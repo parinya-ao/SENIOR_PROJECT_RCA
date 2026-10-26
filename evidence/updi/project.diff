@@ -1,0 +1,473 @@
+--- a/src/receiver/main.cpp
++++ b/src/receiver/main.cpp
+@@ -1,17 +1,6 @@
+ #include <Arduino.h>
+ 
+ #include "updi_uart.h"
+-
+-namespace {
+-
+-void UpdiWrite(const char* text) {
+-  while (*text != '\0') {
+-    updi_uart_tx(static_cast<uint8_t>(*text));
+-    ++text;
+-  }
+-}
+-
+-}  // namespace
+ 
+ void setup() {}
+ 
+@@ -21,6 +10,6 @@
+     return;
+   }
+ 
+-  UpdiWrite("HELLO WORLD\r\n");
+-  delay(1000);
++  updi_uart_tx('H');
++  delay(2000);
+ }
+--- a/lib/updi_uart/updi_uart.c
++++ b/lib/updi_uart/updi_uart.c
+@@ -1,40 +1,6 @@
+-#include <stdint.h>
+ #include <avr/io.h>
+ 
+-#include "updi_uart.h"
+-
+-#define UART_FLAGS _SFR_MEM8(0x001E)
+-#define UART_RX    _SFR_MEM8(0x001F)
+-
+-#define FLAG_ENABLE 0x01
+-#define FLAG_RX     0x02
+-
+-#define SYSCFG_OCDM  _SFR_MEM8(0x0F18)
+-#define SYSCFG_OCDMS _SFR_MEM8(0x0F19)
+-
+-_Bool updi_uart_enabled(void) {
+-    return (UART_FLAGS & FLAG_ENABLE) != 0;
+-}
+-
+-void updi_uart_tx(uint8_t byte) {
+-    while (UART_FLAGS & FLAG_ENABLE) {
+-        if (!SYSCFG_OCDMS) {
+-            SYSCFG_OCDM = byte;
+-            break;
+-        }
+-    }
+-}
+-
+-_Bool updi_uart_rx_poll(void) {
+-    return (UART_FLAGS & FLAG_RX) != 0;
+-}
+-
+-uint8_t updi_uart_rx(void) {
+-    while (!(UART_FLAGS & FLAG_RX)) {
+-    }
+-
+-    uint8_t byte = UART_RX;
+-    UART_FLAGS &= (uint8_t)~FLAG_RX;
+-
+-    return byte;
+-}
++// AVR DA names for the same registers used by upstream (0x001e/0x001f).
++#define GPIOR2 GPR_GPR2
++#define GPIOR3 GPR_GPR3
++#include "../../external/upditerm/updi_uart.c"
+--- a/lib/updi_uart/updi_uart.h
++++ b/lib/updi_uart/updi_uart.h
+@@ -1,22 +1,3 @@
+-// ======================================================================
+-// Virtual UART to be used in combination with upditerm
+-//
+-// Copyright 2024 Dick Streefland
+-//
+-// This is free software, licensed under the terms of the GNU General
+-// Public License as published by the Free Software Foundation.
+-// ======================================================================
+-
+-#ifdef __cplusplus
+-extern "C"
+-{
+-#endif
+-
+-extern	_Bool	updi_uart_enabled	( void );
+-extern	void	updi_uart_tx		( uint8_t byte );
+-extern	_Bool	updi_uart_rx_poll	( void );
+-extern	uint8_t	updi_uart_rx		( void );
+-
+-#ifdef __cplusplus
+-}
+-#endif
++#pragma once
++#include <stdint.h>
++#include "../../external/upditerm/updi_uart.h"
+--- /dev/null
++++ b/test/test_upditerm.py
+@@ -0,0 +1,214 @@
++import importlib.util
++import os
++from pathlib import Path
++import pty
++import subprocess
++import sys
++import termios
++import time
++import types
++import unittest
++from unittest.mock import patch
++
++ROOT = Path(__file__).resolve().parents[1]
++SPEC = importlib.util.spec_from_file_location('upditerm', ROOT / 'external/upditerm/upditerm.py')
++u = importlib.util.module_from_spec(SPEC)
++SPEC.loader.exec_module(u)
++u.TRACING = False
++
++
++class FakeSerial:
++    def __init__(self, *args, **kwargs):
++        self.baudrate = args[1]
++        self.responses = []
++        self.writes = []
++        self.closed = False
++
++    def write(self, data):
++        self.writes.append(data)
++        return len(data)
++
++    def read(self, length):
++        response = self.responses.pop(0)
++        if isinstance(response, Exception):
++            raise response
++        return response
++
++    def close(self):
++        self.closed = True
++
++
++class TransportTests(unittest.TestCase):
++    def setUp(self):
++        self.patcher = patch.object(u.serial, 'Serial', FakeSerial)
++        self.patcher.start()
++        self.addCleanup(self.patcher.stop)
++        self.port = u.SerialPort('/dev/fake', 38400, halfduplex=True)
++
++    def test_echo_mismatch_reports_context_once_and_stops_writes(self):
++        self.port.dev.responses = [b'\x55\x00']
++        with self.assertRaises(u.TransportError) as caught:
++            self.port.send(b'\x55\x85')
++        text = str(caught.exception)
++        for value in ['/dev/fake', '38400', 'echo', '55 85', '55 00']:
++            self.assertIn(value, text)
++        with self.assertRaises(u.TransportError):
++            self.port.send(b'\x00')
++        self.assertEqual(len(self.port.dev.writes), 1)
++        self.port.close()
++        self.assertTrue(self.port.dev.closed)
++
++    def test_short_response_reports_last_transmission(self):
++        self.port.dev.responses = [b'\x55\xe6', b'AVR']
++        self.port.send(b'\x55\xe6')
++        with self.assertRaises(u.TransportError) as caught:
++            self.port.recv(32)
++        for value in ['32', '41 56 52', '55 e6']:
++            self.assertIn(value, str(caught.exception))
++
++    def test_serial_exception_is_contextual(self):
++        self.port.dev.responses = [u.serial.SerialException('disconnected')]
++        with self.assertRaises(u.TransportError) as caught:
++            self.port.send(b'\x55')
++        self.assertIn('disconnected', str(caught.exception))
++        self.assertTrue(self.port.failed)
++
++    def test_constructor_failure_closes_without_cleanup_transactions(self):
++        dev = FakeSerial('/dev/fake', 38400)
++        dev.responses = [b'']
++        with patch.object(u.serial, 'Serial', return_value=dev):
++            with self.assertRaises(u.TransportError):
++                u.SerialUPDI('/dev/fake', 38400)
++        self.assertTrue(dev.closed)
++        self.assertEqual(dev.writes, [b'\x00'])
++
++    def test_healthy_explicit_close_disables_updi_and_closes(self):
++        updi = u.UPDI.__new__(u.UPDI)
++        updi.ser = self.port
++        self.port.dev.responses = [b'\x55\xc3\x04']
++        updi.close()
++        self.assertEqual(self.port.dev.writes, [b'\x55\xc3\x04'])
++        self.assertTrue(self.port.dev.closed)
++
++    def test_missing_sts_ack_names_expected_ack_byte(self):
++        updi = u.UPDI.__new__(u.UPDI)
++        updi.ser = self.port
++        self.port.dev.responses = [b'\x55\x40\x1e', b'']
++        with self.assertRaises(u.TransportError) as caught:
++            updi.sts8(u.UART_FLAGS, u.FLAG_ENABLE)
++        self.assertIn('expected=[40]', str(caught.exception))
++
++    def test_baudrate_reconfiguration_failure_has_context(self):
++        def disconnect(dev, value):
++            raise u.serial.SerialException('disconnected')
++
++        with patch.object(FakeSerial, 'baudrate', property(lambda dev: 38400, disconnect), create=True):
++            with self.assertRaises(u.TransportError) as caught:
++                self.port.set_baudrate(300)
++        for value in ['/dev/fake', 'baud=38400', 'baudrate', 'expected=300', 'received=[]']:
++            self.assertIn(value, str(caught.exception))
++
++
++class WorkerTests(unittest.TestCase):
++    def test_reader_and_writer_failures_reach_wait_and_stop_both_workers(self):
++        self.assertTrue(hasattr(u, 'TransportError'))
++        for failing in ['reader', 'writer']:
++            with self.subTest(failing=failing):
++                class Console:
++                    def get(self):
++                        if failing == 'writer':
++                            return ord('x')
++                        self.stop.wait(1)
++                        return None
++
++                    def put(self, byte):
++                        pass
++
++                class Port:
++                    calls = 0
++
++                    def send1(self, *args, **kwargs):
++                        self.calls += 1
++                        raise u.TransportError('writer failed')
++
++                    def recv1(self, **kwargs):
++                        if failing == 'reader':
++                            self.calls += 1
++                            raise u.TransportError('reader failed')
++
++                port = Port()
++                terminal = u.Terminal(Console(), port)
++                with self.assertRaises(u.TransportError):
++                    terminal.wait()
++                self.assertFalse(terminal.reader_thread.is_alive())
++                self.assertFalse(terminal.writer_thread.is_alive())
++                self.assertEqual(port.calls, 1)
++
++
++class PtyTests(unittest.TestCase):
++    def run_terminal(self, fail):
++        master, slave = pty.openpty()
++        before = termios.tcgetattr(slave)
++        code = f'''
++import importlib.util, sys, time
++s = importlib.util.spec_from_file_location('u', {str(ROOT / 'external/upditerm/upditerm.py')!r})
++u = importlib.util.module_from_spec(s); s.loader.exec_module(u)
++u.TRACING = False
++class Port:
++    def __init__(self, *args): self.started = time.monotonic()
++    def recv1(self, **kwargs):
++        if {fail!r} and time.monotonic() - self.started > .3:
++            raise u.TransportError('/dev/fake baud=38400 echo expected=[55] received=[]')
++    def close(self, **kwargs): print('CLOSED', file=sys.stderr)
++u.SerialUPDI = Port
++sys.exit(u.main(u.parse_arguments()))
++'''
++        proc = subprocess.Popen([sys.executable, '-c', code, '/dev/fake', '38400', '-q'],
++                                stdin=slave, stdout=slave, stderr=subprocess.PIPE)
++        try:
++            deadline = time.monotonic() + 3
++            while termios.tcgetattr(slave) == before and proc.poll() is None:
++                self.assertLess(time.monotonic(), deadline)
++                time.sleep(.01)
++            if not fail:
++                os.write(master, b'\x05e')
++            _, stderr = proc.communicate(timeout=4)
++            self.assertEqual(proc.returncode, 1 if fail else 0)
++            self.assertEqual(termios.tcgetattr(slave), before)
++            self.assertEqual(stderr.count(b'echo expected'), int(fail))
++            self.assertIn(b'CLOSED', stderr)
++        finally:
++            if proc.poll() is None:
++                proc.kill()
++                proc.wait()
++            os.close(master)
++            os.close(slave)
++
++    def test_failure_restores_terminal_and_closes_port(self):
++        self.run_terminal(True)
++
++    def test_escape_exit_is_zero_and_restores_terminal(self):
++        self.run_terminal(False)
++
++
++class WindowsInputTests(unittest.TestCase):
++    def test_redirected_input_uses_pipe_readiness_instead_of_select(self):
++        import ctypes
++        stdin = types.SimpleNamespace(isatty=lambda: False, fileno=lambda: 0, read=lambda n: 'x')
++
++        def peek(handle, buffer, size, read, available, remaining):
++            available._obj.value = 1
++            return 1
++
++        win = types.SimpleNamespace(kernel32=types.SimpleNamespace(PeekNamedPipe=peek))
++        with patch.object(u.platform, 'system', return_value='Windows'), \
++             patch.object(u.sys, 'stdin', stdin), \
++             patch.dict(sys.modules, {'msvcrt': types.SimpleNamespace(get_osfhandle=lambda fd: 0)}), \
++             patch.object(ctypes, 'windll', win, create=True), \
++             patch.object(u.os, 'read', return_value=b'x'), \
++             patch.object(u.select, 'select', side_effect=AssertionError('Windows pipe select')):
++            self.assertEqual(u.Console().get(), ord('x'))
++
++
++if __name__ == '__main__':
++    unittest.main()
+--- /dev/null
++++ b/tools/updi-session.py
+@@ -0,0 +1,122 @@
++"""PTY capture for upstream traces and acceptance gates; no UPDI implementation."""
++import argparse
++import hashlib
++import json
++import os
++from pathlib import Path
++import pty
++import select
++import subprocess
++import termios
++import time
++
++
++def capture(baud, seconds, message, output, trace=False, reset=False):
++    output = Path(output)
++    output.parent.mkdir(parents=True, exist_ok=True)
++    master, slave = pty.openpty()
++    attr = termios.tcgetattr(slave)
++    attr[1] &= ~termios.OPOST
++    termios.tcsetattr(slave, termios.TCSANOW, attr)
++    before = termios.tcgetattr(slave)
++    stty_before = subprocess.check_output(['stty', '-g'], stdin=slave, text=True).strip()
++    command = ['.venv/bin/python', '-u', 'external/upditerm/upditerm.py',
++               '/dev/ttyUSB0', str(baud), '-q'] + (['-t'] if trace else []) + (['-r'] if reset else [])
++    start = time.monotonic()
++    proc = subprocess.Popen(command, stdin=slave, stdout=slave, stderr=subprocess.PIPE)
++    data, errors, pending = bytearray(), bytearray(), bytearray()
++    startup = None
++    count = 0
++    failure = None
++    sent_exit = False
++    exit_time = None
++    try:
++        while proc.poll() is None:
++            now = time.monotonic()
++            if not sent_exit:
++                if trace and now - start >= seconds or (
++                        startup is not None and now - startup >= seconds):
++                    os.write(master, b'\x05e')
++                    sent_exit, exit_time = True, now
++                elif startup is None and now - start > (seconds if trace else 10):
++                    failure = 'startup timeout'
++                    os.write(master, b'\x05e')
++                    sent_exit, exit_time = True, now
++            elif now - exit_time > 5:
++                failure = 'exit timeout'
++                break
++            for fd in select.select([master, proc.stderr], [], [], 0.05)[0]:
++                chunk = os.read(fd if isinstance(fd, int) else fd.fileno(), 65536)
++                if fd == master:
++                    data.extend(chunk)
++                    if not trace and not sent_exit:
++                        pending.extend(chunk)
++                        while len(pending) >= len(message):
++                            actual = bytes(pending[:len(message)])
++                            del pending[:len(message)]
++                            if actual != message:
++                                failure = f'corrupt message: {actual!r}'
++                                break
++                            if startup is None:
++                                startup = time.monotonic()
++                            else:
++                                count += 1
++                else:
++                    errors.extend(chunk)
++            if errors:
++                failure = 'first transport diagnostic (see capture)'
++                try:
++                    proc.wait(timeout=5)
++                except subprocess.TimeoutExpired:
++                    failure = 'failure propagation timeout'
++                break
++            if b'No echo' in data or b'Short read' in data:
++                failure = 'first transport diagnostic (see capture)'
++            if failure and not sent_exit:
++                break
++        if failure and proc.poll() is None:
++            proc.terminate()  # stop upstream spam at the first observed error
++        proc.wait(timeout=6)
++        errors.extend(proc.stderr.read())
++        while select.select([master], [], [], 0)[0]:
++            data.extend(os.read(master, 65536))
++        if not trace and pending and not failure:
++            failure = f'partial message: {bytes(pending)!r}'
++        expected = int(seconds / (2 if message == b'H' else 1))
++        if not trace and not failure and count != expected:
++            failure = f'message count: expected {expected}, received {count}'
++        result = dict(baud=baud, reset=reset, wiring='unverified',
++                      firmware_sha256=hashlib.sha256(Path('.pio/build/receiver/firmware.hex').read_bytes()).hexdigest(),
++                      seconds=seconds, startup_seconds=None if startup is None else startup-start,
++                      messages=count, message=message.decode('ascii'), exit=proc.returncode,
++                      restored=before == termios.tcgetattr(slave), first_failure=failure,
++                      stty_restored=stty_before == subprocess.check_output(
++                          ['stty', '-g'], stdin=slave, text=True).strip(),
++                      stderr=errors.decode(errors='replace'))
++        output.with_suffix('.stdout').write_bytes(data)
++        output.with_suffix('.stderr').write_bytes(errors)
++        output.with_suffix('.json').write_text(json.dumps(result, indent=2) + '\n')
++        return result
++    finally:
++        if proc.poll() is None:
++            proc.kill()
++            proc.wait()
++        proc.stderr.close()
++        os.close(master)
++        os.close(slave)
++
++
++if __name__ == '__main__':
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('baud', type=int)
++    parser.add_argument('seconds', type=float)
++    parser.add_argument('message', choices=['H', 'HELLO', 'WORLD'])
++    parser.add_argument('output')
++    parser.add_argument('--trace', action='store_true')
++    parser.add_argument('--reset', action='store_true')
++    args = parser.parse_args()
++    result = capture(args.baud, args.seconds,
++                     {'H': b'H', 'HELLO': b'HELLO', 'WORLD': b'HELLO WORLD\r\n'}[args.message],
++                     args.output, args.trace, args.reset)
++    print(json.dumps(result))
++    raise SystemExit(bool(result['first_failure'] or result['exit'] or not result['restored']))
+--- /dev/null
++++ b/tools/updi-sib.sh
+@@ -0,0 +1,23 @@
++#!/usr/bin/env bash
++# Run independent upstream SIB connections without resetting or reflashing.
++set -eu
++root=$(cd "$(dirname "$0")/.." && pwd)
++cd "$root"
++out=${1:-evidence/updi/baseline-sib}
++mkdir -p "$out"
++hash=$(sha256sum .pio/build/receiver/firmware.hex | cut -d ' ' -f 1)
++printf 'ID,firmware_sha256,baud,reset,wiring,exit,sib,echo_errors,short_reads,first_failure\n' > "$out/results.csv"
++for baud in 115200 57600 38400; do
++  for attempt in $(seq 1 20); do
++    id="sib-$baud-$attempt"
++    status=0
++    timeout 12 .venv/bin/python -u external/upditerm/upditerm.py /dev/ttyUSB0 "$baud" -i > "$out/$id.stdout" 2> "$out/$id.stderr" || status=$?
++    sib=$(grep -a -m 1 'AVR ' "$out/$id.stdout" | tr -d '\000\r\n' | tr ',' ';' || true)
++    echo_errors=$(cat "$out/$id.stdout" "$out/$id.stderr" | grep -a -c -E 'No echo|/echo:|/send/echo:' || true)
++    short_reads=$(cat "$out/$id.stdout" "$out/$id.stderr" | grep -a -c -E 'Short read|/response:' || true)
++    first=$(cat "$out/$id.stdout" "$out/$id.stderr" | grep -a -m 1 -E 'No echo|Short read|Error|Exception|baud=.*expected=' | tr ',' ';' || true)
++    if [ "$status" -ne 0 ] && [ -z "$first" ]; then first="process exit $status"; fi
++    printf '%s,%s,%s,no,unverified,%s,%s,%s,%s,%s\n' "$id" "$hash" "$baud" "$status" "$sib" "$echo_errors" "$short_reads" "$first" >> "$out/results.csv"
++    printf '%s exit=%s sib=%s echo=%s short=%s\n' "$id" "$status" "$sib" "$echo_errors" "$short_reads"
++  done
++done
+

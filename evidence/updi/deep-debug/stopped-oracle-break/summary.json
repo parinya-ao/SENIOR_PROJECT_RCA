@@ -1,0 +1,290 @@
+[
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "sib",
+    "address": null,
+    "trials": 20,
+    "failure": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "control",
+    "address": null,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "read",
+    "address": 28,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "read",
+    "address": 29,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "read",
+    "address": 30,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "read",
+    "address": 31,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "read",
+    "address": 64,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "read",
+    "address": 99,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "read",
+    "address": 16384,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "read",
+    "address": 3841,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "read",
+    "address": 4177,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "scratch",
+    "address": null,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "sib",
+    "address": null,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "control",
+    "address": null,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "read",
+    "address": 28,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "read",
+    "address": 29,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "read",
+    "address": 30,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "read",
+    "address": 31,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "read",
+    "address": 64,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "read",
+    "address": 99,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "read",
+    "address": 16384,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "read",
+    "address": 3841,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "read",
+    "address": 4177,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 57600,
+    "mode": "scratch",
+    "address": null,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "sib",
+    "address": null,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "control",
+    "address": null,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "read",
+    "address": 28,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "read",
+    "address": 29,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "read",
+    "address": 30,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "read",
+    "address": 31,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "read",
+    "address": 64,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "read",
+    "address": 99,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "read",
+    "address": 16384,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "read",
+    "address": 3841,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "read",
+    "address": 4177,
+    "trials": 20,
+    "success": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 115200,
+    "mode": "scratch",
+    "address": null,
+    "trials": 20,
+    "success": 20
+  }
+]

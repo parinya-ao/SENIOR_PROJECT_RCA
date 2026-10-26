@@ -1,0 +1,15 @@
+{
+  "baud": 38400,
+  "reset": false,
+  "wiring": "unverified",
+  "firmware_sha256": "88c03596bab443c74015d8dfb04e1985f6d14940d227b84a4a943b3d5f47807e",
+  "seconds": 3.0,
+  "startup_seconds": null,
+  "messages": 0,
+  "message": "H",
+  "exit": 0,
+  "restored": true,
+  "first_failure": null,
+  "stty_restored": true,
+  "stderr": ""
+}

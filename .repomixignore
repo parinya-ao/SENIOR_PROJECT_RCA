@@ -1,0 +1,12 @@
+*stdout
+*.json
+*.txt
+
+*idx
+*pack
+*.rev
+*.agents
+*claude
+*.diff
+PROMPT.md
+*.strace

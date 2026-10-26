@@ -1,0 +1,37 @@
+Untouched upstream, guarded H firmware; baud 38400, no reset.
+Command used importlib to load external/upditerm/upditerm.py, TRACING=False,
+then SerialUPDI('/dev/ttyUSB0', 38400). Sample every 0.05 seconds:
+  status = p.updi.ldcs(ASI_OCD_STATUS)
+  p.updi.ldcs(ASI_SYS_STATUS)
+  p.updi.lds8(0x40)  # RSTCTRL.RSTFR
+  p.updi.lds8(0x1c)  # GPR0, where DxCore saves reset flags
+  if status & 1: p.updi.stcs(ASI_OCD_CTRLA, OCD_RUN)
+
+sample  OCD_STATUS ASI_SYS_STATUS RSTFR GPR0
+0       0x01       0xa2           0x02  0x00
+1       0x01       0xa2           0x02  0x00
+2       0x01       0xa2           0x02  0x00
+3       0x01       0xa2           0x02  0x00
+4       0x01       0xa2           0x02  0x00
+5       0x01       0xa2           0x02  0x00
+6       0x01       0xa2           0x02  0x00
+7       0x01       0xa2           0x02  0x00
+8       0x01       0xa2           0x02  0x00
+9       0x01       0xa2           0x02  0x00
+10      0x01       0xa2           0x02  0x00
+11      0x01       0xa2           0x02  0x00
+
+Installed AVR128DA28 header: RSTCTRL_BORF_bm=0x02.
+These are latched flags: they do not measure VCC or prove a physical cause.
+
+Read-only AVRDUDE command (no fuse/Flash writes):
+/home/parinya/.platformio/packages/tool-avrdude/avrdude \
+  -C /home/parinya/.platformio/packages/tool-avrdude/avrdude.conf \
+  -p avr128da28 -c serialupdi -P /dev/ttyUSB0 -b 115200 -U fuses:r:-:h
+Result: 0x0,0x54,0x0,0xff,0xff,0xc9,0x6,0x0,0x2c,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+Exit 0. Watchdog fuse byte is 0x00. No changes made to fuses.
+
+udevadm: Silicon Labs CP2102 USB to UART Bridge Controller,
+VID:PID 10c4:ea60, serial 0001, driver cp210x, /dev/ttyUSB0.
+lsusb reports two 10c4:ea60 adapters; USB identity cannot establish either
+board's TX isolation circuit, resistor value, VCC, logic level or cable length.

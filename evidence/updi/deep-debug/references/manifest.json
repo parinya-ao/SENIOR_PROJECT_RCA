@@ -1,0 +1,24 @@
+{
+  "errata.pdf": {
+    "url": "https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ProductDocuments/Errata/AVR128DA-28-32-48-64-SilConErrataClarif-DS80000882.pdf",
+    "utc": "2026-10-26T13:04:03.852716+00:00",
+    "bytes": 281589,
+    "sha256": "cae3820ed15d73ca0d5dec20e9de45a8d7b25e04c4bb9685df43072f1f782ee2"
+  },
+  "datasheet.pdf": {
+    "url": "https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ProductDocuments/DataSheets/AVR128DA28-32-48-64-Data-Sheet-DS40002183.pdf",
+    "utc": "2026-10-26T13:04:04.396906+00:00",
+    "bytes": 11211065,
+    "sha256": "0001076aa7fb795acef725a38e500e37efe01782b6328f02b54ac0dbb5482b3b"
+  },
+  "cp2102.pdf": {
+    "url": "https://www.silabs.com/documents/public/data-sheets/CP2102-9.pdf",
+    "error": "HTTP Error 403: Forbidden"
+  },
+  "cp210x.c": {
+    "url": "https://raw.githubusercontent.com/torvalds/linux/v6.17/drivers/usb/serial/cp210x.c",
+    "utc": "2026-10-26T13:04:07.035049+00:00",
+    "bytes": 66759,
+    "sha256": "65c329f6be6b09d0b4a3ed2150274480b0caae2e36fa597e436208e757f563b0"
+  }
+}

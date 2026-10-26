@@ -1,0 +1,50 @@
+Processing sender (platform: atmelmegaavr; board: AVR128DA28; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/atmelmegaavr/AVR128DA28.html
+PLATFORM: Atmel megaAVR (1.10.0) > AVR128DA28
+HARDWARE: AVR128DA28 24MHz, 16KB RAM, 128KB Flash
+PACKAGES: 
+ - framework-arduino-megaavr-dxcore @ 1.6.2 
+ - tool-avrdude @ 1.80100.0 (8.1.0) 
+ - toolchain-atmelavr @ 3.70300.220127 (7.3.0)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 20 compatible libraries
+Scanning dependencies...
+No dependencies
+Building in release mode
+Checking size .pio/build/sender/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [          ]   1.5% (used 239 bytes from 16384 bytes)
+Flash: [          ]   1.6% (used 2154 bytes from 131072 bytes)
+========================= [SUCCESS] Took 0.34 seconds =========================
+
+Processing receiver (platform: atmelmegaavr; board: AVR128DA28; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/atmelmegaavr/AVR128DA28.html
+PLATFORM: Atmel megaAVR (1.10.0) > AVR128DA28
+HARDWARE: AVR128DA28 24MHz, 16KB RAM, 128KB Flash
+PACKAGES: 
+ - framework-arduino-megaavr-dxcore @ 1.6.2 
+ - tool-avrdude @ 1.80100.0 (8.1.0) 
+ - toolchain-atmelavr @ 3.70300.220127 (7.3.0)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 20 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- updi_uart @ 0.0.1
+Building in release mode
+Checking size .pio/build/receiver/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [          ]   0.0% (used 4 bytes from 16384 bytes)
+Flash: [          ]   0.6% (used 774 bytes from 131072 bytes)
+========================= [SUCCESS] Took 0.37 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+sender         SUCCESS   00:00:00.341
+receiver       SUCCESS   00:00:00.370
+========================= 2 succeeded in 00:00:00.711 =========================

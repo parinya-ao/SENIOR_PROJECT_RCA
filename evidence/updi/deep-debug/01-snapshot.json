@@ -1,0 +1,125 @@
+{
+  "utc": "2026-10-26T13:02:13.654157+00:00",
+  "baud": 38400,
+  "backend": "upstream",
+  "mode": "snapshot",
+  "address": 28,
+  "hypothesis": "ACC varies with system-domain state",
+  "falsifier": "ACC invariant across status transitions",
+  "preconditions": "unchanged H image; no power cycle; prior teardown in preceding record",
+  "changed_variable": "read-only initial snapshot",
+  "target_state": "unknown until snapshots",
+  "reset_key_operations": [],
+  "first_anomaly": "initial LDS 001c: TransportError: /dev/ttyUSB0 baud=38400 LDS [00 1c]/response: expected=1 bytes received=[] last_tx=[55 00 1c]",
+  "exit": 1,
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 10118870894344,
+      "end_ns": 10118870936144,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 10118870941653,
+      "end_ns": 10118910514502,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 10118913655247,
+      "end_ns": 10118913740729,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 10118913755658,
+      "end_ns": 10118953479073,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 10118955209779,
+      "end_ns": 10118955279155,
+      "hex": "55c308",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10118955286465,
+      "end_ns": 10118956734357,
+      "hex": "55c308",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10118956811537,
+      "end_ns": 10118956877707,
+      "hex": "550040",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10118956884148,
+      "end_ns": 10118958726539,
+      "hex": "550040",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10118958747130,
+      "end_ns": 10118961685821,
+      "hex": "00",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10118961733100,
+      "end_ns": 10118961790663,
+      "hex": "55001c",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10118961796484,
+      "end_ns": 10118963652303,
+      "hex": "55001c",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10118963667048,
+      "end_ns": 10119964855627,
+      "hex": "",
+      "requested": 1,
+      "baud": 38400
+    }
+  ],
+  "values": [
+    {
+      "name": "initial LDS 0040",
+      "ns": 10118961700009,
+      "value": 0
+    }
+  ],
+  "initialization": "UPDI(): two 300-baud BREAKs, CTRLB=8; no reset/key",
+  "teardown": "OS handle closed; no UPDIDIS or recovery traffic; control state deliberately retained",
+  "firmware_sha256": "88c03596bab443c74015d8dfb04e1985f6d14940d227b84a4a943b3d5f47807e",
+  "interpretation": "See report; do not interpret bytes after first anomaly",
+  "self_review": "No fuse/erase/programming calls; one variable identified; failure ends session; no repeated RUN"
+}

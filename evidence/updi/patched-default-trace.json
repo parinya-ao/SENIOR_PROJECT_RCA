@@ -1,0 +1,14 @@
+{
+  "baud": 921600,
+  "reset": false,
+  "wiring": "unverified",
+  "firmware_sha256": "88c03596bab443c74015d8dfb04e1985f6d14940d227b84a4a943b3d5f47807e",
+  "seconds": 15.0,
+  "startup_seconds": null,
+  "messages": 0,
+  "message": "H",
+  "exit": 1,
+  "restored": true,
+  "first_failure": "first transport diagnostic (see capture)",
+  "stderr": "/dev/ttyUSB0 baud=921600 STS [40 1e]/response: expected=1 bytes received=[] last_tx=[55 40 1e]\n"
+}

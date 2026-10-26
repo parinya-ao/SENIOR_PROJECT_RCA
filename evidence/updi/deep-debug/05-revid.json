@@ -1,0 +1,213 @@
+{
+  "utc": "2026-10-26T13:03:23.066002+00:00",
+  "baud": 38400,
+  "backend": "oracle24",
+  "mode": "read",
+  "address": 3841,
+  "hypothesis": "REVID corroborates SIB silicon identification",
+  "falsifier": "REVID inconsistent with SIB suffix or unreadable",
+  "preconditions": "unchanged H image; no power cycle; prior teardown in preceding record",
+  "changed_variable": "read-only SYSCFG.REVID",
+  "target_state": "unknown until snapshots",
+  "reset_key_operations": [],
+  "first_anomaly": null,
+  "exit": 0,
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 10188282100010,
+      "end_ns": 10188282130943,
+      "hex": "00",
+      "count": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10188282135562,
+      "end_ns": 10188282885677,
+      "hex": "00",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10188282913116,
+      "end_ns": 10188282942520,
+      "hex": "55c308",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10188282944434,
+      "end_ns": 10188284342985,
+      "hex": "55c308",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10188284363181,
+      "end_ns": 10188284389795,
+      "hex": "55c206",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10188284390781,
+      "end_ns": 10188286338685,
+      "hex": "55c206",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10188286378655,
+      "end_ns": 10188286403694,
+      "hex": "5580",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10188286404391,
+      "end_ns": 10188287303126,
+      "hex": "5580",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10188287305341,
+      "end_ns": 10189288075420,
+      "hex": "",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10189288100838,
+      "end_ns": 10190289210261,
+      "hex": "",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10190289238673,
+      "end_ns": 10191290097208,
+      "hex": "",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10191348895030,
+      "end_ns": 10191349024914,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 10191349037560,
+      "end_ns": 10191388731444,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 10191446888457,
+      "end_ns": 10191446964028,
+      "hex": "55c308",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10191447017341,
+      "end_ns": 10191448514611,
+      "hex": "55c308",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10191448535749,
+      "end_ns": 10191448577679,
+      "hex": "55c206",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10191448580809,
+      "end_ns": 10191450513973,
+      "hex": "55c206",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10191450536529,
+      "end_ns": 10191450574218,
+      "hex": "5580",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10191450577333,
+      "end_ns": 10191452465490,
+      "hex": "5580",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10191452475282,
+      "end_ns": 10191452490975,
+      "hex": "30",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10191452593558,
+      "end_ns": 10191452632981,
+      "hex": "5508010f00",
+      "count": 5,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10191452635624,
+      "end_ns": 10191455653952,
+      "hex": "5508010f00",
+      "requested": 5,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10191455686725,
+      "end_ns": 10191456588956,
+      "hex": "17",
+      "requested": 1,
+      "baud": 38400
+    }
+  ],
+  "values": [
+    {
+      "name": "LDS 0f01",
+      "ns": 10191456641137,
+      "value": 23
+    }
+  ],
+  "initialization": "installed Microchip/DxCore UpdiPhysical + init_datalink; DTR/RTS false; initial zero; CTRLB=8 CTRLA=6",
+  "teardown": "OS handle closed; no UPDIDIS or recovery traffic; control state deliberately retained",
+  "firmware_sha256": "88c03596bab443c74015d8dfb04e1985f6d14940d227b84a4a943b3d5f47807e",
+  "interpretation": "See report; do not interpret bytes after first anomaly",
+  "self_review": "No fuse/erase/programming calls; one variable identified; failure ends session; no repeated RUN"
+}

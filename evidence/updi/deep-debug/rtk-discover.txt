@@ -1,0 +1,6 @@
+RTK Discover -- Savings Opportunities
+====================================================
+Scanned: 0 sessions (last 30 days), 0 Bash commands
+Already using RTK: 0 commands (0.0%)
+
+No sessions found for the current project (`-home-parinya-unversity-lora`) in the last 30 days. Try `rtk discover --all` to scan every project.

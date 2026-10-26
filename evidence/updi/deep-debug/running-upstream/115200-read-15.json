@@ -1,0 +1,277 @@
+{
+  "utc": "2026-10-26T13:29:36.046951+00:00",
+  "baud": 115200,
+  "backend": "upstream",
+  "mode": "read",
+  "address": 99,
+  "hypothesis": "ACC response loss depends on running reset state at equivalent baud",
+  "falsifier": "all running-state reads as reliable as stopped reads",
+  "preconditions": "unchanged H image; no power cycle; prior teardown in preceding record",
+  "changed_variable": "KEY_OCD absent, CPU not deliberately held, CTRLA default0",
+  "target_state": {
+    "CS02": 0,
+    "CS03": 8,
+    "CS05": 0,
+    "CS07": 0,
+    "CS0b": 32
+  },
+  "oracle_root": "/home/parinya/unversity/lora/.automation/research/pymcuprog",
+  "reset_key_operations": [],
+  "first_anomaly": null,
+  "exit": 0,
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 11761264718936,
+      "end_ns": 11761264755072,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 11761264758706,
+      "end_ns": 11761304386766,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 11761307381672,
+      "end_ns": 11761307435059,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 11761307443555,
+      "end_ns": 11761347325487,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 11761349074997,
+      "end_ns": 11761349123230,
+      "hex": "55c308",
+      "count": 3,
+      "baud": 115200
+    },
+    {
+      "kind": "echo",
+      "ns": 11761349129073,
+      "end_ns": 11761350773193,
+      "hex": "55c308",
+      "requested": 3,
+      "baud": 115200
+    },
+    {
+      "kind": "tx",
+      "ns": 11761350799763,
+      "end_ns": 11761350839844,
+      "hex": "55c200",
+      "count": 3,
+      "baud": 115200
+    },
+    {
+      "kind": "echo",
+      "ns": 11761350843559,
+      "end_ns": 11761351767139,
+      "hex": "55c200",
+      "requested": 3,
+      "baud": 115200
+    },
+    {
+      "kind": "tx",
+      "ns": 11761351793831,
+      "end_ns": 11761351833782,
+      "hex": "5582",
+      "count": 2,
+      "baud": 115200
+    },
+    {
+      "kind": "echo",
+      "ns": 11761351836618,
+      "end_ns": 11761352695532,
+      "hex": "5582",
+      "requested": 2,
+      "baud": 115200
+    },
+    {
+      "kind": "response",
+      "ns": 11761352706407,
+      "end_ns": 11761353644719,
+      "hex": "00",
+      "requested": 1,
+      "baud": 115200
+    },
+    {
+      "kind": "tx",
+      "ns": 11761353662935,
+      "end_ns": 11761353695088,
+      "hex": "5583",
+      "count": 2,
+      "baud": 115200
+    },
+    {
+      "kind": "echo",
+      "ns": 11761353696892,
+      "end_ns": 11761354572625,
+      "hex": "5583",
+      "requested": 2,
+      "baud": 115200
+    },
+    {
+      "kind": "response",
+      "ns": 11761354576263,
+      "end_ns": 11761355569364,
+      "hex": "08",
+      "requested": 1,
+      "baud": 115200
+    },
+    {
+      "kind": "tx",
+      "ns": 11761355575172,
+      "end_ns": 11761355601066,
+      "hex": "5585",
+      "count": 2,
+      "baud": 115200
+    },
+    {
+      "kind": "echo",
+      "ns": 11761355601796,
+      "end_ns": 11761356598884,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 115200
+    },
+    {
+      "kind": "response",
+      "ns": 11761356600213,
+      "end_ns": 11761357558930,
+      "hex": "00",
+      "requested": 1,
+      "baud": 115200
+    },
+    {
+      "kind": "tx",
+      "ns": 11761357561951,
+      "end_ns": 11761357585318,
+      "hex": "5587",
+      "count": 2,
+      "baud": 115200
+    },
+    {
+      "kind": "echo",
+      "ns": 11761357592434,
+      "end_ns": 11761358567729,
+      "hex": "5587",
+      "requested": 2,
+      "baud": 115200
+    },
+    {
+      "kind": "response",
+      "ns": 11761358568705,
+      "end_ns": 11761359549342,
+      "hex": "00",
+      "requested": 1,
+      "baud": 115200
+    },
+    {
+      "kind": "tx",
+      "ns": 11761359553803,
+      "end_ns": 11761359577528,
+      "hex": "558b",
+      "count": 2,
+      "baud": 115200
+    },
+    {
+      "kind": "echo",
+      "ns": 11761359578127,
+      "end_ns": 11761360591071,
+      "hex": "558b",
+      "requested": 2,
+      "baud": 115200
+    },
+    {
+      "kind": "response",
+      "ns": 11761360592165,
+      "end_ns": 11761361629121,
+      "hex": "20",
+      "requested": 1,
+      "baud": 115200
+    },
+    {
+      "kind": "tx",
+      "ns": 11761361636246,
+      "end_ns": 11761361659339,
+      "hex": "550063",
+      "count": 3,
+      "baud": 115200
+    },
+    {
+      "kind": "echo",
+      "ns": 11761361660076,
+      "end_ns": 11761362536406,
+      "hex": "550063",
+      "requested": 3,
+      "baud": 115200
+    },
+    {
+      "kind": "response",
+      "ns": 11761362537679,
+      "end_ns": 11761371743440,
+      "hex": "06",
+      "requested": 1,
+      "baud": 115200
+    }
+  ],
+  "values": [
+    {
+      "name": "diagnostic CTRLA setting",
+      "ns": 11761351774807,
+      "value": null
+    },
+    {
+      "name": "precondition LDCS 02",
+      "ns": 11761353649598,
+      "value": 0
+    },
+    {
+      "name": "precondition LDCS 03",
+      "ns": 11761355571385,
+      "value": 8
+    },
+    {
+      "name": "precondition LDCS 05",
+      "ns": 11761357559909,
+      "value": 0
+    },
+    {
+      "name": "precondition LDCS 07",
+      "ns": 11761359550479,
+      "value": 0
+    },
+    {
+      "name": "precondition LDCS 0b",
+      "ns": 11761361629715,
+      "value": 32
+    },
+    {
+      "name": "LDS 0063",
+      "ns": 11761371750758,
+      "value": 6
+    }
+  ],
+  "initialization": "UPDI(): two 300-baud BREAKs, CTRLB=8; no reset/key",
+  "diagnostic_ctrla": 0,
+  "teardown": "OS handle closed; no UPDIDIS or recovery traffic; control state deliberately retained",
+  "firmware_sha256": "88c03596bab443c74015d8dfb04e1985f6d14940d227b84a4a943b3d5f47807e",
+  "interpretation": "See report; do not interpret bytes after first anomaly",
+  "confidence_update": "Engineering judgments updated by experiment group in report section 5; repeated trials do not constitute independent causal evidence",
+  "next_discriminator": "Compare RUN once versus stopped snapshots",
+  "self_review": "No fuse/erase/programming calls; one variable identified; failure ends session; no repeated RUN"
+}

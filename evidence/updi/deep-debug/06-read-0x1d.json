@@ -1,0 +1,95 @@
+{
+  "utc": "2026-10-26T13:03:58.766504+00:00",
+  "baud": 38400,
+  "backend": "upstream",
+  "mode": "read",
+  "address": 29,
+  "hypothesis": "ACC failure independent of address",
+  "falsifier": "one safe address consistently differs",
+  "preconditions": "unchanged H image; no power cycle; prior teardown in preceding record",
+  "changed_variable": "address only",
+  "target_state": "unknown until snapshots",
+  "reset_key_operations": [],
+  "first_anomaly": "LDS 001d: TransportError: /dev/ttyUSB0 baud=38400 LDS [00 1d]/response: expected=1 bytes received=[] last_tx=[55 00 1d]",
+  "exit": 1,
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 10223984982558,
+      "end_ns": 10223985042752,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 10223985050295,
+      "end_ns": 10224024868592,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 10224028582069,
+      "end_ns": 10224028649263,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 10224028663609,
+      "end_ns": 10224068072601,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 10224069682297,
+      "end_ns": 10224069733290,
+      "hex": "55c308",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10224069764453,
+      "end_ns": 10224071793276,
+      "hex": "55c308",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10224071841695,
+      "end_ns": 10224071891397,
+      "hex": "55001d",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10224071895108,
+      "end_ns": 10224073908151,
+      "hex": "55001d",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10224073931164,
+      "end_ns": 10225074030085,
+      "hex": "",
+      "requested": 1,
+      "baud": 38400
+    }
+  ],
+  "values": [],
+  "initialization": "UPDI(): two 300-baud BREAKs, CTRLB=8; no reset/key",
+  "teardown": "OS handle closed; no UPDIDIS or recovery traffic; control state deliberately retained",
+  "firmware_sha256": "88c03596bab443c74015d8dfb04e1985f6d14940d227b84a4a943b3d5f47807e",
+  "interpretation": "See report; do not interpret bytes after first anomaly",
+  "self_review": "No fuse/erase/programming calls; one variable identified; failure ends session; no repeated RUN"
+}

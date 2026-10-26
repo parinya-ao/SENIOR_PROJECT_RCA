@@ -1,0 +1,4 @@
+[tools]
+clang = "latest"
+d2 = "latest"
+python = "latest"

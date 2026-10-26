@@ -1,0 +1,26 @@
+[
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "sib",
+    "address": null,
+    "trials": 20,
+    "failure": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "control",
+    "address": null,
+    "trials": 20,
+    "failure": 20
+  },
+  {
+    "backend": "oracle24",
+    "baud": 38400,
+    "mode": "read",
+    "address": 28,
+    "trials": 20,
+    "failure": 20
+  }
+]

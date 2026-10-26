@@ -1,0 +1,465 @@
+diff --git a/upditerm.py b/upditerm.py
+index 4982f36..ff201bf 100755
+--- a/upditerm.py
++++ b/upditerm.py
+@@ -16,10 +16,13 @@ import argparse
+ import time
+ import atexit
+ import threading
++import select
++import os
+ import serial
+ import serial.tools.list_ports
+ 
+ VERSION         = '1.1'
++TRACING         = False
+ 
+ # Commandline defaults
+ BAUDRATE        = 921600
+@@ -103,8 +106,10 @@ KEY_UROW        = 'NVMUs&te'
+ KEY_OCD         = 'OCD     '
+ 
+ def error(message):
+-    print(message)
+-    sys.exit(1)
++    raise RuntimeError(message)
++
++class TransportError(RuntimeError):
++    "The first failed transaction; the connection cannot be reused."
+ 
+ class SerialPort:
+     "Serial port"
+@@ -112,6 +117,12 @@ class SerialPort:
+                  parity=serial.PARITY_NONE,
+                  stopbits=serial.STOPBITS_ONE,
+                  halfduplex=False):
++        self.port = port
++        self.baudrate = baudrate
++        self.failed = False
++        self.failure = None
++        self.last_tx = b''
++        self.operation = 'serial'
+         try:
+             self.dev = serial.Serial(port, baudrate,
+                                      parity=parity,
+@@ -119,25 +130,61 @@ class SerialPort:
+                                      timeout=SERIAL_TIMEOUT)
+             self.halfduplex = halfduplex
+         except (ValueError, serial.SerialException) as cause:
+-            error(f'Cannot open serial port: {cause}')
++            self.fail('open', 'open port', b'', cause)
++    def fail(self, operation, expected, received, cause=None):
++        self.failed = True
++        self.failure = TransportError(
++            f'{self.port} baud={self.baudrate} {self.operation}/{operation}: '
++            f'expected={expected} received=[{received.hex(" ")}] '
++            f'last_tx=[{self.last_tx.hex(" ")}]'
++            + (f' ({cause})' if cause else ''))
++        raise self.failure
++    def close(self):
++        self.dev.close()
++    def set_baudrate(self, baudrate):
++        try:
++            self.dev.baudrate = baudrate
++        except (ValueError, OSError, serial.SerialException) as cause:
++            self.fail('baudrate', str(baudrate), b'', cause)
+     def send(self, data):
++        if self.failed:
++            raise self.failure
++        self.last_tx = data
+         if TRACING:
+             print(f'send: {data.hex(sep=" ")}')
+-        self.dev.write(data)
+-        if self.halfduplex:
+-            echo = self.dev.read(len(data))
+-            if data != echo:
+-                error('No echo')
+-    def recv(self, length):
+-        data = self.dev.read(length)
++        try:
++            written = self.dev.write(data)
++            if written != len(data):
++                self.fail('write', f'{len(data)} bytes', data[:written])
++            if self.halfduplex:
++                echo = self.dev.read(len(data))
++                if TRACING:
++                    print(f'echo: {echo.hex(sep=" ")}')
++                if data != echo:
++                    self.fail('echo', f'[{data.hex(" ")}]', echo)
++        except (OSError, serial.SerialException) as cause:
++            self.fail('send/echo', f'[{data.hex(" ")}]', b'', cause)
++    def recv(self, length, expected=None):
++        if self.failed:
++            raise self.failure
++        expected = f'[{expected.hex(" ")}]' if expected is not None else f'{length} bytes'
++        try:
++            data = self.dev.read(length)
++        except (OSError, serial.SerialException) as cause:
++            self.fail('response', expected, b'', cause)
+         if TRACING:
+             print(f'recv: {data.hex(sep=" ")}')
++        if len(data) != length:
++            self.fail('response', expected, data)
+         return data
+     def send_break(self):
+         current_baudrate = self.dev.baudrate
+-        self.dev.baudrate = 300
+-        self.send(bytes([BREAK])) # 10 bits @ 300 baud = 33ms
+-        self.dev.baudrate = current_baudrate
++        self.set_baudrate(300)
++        try:
++            self.send(bytes([BREAK])) # 10 bits @ 300 baud = 33ms
++        finally:
++            if not self.failed:
++                self.set_baudrate(current_baudrate)
+     def send1(self, byte, blocking=True):
+         while True:
+             if self.dev.out_waiting == 0:
+@@ -160,27 +207,33 @@ class UPDI:
+                               parity=serial.PARITY_EVEN,
+                               stopbits=serial.STOPBITS_TWO,
+                               halfduplex=True)
+-        self.ser.send_break()
+-        self.ser.send_break()
+-        self.stcs(CTRLB, CCDETDIS) # disable contention detection
+-        if baudrate > 115200:
+-            self.stcs(ASI_CTRLA, UPDICLKSEL16) # switch AVR to 16MHz UPDI clock
+-            self.ser.dev.baudrate = baudrate   # switch to requested baudrate
+-    def __del__(self):
++        self.ser.baudrate = baudrate
++        try:
++            self.ser.send_break()
++            self.ser.send_break()
++            self.stcs(CTRLB, CCDETDIS) # disable contention detection
++            if baudrate > 115200:
++                self.stcs(ASI_CTRLA, UPDICLKSEL16) # switch AVR to 16MHz UPDI clock
++                self.ser.set_baudrate(baudrate)   # switch to requested baudrate
++        except BaseException:
++            self.close(abort=True)
++            raise
++    def close(self, abort=False):
+         if self.ser:
+             try:
+-                self.stcs(CTRLB, UPDIDIS) # disable UPDI on exit
+-            except SystemExit:
+-                pass
++                if not abort and not self.ser.failed:
++                    self.stcs(CTRLB, UPDIDIS) # disable UPDI on exit
++            finally:
++                self.ser.close()
++                self.ser = None
+     def send(self, data):
+         self.ser.send(bytes(data))
+     def instr(self, data):
++        names = {LDS: 'LDS', STS: 'STS', LDCS: 'LDCS', STCS: 'STCS', KEY: 'KEY/SIB'}
++        self.ser.operation = f'{names.get(data[0] & 0xe0, "UPDI")} [{bytes(data).hex(" ")}]'
+         self.send([SYNCH] + data)
+-    def recv(self, length):
+-        data = self.ser.recv(length)
+-        if len(data) != length:
+-            error('Short read')
+-        return data
++    def recv(self, length, expected=None):
++        return self.ser.recv(length, expected)
+     def stcs(self, address, value):
+         self.instr([STCS | address, value])
+     def ldcs(self, address):
+@@ -189,9 +242,9 @@ class UPDI:
+         return byte
+     def sts8(self, address, value):
+         self.instr([STS | (0 << 2), address])
+-        self.recv(1) # ACK
++        self.recv(1, bytes([ACK])) # ACK
+         self.send([value])
+-        self.recv(1) # ACK
++        self.recv(1, bytes([ACK])) # ACK
+     def lds8(self, address):
+         self.instr([LDS | (0 << 2), address])
+         return self.recv(1)[0]
+@@ -215,16 +268,22 @@ class SerialUPDI:
+     def __init__(self, port, baudrate=BAUDRATE, reset=False):
+         self.updi = None
+         self.updi = UPDI(port, baudrate)
+-        self.updi.key(KEY_OCD)  # switch to OCD mode to enable stop on reset
+-        if reset:
+-            self.updi.reset()
+-        self.updi.sts8(UART_FLAGS, FLAG_ENABLE)
+-    def __del__(self):
++        try:
++            self.updi.key(KEY_OCD)  # switch to OCD mode to enable stop on reset
++            if reset:
++                self.updi.reset()
++            self.updi.sts8(UART_FLAGS, FLAG_ENABLE)
++        except BaseException:
++            self.close(abort=True)
++            raise
++    def close(self, abort=False):
+         if self.updi:
+             try:
+-                self.updi.sts8(UART_FLAGS, 0)
+-            except SystemExit:
+-                pass
++                if not abort and not self.updi.ser.failed:
++                    self.updi.sts8(UART_FLAGS, 0)
++            finally:
++                self.updi.close(abort=abort)
++                self.updi = None
+     def send1(self, byte, blocking=True):
+         while True:
+             flags = self.updi.lds8(UART_FLAGS)
+@@ -253,7 +312,11 @@ class Console:
+     "Keyboard & Screen"
+     def __init__(self, mapkeys=True):
+         self.mapkeys = mapkeys
++        self.stop = threading.Event()
++        self.cleanup = None
+         self.read = sys.stdin.read
++        if platform.system() != 'Windows' or not sys.stdin.isatty():
++            self.read = lambda size: os.read(sys.stdin.fileno(), size)
+         if sys.stdin.isatty():
+             if platform.system() == "Windows":
+                 import msvcrt
+@@ -280,7 +343,32 @@ class Console:
+                 attr[6][termios.VTIME] = 0
+                 termios.tcsetattr(self.fileno, termios.TCSANOW, attr)
+             atexit.register(cleanup)
++            self.cleanup = cleanup
++    def close(self):
++        if self.cleanup:
++            self.cleanup()
++            atexit.unregister(self.cleanup)
++            self.cleanup = None
+     def get(self):
++        while not self.stop.is_set():
++            if platform.system() == 'Windows':
++                import msvcrt
++                if sys.stdin.isatty():
++                    ready = msvcrt.kbhit()
++                else:
++                    import ctypes
++                    available = ctypes.c_ulong()
++                    handle = ctypes.c_void_p(msvcrt.get_osfhandle(sys.stdin.fileno()))
++                    ready = not ctypes.windll.kernel32.PeekNamedPipe(
++                        handle, None, 0, None, ctypes.byref(available), None) or available.value > 0
++                if not ready:
++                    self.stop.wait(0.05)
++            else:
++                ready = bool(select.select([sys.stdin], [], [], 0.05)[0])
++            if ready:
++                break
++        else:
++            return None
+         byte = self.read(1)
+         if not byte:
+             return None
+@@ -302,73 +390,93 @@ class Terminal:
+         self.console = console
+         self.serport = serport
+         self.escape = escape
++        self.stop = threading.Event()
++        self.console.stop = self.stop
++        self.failure = None
+         try:
+             self.log = logfile and open(logfile, 'a', encoding='ascii')
+         except OSError as cause:
+             error(f'Cannot open log file: {cause}')
+         self.serport_lock = threading.Lock()
+-        self.reader_busy = threading.Lock()
+-        self.reader_busy.acquire()
+-        self.writer_thread = threading.Thread(target=self.writer, daemon=True)
++        self.reader_idle = threading.Event()
++        self.writer_thread = threading.Thread(target=self.run, args=(self.writer,), daemon=True)
+         self.writer_thread.start()
+-        self.reader_thread = threading.Thread(target=self.reader, daemon=True)
++        self.reader_thread = threading.Thread(target=self.run, args=(self.reader,), daemon=True)
+         self.reader_thread.start()
++    def run(self, worker):
++        try:
++            worker()
++        except (Exception, SystemExit) as cause:
++            if self.failure is None:
++                self.failure = cause
++            self.stop.set()
++        finally:
++            if worker == self.writer:
++                self.stop.set()
+     def writer(self):
+         "Copy from console to serial port"
+-        while True:
++        while not self.stop.is_set():
+             interactive = not self.escape is None
+-            try:
+-                key = self.console.get()
+-                if key is None:
+-                    with self.reader_busy:  # wait until the reader is idle
+-                        break
+-                if key == self.escape:
+-                    key2 = self.console.get()
+-                    if key2 == ESC_EXIT:
+-                        break
+-                    if key2 == ESC_RESET:
+-                        with self.serport_lock:
+-                            self.serport.reset()
+-                    if key2 != self.escape:
+-                        continue
+-                while True:
++            key = self.console.get()
++            if key is None:
++                while not self.stop.is_set() and not self.reader_idle.wait(0.05):
++                    pass
++                break
++            if key == self.escape:
++                key2 = self.console.get()
++                if key2 == ESC_EXIT:
++                    break
++                if key2 == ESC_RESET:
+                     with self.serport_lock:
+-                        status = self.serport.send1(key, blocking=False)
+-                    if status or interactive:
++                        if not self.stop.is_set():
++                            self.serport.reset()
++                if key2 != self.escape:
++                    continue
++            while not self.stop.is_set():
++                with self.serport_lock:
++                    if self.stop.is_set():
+                         break
+-                    time.sleep(0.010)
+-            except SystemExit:
+-                pass
++                    status = self.serport.send1(key, blocking=False)
++                if status or interactive:
++                    break
++                time.sleep(0.010)
+     def reader(self):
+         "Copy from serial port to console"
+         last_byte = None
+         last_time = time.time()
+-        while self.writer_thread.is_alive():
+-            try:
+-                with self.serport_lock:
+-                    byte = self.serport.recv1(blocking=False)
+-                if byte:
+-                    self.console.put(byte)
+-                    last_byte = byte
+-                    if self.log:
+-                        self.log.write(chr(byte))
+-                    last_time = time.time()
+-                    if not self.reader_busy.locked():
+-                        self.reader_busy.acquire()
+-                    continue
+-                time.sleep(0.010)
+-                idle = time.time() - last_time
+-                if idle > IDLE_TIMEOUT:
+-                    if self.reader_busy.locked():
+-                        self.reader_busy.release()  # reader is idle
+-            except SystemExit:
+-                pass
++        while not self.stop.is_set():
++            with self.serport_lock:
++                if self.stop.is_set():
++                    break
++                byte = self.serport.recv1(blocking=False)
++            if byte is not None:
++                self.console.put(byte)
++                last_byte = byte
++                if self.log:
++                    self.log.write(chr(byte))
++                last_time = time.time()
++                self.reader_idle.clear()
++                continue
++            time.sleep(0.010)
++            idle = time.time() - last_time
++            if idle > IDLE_TIMEOUT:
++                self.reader_idle.set()
+         if last_byte != 0x0a:
+             self.console.put(0x0a)
+     def wait(self):
+         "Wait for the termination of the writer and reader threads"
+-        self.writer_thread.join()
+-        self.reader_thread.join()
++        try:
++            while self.writer_thread.is_alive() or self.reader_thread.is_alive():
++                self.writer_thread.join(0.05)
++                self.reader_thread.join(0.05)
++        finally:
++            self.stop.set()
++            self.writer_thread.join()
++            self.reader_thread.join()
++            if self.log:
++                self.log.close()
++        if self.failure is not None:
++            raise self.failure
+ 
+ def parse_arguments():
+     # Use the first available serial port as default
+@@ -406,17 +514,20 @@ def parse_arguments():
+     if arg.port and arg.port.isnumeric():
+         arg.baudrate = int(arg.port)
+         if not port_default:
+-            error('No default port')
++            parser.error('No default port')
+         arg.port = port_default
+     return arg
+ 
+-def main(arg):
++def session(arg):
+     try:
+         if arg.v:
+             print(VERSION)
+         elif arg.i:
+             updi = UPDI(arg.port, arg.baudrate)
+-            print(updi.sib())
++            try:
++                print(updi.sib())
++            finally:
++                updi.close(abort=sys.exc_info()[0] is not None)
+         else:
+             if sys.stdin.isatty():
+                 escape = arg.e
+@@ -427,16 +538,35 @@ def main(arg):
+                 mapkeys = False
+                 showhelp = False
+             serport = SerialUPDI(arg.port, arg.baudrate, arg.r)
+-            console = Console(mapkeys=mapkeys)
+-            if showhelp:
+-                esc = f'^{0x40+arg.e:c}'
+-                print(f'>>>  Exit: {esc}+e  Reset: {esc}+r  {esc}: {esc}+{esc}', file=sys.stderr)
+-            terminal = Terminal(console, serport, escape=escape, logfile=arg.l)
+-            terminal.wait()
+-    except SystemExit:
+-        sys.exit(1)
++            console = None
++            try:
++                console = Console(mapkeys=mapkeys)
++                if showhelp:
++                    esc = f'^{0x40+arg.e:c}'
++                    print(f'>>>  Exit: {esc}+e  Reset: {esc}+r  {esc}: {esc}+{esc}', file=sys.stderr)
++                terminal = Terminal(console, serport, escape=escape, logfile=arg.l)
++                terminal.wait()
++            finally:
++                try:
++                    if sys.exc_info()[0] is not None:
++                        serport.close(abort=True)
++                    else:
++                        serport.close()
++                finally:
++                    if console:
++                        console.close()
++    except KeyboardInterrupt:
++        return 130
++    return 0
++
++def main(arg):
++    try:
++        return session(arg)
++    except (RuntimeError, OSError, serial.SerialException) as cause:
++        print(cause, file=sys.stderr)
++        return 1
+ 
+ if __name__ == '__main__':
+     arguments = parse_arguments()
+     TRACING = arguments.t
+-    main(arguments)
++    sys.exit(main(arguments))
+

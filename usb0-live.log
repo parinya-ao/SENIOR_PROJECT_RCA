@@ -1,0 +1,4 @@
+[ 3461.021167] localhost.localdomain kernel: cp210x ttyUSB0: usb_serial_generic_write_bulk_callback - nonzero urb status: -71
+[ 8834.900022] localhost.localdomain kernel: cp210x ttyUSB1: cp210x converter now disconnected from ttyUSB1
+[ 8834.903971] localhost.localdomain kernel: cp210x 3-4:1.0: device disconnected
+[ 8835.142057] localhost.localdomain kernel: usb 3-4: new full-speed USB device number 10 using xhci_hcd

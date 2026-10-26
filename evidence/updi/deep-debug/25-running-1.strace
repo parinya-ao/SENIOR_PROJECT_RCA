@@ -1,0 +1,90 @@
+1793021472.175684 ioctl(3</dev/ttyUSB0<char 188:0>>, TCGETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B38400|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000006>
+1793021472.175816 ioctl(3</dev/ttyUSB0<char 188:0>>, TCGETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B38400|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000004>
+1793021472.175839 ioctl(3</dev/ttyUSB0<char 188:0>>, TCSETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B38400|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000004>
+1793021472.175865 ioctl(3</dev/ttyUSB0<char 188:0>>, TIOCMBIS, [TIOCM_DTR]) = 0 <0.000256>
+1793021472.176140 ioctl(3</dev/ttyUSB0<char 188:0>>, TIOCMBIS, [TIOCM_RTS]) = 0 <0.000236>
+1793021472.176410 ioctl(3</dev/ttyUSB0<char 188:0>>, TCFLSH, TCIFLUSH) = 0 <0.000005>
+1793021472.176502 ioctl(3</dev/ttyUSB0<char 188:0>>, TCGETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B38400|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000004>
+1793021472.176548 ioctl(3</dev/ttyUSB0<char 188:0>>, TCGETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B38400|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000004>
+1793021472.176573 ioctl(3</dev/ttyUSB0<char 188:0>>, TCSETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B300|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.001386>
+1793021472.177997 write(3</dev/ttyUSB0<char 188:0>>, "\0", 1) = 1 <0.000029>
+1793021472.178060 pselect6(7, [6<pipe:[460618]>], [3</dev/ttyUSB0<char 188:0>>], NULL, NULL, NULL) = 1 (out [3]) <0.000055>
+1793021472.178201 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=960779610}) <0.039242>
+1793021472.217586 read(3</dev/ttyUSB0<char 188:0>>, "\0", 1) = 1 <0.000014>
+1793021472.217740 ioctl(3</dev/ttyUSB0<char 188:0>>, TCGETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B300|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000014>
+1793021472.217843 ioctl(3</dev/ttyUSB0<char 188:0>>, TCGETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B300|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000012>
+1793021472.217900 ioctl(3</dev/ttyUSB0<char 188:0>>, TCSETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B38400|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.001530>
+1793021472.219489 ioctl(3</dev/ttyUSB0<char 188:0>>, TCGETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B38400|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000010>
+1793021472.219557 ioctl(3</dev/ttyUSB0<char 188:0>>, TCGETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B38400|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000133>
+1793021472.219864 ioctl(3</dev/ttyUSB0<char 188:0>>, TCSETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B300|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.001655>
+1793021472.221737 write(3</dev/ttyUSB0<char 188:0>>, "\0", 1) = 1 <0.000097>
+1793021472.221949 pselect6(7, [6<pipe:[460618]>], [3</dev/ttyUSB0<char 188:0>>], NULL, NULL, NULL) = 1 (out [3]) <0.000020>
+1793021472.222088 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999997000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=960734946}) <0.039370>
+1793021472.261708 read(3</dev/ttyUSB0<char 188:0>>, "\0", 1) = 1 <0.000015>
+1793021472.261871 ioctl(3</dev/ttyUSB0<char 188:0>>, TCGETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B300|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000013>
+1793021472.261986 ioctl(3</dev/ttyUSB0<char 188:0>>, TCGETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B300|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.000010>
+1793021472.262055 ioctl(3</dev/ttyUSB0<char 188:0>>, TCSETS2, {c_iflag=, c_oflag=NL0|CR0|TAB0|BS0|VT0|FF0|, c_cflag=B38400|CS8|CSTOPB|CREAD|PARENB|HUPCL|CLOCAL, c_lflag=, ...}) = 0 <0.001524>
+1793021472.263666 write(3</dev/ttyUSB0<char 188:0>>, "U\303\10", 3) = 3 <0.000039>
+1793021472.263789 pselect6(7, [6<pipe:[460618]>], [3</dev/ttyUSB0<char 188:0>>], NULL, NULL, NULL) = 1 (out [3]) <0.000012>
+1793021472.264325 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999998000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999995635}) <0.000012>
+1793021472.264404 read(3</dev/ttyUSB0<char 188:0>>, "U", 3) = 1 <0.000010>
+1793021472.264470 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999848000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999676889}) <0.000180>
+1793021472.264710 read(3</dev/ttyUSB0<char 188:0>>, "\303", 2) = 1 <0.000021>
+1793021472.264817 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999510000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=998589688}) <0.000948>
+1793021472.265852 read(3</dev/ttyUSB0<char 188:0>>, "\10", 1) = 1 <0.000011>
+1793021472.265961 write(3</dev/ttyUSB0<char 188:0>>, "U\302\0", 3) = 3 <0.000036>
+1793021472.266060 pselect6(7, [6<pipe:[460618]>], [3</dev/ttyUSB0<char 188:0>>], NULL, NULL, NULL) = 1 (out [3]) <0.000018>
+1793021472.266157 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999408517}) <0.000619>
+1793021472.266845 read(3</dev/ttyUSB0<char 188:0>>, "U", 3) = 1 <0.000010>
+1793021472.266915 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999240000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=998474286}) <0.000793>
+1793021472.267779 read(3</dev/ttyUSB0<char 188:0>>, "\302\0", 2) = 2 <0.000011>
+1793021472.267904 write(3</dev/ttyUSB0<char 188:0>>, "U\202", 2) = 2 <0.000039>
+1793021472.268012 pselect6(7, [6<pipe:[460618]>], [3</dev/ttyUSB0<char 188:0>>], NULL, NULL, NULL) = 1 (out [3]) <0.000014>
+1793021472.268118 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999476744}) <0.000552>
+1793021472.268769 read(3</dev/ttyUSB0<char 188:0>>, "U", 2) = 1 <0.000018>
+1793021472.268896 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999216000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=998479318}) <0.000768>
+1793021472.269762 read(3</dev/ttyUSB0<char 188:0>>, "\202", 1) = 1 <0.000014>
+1793021472.269880 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=997566556}) <0.002448>
+1793021472.272431 read(3</dev/ttyUSB0<char 188:0>>, "\0", 1) = 1 <0.000016>
+1793021472.272574 write(3</dev/ttyUSB0<char 188:0>>, "U\203", 2) = 2 <0.000030>
+1793021472.272702 pselect6(7, [6<pipe:[460618]>], [3</dev/ttyUSB0<char 188:0>>], NULL, NULL, NULL) = 1 (out [3]) <0.000019>
+1793021472.272836 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999723526}) <0.000292>
+1793021472.273236 read(3</dev/ttyUSB0<char 188:0>>, "U", 2) = 1 <0.000017>
+1793021472.273348 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999486000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999213933}) <0.000289>
+1793021472.273748 read(3</dev/ttyUSB0<char 188:0>>, "\203", 1) = 1 <0.000017>
+1793021472.273880 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=996887079}) <0.003136>
+1793021472.277169 read(3</dev/ttyUSB0<char 188:0>>, "\10", 1) = 1 <0.000022>
+1793021472.277342 write(3</dev/ttyUSB0<char 188:0>>, "U\205", 2) = 2 <0.000079>
+1793021472.277683 pselect6(7, [6<pipe:[460618]>], [3</dev/ttyUSB0<char 188:0>>], NULL, NULL, NULL) = 1 (out [3]) <0.000024>
+1793021472.277908 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999993000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999918116}) <0.000089>
+1793021472.278082 read(3</dev/ttyUSB0<char 188:0>>, "U", 2) = 1 <0.000018>
+1793021472.278218 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999675000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999219723}) <0.000477>
+1793021472.278770 read(3</dev/ttyUSB0<char 188:0>>, "\205", 1) = 1 <0.000012>
+1793021472.278864 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=996928632}) <0.003098>
+1793021472.282027 read(3</dev/ttyUSB0<char 188:0>>, "\0", 1) = 1 <0.000010>
+1793021472.282119 write(3</dev/ttyUSB0<char 188:0>>, "U\207", 2) = 2 <0.000036>
+1793021472.282201 pselect6(7, [6<pipe:[460618]>], [3</dev/ttyUSB0<char 188:0>>], NULL, NULL, NULL) = 1 (out [3]) <0.000011>
+1793021472.282273 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=1, tv_nsec=0}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999598312}) <0.000426>
+1793021472.282762 read(3</dev/ttyUSB0<char 188:0>>, "U", 2) = 1 <0.000009>
+1793021472.282811 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999461000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=998610521}) <0.000873>
+1793021472.283735 read(3</dev/ttyUSB0<char 188:0>>, "\207", 1) = 1 <0.000009>
+1793021472.283792 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=997191252}) <0.002848>
+1793021472.286743 read(3</dev/ttyUSB0<char 188:0>>, "\0", 1) = 1 <0.000012>
+1793021472.286863 write(3</dev/ttyUSB0<char 188:0>>, "U\213", 2) = 2 <0.000035>
+1793021472.286948 pselect6(7, [6<pipe:[460618]>], [3</dev/ttyUSB0<char 188:0>>], NULL, NULL, NULL) = 1 (out [3]) <0.000012>
+1793021472.287023 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999368732}) <0.000649>
+1793021472.287746 read(3</dev/ttyUSB0<char 188:0>>, "U", 2) = 1 <0.000011>
+1793021472.287800 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999222000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=998325979}) <0.000926>
+1793021472.288831 read(3</dev/ttyUSB0<char 188:0>>, "\213", 1) = 1 <0.000013>
+1793021472.288952 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999998000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=997640943}) <0.002383>
+1793021472.291476 read(3</dev/ttyUSB0<char 188:0>>, " ", 1) = 1 <0.000015>
+1793021472.291655 write(3</dev/ttyUSB0<char 188:0>>, "U\0c", 3) = 3 <0.000045>
+1793021472.291787 pselect6(7, [6<pipe:[460618]>], [3</dev/ttyUSB0<char 188:0>>], NULL, NULL, NULL) = 1 (out [3]) <0.000025>
+1793021472.291949 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999763281}) <0.000251>
+1793021472.292358 read(3</dev/ttyUSB0<char 188:0>>, "U", 3) = 1 <0.000079>
+1793021472.292599 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999359000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=999354254}) <0.000020>
+1793021472.292767 read(3</dev/ttyUSB0<char 188:0>>, "\0", 2) = 1 <0.000016>
+1793021472.292865 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999081000}, NULL) = 1 (in [3], left {tv_sec=0, tv_nsec=998312173}) <0.000803>
+1793021472.293755 read(3</dev/ttyUSB0<char 188:0>>, "c", 1) = 1 <0.000014>
+1793021472.293877 pselect6(5, [3</dev/ttyUSB0<char 188:0>> 4<pipe:[460617]>], NULL, NULL, {tv_sec=0, tv_nsec=999999000}, NULL) = 0 (Timeout) <1.002196>
+1793021473.401754 +++ exited with 1 +++

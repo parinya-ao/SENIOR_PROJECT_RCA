@@ -1,0 +1,271 @@
+{
+  "utc": "2026-10-26T13:04:42.314326+00:00",
+  "baud": 38400,
+  "backend": "upstream",
+  "mode": "startup",
+  "address": 28,
+  "hypothesis": "KEY or RUN changes ACC/reset behavior",
+  "falsifier": "status and access invariant over startup stages",
+  "preconditions": "unchanged H image; no power cycle; prior teardown in preceding record",
+  "changed_variable": "actual constructor stages with RUN once",
+  "target_state": "unknown until snapshots",
+  "oracle_root": "/home/parinya/unversity/lora/.automation/research/pymcuprog",
+  "reset_key_operations": [],
+  "first_anomaly": "initial LDCS 0b: TransportError: /dev/ttyUSB0 baud=38400 LDCS [8b]/response: expected=1 bytes received=[] last_tx=[55 8b]",
+  "exit": 1,
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 10267531438247,
+      "end_ns": 10267531477953,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 10267531482380,
+      "end_ns": 10267571171738,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 10267574310802,
+      "end_ns": 10267574386778,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 10267574400264,
+      "end_ns": 10267613994778,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 10267615732004,
+      "end_ns": 10267615796812,
+      "hex": "55c308",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10267615804023,
+      "end_ns": 10267617286673,
+      "hex": "55c308",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10267617327431,
+      "end_ns": 10267617363779,
+      "hex": "550040",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10267617366632,
+      "end_ns": 10267619296368,
+      "hex": "550040",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10267619310348,
+      "end_ns": 10267619319527,
+      "hex": "20",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10267619338104,
+      "end_ns": 10267619368938,
+      "hex": "55001c",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10267619370609,
+      "end_ns": 10267621218789,
+      "hex": "55001c",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10267621226093,
+      "end_ns": 10267621234568,
+      "hex": "20",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10267621248271,
+      "end_ns": 10267621280141,
+      "hex": "55001d",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10267621282081,
+      "end_ns": 10267623243236,
+      "hex": "55001d",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10267623257216,
+      "end_ns": 10267623272580,
+      "hex": "20",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10267623295451,
+      "end_ns": 10267623338971,
+      "hex": "55001e",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10267623341458,
+      "end_ns": 10267625284451,
+      "hex": "55001e",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10267625309290,
+      "end_ns": 10267625330934,
+      "hex": "20",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10267625357785,
+      "end_ns": 10267625407283,
+      "hex": "55001f",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10267625411465,
+      "end_ns": 10267627284571,
+      "hex": "55001f",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10267627305091,
+      "end_ns": 10267627329132,
+      "hex": "20",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10267627367186,
+      "end_ns": 10267627421743,
+      "hex": "550063",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10267627426707,
+      "end_ns": 10267629260005,
+      "hex": "550063",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10267629273536,
+      "end_ns": 10267629293620,
+      "hex": "20",
+      "requested": 1,
+      "baud": 38400
+    },
+    {
+      "kind": "tx",
+      "ns": 10267629327951,
+      "end_ns": 10267629379090,
+      "hex": "558b",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 10267629384313,
+      "end_ns": 10267630255314,
+      "hex": "558b",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 10267630261875,
+      "end_ns": 10268631091118,
+      "hex": "",
+      "requested": 1,
+      "baud": 38400
+    }
+  ],
+  "values": [
+    {
+      "name": "initial LDS 0040",
+      "ns": 10267619325070,
+      "value": 32
+    },
+    {
+      "name": "initial LDS 001c",
+      "ns": 10267621239321,
+      "value": 32
+    },
+    {
+      "name": "initial LDS 001d",
+      "ns": 10267623276509,
+      "value": 32
+    },
+    {
+      "name": "initial LDS 001e",
+      "ns": 10267625335475,
+      "value": 32
+    },
+    {
+      "name": "initial LDS 001f",
+      "ns": 10267627335986,
+      "value": 32
+    },
+    {
+      "name": "initial LDS 0063",
+      "ns": 10267629298281,
+      "value": 32
+    }
+  ],
+  "initialization": "UPDI(): two 300-baud BREAKs, CTRLB=8; no reset/key",
+  "teardown": "OS handle closed; no UPDIDIS or recovery traffic; control state deliberately retained",
+  "firmware_sha256": "88c03596bab443c74015d8dfb04e1985f6d14940d227b84a4a943b3d5f47807e",
+  "interpretation": "See report; do not interpret bytes after first anomaly",
+  "self_review": "No fuse/erase/programming calls; one variable identified; failure ends session; no repeated RUN"
+}

@@ -1,0 +1,450 @@
+{
+  "utc": "2026-10-26T13:09:39.072348+00:00",
+  "baud": 57600,
+  "backend": "upstream",
+  "mode": "control",
+  "address": 28,
+  "hypothesis": "Equivalent operation depends on observed target state and transport baud",
+  "falsifier": "Failure invariant across states or isolated to one address/backend",
+  "preconditions": "unchanged H image; no power cycle; prior teardown in preceding record",
+  "changed_variable": "control independent attachment; baud block 57600; address None",
+  "target_state": "unknown until snapshots",
+  "oracle_root": "/home/parinya/unversity/lora/.automation/research/pymcuprog",
+  "reset_key_operations": [],
+  "first_anomaly": null,
+  "exit": 0,
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 10564290410783,
+      "end_ns": 10564290448000,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 10564290451925,
+      "end_ns": 10564329962045,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 10564333149308,
+      "end_ns": 10564333222372,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 10564333233519,
+      "end_ns": 10564372822401,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 10564374470025,
+      "end_ns": 10564374514906,
+      "hex": "55c308",
+      "count": 3,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564374520898,
+      "end_ns": 10564375699483,
+      "hex": "55c308",
+      "requested": 3,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564375748241,
+      "end_ns": 10564375790555,
+      "hex": "5580",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564375794620,
+      "end_ns": 10564376711790,
+      "hex": "5580",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564376730664,
+      "end_ns": 10564378842257,
+      "hex": "30",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564378880156,
+      "end_ns": 10564378920023,
+      "hex": "5581",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564378923852,
+      "end_ns": 10564379730218,
+      "hex": "5581",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564379741106,
+      "end_ns": 10564381973908,
+      "hex": "00",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564382017876,
+      "end_ns": 10564382060896,
+      "hex": "5582",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564382065167,
+      "end_ns": 10564382725401,
+      "hex": "5582",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564382738583,
+      "end_ns": 10564385139963,
+      "hex": "80",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564385180473,
+      "end_ns": 10564385232039,
+      "hex": "5583",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564385236611,
+      "end_ns": 10564386724848,
+      "hex": "5583",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564386736709,
+      "end_ns": 10564388285957,
+      "hex": "08",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564388330549,
+      "end_ns": 10564388373990,
+      "hex": "5587",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564388377218,
+      "end_ns": 10564389759166,
+      "hex": "5587",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564389767514,
+      "end_ns": 10564391494320,
+      "hex": "02",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564391520160,
+      "end_ns": 10564391555145,
+      "hex": "5588",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564391558306,
+      "end_ns": 10564392697413,
+      "hex": "5588",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564392703419,
+      "end_ns": 10564394603592,
+      "hex": "00",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564394618951,
+      "end_ns": 10564394656462,
+      "hex": "5589",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564394661046,
+      "end_ns": 10564395731156,
+      "hex": "5589",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564395735734,
+      "end_ns": 10564397724003,
+      "hex": "03",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564397733816,
+      "end_ns": 10564397769105,
+      "hex": "558a",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564397772060,
+      "end_ns": 10564398700534,
+      "hex": "558a",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564398704310,
+      "end_ns": 10564400828173,
+      "hex": "01",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564400843367,
+      "end_ns": 10564400878566,
+      "hex": "558b",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564400881601,
+      "end_ns": 10564401673629,
+      "hex": "558b",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564401680621,
+      "end_ns": 10564403894517,
+      "hex": "82",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564403906308,
+      "end_ns": 10564403939485,
+      "hex": "558b",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564403941663,
+      "end_ns": 10564404691224,
+      "hex": "558b",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564404694552,
+      "end_ns": 10564406919148,
+      "hex": "82",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564406928109,
+      "end_ns": 10564406957431,
+      "hex": "558c",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564406968260,
+      "end_ns": 10564407689032,
+      "hex": "558c",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564407692169,
+      "end_ns": 10564409992181,
+      "hex": "00",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564410019804,
+      "end_ns": 10564410047741,
+      "hex": "5584",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564410048969,
+      "end_ns": 10564410701507,
+      "hex": "5584",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564410705612,
+      "end_ns": 10564413070341,
+      "hex": "00",
+      "requested": 1,
+      "baud": 57600
+    },
+    {
+      "kind": "tx",
+      "ns": 10564413079418,
+      "end_ns": 10564413108544,
+      "hex": "5585",
+      "count": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "echo",
+      "ns": 10564413109653,
+      "end_ns": 10564414726027,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 57600
+    },
+    {
+      "kind": "response",
+      "ns": 10564414728221,
+      "end_ns": 10564416091707,
+      "hex": "01",
+      "requested": 1,
+      "baud": 57600
+    }
+  ],
+  "values": [
+    {
+      "name": "LDCS 00",
+      "ns": 10564378852423,
+      "value": 48
+    },
+    {
+      "name": "LDCS 01",
+      "ns": 10564381989293,
+      "value": 0
+    },
+    {
+      "name": "LDCS 02",
+      "ns": 10564385148765,
+      "value": 128
+    },
+    {
+      "name": "LDCS 03",
+      "ns": 10564388311455,
+      "value": 8
+    },
+    {
+      "name": "LDCS 07",
+      "ns": 10564391501509,
+      "value": 2
+    },
+    {
+      "name": "LDCS 08",
+      "ns": 10564394607575,
+      "value": 0
+    },
+    {
+      "name": "LDCS 09",
+      "ns": 10564397726726,
+      "value": 3
+    },
+    {
+      "name": "LDCS 0a",
+      "ns": 10564400832491,
+      "value": 1
+    },
+    {
+      "name": "LDCS 0b",
+      "ns": 10564403898232,
+      "value": 130
+    },
+    {
+      "name": "LDCS 0b",
+      "ns": 10564406921359,
+      "value": 130
+    },
+    {
+      "name": "LDCS 0c",
+      "ns": 10564409997285,
+      "value": 0
+    },
+    {
+      "name": "LDCS 04",
+      "ns": 10564413074723,
+      "value": 0
+    },
+    {
+      "name": "LDCS 05",
+      "ns": 10564416093496,
+      "value": 1
+    }
+  ],
+  "initialization": "UPDI(): two 300-baud BREAKs, CTRLB=8; no reset/key",
+  "teardown": "OS handle closed; no UPDIDIS or recovery traffic; control state deliberately retained",
+  "firmware_sha256": "88c03596bab443c74015d8dfb04e1985f6d14940d227b84a4a943b3d5f47807e",
+  "interpretation": "See report; do not interpret bytes after first anomaly",
+  "self_review": "No fuse/erase/programming calls; one variable identified; failure ends session; no repeated RUN"
+}
