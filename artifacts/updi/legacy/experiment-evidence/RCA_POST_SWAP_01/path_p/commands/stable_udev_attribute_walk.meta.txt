@@ -1,0 +1,9 @@
+label=stable_udev_attribute_walk
+argv_shell_escaped=udevadm info --attribute-walk --name=/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0
+start_utc=2026-10-27T03:30:31.899375859Z
+end_utc=2026-10-27T03:30:31.926580394Z
+start_proc_uptime_s=62217.11
+end_proc_uptime_s=62217.13
+exit_code=0
+stdout_sha256=6c3d200b2ceb6943bdaab917cf4ab5adfc715686bff810d8f2e9096d72934bc6
+stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

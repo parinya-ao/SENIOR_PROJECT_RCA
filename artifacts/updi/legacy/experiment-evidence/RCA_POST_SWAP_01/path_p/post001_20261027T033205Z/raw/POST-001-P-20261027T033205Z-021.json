@@ -1,0 +1,74 @@
+{
+  "utc": "2026-10-27T03:34:41.351375+00:00",
+  "baud": 38400,
+  "mode": "sib",
+  "address": null,
+  "id_path": "pci-0000:00:14.0-usb-0:4:1.0",
+  "by_path": "pci-0000:00:14.0-usb-0:4:1.0-port0",
+  "write_policy": "no STCS, STS, programming key, reset, or NVM write",
+  "initialization": "two 300-baud BREAK synchronization bytes only",
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 62466568187295,
+      "end_ns": 62466568247387,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 62466568251462,
+      "end_ns": 62466607975922,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 62466611180394,
+      "end_ns": 62466611288541,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 62466611296644,
+      "end_ns": 62466651033781,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 62466653130944,
+      "end_ns": 62466653264859,
+      "hex": "55e6",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 62466653273258,
+      "end_ns": 62466655223126,
+      "hex": "55e6",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 62466655240556,
+      "end_ns": 62467656189206,
+      "hex": "",
+      "requested": 32,
+      "baud": 38400,
+      "stage": "UPDI_CONTROL_RESPONSE"
+    }
+  ],
+  "values": {},
+  "exit": 1,
+  "first_anomaly": "missing response: expected 32 bytes received ",
+  "failure_stage": "UPDI_CONTROL_RESPONSE",
+  "latency_ms": 1146.988947
+}

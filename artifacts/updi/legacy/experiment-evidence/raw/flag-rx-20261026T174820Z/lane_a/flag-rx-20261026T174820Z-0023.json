@@ -1,0 +1,75 @@
+{
+  "utc": "2026-10-26T17:50:21.003937+00:00",
+  "baud": 38400,
+  "mode": "read",
+  "address": 30,
+  "id_path": "pci-0000:00:14.0-usb-0:4:1.0",
+  "by_path": "pci-0000:00:14.0-usb-0:4:1.0-port0",
+  "write_policy": "no STCS, STS, programming key, reset, or NVM write",
+  "initialization": "two 300-baud BREAK synchronization bytes only",
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 27406221219781,
+      "end_ns": 27406221277412,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 27406221281518,
+      "end_ns": 27406261026343,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 27406264981809,
+      "end_ns": 27406265118500,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 27406265125157,
+      "end_ns": 27406304844682,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 27406306825037,
+      "end_ns": 27406306947640,
+      "hex": "55001e",
+      "count": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 27406306953860,
+      "end_ns": 27406308656574,
+      "hex": "55001e",
+      "requested": 3,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 27406308666047,
+      "end_ns": 27406311984768,
+      "hex": "03",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "ACC_DATA_RESPONSE"
+    }
+  ],
+  "values": {
+    "LDS 1e": 3
+  },
+  "exit": 0,
+  "first_anomaly": null,
+  "latency_ms": 148.661583
+}

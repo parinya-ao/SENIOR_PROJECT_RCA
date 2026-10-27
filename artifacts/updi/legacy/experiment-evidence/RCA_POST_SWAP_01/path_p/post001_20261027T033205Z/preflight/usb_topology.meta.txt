@@ -1,0 +1,9 @@
+label=usb_topology
+argv_shell_escaped=lsusb -t
+start_utc=2026-10-27T03:32:31.720479565Z
+end_utc=2026-10-27T03:32:31.727352490Z
+start_proc_uptime_s=62336.93
+end_proc_uptime_s=62336.93
+exit_code=0
+stdout_sha256=44bf5a5c6ef5822b3529a19458ac00e7230469b7a5b9cd279a44688513b04cdd
+stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

@@ -1,0 +1,9 @@
+label=uv_version
+argv_shell_escaped=uv --version
+start_utc=2026-10-27T03:30:32.268894936Z
+end_utc=2026-10-27T03:30:32.276393785Z
+start_proc_uptime_s=62217.48
+end_proc_uptime_s=62217.48
+exit_code=0
+stdout_sha256=4d139bd1c36e7f70d98f148097e7394c1d02439732cdd0a7bec4c1fdb434e342
+stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

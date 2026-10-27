@@ -1,4 +1,14 @@
 .pio
+
+# Local Python environments and generated caches.
+.venv/
+**/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Regenerable Graphify parser cache; graph results remain versioned as artifacts.
+/artifacts/codegraph/**/cache/
 # Created by https://www.toptal.com/developers/gitignore/api/linux,windows,macos,vim,python,java,c++,nesc,pythonvanilla,ruby
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,windows,macos,vim,python,java,c++,nesc,pythonvanilla,ruby
 

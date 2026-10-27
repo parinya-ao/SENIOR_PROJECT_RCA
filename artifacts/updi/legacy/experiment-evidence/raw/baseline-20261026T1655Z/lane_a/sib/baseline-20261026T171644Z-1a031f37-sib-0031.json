@@ -1,0 +1,75 @@
+{
+  "utc": "2026-10-26T17:16:49.816339+00:00",
+  "baud": 38400,
+  "mode": "sib",
+  "address": null,
+  "id_path": "pci-0000:00:14.0-usb-0:4:1.0",
+  "by_path": "pci-0000:00:14.0-usb-0:4:1.0-port0",
+  "write_policy": "no STCS, STS, programming key, reset, or NVM write",
+  "initialization": "two 300-baud BREAK synchronization bytes only",
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 25395033611054,
+      "end_ns": 25395033684462,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 25395033689967,
+      "end_ns": 25395073197994,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 25395076517515,
+      "end_ns": 25395076604007,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 25395076609551,
+      "end_ns": 25395116308807,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 25395118512512,
+      "end_ns": 25395118616941,
+      "hex": "55e6",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 25395118626105,
+      "end_ns": 25395120143386,
+      "hex": "55e6",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 25395120154789,
+      "end_ns": 25395132881635,
+      "hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "requested": 32,
+      "baud": 38400,
+      "stage": "UPDI_CONTROL_RESPONSE"
+    }
+  ],
+  "values": {
+    "SIB": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900"
+  },
+  "exit": 0,
+  "first_anomaly": null,
+  "latency_ms": 157.279148
+}

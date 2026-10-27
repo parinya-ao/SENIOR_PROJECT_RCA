@@ -1,0 +1,32 @@
+{
+  "outer_command_record": "PYTHONPATH=experiments/updi_rca/src uv run --project experiments/updi_rca python experiments/updi_rca/evidence/RCA_BOARD_SWAP_01/path_p/run_pre_campaign.py --id-path pci-0000:00:14.0-usb-0:4:1.0 --attempts 20 --baud 38400 --timeout 1.0 --target X --pairing P-to-X",
+  "argv": [
+    "experiments/updi_rca/evidence/RCA_BOARD_SWAP_01/path_p/run_pre_campaign.py",
+    "--id-path",
+    "pci-0000:00:14.0-usb-0:4:1.0",
+    "--attempts",
+    "20",
+    "--baud",
+    "38400",
+    "--timeout",
+    "1.0",
+    "--target",
+    "X",
+    "--pairing",
+    "P-to-X"
+  ],
+  "python_executable": "/home/parinya/unversity/lora/experiments/updi_rca/.venv/bin/python",
+  "cwd": "/home/parinya/unversity/lora",
+  "start_utc": "2026-10-27T01:58:02.361274Z",
+  "end_utc": "2026-10-27T01:58:26.179020Z",
+  "monotonic_start_ns": 56667573191006,
+  "monotonic_end_ns": 56691390957054,
+  "duration_ms": 23817.766048,
+  "exit_code": 1,
+  "status": "COMPLETE",
+  "abort_reason": null,
+  "stdout": "{\n  \"status\": \"COMPLETE\",\n  \"run_id\": \"swap-pre-P-20261027T015802555251Z\",\n  \"metrics\": {\n    \"n_attempted\": 20,\n    \"planned_n\": 20,\n    \"successes\": 0,\n    \"failures\": 20,\n    \"success_rate\": 0.0,\n    \"failure_rate\": 1.0,\n    \"success_wilson95\": [\n      0.0,\n      0.16112515805281938\n    ],\n    \"failure_stages\": {\n      \"UPDI_CONTROL_RESPONSE\": 20\n    },\n    \"break1_exact_echoes\": 20,\n    \"break2_exact_echoes\": 20,\n    \"sib_request_tx_count\": 20,\n    \"sib_response_count\": 0,\n    \"latency_median_ms\": 1146.7747775,\n    \"latency_p95_ms\": 1148.087688\n  },\n  \"abort_reason\": null\n}\n",
+  "stderr": "",
+  "stdout_sha256": "414ea116d0da583a5f7a2cf6ac500876bd848f13e6effeba1472ac7e0eed23b0",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

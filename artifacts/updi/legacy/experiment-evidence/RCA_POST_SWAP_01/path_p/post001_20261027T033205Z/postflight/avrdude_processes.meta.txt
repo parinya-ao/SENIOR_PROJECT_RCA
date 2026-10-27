@@ -1,0 +1,8 @@
+command=pgrep -a -f \[a\]vrdude
+start_utc=2026-10-27T03:35:19.738733456Z
+end_utc=2026-10-27T03:35:19.765469994Z
+start_proc_uptime_s=62504.95
+end_proc_uptime_s=62504.97
+exit_code=0
+stdout_sha256=47dc6089a169d8fecda2d88fe60e6f9bf83850c20351d3546d99d32b47f15874
+stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

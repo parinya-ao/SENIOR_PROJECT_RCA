@@ -1,0 +1,15 @@
+run_id=POST-001-P-20261027T033205Z
+status=COMPLETE
+planned_attempts=30
+attempts_done=30
+stop_reason=
+start_utc=2026-10-27T03:34:16.164184095Z
+end_utc=2026-10-27T03:34:54.288473544Z
+start_proc_uptime_s=62441.37
+end_proc_uptime_s=62479.50
+outer_exit_code=0
+kernel_log_exit_code=0
+ID_PATH=pci-0000:00:14.0-usb-0:4:1.0
+stable_by_path=/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0
+pairing=P->Y (user-reported)
+target_identity=UNKNOWN_TARGET

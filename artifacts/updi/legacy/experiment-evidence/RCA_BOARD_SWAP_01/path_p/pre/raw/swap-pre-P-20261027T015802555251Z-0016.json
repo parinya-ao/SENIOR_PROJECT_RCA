@@ -1,0 +1,88 @@
+{
+  "utc": "2026-10-27T01:58:20.274818+00:00",
+  "baud": 38400,
+  "mode": "sib",
+  "address": null,
+  "id_path": "pci-0000:00:14.0-usb-0:4:1.0",
+  "by_path": "pci-0000:00:14.0-usb-0:4:1.0-port0",
+  "write_policy": "no STCS, STS, programming key, reset, or NVM write",
+  "initialization": "two 300-baud BREAK synchronization bytes only",
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 56685492562501,
+      "end_ns": 56685492641434,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 56685492650243,
+      "end_ns": 56685532156406,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 56685535270026,
+      "end_ns": 56685535360559,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 56685535366083,
+      "end_ns": 56685575100113,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 56685576965942,
+      "end_ns": 56685577107256,
+      "hex": "55e6",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 56685577115746,
+      "end_ns": 56685578095130,
+      "hex": "55e6",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 56685578104739,
+      "end_ns": 56686579098220,
+      "hex": "",
+      "requested": 32,
+      "baud": 38400,
+      "stage": "UPDI_CONTROL_RESPONSE"
+    }
+  ],
+  "values": {},
+  "exit": 1,
+  "first_anomaly": "missing response: expected 32 bytes received ",
+  "failure_stage": "UPDI_CONTROL_RESPONSE",
+  "latency_ms": 1144.978822,
+  "epoch": "RCA_BOARD_SWAP_01",
+  "run_id": "swap-pre-P-20261027T015802555251Z",
+  "attempt": 16,
+  "board_label": "X",
+  "pairing": "P->X",
+  "target_identity": "UNKNOWN_TARGET",
+  "expected_id_path": "pci-0000:00:14.0-usb-0:4:1.0",
+  "attempt_start_utc": "2026-10-27T01:58:20.239830Z",
+  "attempt_end_utc": "2026-10-27T01:58:21.420958Z",
+  "attempt_monotonic_start_ns": 56685451756229,
+  "attempt_monotonic_end_ns": 56686632853271,
+  "attempt_duration_ms": 1181.097042,
+  "probe": "SIB only",
+  "approved_attempts": 20
+}

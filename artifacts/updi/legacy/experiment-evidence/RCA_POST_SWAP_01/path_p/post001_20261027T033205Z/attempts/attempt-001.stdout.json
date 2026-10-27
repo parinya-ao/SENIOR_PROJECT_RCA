@@ -1,0 +1,11 @@
+{
+  "success": false,
+  "stage": "LOCAL_ECHO",
+  "tx_hex": "00",
+  "echo_hex": "80",
+  "response_hex": "",
+  "latency_ms": 108.193676,
+  "error_type": "echo mismatch: expected 00 received 80",
+  "raw_path": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/RCA_POST_SWAP_01/path_p/post001_20261027T033205Z/raw/POST-001-P-20261027T033205Z-001.json",
+  "raw_sha256": "79a6795c314f4c298f618057749ddbd7e65fb9984c5df737147c4685c271e584"
+}

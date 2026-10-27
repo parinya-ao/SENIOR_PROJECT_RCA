@@ -1,0 +1,33 @@
+direction: right
+
+vars: {
+  d2-config: {
+    theme-id: 4
+    layout-engine: tala
+    pad: 60
+  }
+}
+
+title: "AVR128DA28 UPDI RCA: observed boundaries and evidence limit" {
+  near: top-center
+}
+
+lanes: "Stable adapter lanes" {
+  lane_a: "Lane A\nID_PATH …usb-0:4:1.0\nSIB 100/100; control 100/100"
+  lane_b: "Lane B\nID_PATH …usb-0:1:1.0\nSIB/control 0/100; local echo fail"
+}
+
+host: "Serial / host TX\nHost writes recorded on both lanes\nNo matching kernel USB errors"
+echo: "Local half-duplex echo\nA SIB 300/300; control 1500/1500 exact\nB 200/200 attempts fail before target response"
+control: "UPDI control response\nA SIB 100/100; LDCS 1300/1300 bytes\nB no target control response reached"
+acc: "ACC / target data\nHistorical unheld LDS: 19/60 missing\nafter exact echo; stopped 540/540 passed\nLane A GPR2 0x03; FLAG_RX 100/100"
+ocd: "OCD / runtime\nLane A OCD snapshot n=1: 15 bytes\nHEYYY fuckkkk CR/LF; OCDMV=1\n15/15 valid, then status 0x00\n9-line session lacks timing/identity"
+physical: "Component cause BLOCKED\nTargets UNKNOWN; adapter/target paired\nNext: controlled adapter crossover\nthen capture VDD/GND, RESET, UPDI, TX"
+
+lanes.lane_a -> host: "38400 probe"
+lanes.lane_b -> host: "38400 probes; BREAK sync at 300 baud"
+host -> echo: "TX -> local return"
+echo -> control: "exact echo reaches target-protocol boundary on A"
+control -> acc: "fresh campaign did not reach ACC data reads"
+acc -> ocd: "separate ACC and OCD evidence"
+ocd -> physical: "software cannot distinguish power/reset from signal turnaround"

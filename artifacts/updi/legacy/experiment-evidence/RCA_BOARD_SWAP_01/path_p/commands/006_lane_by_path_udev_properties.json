@@ -1,0 +1,22 @@
+{
+  "label": "lane_by_path_udev_properties",
+  "argv": [
+    "udevadm",
+    "info",
+    "--query=property",
+    "--name=/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0"
+  ],
+  "cwd": "/home/parinya/unversity/lora",
+  "start_utc": "2026-10-27T01:54:48.320548Z",
+  "end_utc": "2026-10-27T01:54:48.331717Z",
+  "monotonic_start_ns": 56473532455116,
+  "monotonic_end_ns": 56473543613975,
+  "duration_ms": 11.158859,
+  "exit_code": 0,
+  "timed_out": false,
+  "stdout": "DEVPATH=/devices/pci0000:00/0000:00:14.0/usb3/3-4/3-4:1.0/ttyUSB0/tty/ttyUSB0\nDEVNAME=/dev/ttyUSB0\nMAJOR=188\nMINOR=0\nSUBSYSTEM=tty\nUSEC_INITIALIZED=16098826760\nID_BUS=usb\nID_MODEL=CP2102_USB_to_UART_Bridge_Controller\nID_MODEL_ENC=CP2102\\x20USB\\x20to\\x20UART\\x20Bridge\\x20Controller\nID_MODEL_ID=ea60\nID_SERIAL=Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001\nID_SERIAL_SHORT=0001\nID_VENDOR=Silicon_Labs\nID_VENDOR_ENC=Silicon\\x20Labs\nID_VENDOR_ID=10c4\nID_REVISION=0100\nID_TYPE=generic\nID_USB_MODEL=CP2102_USB_to_UART_Bridge_Controller\nID_USB_MODEL_ENC=CP2102\\x20USB\\x20to\\x20UART\\x20Bridge\\x20Controller\nID_USB_MODEL_ID=ea60\nID_USB_SERIAL=Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001\nID_USB_SERIAL_SHORT=0001\nID_USB_VENDOR=Silicon_Labs\nID_USB_VENDOR_ENC=Silicon\\x20Labs\nID_USB_VENDOR_ID=10c4\nID_USB_REVISION=0100\nID_USB_TYPE=generic\nID_USB_INTERFACES=:ff0000:\nID_USB_INTERFACE_NUM=00\nID_USB_DRIVER=cp210x\nID_VENDOR_FROM_DATABASE=Silicon Labs\nID_HARDWARE_WALLET=1\nID_MODEL_FROM_DATABASE=CP210x UART Bridge\nID_PATH_WITH_USB_REVISION=pci-0000:00:14.0-usbv2-0:4:1.0\nID_PATH=pci-0000:00:14.0-usb-0:4:1.0\nID_PATH_TAG=pci-0000_00_14_0-usb-0_4_1_0\nID_INTEGRATION=external\nID_MM_CANDIDATE=1\nID_MM_DEVICE_IGNORE=1\nID_MM_PORT_IGNORE=1\nDEVLINKS=/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0 /dev/serial/by-path/pci-0000:00:14.0-usbv2-0:4:1.0-port0 /dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0\nTAGS=:systemd:\nCURRENT_TAGS=:systemd:\n",
+  "stderr": "",
+  "argv_sha256": "7b42e39e191c4cba1e9137783b4520340b99063ded170f2fd8614142a19c170d",
+  "stdout_sha256": "a9f3f7566ffb2a7e36cb6f317962be9e3fb4464ff84c3d365e31b80a1ab9ec56",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

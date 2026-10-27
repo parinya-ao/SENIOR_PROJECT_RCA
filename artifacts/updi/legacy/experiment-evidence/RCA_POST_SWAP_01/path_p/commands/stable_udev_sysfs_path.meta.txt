@@ -1,0 +1,9 @@
+label=stable_udev_sysfs_path
+argv_shell_escaped=udevadm info --query=path --name=/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0
+start_utc=2026-10-27T03:30:31.862569886Z
+end_utc=2026-10-27T03:30:31.877020971Z
+start_proc_uptime_s=62217.07
+end_proc_uptime_s=62217.08
+exit_code=0
+stdout_sha256=5dd8b3b8b7af1f3371fe33a23150a8ed6d81c5c98fc4f820dad9eb04873e687a
+stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

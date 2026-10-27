@@ -1,0 +1,6 @@
+epoch=RCA_POST_SWAP_01
+lane=P
+expected_ID_PATH=pci-0000:00:14.0-usb-0:4:1.0
+user_reported_physical_pairing=P->Y
+serial_open_attempted=false
+hardware_moved=false

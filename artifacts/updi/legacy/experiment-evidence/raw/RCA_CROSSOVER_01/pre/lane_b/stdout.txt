@@ -1,0 +1,59 @@
+{
+  "run_id": "baseline-20261026T211832Z-88c741a8",
+  "adapter_id_path": "pci-0000:00:14.0-usb-0:1:1.0",
+  "adapter_serial": "0001",
+  "current_tty_at_start": "/dev/ttyUSB1",
+  "board_id": "UNKNOWN_TARGET",
+  "target_identity": "UNKNOWN_TARGET",
+  "baud": 38400,
+  "attempts_per_condition": 10,
+  "write_policy": "no STCS, STS, programming key, reset, or NVM write",
+  "conditions": {
+    "sib": {
+      "run_id": "baseline-20261026T211832Z-88c741a8-sib",
+      "raw_directory": "experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_b/sib",
+      "summary": "experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_b/sib/baseline-20261026T211832Z-88c741a8-sib-summary.json",
+      "metrics": {
+        "attempts": 10,
+        "successes": 0,
+        "failures": 10,
+        "success_rate": 0.0,
+        "failure_rate": 1.0,
+        "success_percentage": 0.0,
+        "failure_percentage": 100.0,
+        "median_latency_ms": 1061.646522,
+        "p95_latency_ms": 1064.128277,
+        "wilson_95": [
+          0.0,
+          0.2775401687666165
+        ],
+        "failure_stages": {
+          "LOCAL_ECHO": 10
+        }
+      }
+    },
+    "control": {
+      "run_id": "baseline-20261026T211832Z-88c741a8-control",
+      "raw_directory": "experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_b/control",
+      "summary": "experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_b/control/baseline-20261026T211832Z-88c741a8-control-summary.json",
+      "metrics": {
+        "attempts": 10,
+        "successes": 0,
+        "failures": 10,
+        "success_rate": 0.0,
+        "failure_rate": 1.0,
+        "success_percentage": 0.0,
+        "failure_percentage": 100.0,
+        "median_latency_ms": 1061.5563965000001,
+        "p95_latency_ms": 1063.47464,
+        "wilson_95": [
+          0.0,
+          0.2775401687666165
+        ],
+        "failure_stages": {
+          "LOCAL_ECHO": 10
+        }
+      }
+    }
+  }
+}

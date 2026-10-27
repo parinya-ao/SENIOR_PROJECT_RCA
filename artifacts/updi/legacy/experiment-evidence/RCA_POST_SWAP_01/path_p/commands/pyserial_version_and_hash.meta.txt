@@ -1,0 +1,9 @@
+label=pyserial_version_and_hash
+argv_shell_escaped=uv run --project experiments/updi_rca python -c import\ hashlib\,\ pathlib\,\ serial\;\ p=pathlib.Path\(serial.__file__\)\;\ print\(\"version=\"+serial.__version__\)\;\ print\(\"module=\"+str\(p\)\)\;\ print\(\"sha256=\"+hashlib.sha256\(p.read_bytes\(\)\).hexdigest\(\)\)
+start_utc=2026-10-27T03:30:32.302358544Z
+end_utc=2026-10-27T03:30:32.337967991Z
+start_proc_uptime_s=62217.51
+end_proc_uptime_s=62217.55
+exit_code=0
+stdout_sha256=09a57d48b72d7b6a6a543cf4a206ed96a5f410eddadf0036ad444148f3f4dba3
+stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

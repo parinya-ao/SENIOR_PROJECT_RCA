@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "fuser",
+    "-v",
+    "/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0"
+  ],
+  "start_utc": "2026-10-27T01:58:02.384954Z",
+  "end_utc": "2026-10-27T01:58:02.500311Z",
+  "monotonic_start_ns": 56667596871663,
+  "monotonic_end_ns": 56667712228658,
+  "exit_code": 1,
+  "timed_out": false,
+  "stdout": "",
+  "stderr": "",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

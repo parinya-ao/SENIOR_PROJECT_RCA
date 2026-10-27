@@ -1,0 +1,22 @@
+{
+  "epoch_id": "RCA_FRESH_01",
+  "lane": "Q",
+  "batch": "baseline-1",
+  "mode": "sib",
+  "metrics": {
+    "attempts": 30,
+    "successes": 30,
+    "failures": 0,
+    "success_rate": 1.0,
+    "failure_rate": 0.0,
+    "success_percentage": 100.0,
+    "failure_percentage": 0.0,
+    "median_latency_ms": 382.00833850000004,
+    "p95_latency_ms": 404.674696,
+    "wilson_95": [
+      0.8864829086095221,
+      1.0
+    ],
+    "failure_stages": {}
+  }
+}

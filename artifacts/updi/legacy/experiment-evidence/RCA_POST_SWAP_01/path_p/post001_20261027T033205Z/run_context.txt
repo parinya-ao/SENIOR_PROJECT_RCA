@@ -1,0 +1,12 @@
+epoch=RCA_POST_SWAP_01
+phase=CROSSED_UNTOUCHED
+run_id=POST-001-P-20261027T033205Z
+pairing=P->Y (user-reported)
+board_label=Y (physical label, user-reported)
+target_identity=UNKNOWN_TARGET
+adapter_id_path=pci-0000:00:14.0-usb-0:4:1.0
+stable_by_path=/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0
+planned_attempts=30
+baud=38400
+timeout=1.0
+probe=SIB only; existing CLI; BREAK synchronization then SIB; no writes/reset/control/ACC/programming

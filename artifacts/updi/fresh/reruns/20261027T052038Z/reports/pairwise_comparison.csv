@@ -1,0 +1,6 @@
+epoch_id,batch,mode,n_p,n_q,rate_p,rate_q,delta,interpretation
+RCA_FRESH_01,baseline-1,sib,30,30,0.0,1.0,-1.0,Descriptive only; no locality inference
+RCA_FRESH_01,baseline-2,sib,30,30,0.0,1.0,-1.0,Descriptive only; no locality inference
+RCA_FRESH_01,baseline-3,sib,30,30,0.0,0.9666666666666667,-0.9666666666666667,Descriptive only; no locality inference
+RCA_FRESH_01,confirmation-1,sib,10,10,0.0,1.0,-1.0,Descriptive only; no locality inference
+RCA_FRESH_01,smoke,sib,10,10,0.0,0.0,0.0,Descriptive only; no locality inference

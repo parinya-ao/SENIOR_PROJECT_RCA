@@ -1,0 +1,33 @@
+{
+  "utc": "2026-10-26T17:17:31.768120+00:00",
+  "baud": 38400,
+  "mode": "sib",
+  "address": null,
+  "id_path": "pci-0000:00:14.0-usb-0:1:1.0",
+  "by_path": "pci-0000:00:14.0-usb-0:1:1.0-port0",
+  "write_policy": "no STCS, STS, programming key, reset, or NVM write",
+  "initialization": "two 300-baud BREAK synchronization bytes only",
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 25436986141070,
+      "end_ns": 25436986206327,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 25436986211337,
+      "end_ns": 25437987107895,
+      "hex": "",
+      "requested": 1,
+      "baud": 300
+    }
+  ],
+  "values": {},
+  "exit": 1,
+  "first_anomaly": "echo mismatch: expected 00 received ",
+  "failure_stage": "LOCAL_ECHO",
+  "latency_ms": 1061.925488
+}

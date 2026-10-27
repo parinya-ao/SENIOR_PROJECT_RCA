@@ -1,0 +1,5 @@
+phase,external_path,target,attempts,passes,failures,success_rate,wilson_low,wilson_high,break1_no_echo,break2_no_echo,sib_echo_fail,sib_response_missing,control_fail,median_latency_ms,p95_latency_ms,break1_corrupt_echo,local_echo_failures,notes
+CROSSED_UNTOUCHED,P,Y,30,0,30,0,0,0.113517091390478,0,0,0,29,,1145.1445119999998,1149.715967,1,1,"SIB-only; control/ACC not reached; user-reported physical target. Non-stationary PRE, power-cycle history UNKNOWN."
+CROSSED_UNTOUCHED,Q,X,30,0,30,0,0,0.113517091390478,24,6,0,0,,1061.7540095,1063.53852,0,30,"SIB-only; control/ACC not reached; user-reported physical target. Non-stationary PRE, power-cycle history UNKNOWN."
+RESTORED_NOT_MEASURED,P,X,0,,,,,,,,,,,,,,,No restoration requested before crossed evidence persisted. Unmeasured fields blank.
+RESTORED_NOT_MEASURED,Q,Y,0,,,,,,,,,,,,,,,No restoration requested before crossed evidence persisted. Unmeasured fields blank.

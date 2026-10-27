@@ -1,0 +1,1 @@
+Attempted direct HTTPS retrieval of the official Silicon Labs CP2102/9 PDF with curl (plain and browser-like User-Agent, including the official hkey URL); each was denied with HTTP 403. The official PDF was reviewed through the web browser extraction; the small factual table extract is in silabs-cp2102-9-table4-extract.md. No local PDF copy is claimed.

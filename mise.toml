@@ -2,3 +2,12 @@
 clang = "latest"
 d2 = "latest"
 python = "latest"
+
+[tasks.hello]
+run = "echo hello"
+
+[tasks."monitor0"]
+run = "uv run third_party/upditerm/upditerm.py /dev/ttyUSB0 38400"
+
+[tasks."monitor1"]
+run = "uv run third_party/upditerm/upditerm.py /dev/ttyUSB1 38400"

@@ -1,0 +1,141 @@
+{
+  "run_id": "baseline-20261026T211821Z-1a031f37-sib",
+  "metrics": {
+    "attempts": 10,
+    "successes": 10,
+    "failures": 0,
+    "success_rate": 1.0,
+    "failure_rate": 0.0,
+    "success_percentage": 100.0,
+    "failure_percentage": 0.0,
+    "median_latency_ms": 156.3318145,
+    "p95_latency_ms": 158.130794,
+    "wilson_95": [
+      0.7224598312333834,
+      1.0
+    ],
+    "failure_stages": {}
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "result": "PASS",
+      "failure_stage": "",
+      "error_type": "",
+      "latency_ms": 157.031279,
+      "tx_hex": "000055e6",
+      "echo_hex": "000055e6",
+      "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "source_log": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_a/sib/baseline-20261026T211821Z-1a031f37-sib-0001.json",
+      "raw_sha256": "1324f91b5bb686ac4b671528aedc7f6597345faef51c9beaa0a621080948ed13"
+    },
+    {
+      "attempt": 2,
+      "result": "PASS",
+      "failure_stage": "",
+      "error_type": "",
+      "latency_ms": 158.130794,
+      "tx_hex": "000055e6",
+      "echo_hex": "000055e6",
+      "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "source_log": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_a/sib/baseline-20261026T211821Z-1a031f37-sib-0002.json",
+      "raw_sha256": "619ace3b1972580255ba097320301e8524da73a94252cff4961d9bb63a9ff2c8"
+    },
+    {
+      "attempt": 3,
+      "result": "PASS",
+      "failure_stage": "",
+      "error_type": "",
+      "latency_ms": 156.31338,
+      "tx_hex": "000055e6",
+      "echo_hex": "000055e6",
+      "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "source_log": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_a/sib/baseline-20261026T211821Z-1a031f37-sib-0003.json",
+      "raw_sha256": "e60d1471d10e5db91a73cc313a1bf836609e951980ee7f5ff98c5a5329acd105"
+    },
+    {
+      "attempt": 4,
+      "result": "PASS",
+      "failure_stage": "",
+      "error_type": "",
+      "latency_ms": 155.695503,
+      "tx_hex": "000055e6",
+      "echo_hex": "000055e6",
+      "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "source_log": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_a/sib/baseline-20261026T211821Z-1a031f37-sib-0004.json",
+      "raw_sha256": "061dcb9c8a096f761dadafd6f58f30f595e7ea009a0d84c548b1e3960baf791f"
+    },
+    {
+      "attempt": 5,
+      "result": "PASS",
+      "failure_stage": "",
+      "error_type": "",
+      "latency_ms": 155.486986,
+      "tx_hex": "000055e6",
+      "echo_hex": "000055e6",
+      "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "source_log": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_a/sib/baseline-20261026T211821Z-1a031f37-sib-0005.json",
+      "raw_sha256": "f4d91d95374ceb5acb2ff436b4d18a9610558abff0a791e55466d825ed94f18e"
+    },
+    {
+      "attempt": 6,
+      "result": "PASS",
+      "failure_stage": "",
+      "error_type": "",
+      "latency_ms": 156.190719,
+      "tx_hex": "000055e6",
+      "echo_hex": "000055e6",
+      "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "source_log": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_a/sib/baseline-20261026T211821Z-1a031f37-sib-0006.json",
+      "raw_sha256": "d1052bebc66cdaee8bdacc7bf8a6d66470ecda5549912d3eba36445ffcab5df4"
+    },
+    {
+      "attempt": 7,
+      "result": "PASS",
+      "failure_stage": "",
+      "error_type": "",
+      "latency_ms": 155.734603,
+      "tx_hex": "000055e6",
+      "echo_hex": "000055e6",
+      "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "source_log": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_a/sib/baseline-20261026T211821Z-1a031f37-sib-0007.json",
+      "raw_sha256": "c96c3b2833de8988e1bfa13fe0eceaba08cf06da4bb30a256b9321e89dd6b08c"
+    },
+    {
+      "attempt": 8,
+      "result": "PASS",
+      "failure_stage": "",
+      "error_type": "",
+      "latency_ms": 156.420942,
+      "tx_hex": "000055e6",
+      "echo_hex": "000055e6",
+      "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "source_log": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_a/sib/baseline-20261026T211821Z-1a031f37-sib-0008.json",
+      "raw_sha256": "8652198e72a93fff4dec72caf1d501664724305f6bd8e6340bce85cf0ea8f657"
+    },
+    {
+      "attempt": 9,
+      "result": "PASS",
+      "failure_stage": "",
+      "error_type": "",
+      "latency_ms": 156.549918,
+      "tx_hex": "000055e6",
+      "echo_hex": "000055e6",
+      "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "source_log": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_a/sib/baseline-20261026T211821Z-1a031f37-sib-0009.json",
+      "raw_sha256": "55f532b630424ab22e6d3cb6a0b288460869a3ac678643691eb544f0893f631d"
+    },
+    {
+      "attempt": 10,
+      "result": "PASS",
+      "failure_stage": "",
+      "error_type": "",
+      "latency_ms": 156.350249,
+      "tx_hex": "000055e6",
+      "echo_hex": "000055e6",
+      "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "source_log": "/home/parinya/unversity/lora/experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_a/sib/baseline-20261026T211821Z-1a031f37-sib-0010.json",
+      "raw_sha256": "7a06cc2219cf4764a965b7efd13793dc2e4ef7782dd8f71ee858b9569240479e"
+    }
+  ]
+}

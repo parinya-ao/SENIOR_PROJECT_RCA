@@ -1,0 +1,34 @@
+{
+  "n": 30,
+  "passes": 0,
+  "failures": 30,
+  "success_rate": 0,
+  "failure_rate": 1,
+  "success_wilson95": [
+    0,
+    0.11351339317396876
+  ],
+  "failure_wilson95": [
+    0.8864866068260312,
+    1
+  ],
+  "stage_counts": [
+    {
+      "stage": "LOCAL_ECHO",
+      "count": 1
+    },
+    {
+      "stage": "UPDI_CONTROL_RESPONSE",
+      "count": 29
+    }
+  ],
+  "response_hex_values": [
+    ""
+  ],
+  "latency_ms": {
+    "min": 108.193676,
+    "median": 1145.1445119999998,
+    "p95": 1149.715967,
+    "max": 1149.866666
+  }
+}

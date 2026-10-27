@@ -1,0 +1,155 @@
+{
+  "epoch_id": "RCA_FRESH_01",
+  "run_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778",
+  "lane": "Q",
+  "batch": "baseline-2",
+  "mode": "sib",
+  "mapping": {
+    "epoch_id": "RCA_FRESH_01",
+    "lane": "Q",
+    "adapter": {
+      "vid": "10c4",
+      "pid": "ea60",
+      "usb_serial": "0001",
+      "id_path": "pci-0000:00:14.0-usb-0:4:1.0",
+      "sysfs_path": "/sys/devices/pci0000:00/0000:00:14.0/usb3/3-4/3-4:1.0/ttyUSB0/tty/ttyUSB0",
+      "current_tty": "/dev/ttyUSB0",
+      "by_id": "usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
+      "by_path": "pci-0000:00:14.0-usb-0:4:1.0-port0",
+      "usb_bus": "3",
+      "usb_device": "23",
+      "manufacturer": "Silicon_Labs",
+      "product": "CP2102_USB_to_UART_Bridge_Controller"
+    },
+    "adapter_unit_id": "UNRESOLVED",
+    "target_id": "UNKNOWN",
+    "power_board": "PowerBoard Q",
+    "power_board_branch_report": "user-reported separate power board on current ttyUSB0 branch",
+    "power_board_physical_id": "UNKNOWN",
+    "supply": "UNKNOWN"
+  },
+  "wall_start": "2026-10-27T05:23:43.873807+00:00",
+  "monotonic_start_ns": 69009085714819,
+  "command": [
+    "/home/parinya/unversity/lora/experiments/updi_rca/.venv/bin/python",
+    "-m",
+    "updi_rca.cli",
+    "probe",
+    "sib",
+    "pci-0000:00:14.0-usb-0:4:1.0",
+    "/home/parinya/unversity/lora/experiments/updi_rca/fresh/reruns/20261027T052038Z/evidence/Q/RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778/transport.json",
+    "--timeout",
+    "1",
+    "--baud",
+    "38400"
+  ],
+  "success": true,
+  "failure_stage": "PASS",
+  "transport_stage": "PASS",
+  "exit_status": 0,
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 69009317734417,
+      "end_ns": 69009317787232,
+      "hex": "00",
+      "count": 1,
+      "baud": 300,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778",
+      "event_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778-e1",
+      "break_ordinal": 1
+    },
+    {
+      "kind": "echo",
+      "ns": 69009317791607,
+      "end_ns": 69009357252676,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778",
+      "event_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778-e2",
+      "break_ordinal": 1
+    },
+    {
+      "kind": "tx",
+      "ns": 69009360077223,
+      "end_ns": 69009360125180,
+      "hex": "00",
+      "count": 1,
+      "baud": 300,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778",
+      "event_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778-e3",
+      "break_ordinal": 2
+    },
+    {
+      "kind": "echo",
+      "ns": 69009360132002,
+      "end_ns": 69009399759402,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778",
+      "event_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778-e4",
+      "break_ordinal": 2
+    },
+    {
+      "kind": "tx",
+      "ns": 69009401343301,
+      "end_ns": 69009401383791,
+      "hex": "55e6",
+      "count": 2,
+      "baud": 38400,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778",
+      "event_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778-e5",
+      "break_ordinal": null
+    },
+    {
+      "kind": "echo",
+      "ns": 69009401384907,
+      "end_ns": 69009402608763,
+      "hex": "55e6",
+      "requested": 2,
+      "baud": 38400,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778",
+      "event_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778-e6",
+      "break_ordinal": null
+    },
+    {
+      "kind": "response",
+      "ns": 69009402613009,
+      "end_ns": 69009415703695,
+      "hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+      "requested": 32,
+      "baud": 38400,
+      "stage": "UPDI_CONTROL_RESPONSE",
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778",
+      "event_id": "RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778-e7",
+      "break_ordinal": null
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "/home/parinya/unversity/lora/experiments/updi_rca/fresh/reruns/20261027T052038Z/evidence/Q/RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/parinya/unversity/lora/experiments/updi_rca/fresh/reruns/20261027T052038Z/evidence/Q/RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778/stdout.txt",
+      "sha256": "610d5823e4edd72489a53b623ed3144f88db23fe1775c78763c43e7e2c3d87c2"
+    },
+    {
+      "path": "/home/parinya/unversity/lora/experiments/updi_rca/fresh/reruns/20261027T052038Z/evidence/Q/RCA_FRESH_01-Q-baseline-2-sib-7954c1c58c894602b8e0a1a8ef9fa778/transport.json",
+      "sha256": "cdfaa366f9ca4e911dbccf8d850cc61c034eab459adb21a817bb09bed25cd70c"
+    }
+  ],
+  "current_tty": "/dev/ttyUSB0",
+  "wall_end": "2026-10-27T05:23:44.266373+00:00",
+  "monotonic_end_ns": 69009478291388,
+  "latency_ms": 392.576569
+}

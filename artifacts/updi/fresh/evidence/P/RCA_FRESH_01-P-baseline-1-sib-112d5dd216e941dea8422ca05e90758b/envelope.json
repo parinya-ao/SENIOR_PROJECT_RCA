@@ -1,0 +1,155 @@
+{
+  "epoch_id": "RCA_FRESH_01",
+  "run_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b",
+  "lane": "P",
+  "batch": "baseline-1",
+  "mode": "sib",
+  "mapping": {
+    "epoch_id": "RCA_FRESH_01",
+    "lane": "P",
+    "adapter": {
+      "vid": "10c4",
+      "pid": "ea60",
+      "usb_serial": "0001",
+      "id_path": "pci-0000:00:14.0-usb-0:1:1.0",
+      "sysfs_path": "/sys/devices/pci0000:00/0000:00:14.0/usb3/3-1/3-1:1.0/ttyUSB1/tty/ttyUSB1",
+      "current_tty": "/dev/ttyUSB1",
+      "by_id": null,
+      "by_path": "pci-0000:00:14.0-usb-0:1:1.0-port0",
+      "usb_bus": "3",
+      "usb_device": "24",
+      "manufacturer": "Silicon_Labs",
+      "product": "CP2102_USB_to_UART_Bridge_Controller"
+    },
+    "adapter_unit_id": "UNRESOLVED",
+    "target_id": "UNKNOWN",
+    "power_board": "PowerBoard P",
+    "power_board_branch_report": "user-reported separate power board on current ttyUSB1 branch",
+    "power_board_physical_id": "UNKNOWN",
+    "supply": "UNKNOWN"
+  },
+  "wall_start": "2026-10-27T05:06:10.503819+00:00",
+  "monotonic_start_ns": 67955715726629,
+  "command": [
+    "/home/parinya/unversity/lora/experiments/updi_rca/.venv/bin/python",
+    "-m",
+    "updi_rca.cli",
+    "probe",
+    "sib",
+    "pci-0000:00:14.0-usb-0:1:1.0",
+    "/home/parinya/unversity/lora/experiments/updi_rca/fresh/evidence/P/RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b/transport.json",
+    "--timeout",
+    "1",
+    "--baud",
+    "38400"
+  ],
+  "success": false,
+  "failure_stage": "SIB_RESPONSE_EMPTY",
+  "transport_stage": "UPDI_CONTROL_RESPONSE",
+  "exit_status": 1,
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 67955927744428,
+      "end_ns": 67955927805918,
+      "hex": "00",
+      "count": 1,
+      "baud": 300,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b",
+      "event_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b-e1",
+      "break_ordinal": 1
+    },
+    {
+      "kind": "echo",
+      "ns": 67955927810692,
+      "end_ns": 67955967349148,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b",
+      "event_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b-e2",
+      "break_ordinal": 1
+    },
+    {
+      "kind": "tx",
+      "ns": 67955970263737,
+      "end_ns": 67955970313406,
+      "hex": "00",
+      "count": 1,
+      "baud": 300,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b",
+      "event_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b-e3",
+      "break_ordinal": 2
+    },
+    {
+      "kind": "echo",
+      "ns": 67955970316600,
+      "end_ns": 67956009981400,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b",
+      "event_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b-e4",
+      "break_ordinal": 2
+    },
+    {
+      "kind": "tx",
+      "ns": 67956011792789,
+      "end_ns": 67956011856379,
+      "hex": "55e6",
+      "count": 2,
+      "baud": 38400,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b",
+      "event_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b-e5",
+      "break_ordinal": null
+    },
+    {
+      "kind": "echo",
+      "ns": 67956011859803,
+      "end_ns": 67956013105869,
+      "hex": "55e6",
+      "requested": 2,
+      "baud": 38400,
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b",
+      "event_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b-e6",
+      "break_ordinal": null
+    },
+    {
+      "kind": "response",
+      "ns": 67956013110254,
+      "end_ns": 67957014098454,
+      "hex": "",
+      "requested": 32,
+      "baud": 38400,
+      "stage": "UPDI_CONTROL_RESPONSE",
+      "epoch_id": "RCA_FRESH_01",
+      "run_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b",
+      "event_id": "RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b-e7",
+      "break_ordinal": null
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "/home/parinya/unversity/lora/experiments/updi_rca/fresh/evidence/P/RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/home/parinya/unversity/lora/experiments/updi_rca/fresh/evidence/P/RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b/stdout.txt",
+      "sha256": "ac1effd01ce0e6984570a571c452f475c6a61d2502f605d5342a3aaee3d409e2"
+    },
+    {
+      "path": "/home/parinya/unversity/lora/experiments/updi_rca/fresh/evidence/P/RCA_FRESH_01-P-baseline-1-sib-112d5dd216e941dea8422ca05e90758b/transport.json",
+      "sha256": "a8fd69078586fecaac4e6268f338c6556f49436c7a5a94f21f9c73efcf4dd21b"
+    }
+  ],
+  "current_tty": "/dev/ttyUSB1",
+  "wall_end": "2026-10-27T05:06:11.871679+00:00",
+  "monotonic_end_ns": 67957083597626,
+  "latency_ms": 1367.870997
+}

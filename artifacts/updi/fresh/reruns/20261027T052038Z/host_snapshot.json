@@ -1,0 +1,56 @@
+{
+  "epoch_id": "RCA_FRESH_01",
+  "utc": "2026-10-27T05:21:31.086932+00:00",
+  "monotonic_ns": 68876298845131,
+  "snapshots": {
+    "git_state": {
+      "command": [
+        "git",
+        "status",
+        "--short",
+        "--untracked-files=no"
+      ],
+      "stdout": " M .automation/compact-bundle.xml\n M RCA.md\n D diagram/main.d2\n m external/upditerm\n M graphify-out/.graphify_labels.pending.json\n M graphify-out/GRAPH_REPORT.md\n M graphify-out/cache/last_query_stamp\n M graphify-out/cache/stat-index.json\n M graphify-out/graph.html\n M graphify-out/graph.json\n M graphify-out/manifest.json\n",
+      "stderr": "",
+      "exit_status": 0
+    },
+    "git_head": {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "stdout": "c31d7e4b4ed58c64ef4dec46d1f443dd2607bccc\n",
+      "stderr": "",
+      "exit_status": 0
+    },
+    "kernel": {
+      "command": [
+        "uname",
+        "-a"
+      ],
+      "stdout": "Linux localhost.localdomain 7.3.0-1-default #1 SMP PREEMPT_DYNAMIC Mon Oct 19 15:21:44 UTC 2026 (7f1f6b1) x86_64 x86_64 x86_64 GNU/Linux\n",
+      "stderr": "",
+      "exit_status": 0
+    },
+    "uv": {
+      "command": [
+        "uv",
+        "--version"
+      ],
+      "stdout": "uv 0.13.5 (x86_64-unknown-linux-gnu)\n",
+      "stderr": "",
+      "exit_status": 0
+    },
+    "python_serial": {
+      "command": [
+        "/home/parinya/unversity/lora/experiments/updi_rca/.venv/bin/python",
+        "-c",
+        "import sys,serial; print(sys.version); print(serial.VERSION)"
+      ],
+      "stdout": "3.14.8 (main, Oct  9 2026, 15:20:54) [Clang 22.1.3 ]\n3.5\n",
+      "stderr": "",
+      "exit_status": 0
+    }
+  }
+}

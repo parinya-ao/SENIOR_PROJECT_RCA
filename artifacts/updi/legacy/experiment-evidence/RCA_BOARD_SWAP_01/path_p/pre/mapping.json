@@ -1,0 +1,42 @@
+{
+  "expected_id_path": "pci-0000:00:14.0-usb-0:4:1.0",
+  "pairing": "P->X",
+  "board_label": "X",
+  "target_identity": "UNKNOWN_TARGET",
+  "adapter": {
+    "vid": "10c4",
+    "pid": "ea60",
+    "usb_serial": "0001",
+    "id_path": "pci-0000:00:14.0-usb-0:4:1.0",
+    "sysfs_path": "/sys/devices/pci0000:00/0000:00:14.0/usb3/3-4/3-4:1.0/ttyUSB0/tty/ttyUSB0",
+    "current_tty": "/dev/ttyUSB0",
+    "by_id": "usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
+    "by_path": "pci-0000:00:14.0-usb-0:4:1.0-port0",
+    "usb_bus": "3",
+    "usb_device": "18",
+    "manufacturer": "Silicon_Labs",
+    "product": "CP2102_USB_to_UART_Bridge_Controller"
+  },
+  "current_tty_at_preflight": "/dev/ttyUSB0",
+  "by_path_locator": "/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0",
+  "sysfs_path": "/sys/devices/pci0000:00/0000:00:14.0/usb3/3-4/3-4:1.0/ttyUSB0/tty/ttyUSB0",
+  "fuser_preflight": {
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "",
+    "start_utc": "2026-10-27T01:58:02.384954Z",
+    "end_utc": "2026-10-27T01:58:02.500311Z"
+  },
+  "upditerm_avrdude_process_checks": {
+    "upditerm": {
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": ""
+    },
+    "avrdude": {
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": ""
+    }
+  }
+}

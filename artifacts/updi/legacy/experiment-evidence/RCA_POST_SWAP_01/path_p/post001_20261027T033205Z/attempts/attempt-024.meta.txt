@@ -1,0 +1,18 @@
+attempt=024
+run_id=POST-001-P-20261027T033205Z
+board_label=Y (user-reported)
+pairing=P->Y (user-reported)
+ID_PATH=pci-0000:00:14.0-usb-0:4:1.0
+stable_by_path=/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0
+command=env PYTHONPATH=experiments/updi_rca/src uv run --project experiments/updi_rca python -m updi_rca.cli probe sib pci-0000:00:14.0-usb-0:4:1.0 experiments/updi_rca/evidence/RCA_POST_SWAP_01/path_p/post001_20261027T033205Z/raw/POST-001-P-20261027T033205Z-024.json --baud 38400 --timeout 1.0
+start_utc=2026-10-27T03:34:45.164057079Z
+end_utc=2026-10-27T03:34:46.437004993Z
+start_proc_uptime_s=62470.37
+end_proc_uptime_s=62471.64
+exit_code=1
+success=false
+stage=UPDI_CONTROL_RESPONSE
+raw_failure_stage=UPDI_CONTROL_RESPONSE
+raw_sha256=50f0799d38a1a208cadda43b299fa0bcceffc1d72a082d0de5a0ec3b568bdd1d
+stdout_sha256=f756e1fefbeedada3fcbdd9b2b3ebbf1fb21d3865ecf9716f4f9bda9cdda81f9
+stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

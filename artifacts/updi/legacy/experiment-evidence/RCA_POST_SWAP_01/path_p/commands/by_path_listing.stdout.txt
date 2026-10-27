@@ -1,0 +1,7 @@
+total 0
+drwxr-xr-x. 2 root root 120 Oct 27 10:25 .
+drwxr-xr-x. 4 root root  80 Oct 27 10:25 ..
+lrwxrwxrwx. 1 root root  13 Oct 27 10:25 pci-0000:00:14.0-usb-0:1:1.0-port0 -> ../../ttyUSB1
+lrwxrwxrwx. 1 root root  13 Oct 27 10:25 pci-0000:00:14.0-usb-0:4:1.0-port0 -> ../../ttyUSB0
+lrwxrwxrwx. 1 root root  13 Oct 27 10:25 pci-0000:00:14.0-usbv2-0:1:1.0-port0 -> ../../ttyUSB1
+lrwxrwxrwx. 1 root root  13 Oct 27 10:25 pci-0000:00:14.0-usbv2-0:4:1.0-port0 -> ../../ttyUSB0

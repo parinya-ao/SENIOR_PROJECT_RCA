@@ -1,0 +1,11 @@
+{
+  "success": false,
+  "stage": "UPDI_CONTROL_RESPONSE",
+  "tx_hex": "000055e6",
+  "echo_hex": "000055e6",
+  "response_hex": "",
+  "latency_ms": 1144.173731,
+  "error_type": "missing response: expected 32 bytes received ",
+  "raw_path": "/home/parinya/unversity/lora/experiments/updi_rca/fresh/evidence/Q/RCA_FRESH_01-Q-baseline-1-sib-3dca1c7a5faa4ca2b6ecfcb8e662b5bf/transport.json",
+  "raw_sha256": "a8fc0859e3bb4e81a49d7d4e2329638ac8117b85df9299fec266f4ca0690a561"
+}

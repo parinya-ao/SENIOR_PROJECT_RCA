@@ -1,0 +1,17 @@
+*stdout
+*.json
+manifest.md
+*.txt
+
+*idx
+*pack
+*.rev
+*.agents
+*claude
+*.diff
+PROMPT.md
+*.strace
+*.csv
+*.svg
+*256*
+*.html

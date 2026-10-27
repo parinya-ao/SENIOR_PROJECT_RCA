@@ -1,0 +1,15 @@
+{
+  "run_id": "swap-pre-P-20261027T015802555251Z",
+  "start_utc": "2026-10-27T01:58:02.555530Z",
+  "monotonic_ns": 56667767438249,
+  "attempts": 20,
+  "mode": "SIB only",
+  "baud": 38400,
+  "timeout": 1.0,
+  "pairing": "P->X",
+  "target_label": "X",
+  "target_identity": "UNKNOWN_TARGET",
+  "adapter_id_path": "pci-0000:00:14.0-usb-0:4:1.0",
+  "by_path": "/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0",
+  "policy": "BREAK sync then SIB reads only; no control reads, writes, keys, reset, or NVM operations"
+}

@@ -10,3 +10,4 @@
 *.diff
 PROMPT.md
 *.strace
+exp*

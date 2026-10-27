@@ -1,0 +1,844 @@
+{
+  "utc": "2026-10-26T17:39:23.404420+00:00",
+  "baud": 38400,
+  "mode": "ocd-message",
+  "address": null,
+  "id_path": "pci-0000:00:14.0-usb-0:4:1.0",
+  "by_path": "pci-0000:00:14.0-usb-0:4:1.0-port0",
+  "write_policy": "no STCS, STS, programming key, reset, or NVM write",
+  "initialization": "two 300-baud BREAK synchronization bytes only",
+  "events": [
+    {
+      "kind": "tx",
+      "ns": 26748621244484,
+      "end_ns": 26748621307821,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 26748621312473,
+      "end_ns": 26748660978442,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 26748663939560,
+      "end_ns": 26748663997580,
+      "hex": "00",
+      "count": 1,
+      "baud": 300
+    },
+    {
+      "kind": "echo",
+      "ns": 26748664010303,
+      "end_ns": 26748703681235,
+      "hex": "00",
+      "requested": 1,
+      "baud": 300
+    },
+    {
+      "kind": "tx",
+      "ns": 26748705395528,
+      "end_ns": 26748705466294,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748705470567,
+      "end_ns": 26748706446744,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748706455646,
+      "end_ns": 26748710101456,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748710130038,
+      "end_ns": 26748710196361,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748710200329,
+      "end_ns": 26748711595744,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748711608779,
+      "end_ns": 26748714779800,
+      "hex": "48",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748714800532,
+      "end_ns": 26748714871539,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748714875452,
+      "end_ns": 26748716435215,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748716481181,
+      "end_ns": 26748719390331,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748719417968,
+      "end_ns": 26748719508301,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748719512682,
+      "end_ns": 26748720516313,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748720527815,
+      "end_ns": 26748724112888,
+      "hex": "45",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748724134406,
+      "end_ns": 26748724217498,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748724222758,
+      "end_ns": 26748725374471,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748725386208,
+      "end_ns": 26748728824859,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748728841326,
+      "end_ns": 26748728908916,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748728931094,
+      "end_ns": 26748730392023,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748730399532,
+      "end_ns": 26748733330399,
+      "hex": "59",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748733343242,
+      "end_ns": 26748733406402,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748733409396,
+      "end_ns": 26748734298393,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748734303499,
+      "end_ns": 26748737937924,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748737951863,
+      "end_ns": 26748738034383,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748738037816,
+      "end_ns": 26748739358788,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748739366187,
+      "end_ns": 26748742439388,
+      "hex": "59",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748742452710,
+      "end_ns": 26748742522846,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748742526721,
+      "end_ns": 26748744289639,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748744295290,
+      "end_ns": 26748747017642,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748747059220,
+      "end_ns": 26748747136686,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748747140347,
+      "end_ns": 26748748372506,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748748379949,
+      "end_ns": 26748751647290,
+      "hex": "59",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748751657418,
+      "end_ns": 26748751716109,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748751719171,
+      "end_ns": 26748753333465,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748753337918,
+      "end_ns": 26748756137056,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748756148688,
+      "end_ns": 26748756211235,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748756214159,
+      "end_ns": 26748757328319,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748757334749,
+      "end_ns": 26748760655914,
+      "hex": "20",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748760661319,
+      "end_ns": 26748760703789,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748760706885,
+      "end_ns": 26748762308177,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748762311116,
+      "end_ns": 26748765096717,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748765103458,
+      "end_ns": 26748765301456,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748765307948,
+      "end_ns": 26748766442678,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748766449811,
+      "end_ns": 26748769635029,
+      "hex": "66",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748769646088,
+      "end_ns": 26748769701041,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748769703910,
+      "end_ns": 26748771436599,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748771444670,
+      "end_ns": 26748774250916,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748774267678,
+      "end_ns": 26748774338657,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748774342238,
+      "end_ns": 26748775450714,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748775480804,
+      "end_ns": 26748778918724,
+      "hex": "75",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748778934914,
+      "end_ns": 26748779035485,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748779040154,
+      "end_ns": 26748780435883,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748780448305,
+      "end_ns": 26748783586315,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748783605980,
+      "end_ns": 26748783687292,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748783691768,
+      "end_ns": 26748785396769,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748785408543,
+      "end_ns": 26748788250012,
+      "hex": "63",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748788268448,
+      "end_ns": 26748788349431,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748788353676,
+      "end_ns": 26748789453037,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748789464903,
+      "end_ns": 26748793026229,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748793046121,
+      "end_ns": 26748793127176,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748793131247,
+      "end_ns": 26748794553065,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748794563586,
+      "end_ns": 26748797694449,
+      "hex": "6b",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748797705348,
+      "end_ns": 26748797763025,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748797767511,
+      "end_ns": 26748799380874,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748799385100,
+      "end_ns": 26748802329739,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748802337888,
+      "end_ns": 26748802384901,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748802386785,
+      "end_ns": 26748803436848,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748803442261,
+      "end_ns": 26748806931213,
+      "hex": "6b",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748806947449,
+      "end_ns": 26748806989757,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748806991242,
+      "end_ns": 26748808347506,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748808352795,
+      "end_ns": 26748811387769,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748811397792,
+      "end_ns": 26748811447757,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748811449855,
+      "end_ns": 26748812384141,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748812388182,
+      "end_ns": 26748815899234,
+      "hex": "6b",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748815906717,
+      "end_ns": 26748815955899,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748815960605,
+      "end_ns": 26748817343551,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748817347912,
+      "end_ns": 26748820373999,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748820380956,
+      "end_ns": 26748820424405,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748820426120,
+      "end_ns": 26748821379380,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748821382604,
+      "end_ns": 26748824832606,
+      "hex": "6b",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748824838105,
+      "end_ns": 26748824888917,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748824890620,
+      "end_ns": 26748826347191,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748826350412,
+      "end_ns": 26748829298594,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748829304342,
+      "end_ns": 26748829335181,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748829336479,
+      "end_ns": 26748830308503,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748830311243,
+      "end_ns": 26748833792005,
+      "hex": "0d",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748833797039,
+      "end_ns": 26748833828844,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748833830207,
+      "end_ns": 26748835306733,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748835317931,
+      "end_ns": 26748838274489,
+      "hex": "10",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748838279116,
+      "end_ns": 26748838315844,
+      "hex": "558d",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748838317169,
+      "end_ns": 26748839329971,
+      "hex": "558d",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748839334200,
+      "end_ns": 26748842748977,
+      "hex": "0a",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_MESSAGE"
+    },
+    {
+      "kind": "tx",
+      "ns": 26748842753230,
+      "end_ns": 26748842790324,
+      "hex": "5585",
+      "count": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "echo",
+      "ns": 26748842791653,
+      "end_ns": 26748844333440,
+      "hex": "5585",
+      "requested": 2,
+      "baud": 38400
+    },
+    {
+      "kind": "response",
+      "ns": 26748844335936,
+      "end_ns": 26748847397135,
+      "hex": "00",
+      "requested": 1,
+      "baud": 38400,
+      "stage": "OCD_STATUS"
+    }
+  ],
+  "values": {
+    "ASI_OCD_STATUS_SEQUENCE": [
+      16,
+      16,
+      16,
+      16,
+      16,
+      16,
+      16,
+      16,
+      16,
+      16,
+      16,
+      16,
+      16,
+      16,
+      16,
+      0
+    ],
+    "ASI_OCD_MESSAGE_HEX": "4845595959206675636b6b6b6b0d0a",
+    "ASI_OCD_MESSAGE_TRUNCATED": false
+  },
+  "exit": 0,
+  "first_anomaly": null,
+  "latency_ms": 284.286275
+}

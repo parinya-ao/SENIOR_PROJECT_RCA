@@ -1,0 +1,73 @@
+direction: right
+
+vars: {
+  d2-config: {
+    theme-id: 4
+    layout-engine: tala
+    pad: 60
+  }
+}
+
+classes: {
+  path: {
+    shape: package
+    style.border-radius: 8
+  }
+  node: {
+    shape: circle
+    style.stroke-width: 2
+  }
+  caveat: {
+    shape: document
+    style.stroke-dash: 4
+  }
+}
+
+title: "BREAK / local echo: shared-node causal model" {
+  near: top-center
+}
+
+host: "Linux / pyserial / cp210x\nUSB controller" {
+  shape: package
+}
+
+external: "External path P or Q — proposed frozen boundary" {
+  class: path
+  usb: "USB port + cable"
+  cp: "CP2102 unit\nActual silicon unverified" {
+    shape: hexagon
+  }
+  series: "TX series element\nValue/topology unverified"
+  rx: "CP2102 RX"
+  usb -> cp: carries URBs
+  cp -> series: drives TX
+}
+
+shared: "Shared\nUPDI node" {
+  class: node
+}
+
+target: "Target PCB X or Y — proposed frozen boundary" {
+  class: path
+  network: "Header / trace / attached loads\nActual net and population unknown"
+  avr: "AVR128DA28 UPDI pad\nTarget fingerprint unknown" {
+    shape: hexagon
+  }
+  network <-> avr: loads / drives
+}
+
+reference: "Adapter GND / MCU-local GND / VDD\nMeasured levels and offsets unavailable" {
+  shape: parallelogram
+}
+
+boundary: "Observed: Q+Y fails at first or second 300-baud BREAK echo.\nNo valid SIB/LDCS request follows failed synchronization.\nTarget loading can affect the echo node.\nThis is a conceptual model, not a verified assembled schematic." {
+  class: caveat
+}
+
+host -> external.usb: submits traffic
+external.series -> shared: drives through
+shared -> external.rx: returns local echo
+shared <-> target.network: shares one wire
+reference -- shared: defines logic margin
+reference -- target.avr: supplies reference
+boundary -- shared: marks evidence limit

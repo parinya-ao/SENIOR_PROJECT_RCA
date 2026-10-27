@@ -1,0 +1,21 @@
+{
+  "label": "lsof_lane_by_path",
+  "argv": [
+    "lsof",
+    "-nP",
+    "/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0"
+  ],
+  "cwd": "/home/parinya/unversity/lora",
+  "start_utc": "2026-10-27T01:54:48.448024Z",
+  "end_utc": "2026-10-27T01:54:48.550010Z",
+  "monotonic_start_ns": 56473659931175,
+  "monotonic_end_ns": 56473761906167,
+  "duration_ms": 101.974992,
+  "exit_code": 1,
+  "timed_out": false,
+  "stdout": "",
+  "stderr": "lsof: WARNING: can't stat() tracefs file system /sys/kernel/debug/tracing\n      Output information may be incomplete.\n",
+  "argv_sha256": "daec0f6ebe31d0cc3b5671c43b7172ed1351971b6c3ba81038be488cb8a64bc6",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_sha256": "8af4e76db2287cf30b6f671e3fa91796b9c5d96bbc637debcd3acf5af093c3e5"
+}

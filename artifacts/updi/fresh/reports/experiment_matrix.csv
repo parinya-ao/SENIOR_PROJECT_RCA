@@ -1,0 +1,15 @@
+epoch_id,lane,batch,mode,attempts,status
+RCA_FRESH_01,P,smoke,sib,10,MEASURED
+RCA_FRESH_01,P,baseline-1,sib,30,MEASURED
+RCA_FRESH_01,P,baseline-2,sib,,UNMEASURED
+RCA_FRESH_01,P,baseline-3,sib,,UNMEASURED
+RCA_FRESH_01,P,control-1,control,,UNMEASURED
+RCA_FRESH_01,P,crossed,sib,,UNMEASURED
+RCA_FRESH_01,P,restored,sib,,UNMEASURED
+RCA_FRESH_01,Q,smoke,sib,10,MEASURED
+RCA_FRESH_01,Q,baseline-1,sib,30,MEASURED
+RCA_FRESH_01,Q,baseline-2,sib,,UNMEASURED
+RCA_FRESH_01,Q,baseline-3,sib,,UNMEASURED
+RCA_FRESH_01,Q,control-1,control,,UNMEASURED
+RCA_FRESH_01,Q,crossed,sib,,UNMEASURED
+RCA_FRESH_01,Q,restored,sib,,UNMEASURED

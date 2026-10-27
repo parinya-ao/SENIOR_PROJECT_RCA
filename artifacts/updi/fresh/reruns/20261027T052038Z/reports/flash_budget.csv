@@ -1,0 +1,2 @@
+epoch_id,flash_writes,fuse_writes,chip_erases,bod_changes,policy
+RCA_FRESH_01,0,0,0,0,strict SIB/LDCS only; no register writes

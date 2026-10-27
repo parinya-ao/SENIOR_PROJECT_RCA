@@ -1,0 +1,3 @@
+epoch_id,lane,status,firmware_sha256,fuse_sha256
+RCA_FRESH_01,P,UNMEASURED,,
+RCA_FRESH_01,Q,UNMEASURED,,

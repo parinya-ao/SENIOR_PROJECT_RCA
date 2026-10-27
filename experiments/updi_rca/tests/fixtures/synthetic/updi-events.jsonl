@@ -1,0 +1,20 @@
+{"name":"flash verify success","operation":"FLASH_VERIFY","result":"pass","expected_len":1,"actual_len":1}
+{"name":"initialization failure","message":"UPDI link initialization failed"}
+{"name":"missing LDCS response","operation":"LDCS","tx_hex":"5585","echo_hex":"5585","response_hex":"","expected_len":1,"actual_len":0,"error_type":"missing_response"}
+{"name":"missing STS ACK","operation":"STS ACK1","tx_hex":"55401e","echo_hex":"55401e","response_hex":"","expected_len":1,"actual_len":0,"error_type":"missing_ack"}
+{"name":"corrupted local echo","operation":"LDCS","tx_hex":"5585","echo_hex":"95e1","expected_len":2,"actual_len":2,"error_type":"echo_mismatch"}
+{"name":"truncated local echo","operation":"LDCS","tx_hex":"5585","echo_hex":"80","expected_len":2,"actual_len":1,"error_type":"short_echo"}
+{"name":"empty local echo","operation":"LDCS","tx_hex":"5585","echo_hex":"","expected_len":2,"actual_len":0,"error_type":"short_echo"}
+{"name":"repeated target message","operation":"OCD_MESSAGE","stage":"OCD_MESSAGE","message_bytes":"4845595959","result":"message"}
+{"name":"missing tty","message":"No such file or directory","error_type":"port_missing"}
+{"name":"serial open failure","message":"Permission denied","error_type":"serial_open"}
+{"name":"short host write","operation":"LDS","tx_hex":"5501","tx_count":1}
+{"name":"USB protocol error","kernel_usb_error":"-EPROTO"}
+{"name":"USB bit-stuff error","kernel_usb_error":"-EILSEQ"}
+{"name":"USB disconnect","kernel_usb_error":"disconnect"}
+{"name":"clean echo and response","operation":"LDCS","tx_hex":"5585","echo_hex":"5585","response_hex":"01","expected_len":1,"actual_len":1,"result":"pass"}
+{"name":"OCD status missing","operation":"OCD_STATUS","expected_len":1,"actual_len":0,"error_type":"missing_response"}
+{"name":"flash verify failure","operation":"FLASH_VERIFY","expected_len":1,"actual_len":0,"error_type":"verify_mismatch"}
+{"name":"flash programming failure","operation":"FLASH_PROGRAM","error_type":"program_failed"}
+{"name":"new target reset","new_boot_observed":true}
+{"name":"target runtime failure","error_type":"TARGET_RUNTIME"}

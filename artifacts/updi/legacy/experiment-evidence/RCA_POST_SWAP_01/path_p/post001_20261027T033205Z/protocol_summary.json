@@ -1,0 +1,60 @@
+{
+  "n": 30,
+  "break1_echo_distribution": [
+    {
+      "value": "00",
+      "count": 29
+    },
+    {
+      "value": "80",
+      "count": 1
+    }
+  ],
+  "break2_echo_distribution": [
+    {
+      "value": "00",
+      "count": 29
+    },
+    {
+      "value": "NOT_REACHED",
+      "count": 1
+    }
+  ],
+  "sib_request_echo_distribution": [
+    {
+      "value": "55e6",
+      "count": 29
+    },
+    {
+      "value": "NOT_REACHED",
+      "count": 1
+    }
+  ],
+  "sib_request_tx_count": 29,
+  "conditional_sib_response_missing_n": 29,
+  "conditional_sib_response_missing_wilson95": [
+    0.8830302015002593,
+    1
+  ],
+  "sib_response_outcome_distribution": [
+    {
+      "value": "EMPTY",
+      "count": 29
+    },
+    {
+      "value": "NOT_REACHED",
+      "count": 1
+    }
+  ],
+  "sib_hex_values": [],
+  "failure_stage_counts": [
+    {
+      "value": "LOCAL_ECHO",
+      "count": 1
+    },
+    {
+      "value": "UPDI_CONTROL_RESPONSE",
+      "count": 29
+    }
+  ]
+}

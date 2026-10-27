@@ -1,0 +1,899 @@
+AVR128DA Silicon Errata and Data Sheet Clarification
+AVR128DA28/32/48/64(S)
+
+
+
+
+The AVR128DA28/32/48/64(S) devices you have received conform functionally to the current device data sheet
+(www.microchip.com/DS40002183), except for the anomalies described in this document. The errata described
+in this document will likely be addressed in future revisions of the AVR128DA28/32/48/64(S) devices.
+Notes:
+• This document summarizes all the silicon errata issues from all the silicon revisions, previous and current
+•   Refer to the Device/Revision ID section in the current device data sheet (www.microchip.com/DS40002183)
+    for more detailed information on Device Identification and Revision IDs for your specific device, or contact
+    your local Microchip sales office for assistance
+
+
+
+
+                                                           Errata                                   DS80000882F - 1
+                                    © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                                           AVR128DA28/32/48/64(S)
+                                                                                                              Silicon Issue Summary
+
+
+
+1.   Silicon Issue Summary
+     Legend
+     -         Erratum is not applicable.
+     X         Erratum is applicable.
+
+     Peripheral Short Description                                                                      Valid for Silicon Revision
+                                                                                                Rev. A6(1) Rev. A7 Rev. A8 Rev. AB
+     Device      Some Reserved Fuse Bits Are ‘1’                                                   X           X        X           X
+                 Endurance of Flash Memory Cell is Lower than Specified                            X           X        X           X
+                 CRC Check During Reset Initialization Is not Functional                           X           X        X           -
+                 Write Operation Lost if Consecutive Writes to Specific Address Spaces             X           X        X           X
+     CCL         The LINK Input Source Selection for LUT3 Is not Functional on 28- and 32-Pin      X           X        X           X
+                 Devices
+     CLKCTRL     PLL Status not Working as Expected                                                X           X        X           X
+     DAC         DAC Output Buffer Lifetime Drift                                                  X           X        X           X
+     EVSYS       Port Pins PB[7:6] and PE[7:4] Are not Connected to the Event System               X           X        X           X
+     NVMCTRL Flash Mapping Into Data Space not Working Properly                                    X           X        X           X
+                 Flash Multi-Page Erase Can Erase Write Protected Section                          X           X        X           X
+                 NVM_EEPROM_ERASE Command does Not Respect Write Protect                           X           X        X           X
+     PORT        Digital Input on Pin Automatically Disabled When Pin Selected for Analog          X           X        X           X
+                 Input
+     RSTCTRL     BOD Registers not Reset When UPDI Is Enabled                                      X           X        X           X
+     SPI         SSD Bit Must Be Set When SPIROUTE Value = NONE                                    X           X        X           X
+     TCA         TCA1 Pinout Alternative 2 and 3 not Functional                                    X           X        X           X
+                 Restart Will Reset Counter Direction in NORMAL and FRQ Mode                       X           X        X           X
+     TCB         CCMP and CNT Registers Act as 16-Bit Registers in 8-Bit PWM Mode                  X           X        X           X
+     TCD         Asynchronous Input Events not Working When TCD Counter Prescaler Is               X           X        X           X
+                 Used
+                 CMPAEN Controls All WOx for Alternative Pin Functions                             X           X        X           X
+                 Halting TCD and Waiting for SW Restart Does Not Work if Compare Value A           X           X        X           X
+                 is 0 or Dual Slope Mode is Used
+     TWI         The Output Pin Override Does not Function as Expected                             X           X        X           X
+                 The 50 ns and 300 ns SDA Hold Time Selection Bits Are Swapped                     X           X        X           X
+                 Flush Non-Functional                                                              X           X        X           X
+     USART       Open-Drain Mode Does not Work When TXD Is Configured as Output                    X           X        X           X
+                 Start-of-Frame Detection Can Unintentionally Be Triggered in Active Mode          X           X        X           X
+                 Receiver Non-Functional after Detection of Inconsistent Synchronization           X           X        X           X
+                 Field
+     ZCD         All ZCD Output Selection Bits Are Tied to the ZCD0 Bit                            X           X        X           X
+
+     Note:
+     1. This revision is the initial release of the silicon.
+
+
+
+
+                                                                Errata                                                      DS80000882F - 2
+                                        © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                                 AVR128DA28/32/48/64(S)
+                                                                                                      Silicon Errata Issues
+
+
+
+2.      Silicon Errata Issues
+2.1     Errata Details
+        -       Erratum is not applicable.
+        X       Erratum is applicable.
+
+2.2     Device
+2.2.1   Some Reserved Fuse Bits Are ‘1’
+        For material with date code 2033 (manufactured in the year 2020, week 33) or older, the default fuse
+        values are not compliant with the data sheet. The fuse values will read out as listed below:
+        • BODCFG = 0x10
+        •   OSCCFG = 0x78 (The device will use the OSCHF clock source)
+        •   SYSCFG0 = 0xF2
+        •   SYSCFG1 = 0xF8
+
+        Work Around
+        None.
+
+        Affected Silicon Revisions
+                  Rev. A6                        Rev. A7                        Rev. A8               Rev. AB
+                    X                               X                              X                     X
+
+
+2.2.2   Endurance of Flash Memory Cell is Lower than Specified
+        The Flash memory cell endurance specification (parameter EP) is lower than specified in the device
+        data sheet. The Flash memory cell endurance is 1K cycles instead of 10K cycles.
+
+        Work Around
+        None.
+
+        Affected Silicon Revisions
+                  Rev. A6                        Rev. A7                        Rev. A8               Rev. AB
+                    X                               X                              X                     X
+
+
+2.2.3   CRC Check During Reset Initialization Is not Functional
+        For material with date code 2136 (manufactured in the year 2021, week 36) or older, the CRCSRC bit
+        field in the SYSCFG0 fuse is ignored during Reset initialization. A CRC check will not be performed
+        during Reset initialization. CRCSCAN is only available from the software.
+
+        Work Around
+        None.
+
+        Affected Silicon Revisions
+                  Rev. A6                        Rev. A7                        Rev. A8               Rev. AB
+                    X                               X                              X                      -
+
+
+2.2.4   Write Operation Lost if Consecutive Writes to Specific Address Spaces
+        An ST/STD/STS instruction to address ≥ 64 followed by either an ST/STD instruction to address < 64
+        or a write to the SLPCTRL.CTRLA register will cause a loss of the last write.
+
+
+
+                                                                Errata                                        DS80000882F - 3
+                                         © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                             AVR128DA28/32/48/64(S)
+                                                                                                  Silicon Errata Issues
+
+        Work Around
+        To avoid loss of write operation, use one of the following workarounds depending on address space:
+        • Insert an NOP instruction before writing to address < 64, or use the OUT instruction instead of
+           ST/STD
+        •   Insert an NOP instruction before writing to SLPCTRL.CTRLA register
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.3     CCL - Configurable Custom Logic
+2.3.1   The LINK Input Source Selection for LUT3 Is not Functional on 28- and 32-Pin Devices
+        The LINK option (INSELn in LUT3CTRLB or LUT3CTRLC is ‘0x2’) does not work; the output from LUT0
+        will not get connected as an input to LUT3. This occurs only on 28-pin and 32-pin devices.
+
+        Work Around
+        Connect LUT0 output to LUT3 input using the Event System.
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.4     CLKCTRL - Clock Controller
+2.4.1   PLL Status not Working as Expected
+        The PLL Status (PLLS) bit in the Main Clock Status (MCLKSTATUS) register will never be set to ‘1’ if the
+        Run Standby (RUNSTDBY) bit in PLL Control A (PLLCTRLA) register is set to ‘1’ and no peripherals are
+        requesting the PLL oscillator.
+
+        Work Around
+        None.
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.5     DAC - Digital-to-Analog Converter
+2.5.1   DAC Output Buffer Lifetime Drift
+        The offset of the DAC output buffer can drift over the device's lifetime if powered with the DAC
+        output buffer disabled.
+
+        Work Around
+        Keep the DAC output buffer enabled (OUTEN in DACn.CTRLA is ‘1’) continuously or compensate
+        by measuring the DAC output voltage offset with the ADC and adjust the DAC data register value
+        (DATA[9:0] in DACn.DATA) accordingly.
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+
+
+                                                            Errata                                        DS80000882F - 4
+                                     © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                                                                     AVR128DA28/32/48/64(S)
+                                                                                                                                          Silicon Errata Issues
+
+2.6     EVSYS - Event System
+2.6.1   Port Pins PB[7:6] and PE[7:4] Are not Connected to the Event System
+        Port pins PB[7:6] and PE[7:4] are not connected to the Event System. This is true for both input and
+        output signals into the Event System on these pins.
+
+        Work Around
+        None.
+
+        Affected Silicon Revisions
+                      Rev. A6                                  Rev. A7                                   Rev. A8                              Rev. AB
+                          X                                       X                                        X                                         X
+
+
+2.7     NVMCTRL - Nonvolatile Memory Controller
+2.7.1   Flash Mapping Into Data Space not Working Properly
+        The inter-section Flash protection mechanism does not take into account the FLMAP
+        bit field when checking if the address is in BOOT, APPCODE or APPDATA areas. It
+        uses for comparison only the address offset between Flash start address in data space
+        (0x8000) and the accessed address. This will cause the mirroring of the BOOT area in
+        each Flash section selected by FLMAP (in blocks of 32 KB). Refer to the image below.
+                                              Data space                                                                                Data space
+                  Code space                                                                               Code space
+        0x00000                                                                                0x00000
+                                                  I/O Memory          0x0000-0x103F                                                        I/O Memory          0x0000-0x103F
+                    BOOT Area
+
+                                                    LOCK              0x1040-0x104F                                                          LOCK              0x1040-0x104F
+
+                                                    FUSE              0x1050-0x107F                                                          FUSE              0x1050-0x107F
+
+                                                  USERROW             0x1080-0x10FF                                                        USERROW             0x1080-0x10FF
+
+                                                   SIGROW             0x1100-0x13FF                                                         SIGROW             0x1100-0x13FF
+
+                    Flash code                                                                                                              EEPROM
+                                                  EEPROM              0x1400-0x15FF                                                                            0x1400-0x15FF
+                      128 KB                                                                                                                512 Bytes
+                    Flash code                    512 Bytes                                                  Flash code
+                    Flash code                                                                               Flash code
+                      128 KB                                                                                   128 KB
+                       128 KB                                                                                   128 KB
+                                                                      0x1600-0x3FFF                                                                            0x1600-0x3FFF
+                                                  (Reserved)                                                                               (Reserved)
+
+
+
+                                                    SRAM                                                                                     SRAM              0x4000-0x7FFF
+                                                                      0x4000-0x7FFF
+                                                    16 KB                                                                                    16 KB
+        0x18000                                                                                0x18000
+
+                                                                                                                                          BOOT Area
+                                           In-System Reprogrammable
+                                                    Flash             0x8000-0xFFFF                                                           Flash            0x8000-0xFFFF
+                                                    32 KB                                                                                     32 KB
+                                                                                                                                    In-System Reprogrammable
+        0x1FFFF                                                                                0x1FFFF
+
+
+
+
+                                                    32KB                                                                                     32KB
+                     BOOT area for devices without issue                                                         BOOT area for devices with issue
+        For read operations, the FLMAP bits work as documented when the Boot Read Protect (BOOTRP)
+        bit is not enabled. For write operations, the inter-section Flash protection works properly only when
+        FLMAP is set to '0x00'.
+
+        Work Around
+        Use only store program memory (SPM) instructions to write and load program memory (LPM)
+        instructions to read Flash memory.
+
+        Affected Silicon Revisions
+                      Rev. A6                                  Rev. A7                                   Rev. A8                              Rev. AB
+                          X                                       X                                        X                                         X
+
+
+
+
+                                                                                      Errata                                                             DS80000882F - 5
+                                                © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                             AVR128DA28/32/48/64(S)
+                                                                                                  Silicon Errata Issues
+
+2.7.2   Flash Multi-Page Erase Can Erase Write Protected Section
+        When using Flash Multi-Page Erase mode, only the first page in the selected address range is verified
+        to be within a section that is not write-protected. If the address range includes any write-protected
+        Application Data pages, it will erase them.
+
+        Work Around
+        None.
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.7.3   NVM_EEPROM_ERASE Command does Not Respect Write Protect
+        The NVM_EEPROM_ERASE command does not respect the EEPROM Write Protected (EEWP) bit in the
+        Control B (NVMCTRL.CTRLB) register. Content will be erased even though it should not.
+
+        Work Around
+        None.
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.8     PORT - I/O Configuration
+2.8.1   Digital Input on Pin Automatically Disabled When Pin Selected for Analog Input
+        If an input pin is selected to be analog input, the digital input function for those pins is automatically
+        disabled.
+
+        Work Around
+        None
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.9     RSTCTRL - Reset Controller
+2.9.1   BOD Registers not Reset When UPDI Is Enabled
+        If the UPDI is enabled, the VLMCTRL, INTCTRL, and INTFLAGS registers in BOD will not be reset by
+        other reset sources than POR.
+
+        Work Around
+        None
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+
+
+                                                            Errata                                        DS80000882F - 6
+                                     © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                             AVR128DA28/32/48/64(S)
+                                                                                                  Silicon Errata Issues
+
+2.10    SPI - Serial Peripheral Interface
+2.10.1 SSD Bit Must Be Set When SPIROUTE Value = NONE
+        When operating either SPIn module, when the PORTMUX.SPIROUTE selection is NONE, the SS pin
+        must be disabled (CTRLB.SSD = 1) to maintain Host mode operation.
+
+        Work Around
+        None
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.11    TCA - 16-Bit Timer/Counter Type A
+2.11.1 TCA1 Pinout Alternative 2 and 3 not Functional
+        It is not possible to configure TCA1 in PORTMUX.TCAROUTEA to use pinout alternatives 2 and 3.
+
+        Work Around
+        Use TCA1 pinout alternative 0 or 1.
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.11.2 Restart Will Reset Counter Direction in NORMAL and FRQ Mode
+        When the TCA is configured to a NORMAL or FRQ mode (WGMODE in TCAn.CTRLB is ‘0x0’ or ‘0x1’), a
+        RESTART command or Restart event will reset the count direction to default. The default is counting
+        upwards.
+
+        Work Around
+        None.
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.12    TCB - 16-Bit Timer/Counter Type B
+2.12.1 CCMP and CNT Registers Act as 16-Bit Registers in 8-Bit PWM Mode
+        When the TCB is operating in 8-bit PWM mode (CNTMODE in TCBn.CTRLB is ‘0x7’), the low and high
+        bytes for the CCMP and CNT registers act as 16-bit registers for read and write. They cannot be read
+        or written independently.
+
+        Work Around
+        Use 16-bit register access. Refer to the data sheet for further information.
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+
+
+                                                            Errata                                        DS80000882F - 7
+                                     © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                             AVR128DA28/32/48/64(S)
+                                                                                                  Silicon Errata Issues
+
+2.13    TCD - 12-Bit Timer/Counter Type D
+2.13.1 Asynchronous Input Events not Working When TCD Counter Prescaler Is Used
+        When configuring TCD to use asynchronous input events (CFG in TCDn.EVCTRLx is ‘0x2’) and the TCD
+        Counter Prescaler (CNTPRES in TCDn.CTRLA) is different from ‘0x0’, events can be missed.
+
+        Work Around
+        Use the TCD Synchronization Prescaler (SYNCPRES in TCDn.CTRLA) instead of the TCD Counter
+        Prescaler. Alternatively, use synchronous input events (CFG in TCDn.EVCTRLx is not ‘0x2’) if the input
+        events are longer than one CLK_TCD_CNT cycle.
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.13.2 CMPAEN Controls All WOx for Alternative Pin Functions
+        When TCD alternative pins are enabled (TCD0 in PORTMUX.TCDROUTEA is not ‘0x0’), all waveform
+        outputs (WOx) are controlled by Compare A Enable (CMPAEN in TCDn.FAULTCTRL).
+
+        Work Around
+        None.
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.13.3 Halting TCD and Waiting for SW Restart Does Not Work if Compare Value A is 0 or Dual
+       Slope Mode is Used
+        Halting TCD and waiting for software restart (INPUTMODE in TCDn.INPUTCTRLA is ‘0x7’) does not
+        work if compare value A is 0 (CMPASET in TCDn.CMPASET is ‘0x0’) or Dual Slope mode is used
+        (WGMODE in TCDn.CTRLB is ‘0x3’).
+
+        Work Around
+        Configure the compare value A (CMPASET in TCDn.CMPASET) to be different from 0 and do not use
+        Dual Slope mode (WGMODE in TCDn.CTRLB is not ‘0x3’).
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.14    TWI - Two-Wire Interface
+2.14.1 The Output Pin Override Does not Function as Expected
+        It overrides the output pin driver but not the output value when TWI is enabled. The output on the
+        line will always be high when the value in the PORTx.OUT register is ‘1’ for the pins corresponding to
+        the SDA or SCL.
+
+        Work Around
+        Ensure that the values in the PORTx.OUT register corresponding to the SCL and SDA pins are ‘0’
+        before enabling the TWI.
+
+
+
+
+                                                            Errata                                        DS80000882F - 8
+                                     © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                             AVR128DA28/32/48/64(S)
+                                                                                                  Silicon Errata Issues
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.14.2 The 50 ns and 300 ns SDA Hold Time Selection Bits Are Swapped
+        The bits corresponding to the SDA Hold Time (SDAHOLD) bit field in the TWIn.CTRLA register are
+        swapped.
+
+        Work Around
+        Use the 50 ns bit field selection for the 300 ns hold time and vice versa.
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.14.3 Flush Non-Functional
+        Issuing a Flush by writing to the FLUSH bit in TWIn.MCTRLB can cause the TWI Host to be stuck in the
+        Unknown bus state (see BUSSTATE in TWIn.MSTATUS).
+
+        Work Around
+        Disable and re-enable the Host using the ENABLE bit in TWIn.MCTRLA. An ordinary operation does
+        not require the use of FLUSH.
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.15    USART - Universal Synchronous and Asynchronous Receiver and Transmitter
+2.15.1 Open-Drain Mode Does not Work When TXD Is Configured as Output
+        When configured as an output, the USART TXD pin can drive the pin high regardless of whether the
+        Open-Drain mode is enabled or not.
+
+        Work Around
+        Configure the TXD pin as an input by writing the corresponding bit in PORTx.DIR to ‘0’ when using
+        Open-Drain mode.
+
+        Affected Silicon Revisions
+                 Rev. A6                     Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.15.2 Start-of-Frame Detection Can Unintentionally Be Triggered in Active Mode
+        The Start-of-Frame Detection feature enables the USART to wake up from Standby sleep mode
+        upon data reception. The Start-of-Frame Detector can unintentionally be triggered when the Start-
+        of-Frame Detection Enable (SFDEN) bit in the USART Control B (USARTn.CTRLB) register is set, and
+        the device is in Active mode. If the Receive Data (RXDATA) registers are read while receiving new
+        data, the Receive Complete Interrupt Flag (RXCIF) in the USARTn.STATUS register is cleared. This
+        triggers the Start-of-Frame Detector and falsely detects the next falling edge as a start bit. When
+        the Start-of-Frame Detector detects a start condition, the frame reception is restarted, resulting in
+        corrupt received data. Note that the USART Receive Start Interrupt Flag (RXSIF) always is ‘0’ when in
+        Active mode. No interrupt will be triggered.
+
+
+
+
+                                                            Errata                                        DS80000882F - 9
+                                     © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                             AVR128DA28/32/48/64(S)
+                                                                                                  Silicon Errata Issues
+
+        Work Around
+        Disable Start-of-Frame Detection by writing ‘0’ to the Start-of-Frame Detection Enable (SFDEN) bit
+        in the USART Control B (USARTn.CTRLB) register when the device is in Active mode. Re-enable it by
+        writing the bit to ‘1’ before transitioning to Standby sleep mode. This work around depends on a
+        protocol preventing a new incoming frame when re-enabling Start-of-Frame Detection. Re-enabling
+        Start-of-Frame Detection, while a new frame is already incoming, will result in corrupted received
+        data.
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.15.3 Receiver Non-Functional after Detection of Inconsistent Synchronization Field
+        The USART Receiver becomes non-functional when the Inconsistent Synchronization Field Interrupt
+        Flag (ISFIF) in the Status (USARTn.STATUS) register is set. The ISFIF interrupt flag is set when
+        the Receiver Mode (RXMODE) bit field in the Control B (USARTn.CTRLB) register is configured to
+        Generic Auto-Baud (GENAUTO) or LIN Constrained Auto-Baud (LINAUTO) mode, and the received
+        synchronization frame does not conform to the conditions described in the data sheet. Clearing the
+        flag does not re-enable the USART Receiver.
+
+        Work Around
+        When the ISFIF interrupt flag is set, disable and re-enable the USART Receiver by first writing a ‘0’
+        and then a ‘1’ to the Receiver Enable (RXEN) bit in the Control B (USARTn.CTRLB) register.
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+2.16    ZCD - Zero-Cross Detector
+2.16.1 All ZCD Output Selection Bits Are Tied to the ZCD0 Bit
+        The Zero Cross Detector n Output (ZCDn) bits in the Pin Position (PORTMUX.ZCDROUTEA) register
+        are tied to ZCD0. Any write to ZCD0 will be reflected in the ZCD1 and ZCD2 as well. Writing to ZCD1
+        and/or ZCD2 has no effect.
+
+        Work Around
+        Use the Event System or CCL to make the output of ZCD1 or ZCD2 available on a pin.
+
+        Affected Silicon Revisions
+                  Rev. A6                    Rev. A7                        Rev. A8               Rev. AB
+                    X                           X                              X                     X
+
+
+
+
+                                                            Errata                                       DS80000882F - 10
+                                     © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                         AVR128DA28/32/48/64(S)
+                                                                                          Data Sheet Clarifications
+
+
+
+3.   Data Sheet Clarifications
+     Note the following typographic corrections and clarifications for the latest version of the device data
+     sheet (www.microchip.com/DS40002183).
+     Note: Corrections are shown in bold. Where possible, the original bold text formatting has been
+     removed for clarity.
+
+
+
+
+                                                        Errata                                       DS80000882F - 11
+                                 © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                                            AVR128DA28/32/48/64(S)
+                                                                                                           Document Revision History
+
+
+
+4.    Document Revision History
+      Note: The document revision is independent of the silicon revision.
+
+4.1   Revision History
+       Doc.   Date    Comments
+       Rev.
+        F     09/2024 •   Added new device revision (AB)
+                      •   Added errata:
+                           –   Device: Write Operation Lost if Consecutive Writes to Specific Address Spaces
+
+        E     12/2023 •   Removed data sheet clarifications:
+                           –   3.1. Features
+                           –   3.2. FUSE - Configuration and User Fuses
+                           –   3.3. RSTCTRL - Reset Controller
+                           –   3.4. TWI - Two-Wire Interface
+                           –   3.5. Electrical Characteristics - Peripheral Power Consumption
+                           –   3.6. Electrical Characteristics - Memory Programming Specifications
+                           –   3.7. Electrical Characteristics - VREF
+                           –   3.8. Electrical Characteristics - DAC
+                           –   3.9. Electrical Characteristics - ADC
+
+        D     02/2022 •   Added data sheet clarifications:
+                           –   3.1. Features
+                           –   3.2. FUSE - Configuration and User Fuses
+                           –   3.5. Electrical Characteristics - Peripheral Power Consumption
+                           –   3.6. Electrical Characteristics - Memory Programming
+                           –   3.7. Electrical Characteristics - VREF
+                           –   3.8. Electrical Characteristics - DAC
+                           –   3.9. Electrical Characteristics - ADC
+                      •   Updated data sheet clarifications:
+                           –   3.3. RSTCTRL - Reset Controller
+                           –   3.4. TWI - Two-Wire Interface
+
+        C     10/2021 •   Updated errata:
+                           –   Device: Some Reserved Fuse Bits Are ‘1’
+                           –   Device: CRC Check During Reset Initialization Is Not Functional
+                           –   USART: Start-of-Frame Detection Can Unintentionally Be Enabled in Active Mode When RXCIF Is ‘0’
+                      •   Added errata:
+                           –   CLKCTRL: PLL Status Not Working as Expected
+                           –   DAC: DAC Output Buffer Lifetime Drift
+                           –   TCD: Halting TCD and Wait for SW Restart Does Not Work if Compare Value A Is 0 or Dual Slope
+                               Mode Is Used
+                           –   TWI: Flush Nonfunctional
+                           –   Electrical Characteristics: Endurance of PFM Cell lower is than specified
+
+
+
+
+                                                                 Errata                                               DS80000882F - 12
+                                      © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                                    AVR128DA28/32/48/64(S)
+                                                                                                   Document Revision History
+
+...........continued
+ Doc.   Date     Comments
+ Rev.
+   B    11/2020 •      Added new device revision (A8)
+                 •     Added errata:
+                        –   Device: Some Reserved Fuse Bits Are ‘1’
+                        –   Device: CRC Check During Reset Initialization Is Not Functional
+                        –   CCL: The LINK Input Source Selection for LUT3 Is Not Functional on 28- and 32-Pin Device
+                        –   RSTCTRL: BOD Registers Not Reset When UPDI Is Enabled
+                        –   TCA: Restart Will Reset Counter Direction in NORMAL and FRQ Mode
+                        –   TCB: CCMP and CNT Registers Operate as 16-Bit Registers in 8-Bit PWM Mode
+                        –   TCD: Asynchronous Input Events Not Working When TCD Counter Prescaler Is Used
+                        –   TCD: CMPAEN Controls All WOx for Alternative Pin Functions
+                        –   USART: Start-of-Frame Detection Can Unintentionally Be Enabled in Active Mode When RXCIF Is ‘0’
+                        –   ZCD: All ZCD Output Selection Bits Are Tied to the ZCD0 Bit
+
+   A    04/2020 Initial document release
+
+
+
+
+                                                            Errata                                              DS80000882F - 13
+                                   © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                     AVR128DA28/32/48/64(S)
+
+
+
+
+Microchip Information
+The Microchip Website
+Microchip provides online support via our website at www.microchip.com/. This website is used to
+make files and information easily available to customers. Some of the content available includes:
+•   Product Support – Data sheets and errata, application notes and sample programs, design
+    resources, user’s guides and hardware support documents, latest software releases and archived
+    software
+•   General Technical Support – Frequently Asked Questions (FAQs), technical support requests,
+    online discussion groups, Microchip design partner program member listing
+•   Business of Microchip – Product selector and ordering guides, latest Microchip press releases,
+    listing of seminars and events, listings of Microchip sales offices, distributors and factory
+    representatives
+
+Product Change Notification Service
+Microchip’s product change notification service helps keep customers current on Microchip
+products. Subscribers will receive email notification whenever there are changes, updates, revisions
+or errata related to a specified product family or development tool of interest.
+To register, go to www.microchip.com/pcn and follow the registration instructions.
+
+Customer Support
+Users of Microchip products can receive assistance through several channels:
+•   Distributor or Representative
+•   Local Sales Office
+•   Embedded Solutions Engineer (ESE)
+•   Technical Support
+Customers should contact their distributor, representative or ESE for support. Local sales offices are
+also available to help customers. A listing of sales offices and locations is included in this document.
+Technical support is available through the website at: www.microchip.com/support
+
+Microchip Devices Code Protection Feature
+Note the following details of the code protection feature on Microchip products:
+•   Microchip products meet the specifications contained in their particular Microchip Data Sheet.
+•   Microchip believes that its family of products is secure when used in the intended manner, within
+    operating specifications, and under normal conditions.
+•   Microchip values and aggressively protects its intellectual property rights. Attempts to breach the
+    code protection features of Microchip product is strictly prohibited and may violate the Digital
+    Millennium Copyright Act.
+•   Neither Microchip nor any other semiconductor manufacturer can guarantee the security of its
+    code. Code protection does not mean that we are guaranteeing the product is “unbreakable”.
+    Code protection is constantly evolving. Microchip is committed to continuously improving the
+    code protection features of our products.
+
+Legal Notice
+This publication and the information herein may be used only with Microchip products, including
+to design, test, and integrate Microchip products with your application. Use of this information
+in any other manner violates these terms. Information regarding device applications is provided
+only for your convenience and may be superseded by updates. It is your responsibility to ensure
+
+
+
+                                                    Errata                                     DS80000882F - 14
+                             © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                    AVR128DA28/32/48/64(S)
+
+
+that your application meets with your specifications. Contact your local Microchip sales office for
+additional support or, obtain additional support at www.microchip.com/en-us/support/design-help/
+client-support-services.
+THIS INFORMATION IS PROVIDED BY MICROCHIP “AS IS”. MICROCHIP MAKES NO REPRESENTATIONS
+OR WARRANTIES OF ANY KIND WHETHER EXPRESS OR IMPLIED, WRITTEN OR ORAL, STATUTORY
+OR OTHERWISE, RELATED TO THE INFORMATION INCLUDING BUT NOT LIMITED TO ANY IMPLIED
+WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A PARTICULAR
+PURPOSE, OR WARRANTIES RELATED TO ITS CONDITION, QUALITY, OR PERFORMANCE.
+IN NO EVENT WILL MICROCHIP BE LIABLE FOR ANY INDIRECT, SPECIAL, PUNITIVE, INCIDENTAL, OR
+CONSEQUENTIAL LOSS, DAMAGE, COST, OR EXPENSE OF ANY KIND WHATSOEVER RELATED TO THE
+INFORMATION OR ITS USE, HOWEVER CAUSED, EVEN IF MICROCHIP HAS BEEN ADVISED OF THE
+POSSIBILITY OR THE DAMAGES ARE FORESEEABLE. TO THE FULLEST EXTENT ALLOWED BY LAW,
+MICROCHIP’S TOTAL LIABILITY ON ALL CLAIMS IN ANY WAY RELATED TO THE INFORMATION OR
+ITS USE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY, THAT YOU HAVE PAID DIRECTLY TO
+MICROCHIP FOR THE INFORMATION.
+Use of Microchip devices in life support and/or safety applications is entirely at the buyer’s risk,
+and the buyer agrees to defend, indemnify and hold harmless Microchip from any and all damages,
+claims, suits, or expenses resulting from such use. No licenses are conveyed, implicitly or otherwise,
+under any Microchip intellectual property rights unless otherwise stated.
+
+Trademarks
+The Microchip name and logo, the Microchip logo, Adaptec, AVR, AVR logo, AVR Freaks, BesTime,
+BitCloud, CryptoMemory, CryptoRF, dsPIC, flexPWR, HELDO, IGLOO, JukeBlox, KeeLoq, Kleer,
+LANCheck, LinkMD, maXStylus, maXTouch, MediaLB, megaAVR, Microsemi, Microsemi logo, MOST,
+MOST logo, MPLAB, OptoLyzer, PIC, picoPower, PICSTART, PIC32 logo, PolarFire, Prochip Designer,
+QTouch, SAM-BA, SenGenuity, SpyNIC, SST, SST Logo, SuperFlash, Symmetricom, SyncServer,
+Tachyon, TimeSource, tinyAVR, UNI/O, Vectron, and XMEGA are registered trademarks of Microchip
+Technology Incorporated in the U.S.A. and other countries.
+AgileSwitch, ClockWorks, The Embedded Control Solutions Company, EtherSynch, Flashtec, Hyper
+Speed Control, HyperLight Load, Libero, motorBench, mTouch, Powermite 3, Precision Edge,
+ProASIC, ProASIC Plus, ProASIC Plus logo, Quiet-Wire, SmartFusion, SyncWorld, TimeCesium,
+TimeHub, TimePictra, TimeProvider, and ZL are registered trademarks of Microchip Technology
+Incorporated in the U.S.A.
+Adjacent Key Suppression, AKS, Analog-for-the-Digital Age, Any Capacitor, AnyIn, AnyOut,
+Augmented Switching, BlueSky, BodyCom, Clockstudio, CodeGuard, CryptoAuthentication,
+CryptoAutomotive, CryptoCompanion, CryptoController, dsPICDEM, dsPICDEM.net, Dynamic
+Average Matching, DAM, ECAN, Espresso T1S, EtherGREEN, EyeOpen, GridTime, IdealBridge,
+IGaT, In-Circuit Serial Programming, ICSP, INICnet, Intelligent Paralleling, IntelliMOS, Inter-Chip
+Connectivity, JitterBlocker, Knob-on-Display, MarginLink, maxCrypto, maxView, memBrain, Mindi,
+MiWi, MPASM, MPF, MPLAB Certified logo, MPLIB, MPLINK, mSiC, MultiTRAK, NetDetach, Omniscient
+Code Generation, PICDEM, PICDEM.net, PICkit, PICtail, Power MOS IV, Power MOS 7, PowerSmart,
+PureSilicon, QMatrix, REAL ICE, Ripple Blocker, RTAX, RTG4, SAM-ICE, Serial Quad I/O, simpleMAP,
+SimpliPHY, SmartBuffer, SmartHLS, SMART-I.S., storClad, SQI, SuperSwitcher, SuperSwitcher II,
+Switchtec, SynchroPHY, Total Endurance, Trusted Time, TSHARC, Turing, USBCheck, VariSense,
+VectorBlox, VeriPHY, ViewSpan, WiperLock, XpressConnect, and ZENA are trademarks of Microchip
+Technology Incorporated in the U.S.A. and other countries.
+SQTP is a service mark of Microchip Technology Incorporated in the U.S.A.
+The Adaptec logo, Frequency on Demand, Silicon Storage Technology, and Symmcom are registered
+trademarks of Microchip Technology Inc. in other countries.
+GestIC is a registered trademark of Microchip Technology Germany II GmbH & Co. KG, a subsidiary
+of Microchip Technology Inc., in other countries.
+
+
+
+                                                   Errata                                     DS80000882F - 15
+                            © 2024 Microchip Technology Inc. and its subsidiaries
+                                                                                   AVR128DA28/32/48/64(S)
+
+
+All other trademarks mentioned herein are property of their respective companies.
+© 2024, Microchip Technology Incorporated and its subsidiaries. All Rights Reserved.
+
+ISBN: 978-1-6683-0208-8
+
+Quality Management System
+For information regarding Microchip’s Quality Management Systems, please visit
+www.microchip.com/quality.
+
+
+
+
+                                                  Errata                                     DS80000882F - 16
+                           © 2024 Microchip Technology Inc. and its subsidiaries
+Worldwide Sales and Service
+AMERICAS                    ASIA/PACIFIC                  ASIA/PACIFIC                 EUROPE
+
+Corporate Office            Australia - Sydney            India - Bangalore            Austria - Wels
+2355 West Chandler Blvd.    Tel: 61-2-9868-6733           Tel: 91-80-3090-4444         Tel: 43-7242-2244-39
+Chandler, AZ 85224-6199     China - Beijing               India - New Delhi            Fax: 43-7242-2244-393
+Tel: 480-792-7200                                                                      Denmark - Copenhagen
+                            Tel: 86-10-8569-7000          Tel: 91-11-4160-8631
+Fax: 480-792-7277
+                            China - Chengdu               India - Pune                 Tel: 45-4485-5910
+Technical Support:                                                                     Fax: 45-4485-2829
+                            Tel: 86-28-8665-5511          Tel: 91-20-4121-0141
+www.microchip.com/support
+                                                                                       Finland - Espoo
+                            China - Chongqing             Japan - Osaka
+Web Address:
+                                                                                       Tel: 358-9-4520-820
+www.microchip.com           Tel: 86-23-8980-9588          Tel: 81-6-6152-7160
+                                                                                       France - Paris
+Atlanta                     China - Dongguan              Japan - Tokyo
+                                                                                       Tel: 33-1-69-53-63-20
+Duluth, GA                  Tel: 86-769-8702-9880         Tel: 81-3-6880- 3770
+                                                                                       Fax: 33-1-69-30-90-79
+Tel: 678-957-9614           China - Guangzhou             Korea - Daegu
+                                                                                       Germany - Garching
+Fax: 678-957-1455           Tel: 86-20-8755-8029          Tel: 82-53-744-4301
+                                                                                       Tel: 49-8931-9700
+Austin, TX                  China - Hangzhou              Korea - Seoul
+                                                                                       Germany - Haan
+Tel: 512-257-3370           Tel: 86-571-8792-8115         Tel: 82-2-554-7200
+                                                                                       Tel: 49-2129-3766400
+Boston                      China - Hong Kong SAR         Malaysia - Kuala Lumpur
+                                                                                       Germany - Heilbronn
+Westborough, MA             Tel: 852-2943-5100            Tel: 60-3-7651-7906
+Tel: 774-760-0087                                                                      Tel: 49-7131-72400
+                            China - Nanjing               Malaysia - Penang
+Fax: 774-760-0088                                                                      Germany - Karlsruhe
+                            Tel: 86-25-8473-2460          Tel: 60-4-227-8870
+Chicago                                                                                Tel: 49-721-625370
+                            China - Qingdao               Philippines - Manila
+Itasca, IL                                                                             Germany - Munich
+                            Tel: 86-532-8502-7355         Tel: 63-2-634-9065
+Tel: 630-285-0071                                                                      Tel: 49-89-627-144-0
+Fax: 630-285-0075           China - Shanghai              Singapore
+                                                                                       Fax: 49-89-627-144-44
+Dallas                      Tel: 86-21-3326-8000          Tel: 65-6334-8870
+                                                                                       Germany - Rosenheim
+Addison, TX                 China - Shenyang              Taiwan - Hsin Chu
+                                                                                       Tel: 49-8031-354-560
+Tel: 972-818-7423           Tel: 86-24-2334-2829          Tel: 886-3-577-8366
+                                                                                       Israel - Hod Hasharon
+Fax: 972-818-2924           China - Shenzhen              Taiwan - Kaohsiung
+                                                                                       Tel: 972-9-775-5100
+Detroit                     Tel: 86-755-8864-2200         Tel: 886-7-213-7830
+                                                                                       Italy - Milan
+Novi, MI                    China - Suzhou                Taiwan - Taipei
+                                                                                       Tel: 39-0331-742611
+Tel: 248-848-4000
+                            Tel: 86-186-6233-1526         Tel: 886-2-2508-8600         Fax: 39-0331-466781
+Houston, TX
+                            China - Wuhan                 Thailand - Bangkok           Italy - Padova
+Tel: 281-894-5983
+                            Tel: 86-27-5980-5300          Tel: 66-2-694-1351           Tel: 39-049-7625286
+Indianapolis
+                            China - Xian                  Vietnam - Ho Chi Minh        Netherlands - Drunen
+Noblesville, IN
+                            Tel: 86-29-8833-7252          Tel: 84-28-5448-2100         Tel: 31-416-690399
+Tel: 317-773-8323
+                            China - Xiamen                                             Fax: 31-416-690340
+Fax: 317-773-5453
+Tel: 317-536-2380           Tel: 86-592-2388138                                        Norway - Trondheim
+
+Los Angeles                 China - Zhuhai                                             Tel: 47-72884388
+
+Mission Viejo, CA           Tel: 86-756-3210040                                        Poland - Warsaw
+Tel: 949-462-9523                                                                      Tel: 48-22-3325737
+Fax: 949-462-9608                                                                      Romania - Bucharest
+Tel: 951-273-7800
+                                                                                       Tel: 40-21-407-87-50
+Raleigh, NC
+                                                                                       Spain - Madrid
+Tel: 919-844-7510
+                                                                                       Tel: 34-91-708-08-90
+New York, NY                                                                           Fax: 34-91-708-08-91
+Tel: 631-435-6000                                                                      Sweden - Gothenberg
+San Jose, CA                                                                           Tel: 46-31-704-60-40
+Tel: 408-735-9110                                                                      Sweden - Stockholm
+Tel: 408-436-4270
+                                                                                       Tel: 46-8-5090-4654
+Canada - Toronto
+                                                                                       UK - Wokingham
+Tel: 905-695-1980
+                                                                                       Tel: 44-118-921-5800
+Fax: 905-695-2078
+                                                                                       Fax: 44-118-921-5820
+
+
+
+
+                                                      Errata                                                  DS80000882F - 17
+                               © 2024 Microchip Technology Inc. and its subsidiaries
+

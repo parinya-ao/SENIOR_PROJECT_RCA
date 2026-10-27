@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "stage": "PASS",
+  "tx_hex": "000055e6",
+  "echo_hex": "000055e6",
+  "response_hex": "2020202041565220503a32443a312d334d32202841372e4b563030312e302900",
+  "latency_ms": 158.354178,
+  "error_type": null,
+  "raw_path": "/home/parinya/unversity/lora/experiments/updi_rca/fresh/reruns/20261027T052038Z/evidence/Q/RCA_FRESH_01-Q-baseline-2-sib-ba530ce1fbbb433c85115581eb329819/transport.json",
+  "raw_sha256": "bd5b6dc322d66d8b12050b9ed98da5df46a5eb73e62a441a2d2f5b59e15e52c0"
+}

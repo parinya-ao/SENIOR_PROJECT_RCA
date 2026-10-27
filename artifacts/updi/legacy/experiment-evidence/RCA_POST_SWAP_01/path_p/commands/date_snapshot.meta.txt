@@ -1,0 +1,9 @@
+label=date_snapshot
+argv_shell_escaped=date -u --iso-8601=ns
+start_utc=2026-10-27T03:30:31.772044874Z
+end_utc=2026-10-27T03:30:31.775909020Z
+start_proc_uptime_s=62216.98
+end_proc_uptime_s=62216.98
+exit_code=0
+stdout_sha256=3df1a37bcfab8bff54d2fa093cc144e4a315f3cd9451dd812faf5ed199a54fb2
+stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
