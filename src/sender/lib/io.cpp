@@ -1,0 +1,30 @@
+#include <Arduino.h>
+#include "iw/avr128da28/device.h"
+#include "io.h"
+
+/************************************************************
+ * Enable pull-up on all pins to lower power
+ * taken from https://www.avrfreaks.net/comment/3209046#comment-3209046
+ */
+/************************************************************
+ *
+ */
+void init_gpio() {
+    (void)iw::avr128da28::ConfigureAllPinPullups();
+    pinModeFast(PIN_LED1, OUTPUT);
+    pinModeFast(PIN_LED2, OUTPUT);
+    pinModeFast(PIN_LORA_CS, OUTPUT);
+    pinModeFast(PIN_LORA_RST, OUTPUT);
+    pinModeFast(PIN_LORA_IRQ, INPUT);
+    pinModeFast(PIN_LORA_DIO1, INPUT);
+    pinModeFast(PIN_INT, OUTPUT);
+    digitalWriteFast(PIN_LED1, HIGH);
+    digitalWriteFast(PIN_LED2, HIGH);
+    digitalWriteFast(PIN_LORA_CS, HIGH);
+    digitalWriteFast(PIN_LORA_RST, HIGH);
+    digitalWriteFast(PIN_INT, LOW);
+
+    // Use default I2C pinset. See:
+    // https://github.com/SpenceKonde/DxCore/blob/master/megaavr/extras/DA28.md#twi0-mux-options
+    (void)iw::avr128da28::ConfigureTwiRoute();
+}

@@ -1,0 +1,825 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files and files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed, empty lines have been removed, content has been compressed (code blocks are separated by ⋮---- delimiter).
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: **/*
+- Files matching these patterns are excluded: .git/**, .venv/**, **/.venv/**, venv/**, **/venv/**, env/**, **/env/**, __pycache__/**, **/__pycache__/**, *.py[cod], **/*.py[cod], .mypy_cache/**, **/.mypy_cache/**, .pytest_cache/**, **/.pytest_cache/**, .ruff_cache/**, **/.ruff_cache/**, .tox/**, **/.tox/**, .nox/**, **/.nox/**, .cache/**, **/.cache/**, node_modules/**, **/node_modules/**, .next/**, **/.next/**, .nuxt/**, **/.nuxt/**, .svelte-kit/**, **/.svelte-kit/**, *.lock, **/*.lock, package-lock.json, **/package-lock.json, yarn.lock, **/yarn.lock, pnpm-lock.yaml, **/pnpm-lock.yaml, bun.lockb, **/bun.lockb, *.log, **/*.log, *.bkp, **/*.bkp, *.drawio, **/*.drawio, logs/**, **/logs/**, .coverage, **/.coverage, coverage/**, **/coverage/**, htmlcov/**, **/htmlcov/**, .vscode/**, **/.vscode/**, .idea/**, **/.idea/**, *.swp, **/*.swp, *.swo, **/*.swo, .DS_Store, **/.DS_Store, .env, **/.env, .env.*, **/.env.*, *.pem, **/*.pem, *.key, **/*.key, *.p12, **/*.p12, secrets/**, **/secrets/**, credentials.json, **/credentials.json, .codegraph/**, **/.codegraph/**, graphify-out/**, **/graphify-out/**, src/automation/graphify-out/**, .automation/**, dist/**, build/**, .pio/, .pioenvs/, .piolibdeps/, libdeps/, repomix-output.*, **/repomix-output.*
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Empty lines have been removed from all files
+- Content has been compressed - code blocks are separated by ⋮---- delimiter
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+lib/
+  config/
+    config.h
+    library.json
+  debug/
+    debug.h
+    library.json
+  gnss/
+    gnss.cpp
+    gnss.h
+    library.json
+  logger/
+    library.json
+    logger.cpp
+    logger.h
+  lora/
+    library.json
+    lora.cpp
+    lora.h
+  mcurses/
+    library.json
+    mcurses-config.h
+    mcurses-printf.cpp
+    mcurses-printf.h
+    mcurses.c
+    mcurses.h
+  messages/
+    library.json
+    messages.h
+  printf/
+    library.json
+    printf.cpp
+    printf.h
+  raw-storage/
+    library.json
+    raw-storage.cpp
+    raw-storage.h
+  ringbuf/
+    library.json
+    ringbuf.h
+  sd-storage/
+    library.json
+    sd-storage.h
+  sd-utils/
+    library.json
+    sd-utils.cpp
+    sd-utils.h
+  sleep/
+    library.json
+    sleep.cpp
+    sleep.h
+  task/
+    pt/
+      lc-addrlabels.h
+      lc-switch.h
+      lc.h
+      pt.h
+    library.json
+    task.cpp
+    task.h
+  time-utils/
+    library.json
+    time-utils.cpp
+    time-utils.h
+lora/
+  __init__.py
+receiver/
+  main.cpp
+sender/
+  lib/
+    espcomm.cpp
+    espcomm.h
+    io.cpp
+    io.h
+    lora_rx.cpp
+    lora_rx.h
+    main.cpp
+    main.h
+  main.cpp
+.repomixignore
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="lib/config/config.h">
+
+</file>
+
+<file path="lib/config/library.json">
+{
+    "name" : "config",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/debug/debug.h">
+
+</file>
+
+<file path="lib/debug/library.json">
+{
+    "name" : "debug",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/gnss/gnss.cpp">
+static uint8_t parseHex(char c) {
+⋮----
+static char* extract_field(char* nmea, char* buf) {
+⋮----
+static int calculate_checksum(const char *msg) {
+⋮----
+GNSS::GNSS(Stream& serial):
+⋮----
+void GNSS::send_raw_command(const char *cmd) {
+⋮----
+static int32_t to_coord(const char* buf) {
+⋮----
+void GNSS::_parse() {
+⋮----
+bool GNSS::read() {
+⋮----
+void GNSS::reset_buffer(bool flush_serial) {
+⋮----
+void GNSS::_send_message(const char *msg) {
+⋮----
+void GNSS::disable_nmea_msg(const char *type) {
+⋮----
+void GNSS::enable_nmea_msg(const char *type) {
+</file>
+
+<file path="lib/gnss/gnss.h">
+void begin(uint32_t baud);
+void send_raw_command(const char *);
+bool read();
+void reset_buffer(bool flush_serial);
+void disable_nmea_msg(const char *type);
+void enable_nmea_msg(const char *type);
+⋮----
+void _parse();
+⋮----
+void _send_message(const char *msg);
+</file>
+
+<file path="lib/gnss/library.json">
+{
+    "name" : "gnss",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/logger/library.json">
+{
+    "name" : "logger",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/logger/logger.cpp">
+void Logger::_save_magic() {
+⋮----
+void Logger::_save_cursor() {
+⋮----
+void Logger::_load_cursor() {
+⋮----
+bool Logger::setup(uint32_t start_block, uint32_t capacity, bool overwrite) {
+⋮----
+void Logger::writeraw(const char* buf, uint16_t len) {
+⋮----
+void Logger::printf(const char *fmt, ... ) {
+</file>
+
+<file path="lib/logger/logger.h">
+bool setup(uint32_t start_block, uint32_t capacity, bool overwrite);
+⋮----
+void writeraw(const char *buf, uint16_t len);
+⋮----
+void printf(const char *fmt, ... );
+⋮----
+void _save_cursor();
+void _load_cursor();
+void _save_magic();
+uint64_t _sd_position() { return (_start_block+1)*512 + _cursor; }
+</file>
+
+<file path="lib/lora/library.json">
+{
+    "name" : "lora",
+    "version" : "1.0.0",
+    "dependencies":
+    {
+        "jgromes/RadioLib": "7.1.2"
+    }
+}
+</file>
+
+<file path="lib/lora/lora.cpp">
+static void _sent_action();
+static void _received_action();
+⋮----
+LoRa::LoRa(uint32_t cs_pin, uint32_t irq_pin, uint32_t rst_pin, uint32_t dio1_pin):
+⋮----
+bool LoRa::init(Address my_addr, float freq, int8_t tx_power, uint8_t long_range) {
+⋮----
+bool LoRa::available() {
+⋮----
+int16_t LoRa::send(Address dst, const uint8_t* pkt, uint8_t len) {
+⋮----
+void LoRa::recv(Address *src, Address *dst, uint8_t* pkt, uint8_t* len) {
+⋮----
+static void _sent_action() {
+⋮----
+bool LoRa::send_done() {
+⋮----
+static void _received_action() {
+</file>
+
+<file path="lib/lora/lora.h">
+typedef uint8_t Address;
+⋮----
+bool init(Address my_addr, float freq, int8_t tx_power, uint8_t long_range);
+bool available();
+int16_t send(Address dst, const uint8_t* pkt, uint8_t len);
+bool send_done();
+void recv(Address *src, Address *dst, uint8_t* pkt, uint8_t* len);
+int16_t sleep() { return _module.sleep(); }
+void set_power(int8_t power) { _module.setOutputPower(power, false); }
+void set_frequency(float freq) { _module.setFrequency(freq); }
+void set_my_address(uint8_t addr) { _my_addr = addr; }
+Address my_address() { return _my_addr; }
+int16_t get_last_rssi() { return _last_rssi; }
+</file>
+
+<file path="lib/mcurses/library.json">
+{
+    "name" : "mcurses",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/mcurses/mcurses-config.h">
+
+</file>
+
+<file path="lib/mcurses/mcurses-printf.cpp">
+void mc_vprintf(const char *fmt, va_list args) {
+⋮----
+void mc_printf(char *fmt, ... ) {
+⋮----
+void mc_printf(const __FlashStringHelper *fmt, ... ) {
+</file>
+
+<file path="lib/mcurses/mcurses-printf.h">
+void mc_vprintf(const char *fmt, va_list args);
+void mc_printf(char *fmt, ... );
+void mc_printf(const __FlashStringHelper *fmt, ... );
+</file>
+
+<file path="lib/mcurses/mcurses.c">
+static void                                     mcurses_puts_P (const char *);
+⋮----
+void setFunction_getchar(char (*functionPoitner)(void))
+⋮----
+void setFunction_putchar(void (*functionPoitner)(uint8_t ch))
+⋮----
+static uint_fast8_t mcurses_phyio_init (void)
+⋮----
+static void mcurses_phyio_done (void)
+⋮----
+static void mcurses_phyio_putc (uint_fast8_t ch)
+⋮----
+static uint_fast8_t mcurses_phyio_getc (void)
+⋮----
+static void mcurses_phyio_nodelay (uint_fast8_t flag)
+⋮----
+static void mcurses_phyio_halfdelay (uint_fast8_t tenths)
+⋮----
+static void mcurses_phyio_flush_output ()
+⋮----
+mcurses_putc (uint_fast8_t ch)
+⋮----
+mcurses_puts_P (const char * str)
+⋮----
+mcurses_puti (uint_fast8_t i)
+⋮----
+mcurses_addch_or_insch (uint_fast8_t ch, uint_fast8_t insert)
+⋮----
+mysetscrreg (uint_fast8_t top, uint_fast8_t bottom)
+⋮----
+mymove (uint_fast8_t y, uint_fast8_t x)
+⋮----
+initscr (void)
+⋮----
+addch (uint_fast8_t ch)
+⋮----
+addstr (const char * str)
+⋮----
+addstr_P (const char * str)
+⋮----
+attrset (uint_fast16_t attr)
+⋮----
+move (uint_fast8_t y, uint_fast8_t x)
+⋮----
+deleteln (void)
+⋮----
+insertln (void)
+⋮----
+scroll (void)
+⋮----
+clear (void)
+⋮----
+clrtobot (void)
+⋮----
+clrtoeol (void)
+⋮----
+delch (void)
+⋮----
+insch (uint_fast8_t ch)
+⋮----
+setscrreg (uint_fast8_t t, uint_fast8_t b)
+⋮----
+curs_set (uint_fast8_t visibility)
+⋮----
+refresh (void)
+⋮----
+nodelay (uint_fast8_t flag)
+⋮----
+halfdelay (uint_fast8_t tenths)
+⋮----
+getch (void)
+⋮----
+getnstr (char * str, uint_fast8_t maxlen)
+⋮----
+endwin (void)
+</file>
+
+<file path="lib/mcurses/mcurses.h">
+void                     setFunction_putchar(void (*functionPoitner)(uint8_t ch));
+void                     setFunction_getchar(char (*functionPoitner)(void));
+uint_fast8_t             initscr (void);
+void                     move (uint_fast8_t, uint_fast8_t);
+void                     attrset (uint_fast16_t);
+void                     addch (uint_fast8_t);
+void                     addstr (const char *);
+void                     addstr_P (const char *);
+void                     getnstr (char * str, uint_fast8_t maxlen);
+void                     setscrreg (uint_fast8_t, uint_fast8_t);
+void                     deleteln (void);
+void                     insertln (void);
+void                     scroll (void);
+void                     clear (void);
+void                     clrtobot (void);
+void                     clrtoeol (void);
+void                     delch (void);
+void                     insch (uint_fast8_t);
+void                     nodelay (uint_fast8_t);
+void                     halfdelay (uint_fast8_t);
+uint_fast8_t             getch (void);
+void                     curs_set(uint_fast8_t);
+void                     refresh (void);
+void                     endwin (void);
+</file>
+
+<file path="lib/messages/library.json">
+{
+    "name" : "messages",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/messages/messages.h">
+struct ReportEntry {
+⋮----
+struct PacketAdvertise {
+⋮----
+struct PacketReport {
+⋮----
+struct PacketAck {
+⋮----
+struct PacketBoot {
+⋮----
+struct PacketMaintenance {
+</file>
+
+<file path="lib/printf/library.json">
+{
+    "name" : "printf",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/printf/printf.cpp">
+void printf(Stream& stream, const char *fmt, ... ) {
+⋮----
+void printf(Stream& stream, const __FlashStringHelper *fmt, ... ) {
+⋮----
+char* ui64toa(uint64_t v) {
+</file>
+
+<file path="lib/printf/printf.h">
+void printf(Stream& stream, const char *fmt, ... );
+void printf(Stream& stream, const __FlashStringHelper *fmt, ... );
+char* ui64toa(uint64_t v);
+</file>
+
+<file path="lib/raw-storage/library.json">
+{
+    "name" : "raw-storage",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/raw-storage/raw-storage.cpp">
+void RawStorage::_cache_read(uint64_t pos) {
+⋮----
+void RawStorage::_cache_write(uint64_t pos) {
+⋮----
+bool RawStorage::read(uint64_t offset, uint8_t* data, uint16_t len) {
+⋮----
+bool RawStorage::write(uint64_t offset, const uint8_t* data, uint16_t len) {
+</file>
+
+<file path="lib/raw-storage/raw-storage.h">
+bool read(uint64_t offset, uint8_t* data, uint16_t len);
+bool write(uint64_t offset, const uint8_t* data, uint16_t len);
+⋮----
+void _cache_read(uint64_t pos);
+void _cache_write(uint64_t pos);
+</file>
+
+<file path="lib/ringbuf/library.json">
+{
+    "name" : "ringbuf",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/ringbuf/ringbuf.h">
+size_t capacity();
+⋮----
+bool empty();
+⋮----
+bool full();
+⋮----
+size_t free();
+⋮----
+size_t used();
+⋮----
+bool write_byte(uint8_t data);
+⋮----
+size_t write(const void *data, size_t len);
+⋮----
+uint8_t read_byte();
+⋮----
+size_t read(void *data, size_t len);
+⋮----
+void clear();
+</file>
+
+<file path="lib/sd-storage/library.json">
+{
+    "name" : "sd-storage",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/sd-storage/sd-storage.h">
+bool setup(uint64_t start_block, uint64_t capacity, bool overwrite);
+⋮----
+uint64_t capacity() const { return _capacity; }
+⋮----
+bool empty() const { return _used == 0; }
+⋮----
+bool full() const { return _used == _capacity; }
+⋮----
+uint64_t free() const { return _capacity - _used; }
+⋮----
+uint64_t count() const { return _used; }
+⋮----
+bool push(const T& data);
+⋮----
+bool pop();
+⋮----
+bool peek(T* data, uint64_t index);
+⋮----
+bool top(T* data) { return peek(data, 0); }
+⋮----
+void clear();
+⋮----
+uint64_t _position(uint64_t index)
+⋮----
+uint64_t _first_free() { return (_first+_used)%_capacity; }
+⋮----
+void _save_state();
+void _load_state();
+void _save_magic();
+</file>
+
+<file path="lib/sd-utils/library.json">
+{
+    "name" : "sd-utils",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/sd-utils/sd-utils.cpp">
+void get_data_and_log_partitions(
+⋮----
+bool open_file_in_root(SdFile& file, SdVolume& volume, const char* filename, uint8_t oflag) {
+⋮----
+char* read_line(SdFile& file) {
+</file>
+
+<file path="lib/sd-utils/sd-utils.h">
+void get_data_and_log_partitions(
+⋮----
+bool open_file_in_root(SdFile& file, SdVolume& volume, const char* filename, uint8_t oflag);
+char* read_line(SdFile& file);
+</file>
+
+<file path="lib/sleep/library.json">
+{
+    "name" : "sleep",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/sleep/sleep.cpp">
+static void rtc_init(void) {
+⋮----
+ISR(RTC_PIT_vect) {
+⋮----
+static uint32_t rtc_ticks() {
+⋮----
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+⋮----
+static void rtc_reset_ticks() {
+⋮----
+static void rtc_start() {
+⋮----
+static void rtc_stop() {
+⋮----
+void sleep_init() {
+⋮----
+void sleep_for(uint32_t seconds) {
+⋮----
+ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+⋮----
+uint32_t sleep_rtc_ticks() {
+</file>
+
+<file path="lib/sleep/sleep.h">
+void sleep_init();
+void sleep_for(uint32_t seconds);
+uint32_t sleep_rtc_ticks();
+⋮----
+inline uint32_t sleep_get_unix_time() {
+⋮----
+inline void sleep_set_unix_time(uint32_t ts) {
+⋮----
+inline void sleep_force_wakeup() {
+</file>
+
+<file path="lib/task/pt/lc-addrlabels.h">
+
+</file>
+
+<file path="lib/task/pt/lc-switch.h">
+typedef unsigned short lc_t;
+</file>
+
+<file path="lib/task/pt/lc.h">
+
+</file>
+
+<file path="lib/task/pt/pt.h">
+struct pt {
+</file>
+
+<file path="lib/task/library.json">
+{
+    "name" : "task",
+    "version" : "1.0.0"
+}
+</file>
+
+<file path="lib/task/task.cpp">
+Task::Task() {
+⋮----
+void Task::_init() {
+⋮----
+void Task::set_wakeup_time(uint32_t seconds) {
+⋮----
+void Task::reset_wakeup_time() {
+⋮----
+uint32_t Task::get_wakeup_time() {
+⋮----
+void Task::pause() {
+⋮----
+bool Task::is_paused() {
+⋮----
+void Task::resume() {
+⋮----
+void Task::restart() {
+⋮----
+void TaskScheduler::add(Task* task) {
+⋮----
+Task** TaskScheduler::get_task_list() {
+⋮----
+size_t TaskScheduler::get_task_count() {
+⋮----
+void TaskScheduler::loop() {
+⋮----
+void PowerSavingTaskScheduler::loop() {
+</file>
+
+<file path="lib/task/task.h">
+void _init();
+⋮----
+void set_wakeup_time(uint32_t seconds);
+void reset_wakeup_time();
+uint32_t get_wakeup_time();
+virtual const char* get_name() = 0;
+virtual TASK(run()) = 0;
+void pause();
+bool is_paused();
+void resume();
+void restart();
+⋮----
+void loop();
+void add(Task* task);
+Task** get_task_list();
+size_t get_task_count();
+</file>
+
+<file path="lib/time-utils/library.json">
+{
+    "name" : "time-utils",
+    "version" : "1.0.0",
+    "dependencies":
+    {
+        "paulstoffregen/Time": "^1.6.1"
+    }
+}
+</file>
+
+<file path="lib/time-utils/time-utils.cpp">
+void init_time() {
+⋮----
+void set_time(uint16_t year,
+⋮----
+uint32_t get_total_seconds() {
+⋮----
+char* get_current_time_str() {
+</file>
+
+<file path="lib/time-utils/time-utils.h">
+void init_time();
+void set_time(uint16_t year,
+⋮----
+uint32_t get_total_seconds();
+char* get_current_time_str();
+</file>
+
+<file path="lora/__init__.py">
+def main() -> None
+</file>
+
+<file path="receiver/main.cpp">
+static LoRa lora(
+⋮----
+static void PrintPacket(
+⋮----
+static bool WaitSendDone(
+⋮----
+static uint8_t EncodeTestPacket(
+⋮----
+static uint16_t DecodeSequence(
+⋮----
+static bool SendPong(
+⋮----
+void setup() {
+⋮----
+void loop() {
+</file>
+
+<file path="sender/lib/espcomm.cpp">
+struct LoraConfig {
+⋮----
+void onReceive(int byteCount) {
+⋮----
+void onRequest() {
+⋮----
+class TaskI2CManager: public virtual Task {
+⋮----
+virtual const char* get_name() {
+⋮----
+virtual TASK(run()) {
+⋮----
+class TaskI2CReset: public virtual Task {
+⋮----
+void espcomm_setup() {
+</file>
+
+<file path="sender/lib/espcomm.h">
+void espcomm_setup();
+</file>
+
+<file path="sender/lib/io.cpp">
+static void pullup_all_pins() {
+⋮----
+void init_gpio() {
+</file>
+
+<file path="sender/lib/io.h">
+void init_gpio();
+</file>
+
+<file path="sender/lib/lora_rx.cpp">
+static LoRa lora(PIN_LORA_CS, PIN_LORA_IRQ, PIN_LORA_RST, PIN_LORA_DIO1);
+⋮----
+void error_blink_loop(uint8_t code) {
+⋮----
+class TaskLoraRx:public virtual Task {
+⋮----
+virtual const char * get_name() {
+⋮----
+virtual TASK(run()) {
+⋮----
+void lora_rx_setup() {
+⋮----
+void lora_rx_init_lora(Address my_addr, float freq, int8_t tx_power, uint8_t long_range) {
+⋮----
+void lora_rx_start_lora() {
+⋮----
+void lora_rx_stop_lora() {
+</file>
+
+<file path="sender/lib/lora_rx.h">
+void lora_rx_setup();
+void lora_rx_init_lora(Address my_addr, float freq, int8_t tx_power, uint8_t long_range);
+void lora_rx_start_lora();
+void lora_rx_stop_lora();
+</file>
+
+<file path="sender/lib/main.cpp">
+void init_adc() {
+⋮----
+int16_t read_temperature() {
+⋮----
+class TaskHeartbeat: public virtual Task {
+⋮----
+virtual const char* get_name() {
+⋮----
+virtual TASK(run()) {
+⋮----
+void setup() {
+⋮----
+void loop() {
+</file>
+
+<file path="sender/lib/main.h">
+
+</file>
+
+<file path="sender/main.cpp">
+void setup() {
+⋮----
+void loop() {
+</file>
+
+<file path=".repomixignore">
+*.xml
+</file>
+
+</files>

@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "bootsize": 32,
+    "codesize": 0,
+    "bodcfg": 84
+  },
+  "observed": {
+    "bootsize": 0,
+    "codesize": 0,
+    "bodcfg": 0
+  }
+}

@@ -140,6 +140,13 @@ downloads/
 eggs/
 .eggs/
 lib/
+!src/lib/
+src/lib/*/
+!src/lib/lora/
+!src/lib/lora/**
+!src/lib/updi_uart/
+!src/lib/updi_uart/**
+!src/sender/lib/
 lib64/
 parts/
 sdist/

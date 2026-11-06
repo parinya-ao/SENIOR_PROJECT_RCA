@@ -11,3 +11,10 @@
 PROMPT.md
 *.strace
 exp*
+*.xml
+*.py
+*.html
+artifacts/
+experiments
+docs
+

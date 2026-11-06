@@ -1,0 +1,4 @@
+gateway-candidate=0
+receiver-candidate=0
+gateway-candidate=0
+receiver-candidate=0

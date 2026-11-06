@@ -1,0 +1,137 @@
+[
+  {
+    "environment": "sender",
+    "hex": {
+      "bytes": 103502,
+      "sha256": "408472ddce702118eacc5caa252b0b4d5c3887f7069a2277bb74223060b205f2",
+      "address_range": {
+        "start": 16384,
+        "end_exclusive": 53168,
+        "data_bytes": 36784
+      }
+    },
+    "elf": {
+      "bytes": 80060,
+      "sha256": "eb5fea6cdbb5733551f508b381613344e739f2318cbceddb7a3618d2f498a38e"
+    },
+    "ram": {
+      "percent": 40.9,
+      "used_bytes": 6698,
+      "total_bytes": 16384
+    },
+    "flash": {
+      "percent": 28.1,
+      "used_bytes": 36784,
+      "total_bytes": 131072
+    },
+    "application_layout_safe": true
+  },
+  {
+    "environment": "sender_hello",
+    "hex": {
+      "bytes": 114114,
+      "sha256": "992a5ac509f005aebb9a39870c48e383b712c75c393d25a7ef2a41653a82560b",
+      "address_range": {
+        "start": 16384,
+        "end_exclusive": 56940,
+        "data_bytes": 40556
+      }
+    },
+    "elf": {
+      "bytes": 86524,
+      "sha256": "713b45a7d8e5bb5c6471125162d784ced3d979bf2c155198a72fab4af032885d"
+    },
+    "ram": {
+      "percent": 43.7,
+      "used_bytes": 7164,
+      "total_bytes": 16384
+    },
+    "flash": {
+      "percent": 30.9,
+      "used_bytes": 40556,
+      "total_bytes": 131072
+    },
+    "application_layout_safe": true
+  },
+  {
+    "environment": "receiver",
+    "hex": {
+      "bytes": 91303,
+      "sha256": "ea2e457ff296a374537aa7fdba27d007eeeac132e626d4bef628a046ca3b71b0",
+      "address_range": {
+        "start": 16384,
+        "end_exclusive": 48830,
+        "data_bytes": 32446
+      }
+    },
+    "elf": {
+      "bytes": 73132,
+      "sha256": "d1758bc77fc2efef8b86b83ce91edebf84dd1f20a631a015c69db190542e2bfc"
+    },
+    "ram": {
+      "percent": 11.7,
+      "used_bytes": 1914,
+      "total_bytes": 16384
+    },
+    "flash": {
+      "percent": 24.8,
+      "used_bytes": 32446,
+      "total_bytes": 131072
+    },
+    "application_layout_safe": true
+  },
+  {
+    "environment": "sender_hello_spi",
+    "hex": {
+      "bytes": 111986,
+      "sha256": "f95ee5c43df0064ed091573c036bc4d5db9953ab6fff957a20a39120fa2d8bfb",
+      "address_range": {
+        "start": 16384,
+        "end_exclusive": 56188,
+        "data_bytes": 39804
+      }
+    },
+    "elf": {
+      "bytes": 85488,
+      "sha256": "90c2da8a7c4723c17ad379f0d9d84872efa6d128967ad1a4d065af2ffb6bc234"
+    },
+    "ram": {
+      "percent": 43.6,
+      "used_bytes": 7138,
+      "total_bytes": 16384
+    },
+    "flash": {
+      "percent": 30.4,
+      "used_bytes": 39804,
+      "total_bytes": 131072
+    },
+    "application_layout_safe": true
+  },
+  {
+    "environment": "receiver_spi",
+    "hex": {
+      "bytes": 84700,
+      "sha256": "f10b238815c58a995cfd60456cbcbb9ac6b1a355622e7fffc72a33a255341c45",
+      "address_range": {
+        "start": 16384,
+        "end_exclusive": 46484,
+        "data_bytes": 30100
+      }
+    },
+    "elf": {
+      "bytes": 70256,
+      "sha256": "d0d86c60450b195e803c18cae97f57eda3027ad8273db47c46267bcab8dd4131"
+    },
+    "ram": {
+      "percent": 9.9,
+      "used_bytes": 1628,
+      "total_bytes": 16384
+    },
+    "flash": {
+      "percent": 23.0,
+      "used_bytes": 30100,
+      "total_bytes": 131072
+    },
+    "application_layout_safe": true
+  }
+]

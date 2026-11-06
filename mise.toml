@@ -7,7 +7,7 @@ python = "latest"
 run = "echo hello"
 
 [tasks."monitor0"]
-run = "uv run third_party/upditerm/upditerm.py /dev/ttyUSB0 38400"
+run = "uv run third_party/upditerm/upditerm.py /dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0 38400"
 
 [tasks."monitor1"]
-run = "uv run third_party/upditerm/upditerm.py /dev/ttyUSB1 38400"
+run = "uv run third_party/upditerm/upditerm.py /dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0 38400"
