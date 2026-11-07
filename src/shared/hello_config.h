@@ -1,7 +1,16 @@
 #pragma once
+#include "../../include/generated/lora_shared_config.h"
 
 #ifndef HELLO_TEST_MODE
 #define HELLO_TEST_MODE 0
+#endif
+
+#ifndef HELLO_RAM_ONLY_TEST
+#define HELLO_RAM_ONLY_TEST 0
+#endif
+
+#if HELLO_RAM_ONLY_TEST && !HELLO_TEST_MODE
+#error "RAM-only one-shot mode is restricted to the Hello test firmware."
 #endif
 
 #ifndef HELLO_RF_DIAGNOSTIC_ONLY

@@ -3,6 +3,11 @@
 
 #include "hello_config.h"
 #include "lora.h"
+#ifdef LORA_RECEIVER_BOARD
+#include "../../../include/generated/lora_receiver_board.h"
+#else
+#include "../../../include/generated/lora_sender_board.h"
+#endif
 
 LoRa* LoRa::_active_radio = nullptr;
 
@@ -18,7 +23,7 @@ LoRa::LoRa(uint32_t cs_pin, uint32_t irq_pin, uint32_t rst_pin, uint32_t dio1_pi
 
 bool LoRa::select_spi1() {
     if (_spi1_selected) return true;
-    _spi1_selected = SPI.swap(SPI1_SWAP_DEFAULT);
+    _spi1_selected = SPI.swap(LORA_SPI_ROUTE);
     if (!_spi1_selected) _last_error = RADIOLIB_ERR_UNKNOWN;
     return _spi1_selected;
 }
@@ -107,6 +112,12 @@ int16_t LoRa::send(Address dst, const uint8_t* pkt, uint8_t len) {
 
 int16_t LoRa::send(Address dst, uint8_t id, uint8_t flags,
                    const uint8_t* pkt, uint8_t len) {
+#if HELLO_RF_DIAGNOSTIC_ONLY
+    static_cast<void>(dst); static_cast<void>(id); static_cast<void>(flags);
+    static_cast<void>(pkt); static_cast<void>(len);
+    _last_error = RADIOLIB_ERR_UNKNOWN;
+    return _last_error;
+#endif
     if (!_initialized || _tx_cleanup_pending || (len != 0 && pkt == nullptr)) {
         _last_error = RADIOLIB_ERR_UNKNOWN;
         return _last_error;
@@ -123,6 +134,7 @@ int16_t LoRa::send(Address dst, uint8_t id, uint8_t flags,
     if (len != 0) memcpy(_tx_buffer + kRadioHeaderSize, pkt, len);
 
     _module.setPacketSentAction(_sent_action);
+    _received = false;
     _transmitting = true;
     _tx_cleanup_pending = true;
     _tx_completion_ok = false;

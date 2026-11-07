@@ -1,8 +1,0 @@
-command=udevadm info --query=property --name=/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0
-start_utc=2026-10-27T03:35:19.455459284Z
-end_utc=2026-10-27T03:35:19.468397117Z
-start_proc_uptime_s=62504.66
-end_proc_uptime_s=62504.68
-exit_code=0
-stdout_sha256=4c1a2a4ecb9b815ed45b799ba57292229c0fe61b52d85eef0fdfdd96af7cad3d
-stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

@@ -1,1 +1,0 @@
-PYTHONPATH=experiments/updi_rca/src uv run --project experiments/updi_rca python -m updi_rca.cli baseline pci-0000:00:14.0-usb-0:1:1.0 experiments/updi_rca/evidence/raw/RCA_CROSSOVER_01/pre/lane_b --attempts 10 --baud 38400 --timeout 1.0

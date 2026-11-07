@@ -1,9 +1,0 @@
-label=cli_inventory
-argv_shell_escaped=env PYTHONPATH=experiments/updi_rca/src uv run --project experiments/updi_rca python -m updi_rca.cli inventory
-start_utc=2026-10-27T03:32:31.311228432Z
-end_utc=2026-10-27T03:32:31.404295760Z
-start_proc_uptime_s=62336.52
-end_proc_uptime_s=62336.61
-exit_code=0
-stdout_sha256=2d44d086150535946a1fc782f8e8edc1236320958e4c92698bdada9ebfe3351e
-stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

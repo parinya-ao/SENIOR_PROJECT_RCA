@@ -19032,8 +19032,8 @@
     "semantic_hash": ""
   },
   "skills-lock.json": {
-    "mtime": 1793030809.494576,
-    "seen": 1793897884.1487827,
+    "mtime": 1793969716.1666598,
+    "seen": 1793971588.191713,
     "ast_hash": "1681d35054d4af7c650f03a2e7210655",
     "semantic_hash": ""
   },
@@ -19044,9 +19044,9 @@
     "semantic_hash": ""
   },
   "src/lib/lora/lora.cpp": {
-    "mtime": 1793953429.499871,
-    "seen": 1793955507.828453,
-    "ast_hash": "acaa48adc7692d992c8d04046e9a0e76",
+    "mtime": 1793970668.4165416,
+    "seen": 1793971588.191733,
+    "ast_hash": "ed472b9915b08f93fb0696b8de6856d9",
     "semantic_hash": ""
   },
   "src/lib/lora/lora.h": {
@@ -19086,9 +19086,9 @@
     "semantic_hash": ""
   },
   "src/receiver/main.cpp": {
-    "mtime": 1793958634.2367115,
-    "seen": 1793959271.045446,
-    "ast_hash": "981e7e14f14899e9401eaca806ca584b",
+    "mtime": 1793993945.7473524,
+    "seen": 1793994103.6200671,
+    "ast_hash": "943a060915e591081acc889850282ede",
     "semantic_hash": ""
   },
   "src/sender/lib/espcomm.cpp": {
@@ -19110,15 +19110,15 @@
     "semantic_hash": ""
   },
   "src/sender/lib/io.h": {
-    "mtime": 1793938271.1462653,
-    "seen": 1793939359.1851318,
-    "ast_hash": "3e2ce2bdf7bf08948fa0fc667696fd59",
+    "mtime": 1793970088.410385,
+    "seen": 1793971588.1918702,
+    "ast_hash": "6af49d6c64aa13527482c2969462b42a",
     "semantic_hash": ""
   },
   "src/sender/lib/lora_rx.cpp": {
-    "mtime": 1793958634.2357113,
-    "seen": 1793959271.0455089,
-    "ast_hash": "a38bce8b733d1bfdb399d97e7e546990",
+    "mtime": 1793996345.1649084,
+    "seen": 1793996655.150575,
+    "ast_hash": "8fa0d0934a29046d62bc69da1f51c3f3",
     "semantic_hash": ""
   },
   "src/sender/lib/lora_rx.h": {
@@ -19146,33 +19146,33 @@
     "semantic_hash": ""
   },
   "src/shared/hello_config.h": {
-    "mtime": 1793954915.9373808,
-    "seen": 1793955507.8286686,
-    "ast_hash": "7ab3bc6e25d0e207387fdcc847c5d8ba",
+    "mtime": 1793996345.1609085,
+    "seen": 1793996655.1508126,
+    "ast_hash": "9d323210438cbf76c34fc42a62b8388d",
     "semantic_hash": ""
   },
   "src/shared/hello_protocol.cpp": {
-    "mtime": 1793902761.1026525,
-    "seen": 1793904516.822632,
-    "ast_hash": "b76dae5107abaa86a743615e043df1bc",
+    "mtime": 1793996345.1659083,
+    "seen": 1793996655.150818,
+    "ast_hash": "00743d68e3d61f0f8bbcdd003304fbfe",
     "semantic_hash": ""
   },
   "src/shared/hello_protocol.h": {
-    "mtime": 1793902761.1016526,
-    "seen": 1793904516.8226333,
-    "ast_hash": "27ac6e10fe8527e8c80478694c4cf380",
+    "mtime": 1793970668.4155416,
+    "seen": 1793971588.1919491,
+    "ast_hash": "d255cc07c236cbd6f1075f31f1555b68",
     "semantic_hash": ""
   },
   "tests/lora_hello_test.cpp": {
-    "mtime": 1793902744.1734688,
-    "seen": 1793904516.8226342,
-    "ast_hash": "8c6b2e20b558f112eada6e9d09b57a14",
+    "mtime": 1793971712.698414,
+    "seen": 1793971859.6910303,
+    "ast_hash": "80caf9d4ee2e6cdd7602fa83415ad53e",
     "semantic_hash": ""
   },
   "tests/test_rf_proof.py": {
-    "mtime": 1793964337.2835991,
-    "seen": 1793964675.9515917,
-    "ast_hash": "5088c4ad8c7d7ed02e4802a13948e7bb",
+    "mtime": 1793996293.949361,
+    "seen": 1793996655.1518195,
+    "ast_hash": "eba374617cb54249334378390099b672",
     "semantic_hash": ""
   },
   "third_party/upditerm/demo.c": {
@@ -19218,9 +19218,9 @@
     "semantic_hash": ""
   },
   "tools/rf_proof.py": {
-    "mtime": 1793964306.0832288,
-    "seen": 1793964675.9519272,
-    "ast_hash": "c19617dd707fcec4aa1b7be1ca655a5c",
+    "mtime": 1793996345.1689084,
+    "seen": 1793996655.1529825,
+    "ast_hash": "3d2f317a21dc3f6554f071a284754d80",
     "semantic_hash": ""
   },
   ".agents/skills/accessibility/SKILL.md": {
@@ -19326,9 +19326,9 @@
     "semantic_hash": ""
   },
   "GATEWAY_HELLO_STATUS.md": {
-    "mtime": 1793959260.1440208,
-    "seen": 1793959271.046245,
-    "ast_hash": "a07c27d81f9bd10f76df37346b7749ae",
+    "mtime": 1793981031.2621038,
+    "seen": 1793991922.182218,
+    "ast_hash": "e19849a09659f532b5274686e8e38ff0",
     "semantic_hash": ""
   },
   "README.md": {
@@ -24912,9 +24912,9 @@
     "semantic_hash": ""
   },
   "tests/radio_stub/RadioLib.h": {
-    "mtime": 1793953391.4384222,
-    "seen": 1793955507.8287344,
-    "ast_hash": "3d98fbe76f7f9582ba903f47aae79eb8",
+    "mtime": 1793998246.2192252,
+    "seen": 1793998532.2656114,
+    "ast_hash": "fd85a1fd24711cb8502a0bf3a4f27fe1",
     "semantic_hash": ""
   },
   "tests/radio_stub/SPI.h": {
@@ -25104,9 +25104,9 @@
     "semantic_hash": ""
   },
   "HARDWARE_PREFLIGHT_REPORT.md": {
-    "mtime": 1793959247.10687,
-    "seen": 1793959271.046246,
-    "ast_hash": "4bc98773df35577829668514d0ce75c4",
+    "mtime": 1793981031.2621038,
+    "seen": 1793991922.1822224,
+    "ast_hash": "a97aef6f32a2114bdfcb8b3b5a12f97e",
     "semantic_hash": ""
   },
   "PIN_MAPPING_AUDIT.md": {
@@ -25449,6 +25449,1008 @@
     "mtime": 1793964395.0742888,
     "seen": 1793964675.9524384,
     "ast_hash": "552927f628574ff83407c129f36f336e",
+    "semantic_hash": ""
+  },
+  "artifacts/engineering-loop/state.json": {
+    "mtime": 1793967769.4202127,
+    "seen": 1793968760.307056,
+    "ast_hash": "cc74a01403dc2eb77c8cb32ad7db963b",
+    "semantic_hash": ""
+  },
+  "tests/test_engineering_loop.py": {
+    "mtime": 1793979403.091712,
+    "seen": 1793979426.9769454,
+    "ast_hash": "4078125a88586a3f7dff543fb2871d9d",
+    "semantic_hash": ""
+  },
+  "tools/engineering_loop.py": {
+    "mtime": 1793979416.013865,
+    "seen": 1793979426.97742,
+    "ast_hash": "c515081701b8e69b10f079f2866978bd",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T121446Z/receiver-boot-control-flow.txt": {
+    "mtime": 1793967909.5762572,
+    "seen": 1793968760.3717837,
+    "ast_hash": "5aef744a496dcb909040cfc941b8b3c4",
+    "semantic_hash": ""
+  },
+  "config/lora_system.json": {
+    "mtime": 1793993945.7463524,
+    "seen": 1793994103.615109,
+    "ast_hash": "67ebe53f66f1196b6bb0c75deb804a8f",
+    "semantic_hash": ""
+  },
+  "generated/lora_manifest.json": {
+    "mtime": 1793996473.8737903,
+    "seen": 1793996655.1495962,
+    "ast_hash": "4af16fa9cf261109cde95eb8996f688b",
+    "semantic_hash": ""
+  },
+  "include/generated/lora_receiver_board.h": {
+    "mtime": 1793993949.709395,
+    "seen": 1793994103.61955,
+    "ast_hash": "6d6cdf3ca2683693fd412014b8d39c18",
+    "semantic_hash": ""
+  },
+  "include/generated/lora_sender_board.h": {
+    "mtime": 1793970806.1473238,
+    "seen": 1793971588.1916976,
+    "ast_hash": "796de28054785a2569d570a02beabafc",
+    "semantic_hash": ""
+  },
+  "include/generated/lora_shared_config.h": {
+    "mtime": 1793970201.4871202,
+    "seen": 1793971588.1916993,
+    "ast_hash": "494a2cdfc0222fede2065a66cdcad8d2",
+    "semantic_hash": ""
+  },
+  "tests/test_lora_ssot.py": {
+    "mtime": 1793993441.91196,
+    "seen": 1793993731.3001835,
+    "ast_hash": "7609e18597f1d53dadf9c88f26778e8f",
+    "semantic_hash": ""
+  },
+  "tools/config/generate_lora_config.py": {
+    "mtime": 1793993441.9099598,
+    "seen": 1793993731.300778,
+    "ast_hash": "bb6997893b64d4d2a7d0a91ad28f4370",
+    "semantic_hash": ""
+  },
+  "tools/config/platformio_generate.py": {
+    "mtime": 1793970120.0557756,
+    "seen": 1793971588.1922233,
+    "ast_hash": "a389cc2d4081cb850016c320900ed525",
+    "semantic_hash": ""
+  },
+  "tools/config/validate_lora_ssot.py": {
+    "mtime": 1793993945.7473524,
+    "seen": 1793994103.6217885,
+    "ast_hash": "ce830078a43828af8c1d48979b24c0a7",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T131218Z/host-measurements.json": {
+    "mtime": 1793970743.121046,
+    "seen": 1793971588.132906,
+    "ast_hash": "f1988b65879571735bca9fe1b47785c9",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T131955Z/firmware-measurements.json": {
+    "mtime": 1793971223.685126,
+    "seen": 1793971588.1329079,
+    "ast_hash": "1532d096fdca10f1801e824512e3ed00",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T132129Z/receiver-boot-audit.json": {
+    "mtime": 1793971293.8518398,
+    "seen": 1793971588.1329088,
+    "ast_hash": "0c4740e0bd5e28b6329f7d88d09fe341",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T132305Z/host-measurements.json": {
+    "mtime": 1793971392.730859,
+    "seen": 1793971588.1329095,
+    "ast_hash": "897c4bcc4edf95e1c9dc8b43e8bcb13d",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T132412Z/host-measurements.json": {
+    "mtime": 1793971459.0838206,
+    "seen": 1793971588.1329105,
+    "ast_hash": "ac5c20fecb64df6b851a7f0d5d263661",
+    "semantic_hash": ""
+  },
+  "tests/radio_diagnostic_test.cpp": {
+    "mtime": 1793971340.6788213,
+    "seen": 1793971588.1919665,
+    "ast_hash": "e87b6aa36acc43d50e31fc90cf1c60fe",
+    "semantic_hash": ""
+  },
+  "tests/test_boot_analysis.py": {
+    "mtime": 1793970463.5350156,
+    "seen": 1793971588.1920235,
+    "ast_hash": "55e2f3acb4297f421325d9a227bc923c",
+    "semantic_hash": ""
+  },
+  "tests/test_build_acceptance.py": {
+    "mtime": 1793970981.1883936,
+    "seen": 1793971588.192026,
+    "ast_hash": "dbe9569b8f0c7bfc46e72c2ae15f05cc",
+    "semantic_hash": ""
+  },
+  "tests/test_live_rf_proof.py": {
+    "mtime": 1793996427.0497835,
+    "seen": 1793996655.1516738,
+    "ast_hash": "1237c8413fcfe827969ded2cb82f7bbf",
+    "semantic_hash": ""
+  },
+  "tools/boot_analysis.py": {
+    "mtime": 1793970463.5350156,
+    "seen": 1793971588.1922061,
+    "ast_hash": "ecfa56527cde7053884dc3506a6cc101",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T132709Z/host-measurements.json": {
+    "mtime": 1793971635.7726235,
+    "seen": 1793971859.6127844,
+    "ast_hash": "979724474d4b50541ce2fb5ce8e3a9d3",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T132834Z/firmware-measurements.json": {
+    "mtime": 1793971742.741728,
+    "seen": 1793971859.6127863,
+    "ast_hash": "dd9bd269c7e331941c95953969746e36",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T132843Z/host-measurements.json": {
+    "mtime": 1793971729.9789286,
+    "seen": 1793971859.6127875,
+    "ast_hash": "979724474d4b50541ce2fb5ce8e3a9d3",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T133001Z/host-measurements.json": {
+    "mtime": 1793971808.4757404,
+    "seen": 1793971859.6127882,
+    "ast_hash": "2dc86adc5d018e8bdbb0ba600ed3ce93",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T131955Z/receiver-startup.disassembly.txt": {
+    "mtime": 1793971652.8366714,
+    "seen": 1793971859.692354,
+    "ast_hash": "663900f257f3cafd9f84f557cff63ba7",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T132834Z/receiver-startup.disassembly.txt": {
+    "mtime": 1793971803.46354,
+    "seen": 1793971859.6923566,
+    "ast_hash": "663900f257f3cafd9f84f557cff63ba7",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T135316Z/handoff_config.h": {
+    "mtime": 1793973200.4302661,
+    "seen": 1793974568.9769118,
+    "ast_hash": "3129f87ef974434a2bcd199b6c0ba468",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T135356Z/handoff_config.h": {
+    "mtime": 1793973240.4504519,
+    "seen": 1793974568.9769142,
+    "ast_hash": "96169e32c5f2fe2ca397d7d00d710994",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T135356Z/receiver-boot-overwrite-map.json": {
+    "mtime": 1793973240.5390453,
+    "seen": 1793974568.9769156,
+    "ast_hash": "fa45aeb7999b2178bc7b74fe326adba3",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T135601Z/handoff_config.h": {
+    "mtime": 1793973365.2019703,
+    "seen": 1793974568.976917,
+    "ast_hash": "96169e32c5f2fe2ca397d7d00d710994",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T135601Z/receiver-boot-instruction-traces.json": {
+    "mtime": 1793973365.226264,
+    "seen": 1793974568.9769182,
+    "ast_hash": "45fa3e66be0ae9fb770bc0a23d32676e",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T135601Z/receiver-boot-overwrite-map.json": {
+    "mtime": 1793973365.290057,
+    "seen": 1793974568.9769194,
+    "ast_hash": "6cf8635b23f50ff91eb5c8b9fefb680a",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140239Z/handoff_config.h": {
+    "mtime": 1793973763.9708924,
+    "seen": 1793974568.9769201,
+    "ast_hash": "96169e32c5f2fe2ca397d7d00d710994",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140239Z/receiver-boot-instruction-traces.json": {
+    "mtime": 1793973763.9985776,
+    "seen": 1793974568.976921,
+    "ast_hash": "45fa3e66be0ae9fb770bc0a23d32676e",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140239Z/receiver-boot-overwrite-map.json": {
+    "mtime": 1793973764.0841472,
+    "seen": 1793974568.9769223,
+    "ast_hash": "9ac42f9747b07596ec2df10d9b4399cf",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140558Z/handoff_config.h": {
+    "mtime": 1793973962.8376596,
+    "seen": 1793974568.9769232,
+    "ast_hash": "96169e32c5f2fe2ca397d7d00d710994",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140558Z/receiver-boot-instruction-traces.json": {
+    "mtime": 1793973962.8618498,
+    "seen": 1793974568.976924,
+    "ast_hash": "45fa3e66be0ae9fb770bc0a23d32676e",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140558Z/receiver-boot-overwrite-map.json": {
+    "mtime": 1793973962.9430985,
+    "seen": 1793974568.976925,
+    "ast_hash": "66139e4eb6814d9c5f3d64a79305394a",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140630Z/handoff_config.h": {
+    "mtime": 1793973994.1156907,
+    "seen": 1793974568.9769256,
+    "ast_hash": "96169e32c5f2fe2ca397d7d00d710994",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140630Z/receiver-boot-instruction-traces.json": {
+    "mtime": 1793973994.1413298,
+    "seen": 1793974568.9769268,
+    "ast_hash": "45fa3e66be0ae9fb770bc0a23d32676e",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140630Z/receiver-boot-overwrite-map.json": {
+    "mtime": 1793973994.2975214,
+    "seen": 1793974568.9769278,
+    "ast_hash": "fd75b41600783212005924c06fa67ae3",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/handoff_config.h": {
+    "mtime": 1793974314.4202805,
+    "seen": 1793974568.9769287,
+    "ast_hash": "96169e32c5f2fe2ca397d7d00d710994",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/receiver-boot-instruction-traces.json": {
+    "mtime": 1793974314.4453518,
+    "seen": 1793974568.97693,
+    "ast_hash": "45fa3e66be0ae9fb770bc0a23d32676e",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/receiver-boot-overwrite-map.json": {
+    "mtime": 1793974314.6003711,
+    "seen": 1793974568.976931,
+    "ast_hash": "38b297477e82594f3aa7f4a1a2534caf",
+    "semantic_hash": ""
+  },
+  "boot/receiver_handoff_contract.c": {
+    "mtime": 1793973235.7142608,
+    "seen": 1793974569.0444822,
+    "ast_hash": "e0bc298d679b56aeb991635563d7d1c1",
+    "semantic_hash": ""
+  },
+  "tests/test_receiver_boot.py": {
+    "mtime": 1793977219.9429026,
+    "seen": 1793977542.9715295,
+    "ast_hash": "75de377557909d4a3c5acd67e4784bd6",
+    "semantic_hash": ""
+  },
+  "tools/receiver_boot.py": {
+    "mtime": 1793978520.8232644,
+    "seen": 1793979426.977421,
+    "ast_hash": "44dd6166120b3299aa4c4bb5190a8651",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T135356Z/receiver-handoff.disassembly.txt": {
+    "mtime": 1793973240.4726634,
+    "seen": 1793974569.047823,
+    "ast_hash": "ab965d2435b75d612dbc59693534d43f",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T135601Z/receiver-handoff.disassembly.txt": {
+    "mtime": 1793973365.225579,
+    "seen": 1793974569.0478265,
+    "ast_hash": "ea84b2e9a4e4b667b695c6ad42e7795e",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140239Z/receiver-handoff.disassembly.txt": {
+    "mtime": 1793973763.9978688,
+    "seen": 1793974569.0478284,
+    "ast_hash": "ace61c6e1c1f92577dc625be70c4cec6",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140239Z/receiver-sections.txt": {
+    "mtime": 1793973763.956997,
+    "seen": 1793974569.0478294,
+    "ast_hash": "dc51937f107754d2f5eb88048ccc8285",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140239Z/receiver-startup.disassembly.txt": {
+    "mtime": 1793973763.958427,
+    "seen": 1793974569.047831,
+    "ast_hash": "242dfa3e3e9b5b2e18c9d4d75cf03cfa",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140239Z/receiver-symbols.txt": {
+    "mtime": 1793973763.9558842,
+    "seen": 1793974569.0478325,
+    "ast_hash": "c0f1566e5caa25e7107a0c439fd733de",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140239Z/receiver_spi-sections.txt": {
+    "mtime": 1793973763.9693978,
+    "seen": 1793974569.0478337,
+    "ast_hash": "f74d25ee3dad5c7cafaa549dc814b54c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140239Z/receiver_spi-startup.disassembly.txt": {
+    "mtime": 1793973763.970543,
+    "seen": 1793974569.0478349,
+    "ast_hash": "7a316a1c12adc9bf691271709f3e301c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140239Z/receiver_spi-symbols.txt": {
+    "mtime": 1793973763.968265,
+    "seen": 1793974569.047836,
+    "ast_hash": "e60e8082aebb0570aa2b6f1328429c99",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140558Z/receiver-handoff.disassembly.txt": {
+    "mtime": 1793973962.8611047,
+    "seen": 1793974569.047838,
+    "ast_hash": "d430306ec8aec33f864cd7229a4b5adf",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140558Z/receiver-sections.txt": {
+    "mtime": 1793973962.822583,
+    "seen": 1793974569.0478394,
+    "ast_hash": "dc51937f107754d2f5eb88048ccc8285",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140558Z/receiver-startup.disassembly.txt": {
+    "mtime": 1793973962.8238997,
+    "seen": 1793974569.047841,
+    "ast_hash": "242dfa3e3e9b5b2e18c9d4d75cf03cfa",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140558Z/receiver-symbols.txt": {
+    "mtime": 1793973962.8211648,
+    "seen": 1793974569.047842,
+    "ast_hash": "c0f1566e5caa25e7107a0c439fd733de",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140558Z/receiver_spi-sections.txt": {
+    "mtime": 1793973962.8364809,
+    "seen": 1793974569.047843,
+    "ast_hash": "f74d25ee3dad5c7cafaa549dc814b54c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140558Z/receiver_spi-startup.disassembly.txt": {
+    "mtime": 1793973962.837418,
+    "seen": 1793974569.047844,
+    "ast_hash": "7a316a1c12adc9bf691271709f3e301c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140558Z/receiver_spi-symbols.txt": {
+    "mtime": 1793973962.8353825,
+    "seen": 1793974569.0478446,
+    "ast_hash": "e60e8082aebb0570aa2b6f1328429c99",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140630Z/receiver-handoff.disassembly.txt": {
+    "mtime": 1793973994.1407669,
+    "seen": 1793974569.0478463,
+    "ast_hash": "a51296d2ab9391d0032b3efc6044808f",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140630Z/receiver-sections.txt": {
+    "mtime": 1793973994.1019528,
+    "seen": 1793974569.0478477,
+    "ast_hash": "dc51937f107754d2f5eb88048ccc8285",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140630Z/receiver-startup.disassembly.txt": {
+    "mtime": 1793973994.1032698,
+    "seen": 1793974569.0478494,
+    "ast_hash": "242dfa3e3e9b5b2e18c9d4d75cf03cfa",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140630Z/receiver-symbols.txt": {
+    "mtime": 1793973994.1009161,
+    "seen": 1793974569.0478506,
+    "ast_hash": "c0f1566e5caa25e7107a0c439fd733de",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140630Z/receiver_spi-sections.txt": {
+    "mtime": 1793973994.113949,
+    "seen": 1793974569.0478516,
+    "ast_hash": "f74d25ee3dad5c7cafaa549dc814b54c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140630Z/receiver_spi-startup.disassembly.txt": {
+    "mtime": 1793973994.1153934,
+    "seen": 1793974569.0478523,
+    "ast_hash": "7a316a1c12adc9bf691271709f3e301c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T140630Z/receiver_spi-symbols.txt": {
+    "mtime": 1793973994.112986,
+    "seen": 1793974569.0478535,
+    "ast_hash": "e60e8082aebb0570aa2b6f1328429c99",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/APPROVAL.md": {
+    "mtime": 1793974561.070424,
+    "seen": 1793974569.0478547,
+    "ast_hash": "197bdadefac5bb91bb1bbc7a29d7b158",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/receiver-handoff.disassembly.txt": {
+    "mtime": 1793974314.444647,
+    "seen": 1793974569.0478559,
+    "ast_hash": "ed128eb0aa40649963778efe9c50874c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/receiver-sections.txt": {
+    "mtime": 1793974314.4088678,
+    "seen": 1793974569.047857,
+    "ast_hash": "dc51937f107754d2f5eb88048ccc8285",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/receiver-startup.disassembly.txt": {
+    "mtime": 1793974314.4104204,
+    "seen": 1793974569.0478585,
+    "ast_hash": "242dfa3e3e9b5b2e18c9d4d75cf03cfa",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/receiver-symbols.txt": {
+    "mtime": 1793974314.40769,
+    "seen": 1793974569.04786,
+    "ast_hash": "c0f1566e5caa25e7107a0c439fd733de",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/receiver_spi-sections.txt": {
+    "mtime": 1793974314.4185588,
+    "seen": 1793974569.047861,
+    "ast_hash": "f74d25ee3dad5c7cafaa549dc814b54c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/receiver_spi-startup.disassembly.txt": {
+    "mtime": 1793974314.4199464,
+    "seen": 1793974569.0478628,
+    "ast_hash": "7a316a1c12adc9bf691271709f3e301c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T141150Z/receiver_spi-symbols.txt": {
+    "mtime": 1793974314.4175754,
+    "seen": 1793974569.0478637,
+    "ast_hash": "e60e8082aebb0570aa2b6f1328429c99",
+    "semantic_hash": ""
+  },
+  "artifacts/engineering-loop/physical-preflight.json": {
+    "mtime": 1793996798.0087461,
+    "seen": 1793998532.0549216,
+    "ast_hash": "0ccee238c0a29a3a87a4d8177bf233b3",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T142617Z/approved-mission-verification.json": {
+    "mtime": 1793975181.7696867,
+    "seen": 1793977542.9122844,
+    "ast_hash": "77a130eaba90d61b864d21363dfa9926",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T142617Z/operator-authorization.json": {
+    "mtime": 1793975270.6639452,
+    "seen": 1793977542.912286,
+    "ast_hash": "74ab097aa2a78c612a4c5e95c4acd653",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T142820Z/after-operator-monitor.json": {
+    "mtime": 1793975303.899077,
+    "seen": 1793977542.9122875,
+    "ast_hash": "1bf0408c8b8866e244903c23d15093f4",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T142820Z/operator-monitor-observation.json": {
+    "mtime": 1793975414.870673,
+    "seen": 1793977542.9122882,
+    "ast_hash": "7f96101157c703e497b593e318d8ee78",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T144020Z/both-monitor-observations.json": {
+    "mtime": 1793976130.7291362,
+    "seen": 1793977542.9122894,
+    "ast_hash": "1c6e4e58eb897528326131c1232ceca4",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T144020Z/passive-hardware-check.json": {
+    "mtime": 1793976023.0686138,
+    "seen": 1793977542.9122903,
+    "ast_hash": "4f70d4dec57b01ee9164b3273d82a441",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T144311Z/resume-validation.json": {
+    "mtime": 1793976191.080445,
+    "seen": 1793977542.9122913,
+    "ast_hash": "46fda639a54e1d0f3720d7dc61789665",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T145856Z/target-gateway-layout.json": {
+    "mtime": 1793977141.7606826,
+    "seen": 1793977542.912292,
+    "ast_hash": "7fcc856d080468b4a98450b6cdcfe7da",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T145856Z/target-receiver-layout.json": {
+    "mtime": 1793977142.4224646,
+    "seen": 1793977542.912293,
+    "ast_hash": "670c623eacb59a9e6f3919f2d735e9d5",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T145941Z/no-meter-target-readback.json": {
+    "mtime": 1793977222.2298348,
+    "seen": 1793977542.912294,
+    "ast_hash": "a185ef17eea2aab1053be1c5ac46c936",
+    "semantic_hash": ""
+  },
+  "artifacts/engineering-loop/PHYSICAL_PREFLIGHT_CHECKLIST.md": {
+    "mtime": 1793981098.0789027,
+    "seen": 1793991922.1824903,
+    "ast_hash": "9c057e32a2f1d2afa95b996250a3f0f6",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T143013Z/MISSION_RESULT.md": {
+    "mtime": 1793975550.092293,
+    "seen": 1793977542.972784,
+    "ast_hash": "a559abc6e0754e01e4138bb0cc8ffe81",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T144020Z/MISSION_RESULT.md": {
+    "mtime": 1793976130.7301362,
+    "seen": 1793977542.9727852,
+    "ast_hash": "eafe12e88afc3afe0bb97e848e4e672d",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T152319Z/receiver-app-program-command.json": {
+    "mtime": 1793978624.1805534,
+    "seen": 1793979426.8897903,
+    "ast_hash": "58f89e3faf7ef42c66fb4206297553bf",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T152319Z/receiver-boot-program-command.json": {
+    "mtime": 1793978668.3269703,
+    "seen": 1793979426.8897936,
+    "ast_hash": "3832ada1b609d35ed54a7fb6b6caff02",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T152319Z/receiver-boot-receipt.json": {
+    "mtime": 1793978689.2420192,
+    "seen": 1793979426.8897958,
+    "ast_hash": "896b4d82c0baf180780bb1a779a4430f",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T152319Z/receiver-programming-assessment.json": {
+    "mtime": 1793978604.2002344,
+    "seen": 1793979426.8897982,
+    "ast_hash": "070665e82764c0e6c37751829e78296e",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T152528Z/receiver-boot-spi-runtime.json": {
+    "mtime": 1793978740.1911957,
+    "seen": 1793979426.8898005,
+    "ast_hash": "02246b585451a068a39a5fedaaad8d86",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T152703Z/receiver-reset-attach-assessment.json": {
+    "mtime": 1793978835.1478848,
+    "seen": 1793979426.8898027,
+    "ast_hash": "20a9233932017c678feea8ee1e92b6b1",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T150533Z/MISSION_RESULT.md": {
+    "mtime": 1793978173.3831446,
+    "seen": 1793979426.978805,
+    "ast_hash": "47cd340bf45906d7c0a927efca47877a",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T154458Z/command-provenance.json": {
+    "mtime": 1793980699.5561414,
+    "seen": 1793991921.9671304,
+    "ast_hash": "16756ec3c908c2a8ad83ca1e19e29526",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T155949Z/receiver-readonly-reinit-command.json": {
+    "mtime": 1793980789.4114997,
+    "seen": 1793991921.9671397,
+    "ast_hash": "3fef244adb0bcbe70389dcd66cdc6a23",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T160110Z/receiver-detached-test-57600-command.json": {
+    "mtime": 1793980870.6287673,
+    "seen": 1793991921.9671474,
+    "ast_hash": "e0b9ce6375398665748dafd1c1e5aa44",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T160253Z/receiver-control-only-command.json": {
+    "mtime": 1793980973.253766,
+    "seen": 1793991921.967152,
+    "ast_hash": "18e72e8079e12458dc570d534b8ff40b",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/command-provenance.json": {
+    "mtime": 1793991766.7075331,
+    "seen": 1793991921.9671562,
+    "ast_hash": "4e7337e418434f1fadad7e3f31751261",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/gateway-overwrite-recovery.json": {
+    "mtime": 1793991595.4747891,
+    "seen": 1793991921.967161,
+    "ast_hash": "cd286f6093d542cac7ae3305e51db8f1",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/operator-wiring-attestation.json": {
+    "mtime": 1793992655.385549,
+    "seen": 1793993730.889964,
+    "ast_hash": "d54a44b960444d98d447812cd48888e1",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/physical-preflight.before.json": {
+    "mtime": 1793991894.870802,
+    "seen": 1793991921.96717,
+    "ast_hash": "54e7d836eceae5a93a0d6740e80e82b7",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/receiver-bounded-startup.py": {
+    "mtime": 1793991108.8366444,
+    "seen": 1793991921.967175,
+    "ast_hash": "db9bc16f84a6f66448e8bb48498ee05e",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/receiver-control-consecutive.py": {
+    "mtime": 1793991108.8356442,
+    "seen": 1793991921.9671798,
+    "ast_hash": "3fdcd4b26bb0f636ef81cf52ca412ec8",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/receiver-post-startup-readonly.py": {
+    "mtime": 1793991348.2171912,
+    "seen": 1793991921.9671845,
+    "ast_hash": "efa8e373b1d34081061cb2296b411de0",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T154458Z/MISSION_RESULT.md": {
+    "mtime": 1793980058.0414822,
+    "seen": 1793991922.1844962,
+    "ast_hash": "61af2a5d0cc5e18023631463330da91c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T154458Z/receiver-fresh-borf-two-cycles.command-body.txt": {
+    "mtime": 1793980699.5561414,
+    "seen": 1793991922.1845005,
+    "ast_hash": "78769f54c7401b10117f5752b741fd31",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T155314Z/RESET_RCA.md": {
+    "mtime": 1793981031.2611039,
+    "seen": 1793991922.1845038,
+    "ast_hash": "263c3d0bd17cf84150599ca714a34c30",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T155949Z/UPDI_RECOVERY.md": {
+    "mtime": 1793981031.2601037,
+    "seen": 1793991922.1845083,
+    "ast_hash": "76ed329fdcc90b55a0434c705b0b0f7f",
+    "semantic_hash": ""
+  },
+  "artifacts/receiver-pcb-audit/20261106T193122Z/candidate-build-verification.json": {
+    "mtime": 1793994082.3558116,
+    "seen": 1793994103.3512013,
+    "ast_hash": "cc005a00d4bd37f7fa59dedea79a343e",
+    "semantic_hash": ""
+  },
+  "artifacts/receiver-pcb-audit/20261106T193122Z/source-and-preservation-baseline.json": {
+    "mtime": 1793993536.1159682,
+    "seen": 1793993730.883371,
+    "ast_hash": "54386490c03d6e7596340c881e536c84",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/artifact-verification-command.json": {
+    "mtime": 1793992170.965551,
+    "seen": 1793993730.8898563,
+    "ast_hash": "23bca4e0240a91546a96fdcb35752f82",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/artifact-verification.json": {
+    "mtime": 1793992078.6806273,
+    "seen": 1793993730.8898606,
+    "ast_hash": "a6d509b76a6702fafd89851be2d38c11",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/offline-preparation-command.json": {
+    "mtime": 1793992170.964551,
+    "seen": 1793993730.88996,
+    "ast_hash": "b41a24474d84a373296214145c9bbecb",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/physical-preflight.before-switcher.json": {
+    "mtime": 1793992443.0313385,
+    "seen": 1793993730.8899674,
+    "ast_hash": "894404964a7fde2b1710961136e3b261",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/switcher-model-verification.json": {
+    "mtime": 1793992710.0061293,
+    "seen": 1793993730.890172,
+    "ast_hash": "a887695dca367dd84cc1dd39c99aa4a3",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/switcher-topology.json": {
+    "mtime": 1793992655.383549,
+    "seen": 1793993730.8901749,
+    "ast_hash": "b4b396008dae472fa2564104df61cd32",
+    "semantic_hash": ""
+  },
+  "tests/receiver_gpio_test.cpp": {
+    "mtime": 1793993892.24978,
+    "seen": 1793994103.6208453,
+    "ast_hash": "ffabb5940a2e6946e1a40875a7594944",
+    "semantic_hash": ""
+  },
+  "tests/test_receiver_hardware.py": {
+    "mtime": 1793993892.2487798,
+    "seen": 1793994103.6212285,
+    "ast_hash": "37679676058c716d5a903be23e71416b",
+    "semantic_hash": ""
+  },
+  "artifacts/receiver-pcb-audit/20261106T193122Z/independent-review.txt": {
+    "mtime": 1793994082.3588116,
+    "seen": 1793994103.623572,
+    "ast_hash": "d5aa303b3c09cf9940c0d865e582cf15",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/MISSION_RESULT.md": {
+    "mtime": 1793992657.2325683,
+    "seen": 1793993731.3065183,
+    "ast_hash": "c63c83323453fbe023b5969e9fdc9433",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/POWER_CAPACITY.md": {
+    "mtime": 1793992657.2325683,
+    "seen": 1793993731.3065236,
+    "ast_hash": "d6cc5b9648183a5a7d956985518d614b",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T185058Z/SWITCHER_PATH.md": {
+    "mtime": 1793992657.2305682,
+    "seen": 1793993731.3065283,
+    "ast_hash": "52b0fdb3083eabbc5fcf69f6299fad16",
+    "semantic_hash": ""
+  },
+  "artifacts/receiver-pcb-audit/20261106T193122Z/candidate-build-verification.initial.json": {
+    "mtime": 1793994082.3548117,
+    "seen": 1793994103.351193,
+    "ast_hash": "2eda3d3c4adbf3e794460d15d40a7ba5",
+    "semantic_hash": ""
+  },
+  "artifacts/receiver-pcb-audit/20261106T193122Z/verification-command.json": {
+    "mtime": 1793994082.3578117,
+    "seen": 1793994103.3512576,
+    "ast_hash": "2c8d199073a9654011cdc09df1926116",
+    "semantic_hash": ""
+  },
+  "docs/ssot/GATEWAY_SSOT.md": {
+    "mtime": 1793993945.7483525,
+    "seen": 1793994103.679933,
+    "ast_hash": "fb547e2b1f6f3a2920744bf0e5c1d224",
+    "semantic_hash": ""
+  },
+  "docs/ssot/TRACKER_SSOT.md": {
+    "mtime": 1793993945.7493525,
+    "seen": 1793994103.6799383,
+    "ast_hash": "2ff5125557638018fbbacd39bd3464d8",
+    "semantic_hash": ""
+  },
+  "artifacts/receiver-pcb-audit/20261106T193122Z/hardware-design-evidence.json": {
+    "mtime": 1793994192.2949858,
+    "seen": 1793996654.8833077,
+    "ast_hash": "01e182cff249d4619e4fc83523633e58",
+    "semantic_hash": ""
+  },
+  "artifacts/receiver-pcb-audit/20261106T193122Z/physical-preflight.before-board-audit.json": {
+    "mtime": 1793994192.292986,
+    "seen": 1793996654.8833156,
+    "ast_hash": "97edbaf05b603186542f21def5550bae",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/STATUS.json": {
+    "mtime": 1793996801.753786,
+    "seen": 1793998532.0637205,
+    "ast_hash": "73ca56811179dc06b63723a2c533d929",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/generated-consistency.json": {
+    "mtime": 1793995017.3697581,
+    "seen": 1793996654.8973355,
+    "ast_hash": "fee23da86034539949109fa08e116442",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/operator-pass-prog-confirmation.json": {
+    "mtime": 1793995619.4031532,
+    "seen": 1793996654.897347,
+    "ast_hash": "f73e6e54db693568c6d4f52f15134103",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/operator-switcher-confirmation.json": {
+    "mtime": 1793995270.9094477,
+    "seen": 1793996654.8973532,
+    "ast_hash": "aeaceb9999b8ec012d20813806178a79",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/phase-a-verification.json": {
+    "mtime": 1793995427.800112,
+    "seen": 1793996654.8973587,
+    "ast_hash": "738e6731d9df7a21411178897c692320",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/physical-preflight.before-this-mission.json": {
+    "mtime": 1793995267.4214108,
+    "seen": 1793996654.8973637,
+    "ast_hash": "a8d242188bcfec2abd454fe5010d1e20",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/preservation-baseline.json": {
+    "mtime": 1793994969.9722555,
+    "seen": 1793996654.8973691,
+    "ast_hash": "c862f607d40db732a05c527504b725ec",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/prior-builds-preservation.json": {
+    "mtime": 1793995074.4213634,
+    "seen": 1793996654.8973742,
+    "ast_hash": "3b3cc91181b635c4bdabbd5ca2f00154",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/sender-eeprom-fix/firmware-manifest.json": {
+    "mtime": 1793996633.1759856,
+    "seen": 1793996654.8973794,
+    "ast_hash": "93e007b2e5d1fe03175b9ae391173c1c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/sender-eeprom-fix/generated-manifest.before.json": {
+    "mtime": 1793996472.1612654,
+    "seen": 1793996654.8973854,
+    "ast_hash": "eb9e6d0c97336d4721f6519310c9df3c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/ssot-validation.json": {
+    "mtime": 1793995019.131777,
+    "seen": 1793996654.8973908,
+    "ast_hash": "70c01353b0b684569c32ec4c0076603c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195701Z/host-measurements.json": {
+    "mtime": 1793995037.7529745,
+    "seen": 1793996654.8973968,
+    "ast_hash": "0d9c4030c8dfa2f1f733fcb7c5e990a7",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195757Z/firmware-measurements.json": {
+    "mtime": 1793995142.3935719,
+    "seen": 1793996654.8974023,
+    "ast_hash": "3fdf3839df92fdbbe1a51c8b777bb8cd",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195814Z/receiver-boot-audit.json": {
+    "mtime": 1793995102.1656578,
+    "seen": 1793996654.8974082,
+    "ast_hash": "0c4740e0bd5e28b6329f7d88d09fe341",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T202119Z/host-measurements.json": {
+    "mtime": 1793996492.8945658,
+    "seen": 1793996654.8974147,
+    "ast_hash": "348c11f37ccbfe52e2e280b3212f56bd",
+    "semantic_hash": ""
+  },
+  "tests/sender_one_shot_test.cpp": {
+    "mtime": 1793996293.947361,
+    "seen": 1793996655.1513596,
+    "ast_hash": "72809ab885d8a549a95f19b563ef5792",
+    "semantic_hash": ""
+  },
+  "tests/test_sender_one_shot.py": {
+    "mtime": 1793996427.0477834,
+    "seen": 1793996655.151868,
+    "ast_hash": "fcfa1a45db9b7bc1e6009dccaaa89196",
+    "semantic_hash": ""
+  },
+  "artifacts/receiver-pcb-audit/20261106T193122Z/REPORT.md": {
+    "mtime": 1793994193.8610027,
+    "seen": 1793996655.1542814,
+    "ast_hash": "d91c4438435140bd91c926c280db6e00",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/HARDWARE_ROUTING_CHECKLIST.md": {
+    "mtime": 1793996747.6972086,
+    "seen": 1793998532.2700605,
+    "ast_hash": "cb082bd6403f935d50df03ed7eb3ab0c",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/sender-eeprom-fix/test-results.json": {
+    "mtime": 1793996746.1651924,
+    "seen": 1793998532.0643635,
+    "ast_hash": "4ef60764121872fc3bb8a5f42966c432",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T205441Z-software-mvp/test-results.json": {
+    "mtime": 1793998507.9290247,
+    "seen": 1793998532.0647333,
+    "ast_hash": "d373a4d79b3ea131564b2283f9432f7a",
+    "semantic_hash": ""
+  },
+  "tests/mvp_board.cpp": {
+    "mtime": 1793998246.2242253,
+    "seen": 1793998532.265523,
+    "ast_hash": "1a03a51c35be766c65f5075c5323a158",
+    "semantic_hash": ""
+  },
+  "tests/mvp_stub/Arduino.h": {
+    "mtime": 1793998290.7327013,
+    "seen": 1793998532.2655258,
+    "ast_hash": "0d6b3e8b784df7a598701d35d20dc257",
+    "semantic_hash": ""
+  },
+  "tests/mvp_stub/EEPROM.h": {
+    "mtime": 1793998246.221225,
+    "seen": 1793998532.2655277,
+    "ast_hash": "44acb9f413015b8666cc8ee68ea1eb0f",
+    "semantic_hash": ""
+  },
+  "tests/mvp_stub/debug.h": {
+    "mtime": 1793998290.7337012,
+    "seen": 1793998532.2655306,
+    "ast_hash": "4b06e2d4c4583b38a37f286c8e983899",
+    "semantic_hash": ""
+  },
+  "tests/mvp_stub/sleep.h": {
+    "mtime": 1793998246.223225,
+    "seen": 1793998532.2655332,
+    "ast_hash": "ec48669237e1bdcbffe4012c8e09dd47",
+    "semantic_hash": ""
+  },
+  "tests/mvp_stub/time-utils.h": {
+    "mtime": 1793998246.2222252,
+    "seen": 1793998532.265535,
+    "ast_hash": "8ab9e8eb5d270b8961f22ed8348e9398",
+    "semantic_hash": ""
+  },
+  "tests/test_mvp_roundtrip.py": {
+    "mtime": 1793998476.9996939,
+    "seen": 1793998532.2659895,
+    "ast_hash": "9c1b4708877f2e38c36f9ffb63610283",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/sender-eeprom-fix/REPORT.md": {
+    "mtime": 1793996743.2611613,
+    "seen": 1793998532.270064,
+    "ast_hash": "eba8a6f49db971762a6d0098fa8db6d2",
+    "semantic_hash": ""
+  },
+  "artifacts/rf-proof/20261106T195415Z-mission/sender-eeprom-fix/independent-review.txt": {
+    "mtime": 1793996744.631176,
+    "seen": 1793998532.2700667,
+    "ast_hash": "b366f5812a4c97d22e52d4bda605d719",
     "semantic_hash": ""
   }
 }

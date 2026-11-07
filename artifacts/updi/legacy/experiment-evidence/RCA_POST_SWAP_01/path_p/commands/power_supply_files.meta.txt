@@ -1,9 +1,0 @@
-label=power_supply_files
-argv_shell_escaped=find /sys/class/power_supply -maxdepth 2 -type f -print
-start_utc=2026-10-27T03:30:32.260292507Z
-end_utc=2026-10-27T03:30:32.263237827Z
-start_proc_uptime_s=62217.47
-end_proc_uptime_s=62217.47
-exit_code=0
-stdout_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

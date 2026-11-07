@@ -1,2 +1,0 @@
-epoch_id,report_id,received_utc,affected_lane,id_path,action,occurred_utc,associated_run_id,timing_status,source
-RCA_FRESH_01,RCA_FRESH_01-reported-power-P-20261027T052720Z,2026-10-27T05:27:20Z,P,pci-0000:00:14.0-usb-0:1:1.0,Power changed or cycled,,,UNKNOWN_RELATIVE_TO_ATTEMPTS,User confirmed power change then identified P / ttyUSB1

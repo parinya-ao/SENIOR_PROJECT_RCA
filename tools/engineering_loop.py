@@ -36,12 +36,9 @@ STAGES = (
     "VERIFY_ACK", "DIAGNOSE_FAILURE", "SOFTWARE_REPAIR", "RETEST", "PROVEN",
     "BLOCKED_HARDWARE", "FAILED",
 )
-RF_PROFILE = {
-    "frequency_mhz": 923.0, "tx_power_dbm": 10, "spreading_factor": 7,
-    "bandwidth_khz": 125, "coding_rate": 5, "sync_word": 0x12,
-    "preamble_symbols": 8, "crc_enabled": True, "explicit_header": True,
-    "iq_inverted": False, "long_range": 0,
-}
+sys.path.insert(0, str(ROOT / 'tools/config'))
+from validate_lora_ssot import load as load_lora_ssot
+RF_PROFILE = dict(load_lora_ssot(ROOT / 'config/lora_system.json')['radio'], long_range=0)
 
 
 def _now() -> str:
@@ -58,6 +55,10 @@ def _initial_state() -> dict:
         "firmware_hashes": {},
         "physical_target_mapping": {},
         "latest_verified_mcu_signatures": {},
+        "boot_execution_compatibility": {
+            "gateway": "NOT_RUN; new image replaces the existing executable at 0x0000",
+            "receiver": "UNVERIFIED; saved BOOT reset path to APPCODE 0x5800 has not been proven",
+        },
         "backup_recovery": {
             "backup_hashes_verified": False,
             "full_flash_images_present": False,
@@ -227,9 +228,12 @@ def _verify_recorded_state(root: Path) -> tuple[dict, dict, list[str]]:
     return firmware, signatures, errors
 
 
-def _physical_preflight_errors(path: Path) -> list[str]:
+def _physical_preflight_errors(path: Path, *, no_meter=False, operation='write',
+                               roles=('gateway', 'receiver')) -> list[str]:
+    if operation not in ('diagnostic', 'write') or not roles or any(role not in PORTS for role in roles):
+        return ['unknown physical operation or target role']
     if not path.exists():
-        return [f"operator measurements are missing: {path}"]
+        return [f"physical preflight evidence is missing: {path}"]
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -237,22 +241,43 @@ def _physical_preflight_errors(path: Path) -> list[str]:
     if not isinstance(data, dict):
         return ["physical preflight evidence must be a JSON object"]
     errors = []
-    for key in ("operator", "measured_at", "instrument"):
+    for key in (("operator",) if no_meter else ("operator", "measured_at", "instrument")):
         if not isinstance(data.get(key), str) or not data[key].strip():
             errors.append(f"physical preflight must record {key}")
-    if data.get("mapping_verified_by_operator") is not True:
+    # In no-meter mode fresh MCU serial comparison establishes the target mapping.
+    if not no_meter and data.get("mapping_verified_by_operator") is not True:
         errors.append("physical board-role mapping must be confirmed by the operator")
     paths = data.get("usb_paths", {})
     if not isinstance(paths, dict):
         paths = {}
-    if paths.get("gateway") != PORTS["gateway"] or paths.get("receiver") != PORTS["receiver"]:
-        errors.append("operator-confirmed physical USB path mapping does not match current configuration")
-    for role in ("gateway", "receiver"):
+    if any(paths.get(role) != PORTS[role] for role in roles):
+        errors.append("physical USB path mapping does not match current configuration")
+    attestation = data.get('operator_safety_attestation', {})
+    attested = (isinstance(attestation, dict) and
+        attestation.get('origin') == 'OPERATOR_SAFETY_ATTESTATION' and
+        attestation.get('considered_safe_for_normal_operation') is True and
+        all(isinstance(attestation.get(key), str) and attestation[key].strip()
+            for key in ('operator', 'recorded_at', 'source')) and
+        isinstance(attestation.get('roles'), list) and
+        all(isinstance(role, str) and role in PORTS for role in attestation['roles']))
+    for role in roles:
         board = data.get(role, {})
         if not isinstance(board, dict):
             errors.append(f"{role} measurements must be a JSON object")
             continue
-        for key in ("mcu_vcc_v", "radio_vcc_v"):
+        if board.get('electrical_fault_reported') is True or board.get('operator_confirmed_safe') is False:
+            errors.append(f'{role} has a reported unsafe condition; stop powered access')
+        if no_meter:
+            for key in ('powered_reported_by_operator', 'connected_reported_by_operator'):
+                if board.get(key) is not True:
+                    errors.append(f'{role} {key} requires operator confirmation')
+            if operation == 'diagnostic':
+                continue
+            # The owner may assess an unmeasured setup; this never asserts inspected wiring.
+            # Callers still verify live MCU identity and authorized page scope before writing.
+            if attested and role in attestation['roles']:
+                continue
+        for key in (() if no_meter else ("mcu_vcc_v", "radio_vcc_v")):
             value = board.get(key)
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
                 errors.append(f"{role} {key} must be a measured positive voltage")
@@ -260,7 +285,8 @@ def _physical_preflight_errors(path: Path) -> list[str]:
             if not isinstance(board.get(key), str) or not board[key].strip():
                 errors.append(f"{role} {key} must be recorded")
         for key in ("operator_confirmed_safe", "common_ground_verified",
-                    "updi_to_h1_pin5_verified", "cp2102_backfeed_safe"):
+                    "updi_to_h1_pin5_verified", "cp2102_backfeed_safe",
+                    "setup_unchanged_since_verification" if no_meter else "setup_unchanged_since_measurement"):
             if board.get(key) is not True:
                 errors.append(f"{role} {key} requires operator verification")
     return errors
@@ -284,6 +310,8 @@ def _radio_hardware_errors(path: Path) -> list[str]:
     regulatory = data.get("regulatory", {})
     if not isinstance(regulatory, dict):
         regulatory = {}
+    if not isinstance(regulatory.get("equipment_conformity_reference"), str) or not regulatory["equipment_conformity_reference"].strip():
+        errors.append("radio evidence must include an equipment conformity reference")
     limit = regulatory.get("max_eirp_dbm")
     if not isinstance(limit, (int, float)) or isinstance(limit, bool) or not math.isfinite(limit):
         errors.append("radio evidence must include a documented EIRP limit")
@@ -537,6 +565,7 @@ def run_controller(root: Path = ROOT,
                 print(f"DIAGNOSE_FAILURE at PROGRAM_RECEIVER: {state['last_real_error']}")
                 return 1
             state["upload_status"] = {"receiver": "VERIFIED", "sender": "VERIFIED"}
+            state['upload_evidence'] = str(artifact / 'physical-upload.json') if artifact else None
             _complete(state, "PROGRAM_RECEIVER", "PROGRAM_SENDER")
             state["active_action"] = None
             _write_state(state_path, state)
@@ -546,7 +575,8 @@ def run_controller(root: Path = ROOT,
         code, artifact, output = _proof_action(
             state, state_path, root, command_runner, "rf-test",
             ["--single-packet", "--physical-mapping-verified", "--power-verified",
-             "--authorize-rf-test"], timeout=6 * 60 * 60, state_stage="START_RECEIVER")
+             "--authorize-rf-test", '--upload-evidence',
+             str(state.get('upload_evidence') or root / 'MISSING-UPLOAD-EVIDENCE')], timeout=6 * 60 + 60, state_stage="START_RECEIVER")
         measurements = None
         if artifact and (artifact / "rf-measurements.json").exists():
             measurements = json.loads((artifact / "rf-measurements.json").read_text())
@@ -556,7 +586,7 @@ def run_controller(root: Path = ROOT,
             state["status"] = "RF_DATA_ACK_PROVEN"
             state["final_data_ack_result"] = "PASS"
             state["last_real_error"] = None
-            state["campaign_session_id"] = measurements.get("campaign_id")
+            state["campaign_session_id"] = measurements.get("session")
             state["retry_count"] = measurements.get("retry_count", state["retry_count"])
             state["last_test_evidence"]["rf-test"] = {
                 "artifact_dir": str(artifact), "single_packet_passed": True,

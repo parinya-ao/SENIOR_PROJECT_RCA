@@ -1,15 +1,106 @@
 import hashlib
 import json
 import fcntl
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
 
-from tools.engineering_loop import run_controller
+from tools.engineering_loop import run_controller, _physical_preflight_errors
 
 
 GATEWAY_PATH = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0"
 RECEIVER_PATH = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0"
+
+
+class NoMeterPreflightTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.path = Path(temporary.name) / 'physical.json'
+        self.data = dict(operator='bench operator', measured_at=None, instrument=None,
+            usb_paths=dict(gateway=GATEWAY_PATH, receiver=RECEIVER_PATH))
+        for role in ('gateway', 'receiver'):
+            self.data[role] = dict(powered_reported_by_operator=True,
+                connected_reported_by_operator=True, mcu_vcc_v=None, radio_vcc_v=None)
+
+    def errors(self, operation='diagnostic', **kwargs):
+        self.path.write_text(json.dumps(self.data))
+        return _physical_preflight_errors(self.path, no_meter=True,
+                                         operation=operation, **kwargs)
+
+    def test_read_only_access_does_not_require_or_invent_measurements(self):
+        self.assertEqual(self.errors(), [])
+        self.assertEqual(json.loads(self.path.read_text()), self.data)
+        self.assertTrue(_physical_preflight_errors(self.path))
+
+    def test_no_meter_is_not_a_blanket_write_bypass(self):
+        errors = self.errors('write', roles=('receiver',))
+        self.assertTrue(any('power_source' in error for error in errors))
+        self.assertTrue(any('cp2102_backfeed_safe' in error for error in errors))
+        self.assertFalse(any('measured' in error or 'instrument' in error for error in errors))
+
+    def test_no_meter_rejects_disconnected_unpowered_or_faulty_setup(self):
+        for key, value in (('powered_reported_by_operator', False),
+                           ('connected_reported_by_operator', False),
+                           ('operator_confirmed_safe', False),
+                           ('electrical_fault_reported', True)):
+            with self.subTest(key=key):
+                self.data['receiver'][key] = value
+                self.assertTrue(self.errors())
+                self.data['receiver'].pop(key)
+                self.data['receiver'].update(powered_reported_by_operator=True,
+                                             connected_reported_by_operator=True)
+
+    def test_wiring_observations_allow_receiver_write_without_meter(self):
+        self.data['receiver'].update(power_source='regulated board supply',
+            cp2102_vcc_arrangement='VCC disconnected; data and common ground only',
+            operator_confirmed_safe=True, common_ground_verified=True,
+            updi_to_h1_pin5_verified=True, cp2102_backfeed_safe=True,
+            setup_unchanged_since_verification=True)
+        self.assertEqual(self.errors('write', roles=('receiver',)), [])
+        self.assertTrue(self.errors('write'))
+
+    def test_wrong_path_and_unknown_operation_fail_closed(self):
+        self.data['usb_paths']['receiver'] = GATEWAY_PATH
+        self.assertTrue(self.errors())
+        self.assertTrue(self.errors('ignore'))
+
+    def test_explicit_owner_attestation_allows_no_meter_write_assessment(self):
+        self.data['operator_safety_attestation'] = dict(
+            origin='OPERATOR_SAFETY_ATTESTATION', operator='hardware owner',
+            recorded_at='2026-11-06T15:21:13Z', source='operator declaration',
+            roles=['receiver'], considered_safe_for_normal_operation=True)
+        self.assertEqual(self.errors('write', roles=('receiver',)), [])
+        self.assertIsNone(json.loads(self.path.read_text())['receiver']['mcu_vcc_v'])
+        self.assertNotIn('common_ground_verified', json.loads(self.path.read_text())['receiver'])
+        self.assertTrue(self.errors('write', roles=('gateway',)))
+        self.assertTrue(_physical_preflight_errors(self.path))
+
+    def test_attestation_never_clears_faults_or_accepts_missing_provenance(self):
+        attestation = dict(origin='OPERATOR_SAFETY_ATTESTATION', operator='hardware owner',
+            recorded_at='2026-11-06T15:21:13Z', source='operator declaration',
+            roles=['receiver'], considered_safe_for_normal_operation=True)
+        self.data['operator_safety_attestation'] = attestation
+        for key in attestation:
+            with self.subTest(missing=key):
+                self.data['operator_safety_attestation'] = {k:v for k,v in attestation.items() if k != key}
+                self.assertTrue(self.errors('write', roles=('receiver',)))
+        self.data['operator_safety_attestation'] = attestation
+        for key, value in (('roles', [{}]), ('origin', 'UNVERIFIED'),
+                           ('considered_safe_for_normal_operation', False)):
+            with self.subTest(invalid=key):
+                self.data['operator_safety_attestation'] = dict(attestation, **{key:value})
+                self.assertTrue(self.errors('write', roles=('receiver',)))
+        self.data['operator_safety_attestation'] = attestation
+        for key, value in (('electrical_fault_reported', True), ('operator_confirmed_safe', False),
+                           ('powered_reported_by_operator', False)):
+            with self.subTest(fault=key):
+                self.data['receiver'][key] = value
+                self.assertTrue(self.errors('write', roles=('receiver',)))
+                self.data['receiver'].pop(key)
+                self.data['receiver']['powered_reported_by_operator'] = True
 
 
 def put_manifest_entry(root: Path, manifest: list[str], relative: str, data: bytes):
@@ -64,6 +155,10 @@ def make_existing_evidence(root: Path):
 
 
 class EngineeringLoopTests(unittest.TestCase):
+    def setUp(self):
+        # Keep deliberately rejected /tmp fixtures distinct from live hardware output.
+        self.enterContext(contextlib.redirect_stdout(io.StringIO()))
+
     def test_missing_physical_measurements_runs_only_safe_preflight_and_persists_wait(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

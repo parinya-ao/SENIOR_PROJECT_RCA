@@ -35,6 +35,7 @@ struct State {
     bool explicit_header;
     int16_t receive_starts;
     int16_t finish_transmits;
+    int16_t transmit_starts;
     int16_t begin_calls;
     int16_t node_address_calls;
     bool spi1_route_at_begin;
@@ -118,6 +119,7 @@ public:
         return fake_radio::state.start_receive_status;
     }
     int16_t startTransmit(uint8_t* data, uint8_t len) {
+        ++fake_radio::state.transmit_starts;
         fake_radio::state.tx_data = data;
         fake_radio::state.tx_size = len;
         return fake_radio::state.start_transmit_status;

@@ -1,4 +1,5 @@
 #pragma once
+#include "../../../include/generated/lora_sender_board.h"
 
 #define PIN_LED1      PIN_PA5
 #define PIN_LED2      PIN_PA4
@@ -7,10 +8,10 @@
 #define PIN_DEBUG_TX  PIN_PA0
 
 #define PIN_INT       PIN_PD1
-#define PIN_LORA_CS   PIN_PC3
-#define PIN_LORA_RST  PIN_PD0
-#define PIN_LORA_IRQ  PIN_PD2
-#define PIN_LORA_DIO1 PIN_PD3
+#define PIN_LORA_CS   LORA_PIN_CS
+#define PIN_LORA_RST  LORA_PIN_RST
+#define PIN_LORA_IRQ  LORA_PIN_IRQ
+#define PIN_LORA_DIO1 LORA_PIN_DIO1
 
 #define LED1_ON()   digitalWrite(PIN_LED1, LOW)
 #define LED1_OFF()  digitalWrite(PIN_LED1, HIGH)

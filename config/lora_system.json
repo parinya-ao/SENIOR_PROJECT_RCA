@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "experiment": {"mode": "single_packet", "radio_inventory": null, "antenna_inventory": null},
+  "radio": {"frequency_mhz": 923.0, "tx_power_dbm": 10, "spreading_factor": 7, "bandwidth_khz": 125, "coding_rate": 5, "sync_word": 18, "preamble_symbols": 8, "crc_enabled": true, "explicit_header": true, "iq_inverted": false},
+  "protocol": {"version": 2, "encoding": "existing_radio_header", "sender_address": 0, "receiver_address": 1, "data_type": 8, "ack_type": 3, "nack_type": 9, "sequence_bits": 8, "sequence": 1, "payload": "hello world"},
+  "sender_board": {"mcu": "AVR128DA28", "bootsize": 0, "codesize": 0, "bodcfg": 0, "image_start": 0, "image_end_exclusive": 130048, "spi_route": "SPI1_SWAP_DEFAULT", "pins": {"mosi": "PC0", "miso": "PC1", "sck": "PC2", "cs": "PC3", "rst": "PD0", "irq": "PD2", "dio1": "PD3"}},
+  "receiver_board": {"mcu": "AVR128DA28", "bootsize": 44, "codesize": 0, "bodcfg": 84, "image_start": 22528, "image_end_exclusive": 130048, "spi_route": "SPI1_SWAP_DEFAULT", "radio_power_active_level": 0, "pins": {"mosi": "PC0", "miso": "PC1", "sck": "PC2", "cs": "PD0", "rst": "PD1", "irq": "PD3", "dio1": "PD2", "enable": "PA7", "sd_cs": "PC3", "led1": "PA6", "led2": "PA5", "gps_enable": "PD5", "sd_enable": "PD6", "sd_detect": "PA4"}},
+  "timeouts": {"ack_ms": 3000, "tx_ms": 3000},
+  "retries": {"max_retries": 3}
+}

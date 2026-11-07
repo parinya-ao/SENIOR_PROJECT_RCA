@@ -1,124 +1,190 @@
-# Gateway-to-Receiver LoRa Hello World
+# Gateway-to-Receiver SF7 Hello World
 
-## Current result
+## Current result — Receiver installed, normal startup unresolved
 
-The shared Hello World profile is now an explicit SF7 candidate: 923.0 MHz,
-10 dBm, BW125 kHz, CR4/5, sync word `0x12`, preamble 8, CRC on, explicit
-header, and normal IQ. `HELLO_RF_PROFILE_VERIFIED` and its startup rejection
-were removed. This changes the firmware configuration; it does **not** prove
-that the installed modules, antennas, power rails, or regulatory profile are
-suitable for transmission.
+The owner's `OPERATOR_SAFETY_ATTESTATION` was accepted as the no-meter
+programming assessment without inventing electrical measurements. The exact
+approved Receiver installation **physically passed** in
+[152319Z](artifacts/rf-proof/20261106T152319Z/receiver-boot-receipt.json):
+RF-disabled APPCODE first, independent readback, BOOT page 0 last, and full
+preservation checks. No fuse, EEPROM or lock write or chip erase occurred.
+The Gateway has not been programmed.
 
-No UPDI target read, diagnostic upload, physical SPI response, radio
-initialization, LoRa DATA/ACK, or RF campaign has run. The candidate is not
-cleared for RF because the board supply and fitted radio/antenna remain
-unverified.
+The Receiver has not produced the new Build ID. Two confirmation cycles used
+valid `RSTFR=0x20` baselines and observed fresh `0x02` BORF after release;
+the separate zero-baseline `0x10` test is DxCore's intentional software reset.
+See [the actual execution report](artifacts/rf-proof/20261106T154458Z/MISSION_RESULT.md).
+One bounded read-only UPDI recovery at 57600 baud succeeded and freshly
+confirmed BODCFG `0x54`. The final control snapshot shows RESET_REQ `0x00`,
+SYS_STATUS `0xA2` and OCD_STATUS `0x00`. Normal startup and the physical cause
+remain unresolved; SPI and RF success are not claimed. See
+[the recovery/RCA evidence](artifacts/rf-proof/20261106T155949Z/UPDI_RECOVERY.md).
 
-## Shared profile and protocol
+The affected Python suite passed **130 tests** after the attestation changes
+([log](artifacts/rf-proof/20261106T153656Z/python-regression.stderr.log)).
+Unchanged firmware/C++ tests were not repeated. Earlier status sections below
+are retained as history and are superseded by this update where they differ.
 
-The single source of candidate values is the common `[env]` build profile in
-[platformio.ini](platformio.ini); PlatformIO's effective configuration shows
-the same values for `sender_hello`, `receiver`, and both diagnostic images.
-[hello_config.h](src/shared/hello_config.h) requires those values and checks
-SF7/profile constraints at compile time. The shared SX1276 wrapper explicitly
-applies bandwidth, coding rate, sync word, preamble, CRC, explicit header, and
-IQ settings; it selects SPI1 before RadioLib initialization. A successful
-radio init is required before the Sender starts its bounded campaign or the
-Receiver enters RX.
+## No-meter read-only hardware verified; Receiver write wiring unconfirmed
 
-The regular `sender` remains I2C-configurable through `CONFIG_LORA` and
-`START_LORA`. The standalone `sender_hello` uses the shared candidate and
-starts its one-shot campaign after successful radio initialization. DATA
-contains the four-byte radio header, type `0x08`, sequence, and the exact
-11-byte `hello world` payload. The Receiver validates the payload and sends a
-matching ACK. It now logs `PAYLOAD_MATCH` after every successful byte-for-byte
-decode, plus the actual sequence-1 ASCII/HEX bytes on both Sender and Receiver.
-The proof parser requires those sequence-1 bytes and a receiver payload-match
-event for all 20 sequences. The runner sends `C` only after the correlated
-sequence-1 DATA/ACK and byte evidence.
+The proof runner now supports `--no-meter-mode`. It removes external instrument
+and measured-voltage prerequisites for powered read-only target diagnostics.
+Writes retain power-source/adapter/ground/UPDI observations, exact authorization,
+fresh MCU serial checks, bounded page operations and preservation comparisons.
+RF module and antenna suitability checks remain independent. Unknown voltages
+remain null; this mode does not assert `power_verified`.
 
-`sender_hello_spi` and `receiver_spi` are separate diagnostic builds. They
-read/log the radio version but skip RadioLib init and packet TX. Their firmware
-logs `RF_TX_DISABLED_DIAGNOSTIC`; they are the only images used by the
-`radio-spi-smoke` stage.
+Actual live identification passed on both boards in
+[20261106T145856Z](artifacts/rf-proof/20261106T145856Z/target-identification.log).
+[Complete live memory reads](artifacts/rf-proof/20261106T145941Z/no-meter-target-readback.json)
+confirmed both unique serials, fuses and lock state; both complete Flash images
+equal their original backups byte for byte. The new boot handoff is not installed.
+The Python suite now passes 128 tests, including no-meter rejection cases;
+[logs](artifacts/rf-proof/20261106T150533Z/python-regression.stderr.log).
+These changes do not alter firmware, generated configuration or existing builds.
 
-## Software verification
+A compiled 48-byte handoff and exact one-page BOOT overwrite/recovery package
+are ready in [the specific approval report](artifacts/rf-proof/20261106T141150Z/APPROVAL.md).
+It programs RF-disabled APPCODE pages 44–103 first, verifies them, then modifies
+only BOOT page 0. Fourteen focused boot/package/programming tests and the 43
+affected proof-runner tests pass. Installed AVRDUDE 8.1 dryrun verifies both
+staged programming and restoration against complete Flash images. The guarded
+writer now explicitly page-erases its bounded images instead of assuming -D
+does so automatically. The existing application binaries and SSOT are unchanged.
 
-- Full Python suite: `uv run python -m unittest discover -s tests -q` — **78
-  passed** ([captured output](artifacts/rf-proof/20261106T095802Z/python-unittest.log)).
-- Host proof: [20261106T095802Z](artifacts/rf-proof/20261106T095802Z) — 155
-  protocol, 77 wrapper, 10 role-log, and 40 proof-runner checks (**282 total**).
-- Clean builds: [20261106T095821Z](artifacts/rf-proof/20261106T095821Z) —
-  `sender`, `sender_hello`, `receiver`, `sender_hello_spi`, and `receiver_spi`
-  built successfully; all HEX images fit APPCODE. RAM/Flash usage and HEX/ELF
-  SHA-256 values are in `firmware-measurements.json`.
-- Effective PlatformIO config confirms `sender_hello` test mode and distinct
-  RF-disabled diagnostic environments. Shared profile validation, upload
-  preservation, and stable port mapping checks pass.
+The operator explicitly approved the exact Receiver-only application-first,
+BOOT-page-0-last package and reviewed recovery procedure. Gateway programming
+is excluded. The [approval record](artifacts/rf-proof/20261106T142617Z/operator-authorization.json)
+preserves that scope; the approval package itself remains unchanged.
 
-## Live USB inventory
+The operator reports both boards powered and connected. The
+[physical-preflight record](artifacts/engineering-loop/physical-preflight.json)
+now cites fresh live UPDI identity and full-memory reads as well as prior evidence.
+The operator explicitly reports actual supply source, CP2102 VCC/backfeed,
+physical ground/header inspection and unchanged safe wiring unconfirmed.
+The [no-meter installer attempt](artifacts/rf-proof/20261106T150102Z/receiver-boot-install.log)
+therefore stopped before any write. The remaining
+[visual inspection checklist](artifacts/engineering-loop/PHYSICAL_PREFLIGHT_CHECKLIST.md)
+requires no meter. No repeat Receiver approval is needed.
 
-The latest passive scan is in
-[the 095821Z proof run](artifacts/rf-proof/20261106T095821Z/usb-role-scan.stdout.log):
+[Fresh non-destructive verification](artifacts/rf-proof/20261106T142617Z/approved-mission-verification.json)
+checked all 13 backup hashes, the unchanged approved package, generated
+configuration, effective Flash boundaries and all five existing image hashes.
+No application rebuild or unrelated host-suite rerun was needed. The user-reported
+`F1 START SEQUENCE` and `RED 1 ON` markers occur in the original Receiver backup
+at 0x03A0 and 0x03BE; they support old-program runtime, not the new handoff.
+Those earlier static checks opened no serial port. The later live readbacks
+opened UPDI but performed no Flash write. Physical
+boot repair, SPI and DATA/ACK remain unexecuted. On-target recovery has not been
+demonstrated; simulator verification is not physical proof.
 
-- by-path `usb-0:4:1.0` resolves to `/dev/ttyUSB1`.
-- by-path `usb-0:1:1.0` resolves to `/dev/ttyUSB0`.
-- Both are CP2102 adapters with duplicate serial `0001`; neither adapter
-  serial nor tty numbering independently proves board role.
-- The user reports USB1 as Sender and USB0 as Receiver. The passive firmware
-  role detector still reports both as `UNKNOWN`.
-- `fuser` found no process holding either port.
-- The user supplied an `upditerm` snippet with two
-  `HEY HELLO WORLD FROM AVR128DA28` lines, but its port path is truncated and
-  the string is absent from current source and all five current firmware ELFs.
-  Treat it as user-reported VUART output from an unassociated image; it does
-  not establish SIB/MCU identity or Sender/Receiver role.
+## Verified software result
 
-The latest target-identification attempt is recorded in
-[092627Z](artifacts/rf-proof/20261106T092627Z): it blocked before opening
-serial because physical mapping and power/UPDI wiring were not verified. No
-SIB or fuse-read command was issued.
+The diagnostic configuration is maintained in [config/lora_system.json](config/lora_system.json).
+Both boards consume generated pin definitions, SPI1 routing, radio/protocol constants,
+retry limits and timeouts. Generated PlatformIO configuration owns the target-specific
+Flash starts and expected fuses. Fuse expectations are compared with live reads;
+they are never written by this workflow.
 
-Separate historical investigation [RCA_FRESH_01](artifacts/updi/fresh/STAR_RCA.md),
-last updated 2026-10-27, records 80 read-only SIB attempts and zero target
-responses across two adapter paths. Local byte echoes succeeded, but no MCU
-identity or fuse values were obtained. The investigation found supply values,
-physical pinout, common ground, and target power state unverified; its mapping
-and failures are historical and do not establish today's board roles or state.
+Production Gateway I2C configuration remains a separate mode. Diagnostic SF is
+restricted to 7. Candidate settings are 923 MHz, 10 dBm, BW125, CR4/5, sync 0x12,
+preamble 8, CRC enabled, explicit header, normal IQ. Physical radio and antenna
+inventory remains unknown.
 
-## Hardware stages
+| Check | Actual result | Evidence |
+|---|---|---|
+| Python suite | 128 tests PASS after no-meter integration | [regression log](artifacts/rf-proof/20261106T150533Z/python-regression.stderr.log) |
+| C++ protocol | 130 checks PASS | Same host evidence directory |
+| C++ radio wrapper | 77 checks PASS | Same host evidence directory |
+| Role logging | 10 checks PASS | Same host evidence directory |
+| RF-disabled send protection | PASS; send denied even after successful stub initialization | diagnostic-protection-tests log |
+| Five clean builds | PASS; all starts, ends and reset targets validated | [firmware measurements](artifacts/rf-proof/20261106T132834Z/firmware-measurements.json) |
+| Generated artifacts | Validator and generator --check PASS | [manifest](generated/lora_manifest.json) |
+| Saved Receiver boot | NO_APPLICATION_HANDOFF | [reachable boot audit](artifacts/rf-proof/20261106T132129Z/receiver-boot-audit.json) |
+| Physical SPI/upload/DATA/ACK | NOT RUN; guarded stage blocked before serial open | [SPI stage log](artifacts/rf-proof/20261106T133004Z/radio-spi-smoke.log) |
 
-| Stage | Result |
-|---|---|
-| Host tests and five clean builds | PASS |
-| USB topology and occupancy | PASS; roles remain UNKNOWN to the detector |
-| Physical board mapping and electrical preflight | NOT VERIFIED |
-| Current target identification | BLOCKED before serial open; historical SIB attempts were 0/80 |
-| BOOT layout | NOT RUN |
-| Physical RegVersion read over SPI1 | NOT RUN |
-| Diagnostic upload and radio smoke | NOT RUN |
-| RF-enabled upload | NOT RUN |
-| Real DATA/ACK and 20-message campaign | NOT RUN |
+The host tests deliberately contain synthetic logs and radio stubs. They are not
+physical evidence. A pure parsed log is classified as structural validation;
+physical success is emitted only by the live runner after its readback and
+capture path completes.
 
-The user reports USB1 as Sender and USB0 as Receiver; record this as operator
-mapping, not independent board-identity evidence. Before opening UPDI, provide
-measured MCU VCC and radio VCC for both boards, common-ground and UPDI-to-H1
-pin 5 confirmation, and the CP2102 VCC/backfeed arrangement. No pin mapping is
-needed. Before RF, also inspect the module's full marking, selected SB1/SB2
-antenna path, antenna band/model/gain and feed loss, and applicable NBTC
-conformity/EIRP evidence. BOM calls the module RFM95W, but does not prove the
-fitted module variant or its compatibility with 923 MHz. See
-[HARDWARE_PREFLIGHT_REPORT.md](HARDWARE_PREFLIGHT_REPORT.md).
+## Single-packet behavior and identities
 
-After physical electrical checks, the next command is:
+The Receiver first reports WAIT_SESSION. The runner sends R followed by four
+uppercase hexadecimal session digits. After SESSION_READY and RX_READY, it
+opens the Gateway monitor, verifies identity and WAIT_START, then sends S with
+the same four digits. Session IDs are reserved in the evidence hierarchy and
+are not reused while those records are retained.
 
-```bash
-uv run python tools/rf_proof.py --stage target-identification \
-  --physical-mapping-verified --power-verified
-```
+The Gateway allows only sequence 1, retries within the SSOT limit, and enters a
+terminal state after a matching ACK. It then stops its service loop and sleeps,
+without falling through to the production report/ACK handler. Duplicate S and C cannot restart it.
+The generic multi-message state machine remains available outside standalone
+single-packet mode. The physical acceptance check is deliberately stricter:
+it requires one clean DATA/ACK attempt and rejects duplicate success events.
 
-Then run the RF-disabled SPI stage with `--authorize-upload`. Actual
-RF-enabled upload requires both `--authorize-upload` and
-`--authorize-rf-test` because `sender_hello` begins its campaign at boot; the
-campaign must not be uploaded or run until the module, antenna, and regulatory
-conditions are verified.
+Diagnostic protocol version 2 adds NACK type 0x09 to the existing four-byte
+radio header and two-byte response framing. A NACK is returned only for an
+addressed sequence-1 DATA frame with the armed session and invalid payload.
+CRC/read failures, truncated headers and unrelated sessions are ignored.
+A correlated NACK triggers only a bounded retry of sequence 1. Successful
+acceptance still requires ACK type 0x03, matching addresses/session/sequence,
+and the exact 11 bytes 68 65 6C 6C 6F 20 77 6F 72 6C 64.
+
+Each environment has a deterministic runtime Build ID derived from source,
+configuration, role and mode. Final ELF/HEX SHA-256 values stay on the host;
+they are not embedded as self-references. Upload receipts require fresh
+signature, hardware serial-number and Flash readback checks against the
+current HEX and embedded Build ID. The RF stage requires that receipt and
+performs another fresh readback before opening monitors. Its event journal
+checks both configuration fingerprints, protocol versions, radio startup,
+session, readiness, command order, payload and DATA/ACK completion. No C is sent.
+
+These checks correlate an engineering test session; they are not cryptographic
+authentication against someone able to alter local evidence or spoof the radio.
+
+## Receiver boot incompatibility
+
+The saved Receiver image SHA-256 is
+a142fba14979cbc184d97c62cbfc8da75da01759b4cf6838f5b63aae36d4c943.
+Its reset vector at 0x0000 branches to 0x00A4. Conservative traversal reaches
+334 instructions, finds no unresolved indirect transfer, and finds no transfer
+to APPCODE at 0x5800. Branch-like bytes elsewhere in the backup do not establish
+a boot handoff.
+
+The new Receiver ELF has vectors at 0x5800 and reset target 0x58A6. Its .init3
+startup writes zero to CPUINT.CTRLA at 0x58D0, before constructors. This selects
+the APPCODE vectors, consistent with
+[Microchip's interrupt placement guidance](https://onlinedocs.microchip.com/oxy/GUID-CBA6F7C8-69DB-44BF-ACE3-6949CC30E98A-en-US-5/GUID-3B992030-F430-4DC1-95B4-24561BAF9A01.html).
+A valid new reset vector does not make the saved boot image launch it.
+
+Programming is blocked until a reviewed, target-specific boot handoff and
+recovery path exists. No fuse modification, boot replacement, chip erase or
+forced program-counter workaround was performed. The upload configuration
+retains -D and rejects erase/fuse-write options.
+
+## Remaining physical prerequisites
+
+The existing physical-preflight measurement record is absent. Actual power,
+ground, UPDI wiring and CP2102 backfeed conditions therefore remain
+unestablished. Radio/antenna path and RF suitability evidence is also absent.
+The guarded SPI command was run without asserting unsupported flags and
+stopped before opening serial ports.
+
+The supported validation commands are:
+
+- uv run python tools/config/validate_lora_ssot.py config/lora_system.json
+- uv run python tools/config/generate_lora_config.py
+- uv run python tools/config/generate_lora_config.py --check
+- uv run python tools/rf_proof.py --stage host-tests
+- uv run python tools/rf_proof.py --stage builds
+- uv run python tools/rf_proof.py --stage boot-analysis
+
+After the physical and boot prerequisites are independently resolved, use the
+existing guarded radio-spi-smoke stage before RF-enabled upload. The RF stage
+uses --stage rf-test --single-packet and requires --upload-evidence pointing
+to the physical-upload.json produced by a verified upload. Verification and
+authorization options must reflect actual evidence.
+
+Physical acceptance remains NOT RUN: no DATA reception or matching ACK was
+observed. No RF packet, continuation command or 20-packet campaign was run.

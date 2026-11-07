@@ -1,1 +1,0 @@
-{"mode": "read", "backend": "oracle24", "baud": 38400, "address": 4352, "exit": 1, "first_anomaly": "oracle init_datalink: RuntimeError: missing response: expected 1 bytes received "}

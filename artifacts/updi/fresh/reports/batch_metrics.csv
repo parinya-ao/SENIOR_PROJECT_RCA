@@ -1,5 +1,0 @@
-epoch_id,lane,batch,mode,attempts,successes,failures,success_rate,failure_rate,wilson_low,wilson_high,median_latency_ms,p95_latency_ms,failure_stages
-RCA_FRESH_01,P,baseline-1,sib,30,0,30,0.0,1.0,0.0,0.113517091390478,1384.323851,1397.089236,"{""SIB_RESPONSE_EMPTY"": 30}"
-RCA_FRESH_01,P,smoke,sib,10,0,10,0.0,1.0,0.0,0.2775401687666165,1368.048992,1396.407592,"{""SIB_RESPONSE_EMPTY"": 10}"
-RCA_FRESH_01,Q,baseline-1,sib,30,0,30,0.0,1.0,0.0,0.113517091390478,1373.7472309999998,1421.678006,"{""SIB_RESPONSE_EMPTY"": 30}"
-RCA_FRESH_01,Q,smoke,sib,10,0,10,0.0,1.0,0.0,0.2775401687666165,1385.5316305000001,1414.215461,"{""SIB_RESPONSE_EMPTY"": 10}"

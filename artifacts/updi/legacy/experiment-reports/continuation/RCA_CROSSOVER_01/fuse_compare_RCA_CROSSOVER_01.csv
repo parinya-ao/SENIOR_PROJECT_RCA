@@ -1,3 +1,0 @@
-field,side_a,side_b,value_a,value_b,comparison_status,source_run_a,source_run_b,notes
-All current fuse bytes,UNKNOWN_TARGET_LANE_A,UNKNOWN_TARGET_LANE_B,NOT_READ,NOT_READ,NOT_COMPARABLE,baseline-20261026T171644Z-1a031f37,baseline-20261026T171633Z-88c741a8,"No current fuse reads; target identity, firmware, and programming state are unknown. Historical BODCFG=0x54 is not mapped to these lanes."
-Historical BODCFG,UNKNOWN_TARGET,UNKNOWN_TARGET,0x54 (historical),NOT_READ,NOT_COMPARABLE,docs/updi-root-cause-report.md,,Preserved historical observation; cannot assign to either current adapter path.

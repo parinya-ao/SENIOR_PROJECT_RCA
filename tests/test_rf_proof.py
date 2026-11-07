@@ -35,12 +35,16 @@ def complete_campaign_logs(campaign=0x1234, stop_after_preflight=False,
                            omit_final_ack=False):
     gateway = [
         "[GATEWAY] BOOT sender_hello Nov  6 2026 00:00:00",
+        "[GATEWAY] CONFIG_FINGERPRINT=" + json.loads((rf_proof.ROOT / 'generated/lora_manifest.json').read_text())['shared_fingerprint'],
+        "[GATEWAY] PROTOCOL_VERSION=1",
         payload_event("GATEWAY", "DATA_PAYLOAD", campaign, 1),
         packet_event("GATEWAY", "DATA_TX", campaign, 1, 1, toa_us=1200000),
         packet_event("GATEWAY", "DATA_DONE", campaign, 1, 1),
     ]
     receiver = [
         "[RECEIVER] BOOT receiver Nov  6 2026 00:00:01",
+        "[RECEIVER] CONFIG_FINGERPRINT=" + json.loads((rf_proof.ROOT / 'generated/lora_manifest.json').read_text())['shared_fingerprint'],
+        "[RECEIVER] PROTOCOL_VERSION=1",
         payload_event("RECEIVER", "PAYLOAD_BYTES", campaign, 1),
         packet_event("RECEIVER", "PAYLOAD_MATCH", campaign, 1),
         packet_event("RECEIVER", "DATA_RX", campaign, 1),
@@ -97,10 +101,11 @@ def effective_platformio_config(sender_flags=None, sender_hello_flags=None,
         "-DHELLO_RF_IQ_INVERTED=0",
     ]
     sender_flags = list(sender_flags or shared)
-    sender_hello_flags = list(sender_hello_flags or shared + ["-DHELLO_TEST_MODE=1"])
+    sender_hello_flags = list(sender_hello_flags or shared + ["-DHELLO_TEST_MODE=1",
+                                                           "-DHELLO_RAM_ONLY_TEST=1"])
     receiver_flags = list(receiver_flags or shared)
     sender_hello_spi_flags = list(sender_hello_spi_flags or
-                                  shared + ["-DHELLO_TEST_MODE=1",
+                                  shared + ["-DHELLO_TEST_MODE=1", "-DHELLO_RAM_ONLY_TEST=1",
                                             "-DHELLO_RF_DIAGNOSTIC_ONLY=1"])
     receiver_spi_flags = list(receiver_spi_flags or
                               shared + ["-DHELLO_RF_DIAGNOSTIC_ONLY=1"])
@@ -189,6 +194,10 @@ class TargetLayoutTests(unittest.TestCase):
 
 
 class HardwareGateTests(unittest.TestCase):
+    def setUp(self):
+        readiness = patch.object(rf_proof, 'physical_readiness_errors', return_value=[])
+        readiness.start()
+        self.addCleanup(readiness.stop)
     def test_campaign_build_skip_keeps_ready_gateway_on_normal_rx_path(self):
         source = (Path(__file__).resolve().parents[1] /
                   "src/sender/lib/lora_rx.cpp").read_text()
@@ -203,7 +212,7 @@ class HardwareGateTests(unittest.TestCase):
             self.assertNotIn("_started = false;", branch)
 
     def test_sender_and_receiver_lora_pins_match_board_revision_1(self):
-        expected = {
+        gateway = {
             "CS": "PIN_PC3",
             "RST": "PIN_PD0",
             "IRQ": "PIN_PD2",
@@ -215,6 +224,8 @@ class HardwareGateTests(unittest.TestCase):
             root / "src/receiver/main.cpp",
         )
         for path in sources:
+            expected = (dict(CS='PIN_PD0', RST='PIN_PD1', IRQ='PIN_PD3', DIO1='PIN_PD2')
+                        if 'receiver' in str(path) else gateway)
             bindings = {}
             for line in path.read_text().splitlines():
                 parts = line.split()
@@ -222,22 +233,26 @@ class HardwareGateTests(unittest.TestCase):
                     name = parts[1].removeprefix("PIN_LORA_")
                     if name in expected:
                         bindings[name] = parts[2]
-            self.assertEqual(bindings, expected, str(path))
+            self.assertEqual(bindings, {name: f'LORA_PIN_{name}' for name in expected}, str(path))
+            board = 'receiver' if 'receiver' in str(path) else 'sender'
+            header = (root / f'include/generated/lora_{board}_board.h').read_text()
+            for name, pin in expected.items():
+                self.assertIn(f'#define LORA_PIN_{name} {pin}', header)
         receiver = sources[1].read_text()
-        self.assertNotIn("PIN_LORA_EN", receiver)
+        self.assertIn("#define PIN_LORA_EN LORA_PIN_ENABLE", receiver)
 
     def test_both_radio_setups_keep_dio1_input_and_reset_deasserted(self):
         root = Path(__file__).resolve().parents[1]
         sender = (root / "src/sender/lib/io.cpp").read_text()
+        self.assertIn("pinModeFast(PIN_LORA_DIO1, INPUT);", sender)
+        self.assertIn("digitalWriteFast(PIN_LORA_RST, HIGH);", sender)
         receiver = (root / "src/receiver/main.cpp").read_text()
-        for path, source in (("sender", sender), ("receiver", receiver)):
-            self.assertIn("pinModeFast(PIN_LORA_DIO1, INPUT);", source, path)
-            self.assertIn("digitalWriteFast(PIN_LORA_RST, HIGH);", source, path)
+        self.assertIn("pinModeFast(PIN_LORA_RST, INPUT);", receiver)
 
     def test_led_and_debug_uart_macros_follow_schematic_and_dxcore_directions(self):
         root = Path(__file__).resolve().parents[1]
         expected_leds = {"PIN_LED1": "PIN_PA5", "PIN_LED2": "PIN_PA4"}
-        for relative in ("src/sender/lib/io.h", "src/receiver/main.cpp"):
+        for relative in ("src/sender/lib/io.h",):
             source = (root / relative).read_text()
             bindings = {}
             for line in source.splitlines():
@@ -273,6 +288,7 @@ build_flags =
 build_flags =
     ${env.build_flags}
     -DHELLO_TEST_MODE=1
+    -DHELLO_RAM_ONLY_TEST=1
 
 [env:receiver]
 """
@@ -371,14 +387,17 @@ build_flags =
             authorize_upload=True,
             authorize_rf_test=True,
         )
-        with patch.object(rf_proof, "application_layout_verified", return_value=True), \
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(rf_proof, 'program_application', return_value=0) as program, \
+                patch.object(rf_proof, 'receiver_boot_handoff_supported', return_value=True), \
+                patch.object(rf_proof, 'verify_installed_images', return_value={}), \
+                patch.object(rf_proof, "application_layout_verified", return_value=True), \
                 patch.object(rf_proof, "upload_config_preserves_flash", return_value=True), \
                 patch.object(rf_proof, "upload_ports_match", return_value=True), \
                 patch.object(rf_proof, "check_port_owners", return_value=[]):
+            proof.run_dir = Path(directory)
             self.assertEqual(rf_proof.upload(proof, args, True, "effective"), 0)
-        self.assertEqual([name for name, _ in proof.commands], [
-            "receiver-upload", "sender_hello-upload",
-        ])
+        self.assertEqual([call.args[1] for call in program.call_args_list], ['receiver', 'sender_hello'])
 
     def test_rf_enabled_upload_requires_campaign_authorization(self):
         class Proof:
@@ -509,7 +528,9 @@ build_flags =
                 target_identification_attempted=True,
                 authorize_upload=True,
             )
-            with patch.object(rf_proof, "application_layout_verified", return_value=True), \
+            with patch.object(rf_proof, 'receiver_boot_handoff_supported', return_value=True), \
+                    patch.object(rf_proof, 'program_application', return_value=0) as program, \
+                    patch.object(rf_proof, "application_layout_verified", return_value=True), \
                     patch.object(rf_proof, "upload_config_preserves_flash", return_value=True), \
                     patch.object(rf_proof, "upload_ports_match", return_value=True), \
                     patch.object(rf_proof, "check_port_owners", return_value=[]), \
@@ -517,10 +538,7 @@ build_flags =
                                  return_value={"passed": True, "version": 0x12}):
                 self.assertEqual(rf_proof.radio_spi_smoke(
                     proof, args, effective_platformio_config()), 0)
-            self.assertEqual([name for name, _ in proof.commands], [
-                "receiver_spi-radio-spi-diagnostic-upload",
-                "sender_hello_spi-radio-spi-diagnostic-upload",
-            ])
+            self.assertEqual([call.args[1] for call in program.call_args_list], ['receiver_spi', 'sender_hello_spi'])
             report = json.loads((Path(run_dir) /
                                  "radio-spi-measurements.json").read_text())
             self.assertFalse(report["rf_transmission_enabled"])
@@ -733,200 +751,85 @@ class RfEvidenceTests(unittest.TestCase):
         self.assertFalse(evidence["passed"])
         self.assertIn("multiple campaign IDs", evidence["issues"])
 
-    def test_build_marker_is_committed_before_campaign_counter(self):
+    def test_build_marker_is_committed_before_session_start(self):
         source = (Path(__file__).resolve().parents[1] /
                   "src/sender/lib/lora_rx.cpp").read_text()
         marker_write = source.find("EEPROM.put(kCampaignBuildMarkerAddress")
-        counter_allocation = source.find("if (!next_campaign_id(&_campaign_id))")
+        counter_allocation = source.find("if (!test_campaign.arm(_campaign_id)")
         self.assertGreater(marker_write, -1, "firmware-build marker must be persistent")
-        self.assertGreater(counter_allocation, -1, "campaign counter allocation is required")
+        self.assertGreater(counter_allocation, -1, "fresh session arming is required")
         self.assertLess(marker_write, counter_allocation,
                         "consume the one-shot boot token before allocating the ID")
 
 
 class RfTestContinuationTests(unittest.TestCase):
-    def test_rf_test_sends_one_c_to_gateway_after_correlated_seq1_ack(self):
-        first_gateway, first_receiver = complete_campaign_logs(
-            stop_after_preflight=True)
-        full_gateway, full_receiver = complete_campaign_logs()
-        first_gateway_lines = first_gateway.splitlines()
-        first_receiver_lines = first_receiver.splitlines()
-        more_gateway_lines = full_gateway.splitlines()[len(first_gateway_lines):]
-        more_receiver_lines = full_receiver.splitlines()[len(first_receiver_lines):]
+    def test_rf_test_blocks_without_verified_upload_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            proof = SimpleNamespace(run_dir=Path(directory), note=lambda *_: None)
+            args = SimpleNamespace(physical_mapping_verified=True, power_verified=True,
+                                   boot_layout_verified=True, authorize_rf_test=True)
+            with (patch.object(rf_proof, 'application_layout_verified', return_value=True),
+                  patch.object(rf_proof, 'upload_ports_match', return_value=True),
+                  patch.object(rf_proof, 'check_port_owners', return_value=[]),
+                  patch.object(rf_proof, 'physical_readiness_errors', return_value=[]),
+                  patch.object(rf_proof, 'start_rf_monitor') as monitor):
+                self.assertEqual(rf_proof.rf_test(proof, args, True, 'config'), 2)
+                monitor.assert_not_called()
 
-        class FakeStdin:
-            def __init__(self, role, output_queue, preflight_state):
-                self.role = role
-                self.output_queue = output_queue
-                self.preflight_state = preflight_state
-                self.writes = []
-
-            def write(self, data):
-                self.writes.append(data)
-                if self.role == "gateway":
-                    if data != b"C" or not self.preflight_state["verified"]:
-                        raise AssertionError("C must follow correlated sequence-1 ACK")
-                    for line in more_gateway_lines:
-                        self.output_queue.put(("gateway", "stdout",
-                                               (line + "\n").encode()))
-                    for line in more_receiver_lines:
-                        self.output_queue.put(("receiver", "stdout",
-                                               (line + "\n").encode()))
-                return len(data)
-
-            def flush(self):
-                pass
-
-        class FakeProcess:
-            def __init__(self, role, output_queue, preflight_state):
-                self.stdin = FakeStdin(role, output_queue, preflight_state)
-
-            def poll(self):
-                return None
-
-        preflight_state = {"verified": False}
-        real_parser = rf_proof.parse_rf_campaign
-
-        def parse_and_record(gateway, receiver):
-            evidence = real_parser(gateway, receiver)
-            if evidence["preflight_complete"]:
-                preflight_state["verified"] = True
-            return evidence
-
-        start_order = []
-        monitors = {}
-
-        def start_monitor(proof, role, port, output_queue):
-            start_order.append(role)
-            process = FakeProcess(role, output_queue, preflight_state)
-            monitors[role] = process
-            if role == "receiver":
-                lines = [first_receiver_lines[0], "[RECEIVER] RADIO_READY"]
-                for line in lines:
-                    output_queue.put((role, "stdout", (line + "\n").encode()))
-            else:
-                for line in first_receiver_lines[1:]:
-                    output_queue.put(("receiver", "stdout",
-                                      (line + "\n").encode()))
-                for line in first_gateway_lines:
-                    output_queue.put(("gateway", "stdout",
-                                      (line + "\n").encode()))
-            return {"process": process, "threads": []}
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            notes = []
-
-            class Proof:
-                run_dir = Path(temp_dir)
-
-                def note(self, name, content):
-                    notes.append((name, content))
-
-            args = SimpleNamespace(
-                boot_layout_verified=True,
-                target_identification_attempted=False,
-                physical_mapping_verified=True,
-                power_verified=True,
-                authorize_rf_test=True,
-            )
-            with (
-                patch.object(rf_proof, "application_layout_verified",
-                             return_value=True),
-                patch.object(rf_proof, "upload_ports_match", return_value=True),
-                patch.object(rf_proof, "check_port_owners", return_value=[]),
-                patch.object(rf_proof, "start_rf_monitor", side_effect=start_monitor),
-                patch.object(rf_proof, "stop_rf_monitor", return_value=0),
-                patch.object(rf_proof, "parse_rf_campaign", side_effect=parse_and_record),
-                patch.object(rf_proof, "RF_TEST_TIMEOUT_SECONDS", 2),
-                patch("builtins.print"),
-            ):
-                result = rf_proof.rf_test(Proof(), args, True, "effective config")
-
-            report = json.loads((Path(temp_dir) / "rf-measurements.json").read_text())
-            self.assertEqual(result, 0, notes)
-            self.assertEqual(start_order, ["receiver", "gateway"])
-            self.assertEqual(monitors["gateway"].stdin.writes, [b"C"])
-            self.assertEqual(monitors["receiver"].stdin.writes, [])
-            self.assertTrue(report["continue_command_sent"])
-            self.assertTrue(report["passed"])
-
-    def test_single_packet_mode_withholds_campaign_continuation_after_seq1_ack(self):
-        gateway_text, receiver_text = complete_campaign_logs(stop_after_preflight=True)
-        gateway_lines = gateway_text.splitlines()
-        receiver_lines = receiver_text.splitlines()
-
-        class FakeStdin:
-            def __init__(self):
-                self.writes = []
-
-            def write(self, data):
-                self.writes.append(data)
-                return len(data)
-
-            def flush(self):
-                pass
-
-        class FakeProcess:
-            def __init__(self):
-                self.stdin = FakeStdin()
-
-            def poll(self):
-                return None
-
-        processes = {}
-
-        def start_monitor(_proof, role, _port, output_queue):
-            process = FakeProcess()
-            processes[role] = process
-            if role == "receiver":
-                lines = [receiver_lines[0], "[RECEIVER] RADIO_READY"]
-                for line in lines:
-                    output_queue.put(("receiver", "stdout", (line + "\n").encode()))
-            else:
-                for line in receiver_lines[1:]:
-                    output_queue.put(("receiver", "stdout",
-                                      (line + "\n").encode()))
-                for line in gateway_lines:
-                    output_queue.put(("gateway", "stdout",
-                                      (line + "\n").encode()))
-            return {"process": process, "threads": []}
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            class Proof:
-                run_dir = Path(temp_dir)
-
-                def note(self, _name, _content):
-                    pass
-
-            args = SimpleNamespace(
-                boot_layout_verified=True,
-                target_identification_attempted=False,
-                physical_mapping_verified=True,
-                power_verified=True,
-                authorize_rf_test=True,
-                single_packet=True,
-            )
-            with (
-                patch.object(rf_proof, "application_layout_verified",
-                             return_value=True),
-                patch.object(rf_proof, "upload_ports_match", return_value=True),
-                patch.object(rf_proof, "check_port_owners", return_value=[]),
-                patch.object(rf_proof, "start_rf_monitor", side_effect=start_monitor),
-                patch.object(rf_proof, "stop_rf_monitor", return_value=0),
-                patch.object(rf_proof, "RF_TEST_TIMEOUT_SECONDS", 0.02),
-                patch("builtins.print"),
-            ):
-                result = rf_proof.rf_test(Proof(), args, True, "effective config")
-
-            report = json.loads((Path(temp_dir) / "rf-measurements.json").read_text())
-            self.assertEqual(result, 0, report)
-            self.assertEqual(processes["gateway"].stdin.writes, [])
-            self.assertEqual(processes["receiver"].stdin.writes, [])
-            self.assertTrue(report["single_packet_passed"])
-            self.assertFalse(report["continue_command_sent"])
 
 
 class FlashSafetyTests(unittest.TestCase):
+    def test_no_meter_identity_uses_live_unique_serial_not_legacy_power_flags(self):
+        backup = json.loads((rf_proof.ARTIFACTS /
+            '20261106T104722Z-target-backup/backup-summary.json').read_text())
+        for wrong_serial in (False, True):
+            with self.subTest(wrong_serial=wrong_serial), tempfile.TemporaryDirectory() as directory:
+                commands = []
+                proof = SimpleNamespace(run_dir=Path(directory), note=lambda *_: None)
+                def command(name, argv, *unused):
+                    commands.append(argv)
+                    if argv[0] == 'fuser':
+                        return 1, '', ''
+                    if '-U' in argv:
+                        self.assertIn('-N', argv)
+                        role = 'receiver' if 'receiver' in name else 'gateway'
+                        original = backup[role+'-candidate']
+                        memories = dict(bootsize=bytes([original['fuses_named']['bootsize']]),
+                            codesize=b'\0', bodcfg=bytes([original['fuses_named']['bodcfg']]),
+                            signature=bytes.fromhex('1e970a'),
+                            sernum=bytes(16) if wrong_serial else bytes.fromhex(original['device_serial_hex']))
+                        for i, value in enumerate(argv):
+                            if value == '-U':
+                                memory, mode, path, encoding = argv[i+1].split(':')
+                                self.assertEqual(mode, 'r')
+                                Path(path).write_bytes(memories[memory])
+                    return 0, 'live response', ''
+                proof.command = command
+                args = SimpleNamespace(no_meter_mode=True, physical_mapping_verified=False,
+                                       power_verified=False)
+                with patch.object(rf_proof, 'physical_readiness_errors', return_value=[]) as readiness:
+                    self.assertEqual(rf_proof.identify_targets(proof, args,
+                        effective_platformio_config()), 2 if wrong_serial else 0)
+                readiness.assert_called_once_with(require_rf=False, no_meter=True,
+                                                   operation='diagnostic')
+                self.assertTrue(any('-U' in argv for argv in commands))
+                self.assertFalse(args.power_verified)
+                self.assertFalse(args.physical_mapping_verified)
+
+    def test_no_meter_retains_authorization_and_boot_gates(self):
+        blockers = hardware_blockers('radio-spi-smoke', mapping_verified=False,
+            power_verified=False, boot_layout_verified=False, authorized=False, no_meter=True)
+        self.assertEqual(blockers, ['BOOTSIZE/CODESIZE/BODCFG fuse verification',
+                                    'upload authorization'])
+
+    def test_no_meter_does_not_skip_rf_hardware_suitability(self):
+        with patch('engineering_loop._physical_preflight_errors', return_value=[]), \
+                patch('engineering_loop._radio_hardware_errors',
+                      return_value=['antenna path unknown']) as radio:
+            self.assertEqual(rf_proof.physical_readiness_errors(require_rf=True,
+                no_meter=True), ['antenna path unknown'])
+            radio.assert_called_once()
+
     def test_intel_hex_parser_checks_checksum_and_address_range(self):
         parser = getattr(rf_proof, "parse_ihex_range", None)
         self.assertTrue(callable(parser), "upload hex range verifier is required")

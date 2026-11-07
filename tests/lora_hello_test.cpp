@@ -16,6 +16,23 @@ static unsigned checks = 0;
 } while (0)
 
 int main() {
+    ControlInput control('S');
+    uint16_t session = 0;
+    CHECK(!control.feed('C', 0, &session));
+    CHECK(!control.feed('S', 1, &session));
+    CHECK(!control.feed('1', 2, &session));
+    CHECK(!control.feed('2', 3, &session));
+    CHECK(!control.feed('3', 4, &session));
+    CHECK(control.feed('4', 5, &session) && session == 0x1234);
+    CHECK(!control.feed('S', 6, &session));
+    CHECK(!control.feed('C', 7, &session));
+    ControlInput disconnected('S');
+    CHECK(!disconnected.feed('S', 0, &session));
+    CHECK(!disconnected.feed('1', 2000, &session));
+    CHECK(!disconnected.feed('2', 2001, &session));
+    CHECK(!disconnected.feed('3', 2002, &session));
+    CHECK(!disconnected.feed('4', 2003, &session));
+
     const uint32_t build_id = campaign_build_id("sender_hello build-a");
     CHECK(build_id != 0 && build_id != UINT32_MAX);
     CHECK(build_id == campaign_build_id("sender_hello build-a"));
@@ -52,6 +69,16 @@ int main() {
     CHECK(!decode_frame(bytes, length, &frame));
     bytes[16] ^= 1;
     CHECK(!encode_data_frame(1, 0, 0x1234, 1, bytes, 16, &length));
+    CHECK(encode_data_frame(1, 0, 0x1234, 1, bytes, sizeof(bytes), &length));
+    CHECK(reply_for_data(1, 0, 0x34, 0x12, bytes + 4, length - 4, 0x1234, &frame) == kAckType);
+    CHECK(reply_for_data(1, 0, 0x34, 0x12, bytes + 4, length - 5, 0x1234, &frame) == kNackType);
+    bytes[16] ^= 1;
+    CHECK(reply_for_data(1, 0, 0x34, 0x12, bytes + 4, length - 4, 0x1234, &frame) == kNackType);
+    CHECK(reply_for_data(1, 0, 0x34, 0x12, bytes + 4, 1, 0x1234, &frame) == 0);
+    CHECK(reply_for_data(1, 0, 0x34, 0x12, bytes + 4, length - 4, 0x1235, &frame) == 0);
+    CHECK(reply_for_data(0, 1, 0x34, 0x12, bytes + 4, length - 4, 0x1234, &frame) == 0);
+    bytes[5] = 2;
+    CHECK(reply_for_data(1, 0, 0x34, 0x12, bytes + 4, length - 4, 0x1234, &frame) == 0);
 
     CHECK(encode_ack_frame(0, 1, 0x1234, 1, bytes, sizeof(bytes), &length));
     CHECK(length == sizeof(expected_ack));
@@ -74,8 +101,8 @@ int main() {
     CHECK(!duplicates.observe(0, 0x1235, 1));
     CHECK(!duplicates.observe(1, 0x1235, 1));
 
-    Campaign campaign(0, 1);
-    CHECK(campaign.normal_reception_enabled());
+    Campaign campaign(0, 1, true);
+    CHECK(!campaign.normal_reception_enabled());
     CHECK(campaign.arm(0x1234));
     CHECK(campaign.state() == State::TEST_ARMED);
     CHECK(!campaign.normal_reception_enabled());
@@ -98,11 +125,10 @@ int main() {
     CHECK(!campaign.acknowledge(ack));
     ack.sequence = 1;
     CHECK(campaign.acknowledge(ack));
-    CHECK(campaign.sequence() == 2 && campaign.attempts() == 0);
-    CHECK(campaign.state() == State::TEST_ARMED);
-    CHECK(!campaign.normal_reception_enabled());
-    CHECK(campaign.start());  // Continue only after the first DATA/ACK succeeds.
-    CHECK(campaign.state() == State::TEST_RUNNING);
+    CHECK(campaign.sequence() == 1);
+    CHECK(campaign.state() == State::TEST_COMPLETED);
+    CHECK(!campaign.start());
+    CHECK(!campaign.mark_sent());
     CHECK(!campaign.acknowledge(ack));
 
     Campaign retries(0, 1);
@@ -117,24 +143,33 @@ int main() {
     CHECK(!retries.mark_sent());
     CHECK(!retries.arm(0x2002));
 
-    Campaign complete(0, 1);
+    Campaign complete(0, 1, true);
     CHECK(complete.arm(0x4321) && complete.start());
     CHECK(complete.mark_sent());
     Frame first_ack{0, 1, 0x4321, kAckType, 1};
     CHECK(complete.acknowledge(first_ack));
-    CHECK(complete.state() == State::TEST_ARMED && complete.sequence() == 2);
-    CHECK(complete.start());
-    for (uint8_t sequence = 2; sequence <= kCampaignMessages; ++sequence) {
-        CHECK(complete.mark_sent());
-        Frame current_ack{0, 1, 0x4321, kAckType, sequence};
-        CHECK(complete.acknowledge(current_ack));
-        CHECK(complete.sequence() == (sequence < kCampaignMessages
-                                           ? static_cast<uint8_t>(sequence + 1)
-                                           : sequence));
-    }
+    CHECK(complete.sequence() == 1);
+    CHECK(!complete.start());
     CHECK(complete.state() == State::TEST_COMPLETED);
-    CHECK(complete.normal_reception_enabled());
+    CHECK(!complete.normal_reception_enabled());
     CHECK(!complete.arm(0x4322));
+    Campaign legacy(0, 1);
+    CHECK(legacy.arm(1) && legacy.start() && legacy.mark_sent());
+    CHECK(legacy.acknowledge(Frame{0, 1, 1, kAckType, 1}));
+    CHECK(legacy.sequence() == 2 && legacy.start());
+
+    Campaign rejected(0, 1);
+    CHECK(rejected.arm(0x4567) && rejected.start() && rejected.mark_sent());
+    Frame nack{0, 1, 0x4567, kNackType, 1};
+    CHECK(!rejected.acknowledge(nack));
+    CHECK(rejected.reject(nack));
+    CHECK(rejected.sequence() == 1 && rejected.mark_sent());
+    nack.campaign_id++;
+    CHECK(!rejected.reject(nack));
+    CHECK(encode_nack_payload(1, bytes, sizeof(bytes), &length));
+    CHECK(length == kAckPayloadSize && bytes[0] == kNackType);
+    CHECK(decode_payload(0, 1, 0x67, 0x45, bytes, length, &frame));
+    CHECK(frame.type == kNackType && frame.campaign_id == 0x4567);
 
     std::printf("PASS %u checks\n", checks);
     return EXIT_SUCCESS;
