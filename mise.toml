@@ -6,8 +6,8 @@ python = "latest"
 [tasks.hello]
 run = "echo hello"
 
-[tasks."monitor0"]
+[tasks."monitor_reciver"]
 run = "uv run third_party/upditerm/upditerm.py /dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0 38400"
 
-[tasks."monitor1"]
+[tasks."monitor_sender"]
 run = "uv run third_party/upditerm/upditerm.py /dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0 38400"

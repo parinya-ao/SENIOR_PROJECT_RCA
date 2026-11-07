@@ -72,6 +72,19 @@ class ReceiverBootTests(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 boot.require_preserved(before, changed, 0, 512)
 
+    def test_no_meter_still_blocks_write_without_wiring_observations(self):
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory) / 'map.json'
+            package.write_text('{}')
+            args = SimpleNamespace(receiver_boot_package=package, authorize_upload=True,
+                authorize_receiver_boot_page0=boot.sha(package.read_bytes()),
+                no_meter_mode=True, physical_mapping_verified=False, power_verified=False)
+            proof = SimpleNamespace(note=lambda *_: None)
+            with patch.object(boot, 'load_package', return_value={}), \
+                    patch.object(boot, 'read_snapshot') as snapshot:
+                self.assertEqual(boot.install(proof, args), 2)
+                snapshot.assert_not_called()
+
 
 class CompiledHandoffTests(unittest.TestCase):
     @classmethod
@@ -168,18 +181,6 @@ class BootPackageTests(unittest.TestCase):
         self.assertEqual([command[command.index('-T')+1] for command in commands],
                          ['erase flash 0x5800 0x7800', 'erase flash 0x0 0x200'])
         self.assertTrue(all('-e' not in command for command in commands))
-
-    def test_no_meter_still_blocks_write_without_wiring_observations(self):
-        import rf_proof as rf
-        args = SimpleNamespace(receiver_boot_package=self.package, authorize_upload=True,
-            authorize_receiver_boot_page0=boot.sha(self.package.read_bytes()),
-            no_meter_mode=True, physical_mapping_verified=False, power_verified=False)
-        proof = SimpleNamespace(note=lambda *_: None)
-        with patch.object(rf, 'physical_readiness_errors', return_value=['receiver cp2102_backfeed_safe']) as readiness, \
-                patch.object(boot, 'read_snapshot') as snapshot:
-            self.assertEqual(boot.install(proof, args), 2)
-            readiness.assert_called_once_with(require_rf=False, no_meter=True, roles=('receiver',))
-            snapshot.assert_not_called()
 
     def test_restore_can_recover_partly_erased_page_without_rewriting_app(self):
         import rf_proof as rf

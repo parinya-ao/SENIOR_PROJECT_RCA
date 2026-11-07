@@ -779,7 +779,7 @@ class RfTestContinuationTests(unittest.TestCase):
 
 
 class FlashSafetyTests(unittest.TestCase):
-    def test_no_meter_identity_uses_live_unique_serial_not_legacy_power_flags(self):
+    def test_no_meter_identity_uses_live_unique_serial_without_checklist(self):
         backup = json.loads((rf_proof.ARTIFACTS /
             '20261106T104722Z-target-backup/backup-summary.json').read_text())
         for wrong_serial in (False, True):
@@ -805,16 +805,12 @@ class FlashSafetyTests(unittest.TestCase):
                                 Path(path).write_bytes(memories[memory])
                     return 0, 'live response', ''
                 proof.command = command
-                args = SimpleNamespace(no_meter_mode=True, physical_mapping_verified=False,
-                                       power_verified=False)
-                with patch.object(rf_proof, 'physical_readiness_errors', return_value=[]) as readiness:
-                    self.assertEqual(rf_proof.identify_targets(proof, args,
-                        effective_platformio_config()), 2 if wrong_serial else 0)
-                readiness.assert_called_once_with(require_rf=False, no_meter=True,
-                                                   operation='diagnostic')
+                args = SimpleNamespace(no_meter_mode=True, physical_mapping_verified=True,
+                                       power_verified=True)
+                self.assertEqual(rf_proof.identify_targets(proof, args,
+                    effective_platformio_config()), 2 if wrong_serial else 0)
                 self.assertTrue(any('-U' in argv for argv in commands))
-                self.assertFalse(args.power_verified)
-                self.assertFalse(args.physical_mapping_verified)
+                self.assertTrue(args.no_meter_mode)
 
     def test_no_meter_retains_authorization_and_boot_gates(self):
         blockers = hardware_blockers('radio-spi-smoke', mapping_verified=False,
@@ -823,12 +819,24 @@ class FlashSafetyTests(unittest.TestCase):
                                     'upload authorization'])
 
     def test_no_meter_does_not_skip_rf_hardware_suitability(self):
-        with patch('engineering_loop._physical_preflight_errors', return_value=[]), \
-                patch('engineering_loop._radio_hardware_errors',
-                      return_value=['antenna path unknown']) as radio:
-            self.assertEqual(rf_proof.physical_readiness_errors(require_rf=True,
-                no_meter=True), ['antenna path unknown'])
-            radio.assert_called_once()
+        args = SimpleNamespace(no_meter_mode=True, physical_mapping_verified=True,
+                               power_verified=True, rf_hardware_verified=False)
+        self.assertEqual(rf_proof.physical_readiness_errors(args), [])
+        self.assertEqual(rf_proof.physical_readiness_errors(args, require_rf=True),
+                         ['radio/module/antenna compatibility and safe RF power'])
+        args.rf_hardware_verified = True
+        self.assertEqual(rf_proof.physical_readiness_errors(args, require_rf=True), [])
+
+    def test_no_meter_does_not_bypass_mapping_or_electrical_safety(self):
+        for key in ('physical_mapping_verified', 'power_verified'):
+            with self.subTest(key=key):
+                args = SimpleNamespace(no_meter_mode=True, physical_mapping_verified=True,
+                                       power_verified=True)
+                setattr(args, key, False)
+                proof = SimpleNamespace(note=lambda *_: None,
+                    command=lambda *_: self.fail('unsafe target must not be accessed'))
+                self.assertTrue(rf_proof.physical_readiness_errors(args))
+                self.assertEqual(rf_proof.identify_targets(proof, args), 2)
 
     def test_intel_hex_parser_checks_checksum_and_address_range(self):
         parser = getattr(rf_proof, "parse_ihex_range", None)

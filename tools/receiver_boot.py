@@ -221,22 +221,11 @@ def install(proof, args, restore=False):
     expected_token = report['restore_hex_sha256'] if restore else sha(Path(args.receiver_boot_package).read_bytes())
     if token != expected_token:
         raise ValueError('authorization hash does not match exact reviewed page image')
-    no_meter = getattr(args, 'no_meter_mode', False)
-    if not no_meter and (not args.physical_mapping_verified or not args.power_verified):
-        proof.note('receiver-boot-install.log', 'BLOCKED: physical mapping/power/UPDI prerequisites are not established; no serial port opened.\n')
-        return 2
     import rf_proof
-    errors = rf_proof.physical_readiness_errors(require_rf=False, no_meter=no_meter,
-                                               roles=('receiver',))
+    errors = rf_proof.physical_readiness_errors(args)
     if errors or rf_proof.check_port_owners(proof, 'boot-preflight'):
         proof.note('receiver-boot-install.log', 'BLOCKED: '+ '; '.join(errors or ['UPDI port ownership']) + '; no serial port opened.\n')
         return 2
-    if no_meter:
-        evidence = json.loads((ROOT/'artifacts/engineering-loop/physical-preflight.json').read_text())
-        proof.note('receiver-programming-assessment.json', json.dumps(dict(
-            no_meter_mode=True, voltage_measured=False,
-            operator_safety_attestation=evidence.get('operator_safety_attestation'),
-            wiring_independently_inspected=False), indent=2)+'\n')
     directory = Path(args.receiver_boot_package).parent
     before = read_snapshot(proof, 'boot-before')
     original = BACKUP.read_bytes()

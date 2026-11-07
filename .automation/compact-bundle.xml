@@ -4741,15 +4741,12 @@ BOOT-page-0-last package and reviewed recovery procedure. Gateway programming
 is excluded. The [approval record](artifacts/rf-proof/20261106T142617Z/operator-authorization.json)
 preserves that scope; the approval package itself remains unchanged.
 
-The operator reports both boards powered and connected. The
-[physical-preflight record](artifacts/engineering-loop/physical-preflight.json)
-now cites fresh live UPDI identity and full-memory reads as well as prior evidence.
+The operator reported both boards powered and connected; live UPDI identity and
+full-memory reads are recorded in the technical evidence linked above.
 The operator explicitly reports actual supply source, CP2102 VCC/backfeed,
 physical ground/header inspection and unchanged safe wiring unconfirmed.
 The [no-meter installer attempt](artifacts/rf-proof/20261106T150102Z/receiver-boot-install.log)
-therefore stopped before any write. The remaining
-[visual inspection checklist](artifacts/engineering-loop/PHYSICAL_PREFLIGHT_CHECKLIST.md)
-requires no meter. No repeat Receiver approval is needed.
+therefore stopped before any write. No repeat Receiver approval is needed.
 
 [Fresh non-destructive verification](artifacts/rf-proof/20261106T142617Z/approved-mission-verification.json)
 checked all 13 backup hashes, the unchanged approved package, generated
@@ -4897,7 +4894,6 @@ read-only access without measured-voltage/instrument fields. Actual voltages
 remain unknown. Flash writes still require documented supply and adapter wiring,
 exact target authorization and guarded memory checks; RF suitability remains
 separate. The operator explicitly reports those connection observations unknown.
-See the [minimal visual checklist](artifacts/engineering-loop/PHYSICAL_PREFLIGHT_CHECKLIST.md).
 No hardware write, physical SPI test or RF transmission has occurred.
 
 ## Design evidence

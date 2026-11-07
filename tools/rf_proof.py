@@ -361,8 +361,7 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace,
                    "; no serial ports opened.\n")
         return 2
 
-    evidence_errors = physical_readiness_errors(require_rf=False, no_meter=no_meter,
-                                                operation='diagnostic')
+    evidence_errors = physical_readiness_errors(args)
     if evidence_errors:
         proof.note('target-identification.log', 'BLOCKED: ' + '; '.join(evidence_errors) + '; no serial ports opened.\n')
         return 2
@@ -1055,13 +1054,7 @@ def read_only_preflight(proof: ProofRun, args: argparse.Namespace,
     unavailable = check_port_owners(proof, "preflight")
     missing.extend(f"{role} UPDI port occupied or owner check failed"
                    for role in unavailable)
-    no_meter = getattr(args, 'no_meter_mode', False)
-    if not no_meter and not args.physical_mapping_verified:
-        missing.append("physical board mapping")
-    if not no_meter and not args.power_verified:
-        missing.append("power conditions")
-    if no_meter:
-        missing.extend(physical_readiness_errors(no_meter=True, operation='diagnostic'))
+    missing.extend(physical_readiness_errors(args))
     if not profile_ok:
         missing.append("valid shared SF7 profile configuration")
     if not application_layout_verified(("sender_hello", "receiver"), effective_config):
@@ -1077,21 +1070,21 @@ def read_only_preflight(proof: ProofRun, args: argparse.Namespace,
     return 0 if not missing else 2
 
 
-def physical_readiness_errors(require_rf=False, *, no_meter=False, operation='write',
-                              roles=('gateway', 'receiver')):
-    from engineering_loop import _physical_preflight_errors, _radio_hardware_errors, PHYSICAL_PREFLIGHT, RF_HARDWARE_EVIDENCE
-    errors = _physical_preflight_errors(ROOT / PHYSICAL_PREFLIGHT, no_meter=no_meter,
-                                        operation=operation, roles=roles)
-    if require_rf:
-        errors += _radio_hardware_errors(ROOT / RF_HARDWARE_EVIDENCE)
+def physical_readiness_errors(args, require_rf=False):
+    errors = []
+    if getattr(args, 'physical_mapping_verified', False) is not True:
+        errors.append('physical board mapping')
+    if getattr(args, 'power_verified', False) is not True:
+        errors.append('safe power, common ground, UPDI wiring and CP2102 backfeed conditions')
+    if require_rf and getattr(args, 'rf_hardware_verified', False) is not True:
+        errors.append('radio/module/antenna compatibility and safe RF power')
     return errors
 
 
 def receiver_boot_handoff_supported(proof, args=None):
     receipt = getattr(args, 'receiver_boot_evidence', None)
     if receipt is not None:
-        if not getattr(args, 'boot_layout_verified', False) or physical_readiness_errors(
-                no_meter=getattr(args, 'no_meter_mode', False), operation='diagnostic', roles=('receiver',)):
+        if not getattr(args, 'boot_layout_verified', False) or physical_readiness_errors(args):
             return False
         try:
             from receiver_boot import verify_live_receipt
@@ -1191,7 +1184,7 @@ def upload(proof: ProofRun, args: argparse.Namespace, profile_ok: bool,
         proof.note("upload.log",
                    "BLOCKED: RF-test authorization is missing for RF-enabled images; no upload attempted.\n")
         return 2
-    evidence_errors = physical_readiness_errors(require_rf=True, no_meter=getattr(args, 'no_meter_mode', False))
+    evidence_errors = physical_readiness_errors(args, require_rf=True)
     if evidence_errors:
         proof.note('upload.log', 'BLOCKED: ' + '; '.join(evidence_errors) + '; no upload attempted.\n')
         return 2
@@ -1392,7 +1385,7 @@ def radio_spi_smoke(proof: ProofRun, args: argparse.Namespace,
                    "BLOCKED: " + ", ".join(blockers) +
                    "; no diagnostic upload attempted.\n")
         return 2
-    evidence_errors = physical_readiness_errors(require_rf=False, no_meter=getattr(args, 'no_meter_mode', False))
+    evidence_errors = physical_readiness_errors(args)
     if evidence_errors:
         proof.note('radio-spi-smoke.log', 'BLOCKED: ' + '; '.join(evidence_errors) + '; no upload attempted.\n')
         return 2
@@ -1643,7 +1636,7 @@ def rf_test(proof: ProofRun, args: argparse.Namespace, profile_ok: bool,
         return 2
     if check_port_owners(proof, "rf-preflight"):
         return 2
-    evidence_errors = physical_readiness_errors(require_rf=True, no_meter=getattr(args, 'no_meter_mode', False))
+    evidence_errors = physical_readiness_errors(args, require_rf=True)
     if evidence_errors:
         proof.note('rf-test.log', 'BLOCKED: ' + '; '.join(evidence_errors) + '; no RF test attempted.\n')
         return 2
@@ -1767,11 +1760,15 @@ def main() -> int:
     parser.add_argument("--stage", choices=("all", "config", "host-tests", "builds",
                         "target-identification", "radio-spi-smoke", "preflight",
                         "upload", "rf-test", "boot-analysis", "receiver-boot-prepare",
-                        'receiver-boot-install', 'receiver-boot-restore'), default="all")
-    parser.add_argument("--physical-mapping-verified", action="store_true")
-    parser.add_argument("--power-verified", action="store_true")
+                        'receiver-boot-install', 'receiver-boot-restore'), required=True)
+    parser.add_argument("--physical-mapping-verified", action="store_true",
+                        help='confirm current board-to-USB role mapping')
+    parser.add_argument("--power-verified", action="store_true",
+                        help='confirm safe supply, common ground, UPDI wiring and no CP2102 backfeed; does not assert measurements')
+    parser.add_argument('--rf-hardware-verified', action='store_true',
+                        help='confirm connected compatible antennas/modules and permitted RF power including antenna gain')
     parser.add_argument('--no-meter-mode', action='store_true',
-                        help='omit instrument/rail measurements; programming accepts documented wiring or owner safety attestation with live identity, exact authorization and readback; RF checks remain required')
+                        help='no instrument measurements; mapping, electrical safety and RF suitability confirmations remain required')
     parser.add_argument("--authorize-upload", action="store_true")
     parser.add_argument("--authorize-rf-test", action="store_true")
     parser.add_argument("--single-packet", action="store_true",
