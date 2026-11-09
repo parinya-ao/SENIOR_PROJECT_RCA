@@ -32,7 +32,7 @@ static constexpr Address RECEIVER_ADDRESS = LORA_RECEIVER_ADDRESS;
 static constexpr Address GATEWAY_ADDRESS = LORA_SENDER_ADDRESS;
 static constexpr uint32_t ACK_TIMEOUT_MS = LORA_TX_TIMEOUT_MS;
 
-static LoRa lora(PIN_LORA_CS, PIN_LORA_IRQ, PIN_LORA_RST, PIN_LORA_DIO1);
+static LoRa lora;
 static bool radio_ready = false;
 static bool boot_logged = false;
 static uint8_t radio_version = 0;
@@ -75,8 +75,7 @@ void setup() {
     if (radio_probe_status == RADIOLIB_ERR_NONE &&
         LoRa::is_supported_chip_version(radio_version)) {
         radio_init_attempted = true;
-        radio_ready = lora.init(RECEIVER_ADDRESS, HELLO_RF_FREQUENCY_MHZ,
-                                HELLO_RF_TX_POWER_DBM, HELLO_RF_LONG_RANGE);
+        radio_ready = lora.init(RECEIVER_ADDRESS);
         radio_init_status = lora.last_error();
     } else {
         radio_init_status = radio_probe_status == RADIOLIB_ERR_NONE

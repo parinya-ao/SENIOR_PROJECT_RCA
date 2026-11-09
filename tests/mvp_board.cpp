@@ -37,7 +37,7 @@ void delay(unsigned ms) {
     }
 }
 
-#ifdef LORA_RECEIVER_BOARD
+#ifdef LORA_ROLE_RECEIVER
 #include "../src/receiver/main.cpp"
 static void step() { loop(); }
 static const char* state_name() { return armed_session ? "RX_READY" : "WAIT_SESSION"; }
@@ -79,7 +79,7 @@ static void pump() {
 int main() {
     SPI.reset();
     fake_radio::state.airtime_us = 50000;  // Synthetic timing; no RF measurement.
-#ifdef LORA_RECEIVER_BOARD
+#ifdef LORA_ROLE_RECEIVER
     setup();
 #else
     lora_rx_setup();
@@ -105,7 +105,7 @@ int main() {
         } else if (command.compare(0, 5, "TICK ") == 0) {
             host_ms += std::stoul(command.substr(5));
         } else if (command == "START") {
-#ifndef LORA_RECEIVER_BOARD
+#ifndef LORA_ROLE_RECEIVER
             lora_rx_start_lora();
 #endif
         } else {

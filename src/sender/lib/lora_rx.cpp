@@ -21,7 +21,7 @@ using namespace iw::tracker::radio;
 #define LORA_DEVICE_ADDR LORA_SENDER_ADDRESS
 #define LORA_TEST_PEER_ADDR LORA_RECEIVER_ADDRESS
 
-static LoRa lora(PIN_LORA_CS, PIN_LORA_IRQ, PIN_LORA_RST, PIN_LORA_DIO1);
+static LoRa lora;
 static bool _started = false;
 static bool _radio_ready = false;
 
@@ -151,8 +151,7 @@ public:
                 _started = false;
                 continue;
 #else
-                lora_rx_init_lora(LORA_DEVICE_ADDR, HELLO_RF_FREQUENCY_MHZ,
-                                  HELLO_RF_TX_POWER_DBM, HELLO_RF_LONG_RANGE);
+                lora_rx_init_lora(LORA_DEVICE_ADDR);
                 if (!_radio_ready) {
                     test_campaign.fail();
                     updi_role_log("GATEWAY", "RADIO_INIT_FAILED");
@@ -255,10 +254,7 @@ public:
                     updi_role_log_packet("GATEWAY", "DATA_TX_TIMEOUT",
                                          test_campaign.campaign_id(),
                                          test_campaign.sequence(), _campaign_attempt);
-                    _radio_ready = lora.init(LORA_DEVICE_ADDR,
-                                             HELLO_RF_FREQUENCY_MHZ,
-                                             HELLO_RF_TX_POWER_DBM,
-                                             HELLO_RF_LONG_RANGE);
+                    _radio_ready = lora.init(LORA_DEVICE_ADDR);
                     _started = _radio_ready;
                     _test_result_logged = true;
                     break;
@@ -386,11 +382,9 @@ void lora_rx_setup() {
     scheduler.Add(&taskLoraRx);
 }
 
-void lora_rx_init_lora(Address my_addr, float freq, int8_t tx_power,
-                       uint8_t long_range) {
+void lora_rx_init_lora(Address my_addr) {
 #if HELLO_TEST_MODE
-    if (my_addr != LORA_DEVICE_ADDR || freq != HELLO_RF_FREQUENCY_MHZ ||
-        tx_power != HELLO_RF_TX_POWER_DBM || long_range != HELLO_RF_LONG_RANGE) {
+    if (my_addr != LORA_DEVICE_ADDR) {
         _radio_ready = false;
         updi_role_log("GATEWAY", "RADIO_PROFILE_MISMATCH");
         return;
@@ -400,16 +394,13 @@ void lora_rx_init_lora(Address my_addr, float freq, int8_t tx_power,
         _radio_ready = false;
         return;
     }
-    _radio_ready = lora.init(my_addr, freq, tx_power, long_range);
+    _radio_ready = lora.init(my_addr);
     updi_role_log_status("GATEWAY", "RADIO_INIT", lora.last_error());
     if (_radio_ready) {
-        const uint8_t spreading_factor = long_range
-                                             ? 12
-                                             : HELLO_RF_SPREADING_FACTOR;
-        const uint8_t coding_rate = long_range ? 8 : HELLO_RF_CODING_RATE;
         updi_role_log_radio_profile(
-            "GATEWAY", freq, tx_power, spreading_factor,
-            HELLO_RF_BANDWIDTH_KHZ, coding_rate,
+            "GATEWAY", HELLO_RF_FREQUENCY_MHZ, HELLO_RF_TX_POWER_DBM,
+            HELLO_RF_SPREADING_FACTOR, HELLO_RF_BANDWIDTH_KHZ,
+            HELLO_RF_CODING_RATE,
             HELLO_RF_SYNC_WORD, HELLO_RF_PREAMBLE_SYMBOLS,
             HELLO_RF_CRC_ENABLED, HELLO_RF_IQ_INVERTED);
         updi_role_log("GATEWAY", "RADIO_READY");
@@ -418,6 +409,12 @@ void lora_rx_init_lora(Address my_addr, float freq, int8_t tx_power,
         updi_role_log("GATEWAY", "RADIO_INIT_FAILED");
         DEBUG_TS("Failed to initialize LoRa (%d)\r\n", lora.last_error());
     }
+}
+
+void lora_rx_reject_config() {
+    _started = false;
+    _radio_ready = false;
+    updi_role_log("GATEWAY", "RADIO_CONFIG_REJECTED");
 }
 
 void lora_rx_start_lora() {

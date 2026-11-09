@@ -3,69 +3,75 @@
     "receiver": {
       "bodcfg": 84,
       "bootsize": 44,
-      "build_fingerprint": "ccd2b0421e253d765c0c1f62d1d80ee70143d5759734551766531fc4817f5888",
+      "build_fingerprint": "d2d51348bb4210f3982088fd7555bcd3fe52616fe4fee31a4f9fa1425ca2b7a3",
       "codesize": 0,
       "image_end_exclusive": 130048,
       "image_start": 22528,
       "mcu": "AVR128DA28",
       "pins": {
-        "cs": "PD0",
-        "dio1": "PD2",
-        "enable": "PA7",
         "gps_enable": "PD5",
-        "irq": "PD3",
         "led1": "PA6",
         "led2": "PA5",
-        "miso": "PC1",
-        "mosi": "PC0",
-        "rst": "PD1",
-        "sck": "PC2",
         "sd_cs": "PC3",
         "sd_detect": "PA4",
         "sd_enable": "PD6"
       },
-      "radio_power_active_level": 0,
-      "spi_route": "SPI1_SWAP_DEFAULT"
+      "radio_board": {
+        "pins": {
+          "cs": "PD0",
+          "dio1": "PD2",
+          "enable": "PA7",
+          "irq": "PD3",
+          "miso": "PC1",
+          "mosi": "PC0",
+          "rst": "PD1",
+          "sck": "PC2"
+        },
+        "radio_power_active_level": 0,
+        "spi_route": "SPI1_SWAP_DEFAULT"
+      }
     },
     "sender": {
       "bodcfg": 0,
       "bootsize": 0,
-      "build_fingerprint": "0c6887c35f3f6d35f6e8c439760401e33505955162bc893feb60c9e7abdca926",
+      "build_fingerprint": "965a2b549d7cf1d442f2a36ca2b99c0062ee00c51786f5eff8a911099b5c2678",
       "codesize": 0,
       "image_end_exclusive": 130048,
       "image_start": 0,
       "mcu": "AVR128DA28",
-      "pins": {
-        "cs": "PC3",
-        "dio1": "PD3",
-        "irq": "PD2",
-        "miso": "PC1",
-        "mosi": "PC0",
-        "rst": "PD0",
-        "sck": "PC2"
-      },
-      "spi_route": "SPI1_SWAP_DEFAULT"
+      "radio_board": {
+        "pins": {
+          "cs": "PC3",
+          "dio1": "PD3",
+          "irq": "PD2",
+          "miso": "PC1",
+          "mosi": "PC0",
+          "rst": "PD0",
+          "sck": "PC2"
+        },
+        "spi_route": "SPI1_SWAP_DEFAULT"
+      }
     }
   },
   "environments": {
     "receiver": {
-      "build_id": "5eee8271b2cfadb9106b5a0e0a84c7faa82211b23402b4b4f3dfbdcb395e9b26",
+      "build_id": "61dff6f8bfda5954f74bccac7d853036dd6e6484f97ca962ee35074cede9e226",
       "role": "receiver"
     },
     "receiver_spi": {
-      "build_id": "c596556dcfbf46f69f813eeefa47c3bca859a13e700b0230cd90a437ec1521d7",
+      "build_id": "7f15f3248683e4552d972ca2493ad69913a2751e92a79cf343776384b56785eb",
       "role": "receiver"
     },
     "sender": {
-      "build_id": "b0e905339b3f60e897f8fd785d94f28d7f9ccfda594a85bbdc1676b98912b986",
+      "build_id": "20e73a9ef50953d14b8e37b70c96ddda27ff0fcce67a932e33e470e54fa1636a",
       "role": "sender"
     },
     "sender_hello": {
-      "build_id": "e7189c272f8963e3430bee68d8c76c060801e89448ed078737e8250099b2c759",
+      "build_id": "6ddedd99c99a986c5b0e2688f0b5632b5307f4102d64a55369dc06e0a1ad5775",
       "role": "sender"
     },
     "sender_hello_spi": {
-      "build_id": "fd3a94c53e85c37a49588204bb0f2b8573f896657f71be9fcc998e929dfc9d50",
+      "build_id": "6f1d5aa26c34ee4a492bc339eafb2cb770088342f24b8acf351697dabd5e9f96",
       "role": "sender"
     }
   },
@@ -83,12 +89,16 @@
       "version": 2
     },
     "radio": {
+      "automatic_gain": 0,
       "bandwidth_khz": 125,
       "coding_rate": 5,
       "crc_enabled": true,
+      "current_limit_ma": 200,
       "explicit_header": true,
-      "frequency_mhz": 923.0,
+      "frequency_hz": 915000000,
+      "frequency_mhz": 915.0,
       "iq_inverted": false,
+      "long_range": 0,
       "preamble_symbols": 8,
       "spreading_factor": 7,
       "sync_word": 18,
@@ -103,6 +113,6 @@
       "tx_ms": 3000
     }
   },
-  "shared_fingerprint": "58543a4bdbe53f64c4b1871503c698556d4c9507967d171fb46ba10cf6feb232",
-  "source_fingerprint": "5dba5be01dce6e6c3d8ebb805497c83a1041828285b793f4447b21a7d2f8ffa6"
+  "shared_fingerprint": "134ac64a410cd93c902c8eccb20a3639b7a4aae0c2b666e5dcec6868e1057811",
+  "source_fingerprint": "be9ea431d7293d4efd400d4f3cc933409bea835b02ce8ce328c6d183359f52ee"
 }

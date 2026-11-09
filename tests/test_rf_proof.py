@@ -91,15 +91,7 @@ def effective_platformio_config(sender_flags=None, sender_hello_flags=None,
                                 receiver_spi_flags=None, upload_flags=("-D",),
                                 gateway_app_start="0x00000",
                                 receiver_app_start="0x05800"):
-    shared = [
-        "-DAPPLICATION_BUILD", "-Isrc/shared",
-        "-DHELLO_RF_FREQUENCY_MHZ=923.0f",
-        "-DHELLO_RF_TX_POWER_DBM=10", "-DHELLO_RF_LONG_RANGE=0",
-        "-DHELLO_RF_SPREADING_FACTOR=7", "-DHELLO_RF_BANDWIDTH_KHZ=125",
-        "-DHELLO_RF_CODING_RATE=5", "-DHELLO_RF_SYNC_WORD=0x12",
-        "-DHELLO_RF_PREAMBLE_SYMBOLS=8", "-DHELLO_RF_CRC_ENABLED=1",
-        "-DHELLO_RF_IQ_INVERTED=0",
-    ]
+    shared = ["-DAPPLICATION_BUILD", "-DLORA_SSOT_GENERATED=1", "-Isrc/shared"]
     sender_flags = list(sender_flags or shared)
     sender_hello_flags = list(sender_hello_flags or shared + ["-DHELLO_TEST_MODE=1",
                                                            "-DHELLO_RAM_ONLY_TEST=1"])
@@ -234,10 +226,9 @@ class HardwareGateTests(unittest.TestCase):
                     if name in expected:
                         bindings[name] = parts[2]
             self.assertEqual(bindings, {name: f'LORA_PIN_{name}' for name in expected}, str(path))
-            board = 'receiver' if 'receiver' in str(path) else 'sender'
-            header = (root / f'include/generated/lora_{board}_board.h').read_text()
-            for name, pin in expected.items():
-                self.assertIn(f'#define LORA_PIN_{name} {pin}', header)
+        header = (root / 'include/generated/radio_915_config.h').read_text()
+        for pin in (*gateway.values(), 'PIN_PD0', 'PIN_PD1', 'PIN_PD3', 'PIN_PD2'):
+            self.assertIn(pin, header)
         receiver = sources[1].read_text()
         self.assertIn("#define PIN_LORA_EN LORA_PIN_ENABLE", receiver)
 
@@ -265,36 +256,14 @@ class HardwareGateTests(unittest.TestCase):
         self.assertIn("#define PIN_DEBUG_TX  PIN_PA0", sender_io)
         self.assertIn("#define PIN_DEBUG_RX  PIN_PA1", sender_io)
 
-    def test_shared_rf_profile_is_the_sf7_bench_candidate(self):
+    def test_shared_rf_profile_only_accepts_the_generated_915_mhz_profile(self):
         validator = getattr(rf_proof, "valid_rf_profile_config", None)
         self.assertTrue(callable(validator), "shared RF profile validation is required")
-        config = """[env]
-build_flags =
-    -DAPPLICATION_BUILD
-    -DHELLO_RF_FREQUENCY_MHZ=923.0f
-    -DHELLO_RF_TX_POWER_DBM=10
-    -DHELLO_RF_LONG_RANGE=0
-    -DHELLO_RF_SPREADING_FACTOR=7
-    -DHELLO_RF_BANDWIDTH_KHZ=125
-    -DHELLO_RF_CODING_RATE=5
-    -DHELLO_RF_SYNC_WORD=0x12
-    -DHELLO_RF_PREAMBLE_SYMBOLS=8
-    -DHELLO_RF_CRC_ENABLED=1
-    -DHELLO_RF_IQ_INVERTED=0
-
-[env:sender]
-
-[env:sender_hello]
-build_flags =
-    ${env.build_flags}
-    -DHELLO_TEST_MODE=1
-    -DHELLO_RAM_ONLY_TEST=1
-
-[env:receiver]
-"""
+        config = effective_platformio_config()
         self.assertTrue(validator(config))
         self.assertEqual(rf_proof.shared_rf_profile(config), {
-            "frequency_mhz": 923.0,
+            "frequency_hz": 915_000_000,
+            "frequency_mhz": 915.0,
             "tx_power_dbm": 10,
             "long_range": 0,
             "spreading_factor": 7,
@@ -302,12 +271,13 @@ build_flags =
             "coding_rate": 5,
             "sync_word": 0x12,
             "preamble_symbols": 8,
-            "crc_enabled": 1,
-            "iq_inverted": 0,
+            "crc_enabled": True,
+            "explicit_header": True,
+            "iq_inverted": False,
+            "current_limit_ma": 200,
+            "automatic_gain": 0,
         })
-        self.assertFalse(validator(config.replace(
-            "[env:receiver]", "[env:receiver]\nbuild_flags =\n"
-            "    -DHELLO_RF_LONG_RANGE=1")))
+        self.assertFalse(validator("""[env]\nbuild_flags =\n    -DHELLO_RF_FREQUENCY_MHZ=923.0f\n"""))
 
     def test_spi_diagnostic_environments_are_separate_and_rf_disabled(self):
         disabled = effective_platformio_config()
@@ -326,29 +296,20 @@ build_flags =
         validator = getattr(rf_proof, "valid_rf_profile_config", None)
         self.assertTrue(callable(validator))
         profile = effective_platformio_config()
-        self.assertEqual(rf_proof.shared_rf_profile(profile)["frequency_mhz"], 923.0)
-        changed_receiver = profile.replace(
-            '"-DHELLO_RF_LONG_RANGE=0"', '"-DHELLO_RF_LONG_RANGE=1"')
+        self.assertEqual(rf_proof.shared_rf_profile(profile)["frequency_mhz"], 915.0)
+        changed_receiver = effective_platformio_config(
+            receiver_flags=["-DAPPLICATION_BUILD", "-DLORA_SSOT_GENERATED=1",
+                            "-DHELLO_RF_LONG_RANGE=1", "-Isrc/shared"])
         self.assertFalse(validator(changed_receiver))
         self.assertFalse(validator(effective_platformio_config(
-            sender_hello_flags=["-DHELLO_TEST_MODE=1",
+            sender_hello_flags=["-DAPPLICATION_BUILD", "-DLORA_SSOT_GENERATED=1",
+                                "-DHELLO_TEST_MODE=1", "-DHELLO_RAM_ONLY_TEST=1",
                                 "-DHELLO_RF_FREQUENCY_MHZ=923.0f"])))
 
     def test_wrapper_host_compile_uses_effective_platformio_profile(self):
         flags = rf_proof.radio_profile_compile_flags(
             effective_platformio_config())
-        self.assertEqual(flags, [
-            "-DHELLO_RF_FREQUENCY_MHZ=923.0f",
-            "-DHELLO_RF_TX_POWER_DBM=10",
-            "-DHELLO_RF_LONG_RANGE=0",
-            "-DHELLO_RF_SPREADING_FACTOR=7",
-            "-DHELLO_RF_BANDWIDTH_KHZ=125",
-            "-DHELLO_RF_CODING_RATE=5",
-            "-DHELLO_RF_SYNC_WORD=0x12",
-            "-DHELLO_RF_PREAMBLE_SYMBOLS=8",
-            "-DHELLO_RF_CRC_ENABLED=1",
-            "-DHELLO_RF_IQ_INVERTED=0",
-        ])
+        self.assertEqual(flags, ["-DLORA_ROLE_SENDER=1"])
 
     def test_effective_upload_flags_and_ports_are_checked(self):
         config = effective_platformio_config()

@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <Arduino.h>
 #include "lora.h"
 #include <RadioLib.h>
 
@@ -54,14 +55,18 @@ int main() {
 
     reset_radio();
     fake_spi::state.swap_succeeds = false;
-    LoRa failed_spi_route(1, 2, 3, 4);
-    CHECK(!failed_spi_route.init(0, 922.0f, 14, 1));
+    LoRa failed_spi_route;
+    CHECK(!failed_spi_route.init(0));
     CHECK(failed_spi_route.last_error() == RADIOLIB_ERR_UNKNOWN);
     CHECK(fake_spi::state.swap_count == 1);
     CHECK(fake_radio::state.begin_calls == 0);
 
     reset_radio();
-    LoRa smoke(13, 2, 3, 4);
+    LoRa smoke;
+    CHECK(fake_radio::state.module_cs_pin == PIN_PC3);
+    CHECK(fake_radio::state.module_irq_pin == PIN_PD2);
+    CHECK(fake_radio::state.module_reset_pin == PIN_PD0);
+    CHECK(fake_radio::state.module_dio1_pin == PIN_PD3);
     uint8_t version = 0;
     CHECK(smoke.read_chip_version(&version) == RADIOLIB_ERR_NONE);
     CHECK(version == 0x12);
@@ -71,9 +76,9 @@ int main() {
     CHECK(fake_spi::state.transfer_bytes[1] == 0x00);
     CHECK(fake_spi::state.cs_pin == 13);
     CHECK(fake_spi::state.cs_low_seen && fake_spi::state.cs_high_seen);
-    CHECK(smoke.init(0, 923.0f, 10, 0));
+    CHECK(smoke.init(0));
     CHECK(fake_radio::state.spi1_route_at_begin);
-    CHECK(fake_radio::state.frequency_mhz == 923.0f);
+    CHECK(fake_radio::state.frequency_mhz == 915.0f);
     CHECK(fake_radio::state.tx_power_dbm == 10);
     CHECK(fake_radio::state.spreading_factor == 7);
     CHECK(fake_radio::state.bandwidth_khz == 125.0f);
@@ -83,10 +88,25 @@ int main() {
     CHECK(fake_radio::state.crc_enabled);
     CHECK(!fake_radio::state.iq_inverted);
     CHECK(fake_radio::state.explicit_header);
+    CHECK(fake_radio::state.gain == 0);
+    CHECK(fake_radio::state.begin_calls == 1);
+    CHECK(fake_radio::state.current_limit_ma == 200);
+    CHECK(fake_radio::state.current_limit_calls == 1);
+    CHECK(fake_radio::state.frequency_set_calls == 0);
+    CHECK(fake_radio::state.output_power_set_calls == 0);
 
     reset_radio();
-    LoRa tx(1, 2, 3, 4);
-    CHECK(tx.init(0, 922.0f, 14, 1));
+    fake_radio::state.begin_status = -7;
+    LoRa failed_begin;
+    CHECK(!failed_begin.init(0));
+    CHECK(failed_begin.last_error() == -7);
+    CHECK(fake_radio::state.begin_calls == 1);
+    CHECK(fake_radio::state.current_limit_calls == 0);
+    CHECK(fake_radio::state.receive_starts == 0);
+
+    reset_radio();
+    LoRa tx;
+    CHECK(tx.init(0));
     CHECK(fake_radio::state.node_address_calls == 0);
     fake_radio::state.airtime_us = 123456;
     CHECK(tx.time_on_air_us(13) == 123456);
@@ -103,32 +123,32 @@ int main() {
     CHECK(fake_radio::state.receive_starts == 2);
 
     reset_radio();
-    LoRa software_address(1, 2, 3, 4);
-    CHECK(software_address.init(5, 922.0f, 14, 1));
+    LoRa software_address;
+    CHECK(software_address.init(5));
     CHECK(software_address.my_address() == 5);
     software_address.set_my_address(7);
     CHECK(software_address.my_address() == 7);
     CHECK(fake_radio::state.node_address_calls == 0);
 
     reset_radio();
-    LoRa failed_start(1, 2, 3, 4);
-    CHECK(failed_start.init(0, 922.0f, 14, 1));
+    LoRa failed_start;
+    CHECK(failed_start.init(0));
     fake_radio::state.start_transmit_status = -7;
     CHECK(failed_start.send(1, payload, sizeof(payload)) == -7);
     CHECK(fake_radio::state.receive_starts == 2);
     CHECK(!failed_start.send_done());
 
     reset_radio();
-    LoRa oversized_tx(1, 2, 3, 4);
-    CHECK(oversized_tx.init(0, 922.0f, 14, 1));
+    LoRa oversized_tx;
+    CHECK(oversized_tx.init(0));
     uint8_t too_large[252] = {};
     CHECK(oversized_tx.send(1, too_large, sizeof(too_large)) ==
           RADIOLIB_ERR_PACKET_TOO_LONG);
     CHECK(fake_radio::state.tx_data == nullptr);
 
     reset_radio();
-    LoRa failed_finish(1, 2, 3, 4);
-    CHECK(failed_finish.init(0, 922.0f, 14, 1));
+    LoRa failed_finish;
+    CHECK(failed_finish.init(0));
     CHECK(failed_finish.send(1, payload, sizeof(payload)) == RADIOLIB_ERR_NONE);
     complete_tx();
     fake_radio::state.finish_transmit_status = -8;
@@ -137,8 +157,8 @@ int main() {
     CHECK(!failed_finish.send_done());
 
     reset_radio();
-    LoRa failed_rx_restart(1, 2, 3, 4);
-    CHECK(failed_rx_restart.init(0, 922.0f, 14, 1));
+    LoRa failed_rx_restart;
+    CHECK(failed_rx_restart.init(0));
     CHECK(failed_rx_restart.send(1, payload, sizeof(payload)) == RADIOLIB_ERR_NONE);
     complete_tx();
     fake_radio::state.start_receive_status = -9;
@@ -148,8 +168,8 @@ int main() {
           RADIOLIB_ERR_UNKNOWN);
 
     reset_radio();
-    LoRa rx(1, 2, 3, 4);
-    CHECK(rx.init(1, 922.0f, 14, 1));
+    LoRa rx;
+    CHECK(rx.init(1));
     const uint8_t rx_packet[] = {1, 0, 0x34, 0x12, 'O', 'K'};
     deliver(rx_packet, sizeof(rx_packet));
     CHECK(rx.available());
@@ -168,8 +188,8 @@ int main() {
     CHECK(fake_radio::state.receive_starts == 3);
 
     reset_radio();
-    LoRa max_packet_radio(1, 2, 3, 4);
-    CHECK(max_packet_radio.init(1, 922.0f, 14, 1));
+    LoRa max_packet_radio;
+    CHECK(max_packet_radio.init(1));
     uint8_t max_packet[255] = {1, 0, 0x34, 0x12};
     for (size_t i = 4; i < sizeof(max_packet); ++i) {
         max_packet[i] = static_cast<uint8_t>(i);
@@ -184,8 +204,8 @@ int main() {
     CHECK(fake_radio::state.receive_starts == 2);
 
     reset_radio();
-    LoRa wide_capacity_radio(1, 2, 3, 4);
-    CHECK(wide_capacity_radio.init(1, 922.0f, 14, 1));
+    LoRa wide_capacity_radio;
+    CHECK(wide_capacity_radio.init(1));
     deliver(max_packet, sizeof(max_packet));
     uint8_t wide_payload[256] = {};
     size_t wide_capacity = sizeof(wide_payload);

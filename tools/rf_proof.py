@@ -510,113 +510,49 @@ PROFILE_MACROS = (
     "HELLO_RF_SPREADING_FACTOR", "HELLO_RF_BANDWIDTH_KHZ",
     "HELLO_RF_CODING_RATE", "HELLO_RF_SYNC_WORD",
     "HELLO_RF_PREAMBLE_SYMBOLS", "HELLO_RF_CRC_ENABLED",
-    "HELLO_RF_IQ_INVERTED",
+    "HELLO_RF_EXPLICIT_HEADER", "HELLO_RF_IQ_INVERTED",
+    "HELLO_RF_CURRENT_LIMIT_MA", "HELLO_RF_AUTOMATIC_GAIN",
 )
-
-
-def _parse_rf_profile(raw: dict[str, str]) -> dict[str, object] | None:
-    try:
-        profile = {
-            "frequency_mhz": float(raw["HELLO_RF_FREQUENCY_MHZ"].rstrip("fF")),
-            "tx_power_dbm": int(raw["HELLO_RF_TX_POWER_DBM"], 0),
-            "long_range": int(raw["HELLO_RF_LONG_RANGE"], 0),
-            "spreading_factor": int(raw["HELLO_RF_SPREADING_FACTOR"], 0),
-            "bandwidth_khz": int(raw["HELLO_RF_BANDWIDTH_KHZ"], 0),
-            "coding_rate": int(raw["HELLO_RF_CODING_RATE"], 0),
-            "sync_word": int(raw["HELLO_RF_SYNC_WORD"], 0),
-            "preamble_symbols": int(raw["HELLO_RF_PREAMBLE_SYMBOLS"], 0),
-            "crc_enabled": int(raw["HELLO_RF_CRC_ENABLED"], 0),
-            "iq_inverted": int(raw["HELLO_RF_IQ_INVERTED"], 0),
-        }
-    except ValueError:
-        return None
-
-    if not (920.0 <= profile["frequency_mhz"] <= 925.0 and
-            2 <= profile["tx_power_dbm"] <= 20 and
-            profile["long_range"] == 0 and
-            profile["spreading_factor"] == 7 and
-            profile["bandwidth_khz"] == 125 and
-            profile["coding_rate"] == 5 and
-            profile["sync_word"] == 0x12 and
-            profile["preamble_symbols"] == 8 and
-            profile["crc_enabled"] == 1 and
-            profile["iq_inverted"] == 0):
-        return None
-    return profile
 
 
 def shared_rf_profile(config_text: str) -> dict[str, object] | None:
     sections = effective_project_sections(config_text)
-    if sections is not None:
-        if all(build_flag_defines(sections, environment, 'LORA_SSOT_GENERATED') == ['1'] for environment in ENVIRONMENTS):
-            if any(build_flag_defines(sections, environment, name) != []
-                   for environment in ENVIRONMENTS for name in PROFILE_MACROS):
-                return None
-            try:
-                sys.path.insert(0, str(ROOT / 'tools/config'))
-                from generate_lora_config import generate
-                generate(check=True)
-                manifest = json.loads((ROOT / 'generated/lora_manifest.json').read_text())
-                return dict(manifest['shared']['radio'], long_range=0)
-            except (OSError, ValueError):
-                return None
-        profiles = []
-        for environment in ENVIRONMENTS:
-            values = {}
-            for name in PROFILE_MACROS:
-                definitions = build_flag_defines(sections, environment, name)
-                if definitions is None or len(definitions) != 1:
-                    return None
-                values[name] = definitions[0]
-            profiles.append(values)
-        if any(profile != profiles[0] for profile in profiles[1:]):
-            return None
-        return _parse_rf_profile(profiles[0])
-
-    sections_text = dict(re.findall(
-        r"(?ms)^\[([^\]]+)\]\s*(.*?)(?=^\[|\Z)", config_text))
-    base = sections_text.get("env", "")
-    raw = {}
-    for name in PROFILE_MACROS:
-        values = re.findall(rf"(?m)^\s*-D{name}=([^\s]+)", base)
-        if len(values) != 1:
-            return None
-        raw[name] = values[0]
-    for environment in ENVIRONMENTS:
-        body = sections_text.get(f"env:{environment}", "")
-        if any(re.search(rf"-D{name}(?:=|\s)", body) for name in PROFILE_MACROS):
-            return None
-    return _parse_rf_profile(raw)
+    if sections is None or any(
+            build_flag_defines(sections, environment, 'LORA_SSOT_GENERATED') != ['1']
+            for environment in ENVIRONMENTS):
+        return None
+    if any(build_flag_defines(sections, environment, name) != []
+           for environment in ENVIRONMENTS for name in PROFILE_MACROS):
+        return None
+    try:
+        sys.path.insert(0, str(ROOT / 'tools/config'))
+        from generate_lora_config import generate
+        generate(check=True)
+        manifest = json.loads((ROOT / 'generated/lora_manifest.json').read_text())
+        return dict(manifest['shared']['radio'])
+    except (KeyError, OSError, ValueError):
+        return None
 
 
 def valid_rf_profile_config(config_text: str) -> bool:
-    if shared_rf_profile(config_text) is None:
-        return False
     sections = effective_project_sections(config_text)
-    if sections is not None:
-        return (build_flag_defines(sections, "sender_hello", "HELLO_TEST_MODE") == ["1"] and
-                build_flag_defines(sections, "sender_hello", "HELLO_RAM_ONLY_TEST") == ["1"])
-
-    sections_text = dict(re.findall(
-        r"(?ms)^\[([^\]]+)\]\s*(.*?)(?=^\[|\Z)", config_text))
-    sender_hello = sections_text.get("env:sender_hello", "")
-    return all(re.findall(rf"(?m)^\s*-D{name}=([^\s]+)", sender_hello) == ["1"]
-               for name in ("HELLO_TEST_MODE", "HELLO_RAM_ONLY_TEST"))
+    return (sections is not None and shared_rf_profile(config_text) is not None and
+            build_flag_defines(sections, "sender_hello", "HELLO_TEST_MODE") == ["1"] and
+            build_flag_defines(sections, "sender_hello", "HELLO_RAM_ONLY_TEST") == ["1"])
 
 
 def radio_profile_compile_flags(config_text: str) -> list[str] | None:
     sections = effective_project_sections(config_text)
     if sections is None or not valid_rf_profile_config(config_text):
         return None
-    if build_flag_defines(sections, 'sender_hello', 'LORA_SSOT_GENERATED') == ['1']:
-        return []  # Host C++ tests include the same generated header as firmware.
-    definitions = []
-    for name in PROFILE_MACROS:
-        values = build_flag_defines(sections, "sender_hello", name)
-        if values is None or len(values) != 1:
+    try:
+        manifest = json.loads((ROOT / 'generated/lora_manifest.json').read_text())
+        role = manifest['environments']['sender_hello']['role']
+        if role not in ('sender', 'receiver'):
             return None
-        definitions.append(f"-D{name}={values[0]}")
-    return definitions
+        return [f'-DLORA_ROLE_{role.upper()}=1']
+    except (KeyError, OSError, ValueError):
+        return None
 
 
 def rf_spi_diagnostic_config(config_text: str) -> bool:
@@ -884,7 +820,7 @@ def host_tests(proof: ProofRun, effective_config: str) -> int:
         role_binary = str(Path(temp_dir) / "role_log_test")
         role_compile_code, _, _ = proof.command("role-log-compile", [
             "g++", "-std=c++11", "-Wall", "-Wextra", "-Werror",
-            "-Isrc/lib/updi_uart", "tests/role_log_test.cpp",
+            "-Ilib/updi_uart/src", "tests/role_log_test.cpp",
             "-o", role_binary,
         ])
         if role_compile_code != 0:
@@ -896,9 +832,9 @@ def host_tests(proof: ProofRun, effective_config: str) -> int:
         wrapper_binary = str(Path(temp_dir) / "lora_wrapper_test")
         wrapper_compile_code, _, _ = proof.command("radio-wrapper-compile", [
             "g++", "-std=c++11", "-Wall", "-Wextra", "-Werror",
-            "-Itests/radio_stub", "-Isrc/lib/lora", "-Isrc/shared",
+            "-Itests/radio_stub", "-Ilib/lora/src", "-Isrc/shared",
             *profile_flags,
-            "tests/lora_wrapper_test.cpp", "src/lib/lora/lora.cpp",
+            "tests/lora_wrapper_test.cpp", "lib/lora/src/lora.cpp",
             "-o", wrapper_binary,
         ])
         if wrapper_compile_code != 0:
@@ -910,9 +846,9 @@ def host_tests(proof: ProofRun, effective_config: str) -> int:
         diagnostic_binary = str(Path(temp_dir) / 'radio_diagnostic_test')
         diagnostic_compile, _, _ = proof.command('diagnostic-protection-compile', [
             'g++', '-std=c++11', '-Wall', '-Wextra', '-Werror',
-            '-Itests/radio_stub', '-Isrc/lib/lora', '-Isrc/shared',
+            '-Itests/radio_stub', '-Ilib/lora/src', '-Isrc/shared',
             '-DHELLO_RF_DIAGNOSTIC_ONLY=1', 'tests/radio_diagnostic_test.cpp',
-            'src/lib/lora/lora.cpp', '-o', diagnostic_binary])
+            'lib/lora/src/lora.cpp', '-o', diagnostic_binary])
         if diagnostic_compile != 0:
             return 1
         diagnostic_code, _, _ = proof.command('diagnostic-protection-tests', [diagnostic_binary])

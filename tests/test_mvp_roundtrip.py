@@ -7,7 +7,7 @@ import threading
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-TRACKER_LIB = ROOT.parent / 'iwing-tracker/device-lora_dev/lib'
+PROJECT_LIB = ROOT / 'lib'
 
 
 class Board:
@@ -72,19 +72,19 @@ class MvpRoundtripTests(unittest.TestCase):
                 '-I' + str(ROOT / 'tests/mvp_stub'),
                 '-I' + str(ROOT / 'tests/radio_stub'),
                 '-I' + str(ROOT / 'src/shared'),
-                '-I' + str(ROOT / 'src/lib/lora'),
-                '-I' + str(ROOT / 'src/lib/updi_uart'),
-                '-I' + str(TRACKER_LIB / 'task'),
-                '-I' + str(TRACKER_LIB / 'iw_core/include'),
-                '-I' + str(TRACKER_LIB / 'iw_tracker_radio_protocol/include'),
+                '-I' + str(ROOT / 'lib/lora/src'),
+                '-I' + str(ROOT / 'lib/updi_uart/src'),
+                '-I' + str(PROJECT_LIB / 'task/src'),
+                '-I' + str(PROJECT_LIB / 'iw_core/src'),
+                '-I' + str(PROJECT_LIB / 'iw_tracker_radio_protocol/src'),
                 *(['-DHELLO_TEST_MODE=1', '-DHELLO_RAM_ONLY_TEST=1']
-                  if role == 'sender' else ['-DLORA_RECEIVER_BOARD=1']),
+                  if role == 'sender' else ['-DLORA_ROLE_RECEIVER=1']),
                 str(ROOT / 'tests/mvp_board.cpp'),
-                str(ROOT / 'src/lib/lora/lora.cpp'),
+                str(ROOT / 'lib/lora/src/lora.cpp'),
                 str(ROOT / 'src/shared/hello_protocol.cpp'),
                 str(Path(cls.directory.name) / 'task.o'),
-                str(TRACKER_LIB / 'iw_tracker_radio_protocol/src/codec.cpp'),
-                str(TRACKER_LIB / 'iw_core/src/byte_codec.cpp'),
+                str(PROJECT_LIB / 'iw_tracker_radio_protocol/src/codec.cpp'),
+                str(PROJECT_LIB / 'iw_core/src/byte_codec.cpp'),
                 '-o', str(binary),
             ]
             if role == 'sender':
@@ -93,7 +93,7 @@ class MvpRoundtripTests(unittest.TestCase):
                 flags = command[:command.index(str(ROOT / 'tests/mvp_board.cpp'))]
                 dependency = subprocess.run([
                     *[flag for flag in flags if flag != '-Werror'], '-fpermissive',
-                    '-c', str(TRACKER_LIB / 'task/task.cpp'),
+                    '-c', str(PROJECT_LIB / 'task/src/task.cpp'),
                     '-o', str(Path(cls.directory.name) / 'task.o'),
                 ], capture_output=True, text=True, timeout=30)
                 if dependency.returncode:
@@ -113,7 +113,7 @@ class MvpRoundtripTests(unittest.TestCase):
         self.addCleanup(board.close)
         self.assertIn('RADIO_INIT E=0', '\n'.join(board.initial))
         self.assertIn('RADIO_MOD SF=7 BW=125 CR=5', '\n'.join(board.initial))
-        self.assertIn('RADIO_PROFILE F100=92300 P=10', '\n'.join(board.initial))
+        self.assertIn('RADIO_PROFILE F100=91500 P=10', '\n'.join(board.initial))
         self.assertIn('RADIO_FRAME SW=12 PRE=8 CRC=1 HDR=E IQ=0',
                       '\n'.join(board.initial))
         return board

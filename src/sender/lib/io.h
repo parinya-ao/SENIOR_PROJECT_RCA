@@ -1,5 +1,6 @@
 #pragma once
 #include "../../../include/generated/lora_sender_board.h"
+#include "../../../include/generated/radio_915_config.h"
 
 #define PIN_LED1      PIN_PA5
 #define PIN_LED2      PIN_PA4

@@ -76,10 +76,10 @@ int main() {
     CHECK(std::strcmp(captured,
           "[RECEIVER] RADIO_SPI_VERSION=0x12\r\n") == 0);
     clear_capture();
-    updi_role_log_radio_profile("GATEWAY", 923.0f, 10, 7, 125, 5,
+    updi_role_log_radio_profile("GATEWAY", 915.0f, 10, 7, 125, 5,
                                 0x12, 8, true, false);
     CHECK(std::strcmp(captured,
-          "[GATEWAY] RADIO_PROFILE F100=92300 P=10\r\n"
+          "[GATEWAY] RADIO_PROFILE F100=91500 P=10\r\n"
           "[GATEWAY] RADIO_MOD SF=7 BW=125 CR=5\r\n"
           "[GATEWAY] RADIO_FRAME SW=12 PRE=8 CRC=1 HDR=E IQ=0\r\n") == 0);
     clear_capture();

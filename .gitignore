@@ -140,6 +140,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!/lib/
+!/lib/**
 !src/lib/
 src/lib/*/
 !src/lib/lora/
