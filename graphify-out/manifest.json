@@ -390,9 +390,9 @@
     "semantic_hash": ""
   },
   "generated/lora_manifest.json": {
-    "mtime": 1794218766.587479,
-    "seen": 1794218854.9346037,
-    "ast_hash": "78245917be4844b67fc9917263eb3dae",
+    "mtime": 1794222896.8714082,
+    "seen": 1794222924.6630766,
+    "ast_hash": "66afd3ac91407a0de2c69bb532d14a31",
     "semantic_hash": ""
   },
   "include/generated/lora_receiver_board.h": {
@@ -426,9 +426,9 @@
     "semantic_hash": ""
   },
   "tools/config/platformio_generate.py": {
-    "mtime": 1794217480.4375298,
-    "seen": 1794217963.1196082,
-    "ast_hash": "e103ab263108b2287295d65477779fef",
+    "mtime": 1794222838.4421258,
+    "seen": 1794222924.6631827,
+    "ast_hash": "80821c8bad864ae4992e0fbe94bc55d0",
     "semantic_hash": ""
   },
   "tools/config/validate_lora_ssot.py": {

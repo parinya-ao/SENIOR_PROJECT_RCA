@@ -34,6 +34,8 @@ defines = [(f'LORA_ROLE_{role.upper()}', 1)]
 if role == 'receiver':
     defines.append(('LORA_RECEIVER_BOARD', 1))
 env.Append(CPPDEFINES=defines)
+if env.GetProjectOption('build_type') == 'release':
+    env.Append(LINKFLAGS=['-Wl,--strip-debug'])
 manifest = json.loads((ROOT / 'generated/lora_manifest.json').read_text())
 identity = Path(env.subst('$BUILD_DIR')) / 'lora_build_identity.h'
 contents = '#pragma once\n#define LORA_BUILD_ID "' + manifest['environments'][env['PIOENV']]['build_id'] + '"\n'
