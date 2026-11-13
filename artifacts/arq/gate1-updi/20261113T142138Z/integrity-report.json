@@ -1,0 +1,28 @@
+{
+  "result": "EVIDENCE_INTEGRITY_PASS",
+  "evidence_files": 33,
+  "files_hashed": 31,
+  "hash_mismatches": [],
+  "sha256_manifest_hash": "247c7663290071fe4690e0a757dc326f8376f22b8e9539744680f350a5f476bd",
+  "hash_exclusions": [
+    "sha256.json",
+    "integrity-report.json"
+  ],
+  "required_files_missing": [],
+  "host_events_parsed": 3,
+  "transactions_parsed": 0,
+  "duplicate_transactions": 0,
+  "transaction_counts_match_verdict": true,
+  "first_failure": null,
+  "historical_preservation_files_checked": 1553,
+  "historical_preservation_changed": [],
+  "extended_original_files_checked": 1929,
+  "extended_original_changed": [],
+  "existing_production_files_changed": 0,
+  "blocked_preflight_completeness": "PASS",
+  "live_evidence_completeness": "INCOMPLETE_NOT_EXECUTED",
+  "gate1_definitive_pass": false,
+  "git_diff_check": "PASS",
+  "report_local_links": "PASS",
+  "checksum_scope": "All listed evidence bytes except explicitly excluded checksum manifest and integrity report; both are present and JSON parsed."
+}

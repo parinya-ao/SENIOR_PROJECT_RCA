@@ -1,0 +1,11 @@
+{
+  "src/reverse_raw/main.cpp": "111de672574c2a1b3863bb7f2538f28f59558820beadd366843b73654fa34e46",
+  "src/arq/main.cpp": "228a4e8aaf58de278b99d45dc5f131d17cdd6a2159d9c6623b31922edbd430e1",
+  "src/mvp/main.cpp": "e194a5d6f1cd1c5da32382e6bd3b1d20f9f9efa716011ad650653de2ae14382c",
+  "src/ssot.c": "49044d3db18eeb367a977e01a2b8c533f33fc9e2cafca4217e0d6b3ae812c766",
+  "config/arq_test.toml": "3a205a280d30e6a84da23a1392f955cd50303ef7e7ad27d7571d5358c6fe2473",
+  "config/radio_915.toml": "7b6580f704a16b917f5398f413608c19750568870c62a3b71b8e063c7d1be684",
+  "config/current_hardware.json": "86189ef70ad4dc047627b3429910bcfcba4dbf9a1b5f566e396adf9ca41741de",
+  "tools/arq_trial.py": "0653166d81bb455cb11d0a768c80a93527db9c7a388e1eec06e858538164ee93",
+  "platformio.ini": "a68ab0f2abb62ff6c27dc6379f9a3791cd3959df3c1d2c50b588ba2f8eb9c576"
+}

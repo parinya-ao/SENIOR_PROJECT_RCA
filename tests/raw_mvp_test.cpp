@@ -7,6 +7,7 @@ int main() {
     assert(ready && swapped && begun && !monitor);
     assert(stage_count >= 7 && reset_flags == 4);
 #if defined(LORA_ROLE_RECEIVER)
+    assert(!transmitting && tx_started==0 && tx_starts==0);
     auto off = std::find(gpio.begin(), gpio.end(), std::make_pair(PIN_PA7, HIGH));
     auto sd = std::find(gpio.begin(), gpio.end(), std::make_pair(PIN_PC3, HIGH));
     auto on = std::find(gpio.begin(), gpio.end(), std::make_pair(PIN_PA7, LOW));

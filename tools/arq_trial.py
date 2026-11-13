@@ -171,7 +171,7 @@ def validate_bundle(b,directory=None):
 
 class Capture:
     def __init__(self,proof):
-        self.proof=proof;self.monitors={};self.queue=queue.Queue();self.events=[];self.commands=[]
+        self.proof=proof;self.monitors={};self.queue=queue.Queue();self.events=[];self.commands=[];self.errors=[]
     def start(self):
         for role,target in (('receiver','receiver'),('sender','gateway')):
             self.monitors[role]=rf.start_rf_monitor(self.proof,role,rf.PORTS[target],self.queue)
@@ -184,27 +184,54 @@ class Capture:
     def wait(self,predicate,seconds=30):
         deadline=time.monotonic()+seconds
         while time.monotonic()<deadline:
-            if predicate():return
             if any(m['process'].poll() is not None for m in self.monitors.values()):raise ValueError('monitor exited')
+            if predicate():return
             try:role,stream,raw=self.queue.get(timeout=.1)
             except queue.Empty:continue
             if stream=='stdout' and raw:
                 event=parse_event(raw.decode('ascii',errors='replace').strip())
                 if event:event.update(role=role,host_ns=time.monotonic_ns());self.events.append(event)
         raise ValueError('incomplete evidence: capture deadline')
+    def acquire(self,programming,config_hash,seconds=45,expected_session=0):
+        """Drain startup, then recover each missing status once within one deadline."""
+        deadline=time.monotonic()+seconds
+        def complete(role):
+            rows=[e for e in self.events if e['role']==role]
+            starts=[i for i,e in enumerate(rows) if e['e']=='BOOT']
+            if not starts:return False
+            block=rows[starts[-1]:]
+            for e in block:
+                if int(e['s'],16)!=expected_session:raise ValueError('unexpected startup session before acquisition')
+                if e['e']=='IDENTITY' and (e.get('build')!=programming[role]['build_id'] or e.get('config')!=config_hash):
+                    raise ValueError('installed firmware/config mismatch before ARM')
+                if e['e']=='STATUS' and (e.get('ready')!='1' or e.get('overflow')!='0'):
+                    raise ValueError('startup radio failure or logger overflow')
+                if e['e']=='STATUS_END' and e.get('v')!='0':raise ValueError('startup logger overflow')
+            return {'BOOT','IDENTITY','STATUS','REG','STATUS_END'}<={e['e'] for e in block} and status_complete(block,role,expected_session)
+        try:self.wait(lambda:all(complete(r) for r in programming),min(12,seconds))
+        except ValueError as error:
+            if str(error)!='incomplete evidence: capture deadline':raise
+        for role in programming:
+            if complete(role):continue
+            self.command(role,'STATUS')
+            self.wait(lambda:complete(role),max(0,deadline-time.monotonic()))
     def seen(self,role,event):return [x for x in self.events if x['role']==role and x['e']==event]
     def close(self):
-        for m in self.monitors.values():rf.stop_rf_monitor(m)
+        for m in self.monitors.values():
+            try:rf.stop_rf_monitor(m)
+            except Exception as error:self.errors.append(str(error))
         # Reader threads may finish trailing lines while stop waits for the mailbox to drain.
         while True:
             try:role,stream,raw=self.queue.get_nowait()
             except queue.Empty:break
             if stream=='stdout' and raw:
-                event=parse_event(raw.decode('ascii',errors='replace').strip())
+                try:event=parse_event(raw.decode('ascii',errors='replace').strip())
+                except ValueError as error:
+                    self.errors.append(f'{role}: {error}: {raw!r}');continue
                 if event:event.update(role=role,host_ns=time.monotonic_ns());self.events.append(event)
 
 
-def trial(parent,gate,count,manifest,programming,firmware):
+def trial(parent,gate,count,manifest,programming,firmware,startup_session=0):
     proof=rf.ProofRun(parent/gate);c=Capture(proof)
     provenance=proof.run_dir/'provenance';provenance.mkdir()
     for p in parent.iterdir():
@@ -213,12 +240,9 @@ def trial(parent,gate,count,manifest,programming,firmware):
     bundle=dict(acquisition='updi-live',synthetic=False,gate=gate,count=count,session=session,
         config_hash=manifest['config_hash'],firmware=firmware,programming=programming)
     try:
-        c.start()
-        c.wait(lambda:all(c.seen(r,'STATUS') for r in ('sender','receiver')),45)
-        for r in ('sender','receiver'):
-            identities=c.seen(r,'IDENTITY')
-            if not identities or identities[-1]['build']!=programming[r]['build_id'] or identities[-1]['config']!=manifest['config_hash']:
-                raise ValueError('installed firmware/config mismatch before ARM')
+        bundle['phase']='acquisition';c.start()
+        c.acquire(programming,manifest['config_hash'],expected_session=startup_session)
+        bundle['phase']='arming'
         for r in ('sender','receiver'):c.command(r,f'ARM {session:08X}')
         c.wait(lambda:all(c.seen(r,'ARM') for r in ('sender','receiver')))
         for r in ('sender','receiver'):
@@ -227,6 +251,7 @@ def trial(parent,gate,count,manifest,programming,firmware):
         c.command('receiver',f'FAULT {stride} {budget}')
         c.wait(lambda:bool(c.seen('receiver','FAULT')))
         payload=manifest['config']['negative_payload' if gate=='H02' else 'payload'].encode().hex()
+        bundle['phase']='rf-trial'
         for i in range(count):
             c.command('sender','SEND '+payload)
             c.wait(lambda:len([x for x in c.events if x['role']=='sender' and x['e'] in
@@ -234,21 +259,29 @@ def trial(parent,gate,count,manifest,programming,firmware):
             terminal=[x for x in c.events if x['role']=='sender' and x['e'] in
                 ('DELIVERED','REJECTED','PROTOCOL_ERROR','TIMEOUT_EXHAUSTED','RADIO_ERROR')][-1]
             if terminal['e']!=('REJECTED' if gate=='H02' else 'DELIVERED'):raise ValueError('transaction failed: '+terminal['e'])
-        for r in ('sender','receiver'):c.command(r,'X');c.command(r,'STATUS')
-        c.wait(lambda:all(status_complete(c.events,r,session) for r in ('sender','receiver')),45)
+        for r in ('sender','receiver'):
+            c.command(r,'X')
+            c.wait(lambda:bool(c.seen(r,'PARKED')),10)
+            c.command(r,'STATUS')
+            c.wait(lambda:status_complete(c.events,r,session),45)
         bundle.update(events=c.events,commands=c.commands)
-    except Exception:
+    except Exception as failure:
+        bundle['failure_reason']=str(failure)
+        bundle['classification']='capture-failure' if bundle.get('phase')=='acquisition' else 'trial-failure'
         counts={r:len(c.seen(r,'STATUS')) for r in c.monitors}
         try:
-            for r in c.monitors:c.command(r,'X');c.command(r,'STATUS')
-            c.wait(lambda:all(len(c.seen(r,'STATUS'))>n and status_complete(c.events,r,session) for r,n in counts.items()),45)
+            if bundle.get('phase')!='acquisition':
+                for r in c.monitors:c.command(r,'X');c.command(r,'STATUS')
+                c.wait(lambda:all(len(c.seen(r,'STATUS'))>n and status_complete(c.events,r,session) for r,n in counts.items()),45)
         except Exception as error:proof.note('final-status-error.log',str(error)+'\n')
         raise
     finally:
-        c.close();bundle.update(events=c.events,commands=c.commands)
+        c.close();bundle.update(events=c.events,commands=c.commands,capture_errors=c.errors)
         bundle['files']={str(p.relative_to(proof.run_dir)):sha(p) for p in proof.run_dir.rglob('*') if p.is_file()}
         (proof.run_dir/'bundle.json').write_text(json.dumps(bundle,indent=2)+'\n')
+    if c.errors:raise ValueError('incomplete capture cleanup: '+str(c.errors))
     report=validate_bundle(bundle,proof.run_dir)
+    report['session']=session
     (proof.run_dir/'result.json').write_text(json.dumps(report,indent=2)+'\n')
     print(gate,json.dumps(report));return report
 
@@ -260,32 +293,33 @@ def campaign(gates=None):
     proof=rf.ProofRun(parent);manifest=json.loads((ROOT/'generated/arq_manifest.json').read_text())
     config=subprocess.check_output(['pio','project','config','--json-output'],cwd=ROOT,text=True)
     if rf.check_port_owners(proof,'arq-preflight'):raise ValueError('UPDI ports owned')
-    programming={};firmware={}
-    for role in ('receiver','sender'):
-        environment=role+'_arq_test'
-        for suffix in ('hex','elf'):
-            src=ROOT/'.pio/build'/environment/('firmware.'+suffix)
-            (parent/(environment+'.'+suffix)).write_bytes(src.read_bytes())
-        firmware[role]=sha(parent/(environment+'.hex'))
-        # Fresh serial/signature/fuses plus independent full-memory comparison.
-        if rf.program_application(proof,environment,config):raise ValueError('programming failed: '+role)
-        identity=(ROOT/'.pio/build'/environment/'lora_build_identity.h').read_text()
-        build_id=re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"',identity).group(1)
-        # Existing exact images still need an independent after snapshot for bundle validation.
-        after=parent/f'{environment}-after-page-write-flash.bin'
-        if not after.exists():boot.read_snapshot(proof,environment+'-after-page-write',
-            'gateway' if role=='sender' else 'receiver',current_target=True)
-        programming[role]=dict(environment=environment,hex_sha256=firmware[role],build_id=build_id,verified=True)
-    (parent/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    results=[]
+    programming={};firmware={};results=[]
     try:
+        for role in ('receiver','sender'):
+            environment=role+'_arq_test'
+            for suffix in ('hex','elf'):
+                src=ROOT/'.pio/build'/environment/('firmware.'+suffix)
+                (parent/(environment+'.'+suffix)).write_bytes(src.read_bytes())
+            firmware[role]=sha(parent/(environment+'.hex'))
+            # Fresh serial/signature/fuses plus independent full-memory comparison.
+            if rf.check_port_owners(proof,environment+'-preflight'):raise ValueError('UPDI ports owned')
+            if rf.program_application(proof,environment,config):raise ValueError('programming failed: '+role)
+            identity=(ROOT/'.pio/build'/environment/'lora_build_identity.h').read_text()
+            build_id=re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"',identity).group(1)
+            # Existing exact images still need an independent after snapshot for bundle validation.
+            after=parent/f'{environment}-after-page-write-flash.bin'
+            if not after.exists():boot.read_snapshot(proof,environment+'-after-page-write',
+                'gateway' if role=='sender' else 'receiver',current_target=True)
+            programming[role]=dict(environment=environment,hex_sha256=firmware[role],build_id=build_id,verified=True)
+        (parent/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+        startup_session=0
         for gate,count in gates or tuple((f'H{i:02}',n) for i,n in enumerate(manifest['config']['test_counts'],1)):
-            results.append(trial(parent,gate,count,manifest,programming,firmware))
+            results.append(trial(parent,gate,count,manifest,programming,firmware,startup_session))
+            startup_session=results[-1]['session']
     finally:
         (parent/'campaign.json').write_text(json.dumps(results,indent=2)+'\n')
-        # Leave normal command-driven firmware unarmed/idle, even after a failed gate.
-        for role in ('receiver','sender'):
-            if rf.program_application(proof,role+'_arq',config):raise ValueError('normal restore failed: '+role)
+        restored=prepare()
+        proof.note('restore.json',json.dumps(dict(standby_evidence=str(restored)))+'\n')
     return parent
 
 
@@ -296,16 +330,22 @@ def prepare():
     proof=rf.ProofRun(ROOT/'artifacts/arq'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ-standby'))
     config=subprocess.check_output(['pio','project','config','--json-output'],cwd=ROOT,text=True)
     if rf.check_port_owners(proof,'standby-preflight'):raise ValueError('UPDI ports owned')
+    programming={}
     for role in ('receiver','sender'):
         env=role+'_arq';image=ROOT/'.pio/build'/env/'firmware.hex'
         (proof.run_dir/(env+'.hex')).write_bytes(image.read_bytes())
+        if rf.check_port_owners(proof,env+'-preflight'):raise ValueError('UPDI ports owned')
         if rf.program_application(proof,env,config):raise ValueError('standby programming/readback failed: '+role)
+        identity=(ROOT/'.pio/build'/env/'lora_build_identity.h').read_text()
+        programming[role]=dict(build_id=re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"',identity).group(1))
     capture=Capture(proof)
     try:
         capture.start()
-        capture.wait(lambda:all(capture.seen(r,'STATUS_END') for r in ('sender','receiver')),45)
-        for r in ('sender','receiver'):capture.command(r,'X');capture.command(r,'STATUS')
-        capture.wait(lambda:all(len(capture.seen(r,'STATUS_END'))>=2 for r in ('sender','receiver')),45)
+        capture.acquire(programming,json.loads((ROOT/'generated/arq_manifest.json').read_text())['config_hash'])
+        counts={r:len(capture.seen(r,'STATUS_END')) for r in ('sender','receiver')}
+        for r in ('sender','receiver'):
+            capture.command(r,'X');capture.command(r,'STATUS')
+            capture.wait(lambda:len(capture.seen(r,'STATUS_END'))>counts[r] and status_complete(capture.events,r,0),45)
         for r in ('sender','receiver'):
             mode=bytes.fromhex(capture.seen(r,'REG')[-1]['bytes'])[0]
             if mode&7!=1 or capture.seen(r,'STATUS')[-1]['ready']!='1' or capture.seen(r,'STATUS_END')[-1]['v']!='0':
@@ -314,9 +354,116 @@ def prepare():
     finally:
         capture.close()
         (proof.run_dir/'status.json').write_text(json.dumps(capture.events,indent=2)+'\n')
+    if capture.errors:
+        proof.note('capture-errors.json',json.dumps(capture.errors)+'\n')
+        raise ValueError('standby capture cleanup failed')
     proof.note('standby-verified.json',json.dumps(dict(standby=True,rf_transmissions=0,
         firmware={r:sha(proof.run_dir/(r+'_arq.hex')) for r in ('sender','receiver')}),indent=2)+'\n')
     return proof.run_dir
+
+
+def validate_reverse(events):
+    if any(e.get('overflow','0')!='0' for e in events):raise ValueError('raw logger overflow')
+    starts=[e for e in events if e['role']=='receiver' and e['e']=='RAW_TX']
+    done=[e for e in events if e['role']=='receiver' and e['e']=='RAW_TX_DONE' and e.get('rc')=='0' and int(e['flags'])&8]
+    received=[e for e in events if e['role']=='sender' and e['e']=='RAW_RX']
+    if len(starts)!=1 or starts[0].get('rc')!='0' or starts[0].get('flags')!='11' or len(done)!=1:
+        raise ValueError('missing single successful raw transmission')
+    if len(received)!=1:raise ValueError('missing single actual raw reception')
+    packet=received[0];flags=int(packet['flags'])
+    if packet.get('rc')!='0' or flags&0x60!=0x40 or packet.get('len')!='11' or packet.get('match')!='1' or packet.get('bytes')!='48656C6C6F20576F726C64':
+        raise ValueError('raw RxDone/CRC/payload mismatch')
+    return dict(complete=True,payload=packet['bytes'],rssi=int(packet['rssi']),snr=int(packet['snr']),
+        validation_scope='captured physical UPDI; radio metrics in hundredths')
+
+
+def audit_raw_configuration(event):
+    values=bytes.fromhex(event['bytes'])
+    # Address order matches reverse_raw configuration(); compare PHY, not mode/DIO state.
+    expected=bytes.fromhex('E4C000F084727404000812271D')
+    if len(values)!=23 or values[0] not in (0x11,0x12,0x13) or values[2:15]!=expected:
+        raise ValueError('reverse radio configuration mismatch')
+
+
+def reverse_exchange(c):
+    # Host deadline starts before RX: delayed mailbox delivery cannot extend the RF window.
+    armed=time.monotonic()
+    c.command('sender','RX')
+    c.wait(lambda:bool(c.seen('sender','RAW_RX_READY')),5)
+    ready=c.seen('sender','RAW_RX_READY')[-1]
+    if ready.get('rc')!='0' or int(ready.get('mode','0'))&0xc7!=0x85:
+        raise ValueError('reverse RX continuous not verified')
+    if time.monotonic()-armed>=10 or c.seen('sender','RAW_RX_TIMEOUT'):
+        raise ValueError('reverse receive window expired before SEND')
+    configs=c.seen('sender','RAW_RX_ACTIVE')
+    if not configs:raise ValueError('missing active RX configuration')
+    audit_raw_configuration(configs[-1])
+    c.command('receiver','SEND 48656C6C6F20576F726C64')
+    # Allow the bounded device timeout plus mailbox drain; preserve its actual event.
+    c.wait(lambda:bool(c.seen('sender','RAW_RX') or c.seen('sender','RAW_RX_TIMEOUT') or c.seen('receiver','RAW_TX_TIMEOUT')),20)
+    c.wait(lambda:bool(c.seen('receiver','RAW_TX_DONE') or c.seen('receiver','RAW_TX_TIMEOUT')),5)
+    return validate_reverse(c.events)
+
+
+def park_reverse(c):
+    errors=[]
+    for role in c.monitors:
+        try:c.command(role,'X')
+        except Exception as error:errors.append(role+': '+str(error))
+    try:
+        if c.monitors:c.wait(lambda:all(c.seen(r,'RAW_STANDBY') for r in c.monitors),5)
+    except Exception as error:errors.append(str(error))
+    return errors
+
+
+def reverse_raw():
+    """One explicitly commanded Tracker TX, Rudolph RX; always restore normal images."""
+    from generate_lora_config import generate
+    generate(check=True)
+    proof=rf.ProofRun(ROOT/'artifacts/arq'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ-reverse-raw'))
+    config=subprocess.check_output(['pio','project','config','--json-output'],cwd=ROOT,text=True)
+    c=Capture(proof);bundle=dict(acquisition='updi-live',synthetic=False,phase='programming',firmware={})
+    try:
+        for role in ('sender','receiver'):
+            env=role+'_reverse_raw'
+            for suffix in ('hex','elf'):
+                shutil.copy2(ROOT/'.pio/build'/env/('firmware.'+suffix),proof.run_dir/(env+'.'+suffix))
+            identity=(ROOT/'.pio/build'/env/'lora_build_identity.h').read_text()
+            bundle['firmware'][role]=dict(sha256=sha(proof.run_dir/(env+'.hex')),
+                build_id=re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"',identity).group(1))
+            if rf.check_port_owners(proof,env+'-preflight'):raise ValueError('UPDI ports owned')
+            if rf.program_application(proof,env,config):raise ValueError('reverse programming failed: '+role)
+        bundle['phase']='acquisition';c.start()
+        def status(role):
+            ids=c.seen(role,'IDENTITY');rows=c.seen(role,'RAW_STATUS');configs=c.seen(role,'RAW_CONFIG')
+            if not ids or not rows or not configs:return False
+            if ids[-1]['build']!=bundle['firmware'][role]['build_id'] or ids[-1]['config']!=json.loads((ROOT/'generated/arq_manifest.json').read_text())['config_hash']:
+                raise ValueError('reverse firmware/config identity mismatch')
+            if rows[-1].get('rc')!='0' or rows[-1].get('overflow')!='0':raise ValueError('reverse radio not ready')
+            audit_raw_configuration(configs[-1])
+            return True
+        deadline=time.monotonic()+45
+        try:c.wait(lambda:all(status(r) for r in ('sender','receiver')),12)
+        except ValueError as error:
+            if str(error)!='incomplete evidence: capture deadline':raise
+        for role in ('sender','receiver'):
+            if not status(role):
+                c.command(role,'STATUS');c.wait(lambda:status(role),max(0,deadline-time.monotonic()))
+        bundle['phase']='rf-trial';bundle['result']=reverse_exchange(c)
+    except Exception as error:
+        bundle['failure_reason']=str(error);raise
+    finally:
+        cleanup_errors=park_reverse(c)
+        if cleanup_errors:bundle['cleanup_error']='; '.join(cleanup_errors)
+        c.close();bundle.update(events=c.events,commands=c.commands)
+        bundle['capture_errors']=c.errors
+        bundle['files']={str(p.relative_to(proof.run_dir)):sha(p) for p in proof.run_dir.rglob('*') if p.is_file()}
+        (proof.run_dir/'bundle.json').write_text(json.dumps(bundle,indent=2)+'\n')
+        # Monitors release both ports before normal-image restoration and verification.
+        restored=prepare()
+        proof.note('restore.json',json.dumps(dict(standby_evidence=str(restored)))+'\n')
+    if c.errors:raise ValueError('incomplete raw capture tail: '+str(c.errors))
+    print(json.dumps(bundle['result']));return proof.run_dir
 
 
 def main():
@@ -324,6 +471,7 @@ def main():
     mode=p.add_mutually_exclusive_group(required=True)
     mode.add_argument('--campaign',action='store_true');mode.add_argument('--mvp',action='store_true')
     mode.add_argument('--prepare',action='store_true');mode.add_argument('--validate',type=Path)
+    mode.add_argument('--reverse-raw',action='store_true')
     p.add_argument('--rf-path-confirmed',action='store_true',help='operator has physically verified antenna connector and solder bridges')
     args=p.parse_args()
     if args.validate:
@@ -331,7 +479,8 @@ def main():
     elif args.prepare:print(prepare())
     else:
         if not args.rf_path_confirmed:p.error('RF transmission requires --rf-path-confirmed after physical inspection')
-        print(campaign((('H01',1),('H04',10),('H02',1),('H03',1))) if args.mvp else campaign())
+        if args.reverse_raw:print(reverse_raw())
+        else:print(campaign((('H01',1),('H02',1),('H03',1),('H04',10))) if args.mvp else campaign())
 
 
 if __name__=='__main__':main()

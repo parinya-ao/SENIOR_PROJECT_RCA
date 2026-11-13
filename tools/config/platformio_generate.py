@@ -19,6 +19,7 @@ roles_by_environment = {
 }
 roles_by_environment.update({f'{role}_arq{suffix}':role
     for role in ('sender','receiver') for suffix in ('','_test')})
+roles_by_environment.update({role+'_reverse_raw':role for role in ('sender','receiver')})
 try:
     role = roles_by_environment[env['PIOENV']]
 except KeyError as error:
@@ -47,4 +48,5 @@ if build_id is None:
     build_id = digest(dict(environment=env['PIOENV'], arq=arq))
 contents = '#pragma once\n#define LORA_BUILD_ID "' + build_id + '"\n'
 _write_atomic(identity, contents)
-env.Append(CCFLAGS=['-include', str(identity)])
+# The identity must affect SCons' compile signature, including incremental builds.
+env.Append(CPPDEFINES=[('LORA_BUILD_ID', '\\"'+build_id+'\\"')])

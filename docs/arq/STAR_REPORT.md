@@ -1,5 +1,34 @@
 # Raw LoRa ARQ V1 — STAR report
 
+## Latest measured state — 2026-11-13 12:41 UTC
+
+Final software verification: **190 tests, OK (one skip)**; six normal/test/raw
+builds pass. Focused tests enforce RX mode/profile before SEND, preserve timeout
+and pre-clear receive diagnostics, reject mismatches and clean up both peers
+after a monitor failure. These are software results, not physical RF proof.
+
+The operator completed antenna/bridge/915 MHz inspection after the historical
+hold recorded below. Reverse raw `20261113T121506Z` remains a valid negative RF
+observation: Tracker TxDone, Rudolph no RxDone in 15 seconds. Its 62 hashes
+reverify, and host RX_READY preceded SEND. It lacked active register/counter evidence.
+
+The [new diagnostic attempt](investigations/20261113T123620Z.md) verified matching
+standby PHY and actual Rudolph RX Continuous (`0x8D`) before SEND. Header/packet
+counters were zero at readiness. Tracker UPDI then returned an empty response;
+no TX_START/TX_DONE or receiver terminal observation was captured. **INCONCLUSIVE**,
+not another measured RF loss. Its 74 original hashes and eight journal events verify.
+No physical component or PHY defect is established. No speculative frequency,
+power, IQ, bit-3 or ACK timing change was made; original raw MVP remains intact.
+
+Both boards returned to verified normal unarmed standby in
+`artifacts/arq/20261113T123837Z-standby/`, with matching archived image identities,
+protected-memory comparisons and complete zero-overflow status. A later
+host-only error-diagnostic edit causes rebuilt candidates to have new source
+IDs; those candidates are not claimed installed. Reverse 3/3 and H01–H04 remain
+unmet. Testing stopped pending Tracker UPDI/supply and RF-output isolation;
+the exact missing measurements are in the experiment report. Historical
+results and old software failures below are retained with their original context.
+
 ## Situation
 
 งานเดิมมี raw Hello World MVP ที่ยังไม่อยู่ใน Git HEAD. ก่อนแก้ไขสำรอง

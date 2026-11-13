@@ -1,0 +1,10 @@
+{
+  "synthetic_transactions_only": true,
+  "test_file": "tests/test_gate1_rca.py",
+  "focused_test_cases": 18,
+  "actual_live_transactions": 0,
+  "live_capture_implemented": false,
+  "assessor": "tools/rca/gate1.py",
+  "assessor_default": "blocked until external source audit supplied",
+  "notes": "Replays test strict response length/value, raw error preservation, STATUS framing, identities, sequential ordering, first-failure stop and read-only hash verification. It does not establish MCU or electrical behavior."
+}

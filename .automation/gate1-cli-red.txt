@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_gate1_rca.py", line 201, in test_T23_live_cli_help_loads_without_opening_hardware
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tools/rca/gate1_live.py", line 19, in <module>
+from tools.arq_trial import parse_event, status_complete
+ModuleNotFoundError: No module named 'tools'
+
+FAILED (failures=1)
+[full output: rtk recall 0d98f909e23e8686]

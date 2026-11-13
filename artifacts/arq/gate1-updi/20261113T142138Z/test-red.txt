@@ -1,0 +1,14 @@
+F
+======================================================================
+FAIL: test_T01_twenty_successes (tests.test_gate1_rca.Gate1Tests.test_T01_twenty_successes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_gate1_rca.py", line 39, in test_T01_twenty_successes
+    self.assertTrue(callable(getattr(gate1, 'assess', None)), 'offline Gate 1 assessor missing')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : offline Gate 1 assessor missing
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (failures=1)

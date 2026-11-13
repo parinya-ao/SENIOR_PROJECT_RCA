@@ -1,0 +1,359 @@
+{
+  "classification": "HOST_TRANSPORT_ERROR",
+  "counter_interpretation": "A zero counter is not evidence of zero receptions; no events are inferred",
+  "evidence_completeness": "INCOMPLETE",
+  "evidence_integrity": "PASS",
+  "hypotheses": [
+    {
+      "confidence": "INSUFFICIENT_EVIDENCE",
+      "id": "H3",
+      "status": "HYPOTHESIS"
+    },
+    {
+      "confidence": "INSUFFICIENT_EVIDENCE",
+      "id": "H5",
+      "status": "HYPOTHESIS"
+    },
+    {
+      "confidence": "INSUFFICIENT_EVIDENCE",
+      "id": "H6",
+      "status": "HYPOTHESIS"
+    }
+  ],
+  "identity_checks": [
+    {
+      "build": "be16fb72b3f94b3c4057a10ca1c9eff086f859dec790d38a963b4e08e9263732",
+      "config": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+      "image_sha256": "990677a142eac631b829f61cafdba411e51f6d0b17eb2ec82c198ba51c694e03",
+      "role": "sender"
+    },
+    {
+      "build": "83b4048773b44c635b3f6cb6da3b4ce5cf8008d7982dbd5922e10dd39c780b64",
+      "config": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+      "image_sha256": "067330164a03e7e021730e8a5336ef005af87cd5fe013ebe565b2c050b4d833e",
+      "role": "receiver"
+    }
+  ],
+  "incident_id": "20261113T123620Z-reverse-raw",
+  "integrity_problems": [],
+  "mcu_timelines": {
+    "receiver": [
+      {
+        "build": "83b4048773b44c635b3f6cb6da3b4ce5cf8008d7982dbd5922e10dd39c780b64",
+        "config": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+        "e": "IDENTITY",
+        "host_ns": 103522120345381,
+        "role": "receiver",
+        "s": "0",
+        "t": "226"
+      },
+      {
+        "e": "RAW_STATUS",
+        "flags": "0",
+        "host_ns": 103522566211625,
+        "overflow": "0",
+        "rc": "0",
+        "role": "receiver",
+        "s": "0",
+        "t": "227"
+      },
+      {
+        "bytes": "1289E4C000F084727404000812271D00000023C30A0009",
+        "e": "RAW_CONFIG",
+        "host_ns": 103523274168098,
+        "role": "receiver",
+        "s": "0",
+        "t": "227"
+      }
+    ],
+    "sender": [
+      {
+        "build": "be16fb72b3f94b3c4057a10ca1c9eff086f859dec790d38a963b4e08e9263732",
+        "config": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+        "e": "IDENTITY",
+        "host_ns": 103522138120842,
+        "role": "sender",
+        "s": "0",
+        "t": "64489"
+      },
+      {
+        "e": "RAW_STATUS",
+        "flags": "0",
+        "host_ns": 103522602493026,
+        "overflow": "0",
+        "rc": "0",
+        "role": "sender",
+        "s": "0",
+        "t": "64490"
+      },
+      {
+        "bytes": "1289E4C000F084727404000812271D00000023C30A0009",
+        "e": "RAW_CONFIG",
+        "host_ns": 103523327189232,
+        "role": "sender",
+        "s": "0",
+        "t": "64490"
+      },
+      {
+        "bytes": "128DE4C000F084727404000812271D00000023C30A0009",
+        "e": "RAW_RX_ACTIVE",
+        "host_ns": 103524165113559,
+        "role": "sender",
+        "s": "0",
+        "t": "67281"
+      },
+      {
+        "e": "RAW_RX_READY",
+        "flags": "0",
+        "headers": "0",
+        "hop": "0",
+        "host_ns": 103525089015341,
+        "mode": "141",
+        "overflow": "0",
+        "packets": "0",
+        "rc": "0",
+        "role": "sender",
+        "s": "0",
+        "seen": "0",
+        "stat": "4",
+        "t": "67283"
+      }
+    ]
+  },
+  "missing_evidence": [
+    "RAW_TX_PRE",
+    "RAW_TX_STATE",
+    "RAW_RX_DONE",
+    "RAW_RX_TIMEOUT"
+  ],
+  "observed_events": [
+    {
+      "build": "83b4048773b44c635b3f6cb6da3b4ce5cf8008d7982dbd5922e10dd39c780b64",
+      "config": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+      "e": "IDENTITY",
+      "host_ns": 103522120345381,
+      "role": "receiver",
+      "s": "0",
+      "t": "226"
+    },
+    {
+      "build": "be16fb72b3f94b3c4057a10ca1c9eff086f859dec790d38a963b4e08e9263732",
+      "config": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+      "e": "IDENTITY",
+      "host_ns": 103522138120842,
+      "role": "sender",
+      "s": "0",
+      "t": "64489"
+    },
+    {
+      "e": "RAW_STATUS",
+      "flags": "0",
+      "host_ns": 103522566211625,
+      "overflow": "0",
+      "rc": "0",
+      "role": "receiver",
+      "s": "0",
+      "t": "227"
+    },
+    {
+      "e": "RAW_STATUS",
+      "flags": "0",
+      "host_ns": 103522602493026,
+      "overflow": "0",
+      "rc": "0",
+      "role": "sender",
+      "s": "0",
+      "t": "64490"
+    },
+    {
+      "bytes": "1289E4C000F084727404000812271D00000023C30A0009",
+      "e": "RAW_CONFIG",
+      "host_ns": 103523274168098,
+      "role": "receiver",
+      "s": "0",
+      "t": "227"
+    },
+    {
+      "bytes": "1289E4C000F084727404000812271D00000023C30A0009",
+      "e": "RAW_CONFIG",
+      "host_ns": 103523327189232,
+      "role": "sender",
+      "s": "0",
+      "t": "64490"
+    },
+    {
+      "bytes": "128DE4C000F084727404000812271D00000023C30A0009",
+      "e": "RAW_RX_ACTIVE",
+      "host_ns": 103524165113559,
+      "role": "sender",
+      "s": "0",
+      "t": "67281"
+    },
+    {
+      "e": "RAW_RX_READY",
+      "flags": "0",
+      "headers": "0",
+      "hop": "0",
+      "host_ns": 103525089015341,
+      "mode": "141",
+      "overflow": "0",
+      "packets": "0",
+      "rc": "0",
+      "role": "sender",
+      "s": "0",
+      "seen": "0",
+      "stat": "4",
+      "t": "67283"
+    }
+  ],
+  "operational_snapshot_comparison": {
+    "registers": {},
+    "status": "NOT CAPTURED"
+  },
+  "radiated_rf": null,
+  "received_packet_count": null,
+  "receiver_counter_audit": [
+    {
+      "crc_error": false,
+      "event": "RAW_RX_READY",
+      "hardware_packets": 0,
+      "host_ns": 103525089015341,
+      "limitation": "SX1276 erratum 2.4: RX Continuous can omit first valid packet; RX Single counter does not increment",
+      "rx_done": false,
+      "rx_timeout_irq": false,
+      "valid_header": false,
+      "valid_packet_increment": 0,
+      "zero_counter_proves_no_reception": false
+    }
+  ],
+  "recommended_next_experiment": "Capture UPDI and MCU VDD/3V3-LORA synchronously; separate authorization required.",
+  "reset_during_send": null,
+  "restore_record": {
+    "standby_evidence": "/home/parinya/university/SENIOR_PROJECT_RCA/artifacts/arq/20261113T123837Z-standby"
+  },
+  "rf_verdict": "INCONCLUSIVE",
+  "root_cause": "UNKNOWN",
+  "timeline": [
+    {
+      "build": "83b4048773b44c635b3f6cb6da3b4ce5cf8008d7982dbd5922e10dd39c780b64",
+      "config": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+      "e": "IDENTITY",
+      "host_ns": 103522120345381,
+      "kind": "DEVICE_EVENT_RECEIVED",
+      "role": "receiver",
+      "s": "0",
+      "t": "226"
+    },
+    {
+      "build": "be16fb72b3f94b3c4057a10ca1c9eff086f859dec790d38a963b4e08e9263732",
+      "config": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+      "e": "IDENTITY",
+      "host_ns": 103522138120842,
+      "kind": "DEVICE_EVENT_RECEIVED",
+      "role": "sender",
+      "s": "0",
+      "t": "64489"
+    },
+    {
+      "e": "RAW_STATUS",
+      "flags": "0",
+      "host_ns": 103522566211625,
+      "kind": "DEVICE_EVENT_RECEIVED",
+      "overflow": "0",
+      "rc": "0",
+      "role": "receiver",
+      "s": "0",
+      "t": "227"
+    },
+    {
+      "e": "RAW_STATUS",
+      "flags": "0",
+      "host_ns": 103522602493026,
+      "kind": "DEVICE_EVENT_RECEIVED",
+      "overflow": "0",
+      "rc": "0",
+      "role": "sender",
+      "s": "0",
+      "t": "64490"
+    },
+    {
+      "bytes": "1289E4C000F084727404000812271D00000023C30A0009",
+      "e": "RAW_CONFIG",
+      "host_ns": 103523274168098,
+      "kind": "DEVICE_EVENT_RECEIVED",
+      "role": "receiver",
+      "s": "0",
+      "t": "227"
+    },
+    {
+      "bytes": "1289E4C000F084727404000812271D00000023C30A0009",
+      "e": "RAW_CONFIG",
+      "host_ns": 103523327189232,
+      "kind": "DEVICE_EVENT_RECEIVED",
+      "role": "sender",
+      "s": "0",
+      "t": "64490"
+    },
+    {
+      "host_ns": 103523328665310,
+      "kind": "HOST_COMMAND",
+      "role": "sender",
+      "text": "RX"
+    },
+    {
+      "bytes": "128DE4C000F084727404000812271D00000023C30A0009",
+      "e": "RAW_RX_ACTIVE",
+      "host_ns": 103524165113559,
+      "kind": "DEVICE_EVENT_RECEIVED",
+      "role": "sender",
+      "s": "0",
+      "t": "67281"
+    },
+    {
+      "e": "RAW_RX_READY",
+      "flags": "0",
+      "headers": "0",
+      "hop": "0",
+      "host_ns": 103525089015341,
+      "kind": "DEVICE_EVENT_RECEIVED",
+      "mode": "141",
+      "overflow": "0",
+      "packets": "0",
+      "rc": "0",
+      "role": "sender",
+      "s": "0",
+      "seen": "0",
+      "stat": "4",
+      "t": "67283"
+    },
+    {
+      "host_ns": 103525089152263,
+      "kind": "HOST_COMMAND",
+      "role": "receiver",
+      "text": "SEND 48656C6C6F20576F726C64"
+    }
+  ],
+  "transport": [
+    {
+      "baud": "38400",
+      "end_ns": null,
+      "exception_type": "TransportError",
+      "expected": "ANY_VALUE_EXACT_LENGTH_UNKNOWN",
+      "message": "UPDI response mismatch: expected None, received b''\n",
+      "monitor_exit_code": null,
+      "monitor_pid": null,
+      "parser_state": null,
+      "port": "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0",
+      "port_owner": null,
+      "request_hex": null,
+      "request_length": null,
+      "response_hex": "",
+      "response_length": 0,
+      "role": "receiver",
+      "start_ns": null,
+      "timeout_s": null
+    }
+  ],
+  "tx_started": null,
+  "usb_disconnected": null
+}

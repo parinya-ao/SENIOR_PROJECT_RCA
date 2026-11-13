@@ -1,0 +1,113 @@
+--- 7.1.2
++++ master
+@@ -7,11 +7,11 @@
+   // sensitivity optimization for 500kHz bandwidth
+   // see SX1276/77/78 Errata, section 2.1 for details
+   Module* mod = this->getMod();
+-  if(fabsf(SX127x::bandwidth - 500.0) <= 0.001) {
+-    if((frequency >= 862.0) && (frequency <= 1020.0)) {
++  if(this->bandwidth == RADIOLIB_UNIT_KILO(500)) {
++    if((this->frequency >= RADIOLIB_UNIT_MEGA(862)) && (this->frequency <= RADIOLIB_UNIT_MEGA(1020))) {
+       mod->SPIwriteRegister(0x36, 0x02);
+       mod->SPIwriteRegister(0x3a, 0x64);
+-    } else if((frequency >= 410.0) && (frequency <= 525.0)) {
++    } else if((this->frequency >= RADIOLIB_UNIT_MEGA(410)) && (this->frequency <= RADIOLIB_UNIT_MEGA(525))) {
+       mod->SPIwriteRegister(0x36, 0x02);
+       mod->SPIwriteRegister(0x3a, 0x7F);
+     }
+@@ -21,67 +21,40 @@
+   // see SX1276/77/78 Errata, section 2.3 for details
+ 
+   // figure out what we need to set
+-  uint8_t fixedRegs[3] = { 0x00, 0x00, 0x00 };
+-  float rxFreq = frequency;
+-  if(fabsf(SX127x::bandwidth - 7.8) <= 0.001) {
+-    fixedRegs[0] = 0b00000000;
+-    fixedRegs[1] = 0x48;
+-    fixedRegs[2] = 0x00;
+-    rxFreq += 0.00781;
+-  } else if(fabsf(SX127x::bandwidth - 10.4) <= 0.001) {
+-    fixedRegs[0] = 0b00000000;
+-    fixedRegs[1] = 0x44;
+-    fixedRegs[2] = 0x00;
+-    rxFreq += 0.01042;
+-  } else if(fabsf(SX127x::bandwidth - 15.6) <= 0.001) {
+-    fixedRegs[0] = 0b00000000;
+-    fixedRegs[1] = 0x44;
+-    fixedRegs[2] = 0x00;
+-    rxFreq += 0.01562;
+-  } else if(fabsf(SX127x::bandwidth - 20.8) <= 0.001) {
+-    fixedRegs[0] = 0b00000000;
+-    fixedRegs[1] = 0x44;
+-    fixedRegs[2] = 0x00;
+-    rxFreq += 0.02083;
+-  } else if(fabsf(SX127x::bandwidth - 31.25) <= 0.001) {
+-    fixedRegs[0] = 0b00000000;
+-    fixedRegs[1] = 0x44;
+-    fixedRegs[2] = 0x00;
+-    rxFreq += 0.03125;
+-  } else if(fabsf(SX127x::bandwidth - 41.7) <= 0.001) {
+-    fixedRegs[0] = 0b00000000;
+-    fixedRegs[1] = 0x44;
+-    fixedRegs[2] = 0x00;
+-    rxFreq += 0.04167;
+-  } else if(fabsf(SX127x::bandwidth - 62.5) <= 0.001) {
+-    fixedRegs[0] = 0b00000000;
+-    fixedRegs[1] = 0x40;
+-    fixedRegs[2] = 0x00;
+-  } else if(fabsf(SX127x::bandwidth - 125.0) <= 0.001) {
+-    fixedRegs[0] = 0b00000000;
+-    fixedRegs[1] = 0x40;
+-    fixedRegs[2] = 0x00;
+-  } else if(fabsf(SX127x::bandwidth - 250.0) <= 0.001) {
+-    fixedRegs[0] = 0b00000000;
+-    fixedRegs[1] = 0x40;
+-    fixedRegs[2] = 0x00;
+-  } else if(fabsf(SX127x::bandwidth - 500.0) <= 0.001) {
+-    fixedRegs[0] = 0b10000000;
+-    fixedRegs[1] = mod->SPIreadRegister(0x2F);
+-    fixedRegs[2] = mod->SPIreadRegister(0x30);
+-  } else {
+-    return;
++  uint8_t fixedRegs[3] = { 0x00, 0x40, 0x00 };
++  uint32_t rxFreq = this->frequency;
++  switch(this->bandwidth) {
++    case(7800):
++      fixedRegs[1] = 0x48;
++      rxFreq += this->bandwidth;
++      break;
++    
++    case(10400):
++    case(15600):
++    case(20800):
++    case(31250):
++    case(41700):
++      fixedRegs[1] = 0x44;
++      rxFreq += this->bandwidth;
++      break;
++    
++    case(62500):
++    case(125000):
++    case(250000):
++      break;
++
++    default:
++      fixedRegs[0] = 0x80;
++      fixedRegs[1] = mod->SPIreadRegister(0x2F);
++      fixedRegs[2] = mod->SPIreadRegister(0x30);
++      break;
+   }
+ 
+   // first, go to standby
+   standby();
+ 
+   // shift the freqency up when receiving, or restore the original when transmitting
+-  if(rx) {
+-    SX127x::setFrequencyRaw(rxFreq);
+-  } else {
+-    SX127x::setFrequencyRaw(frequency);
+-  }
++  SX127x::setFrequencyRaw(rx ? rxFreq : this->frequency);
+ 
+   // finally, apply errata fixes
+   mod->SPIsetRegValue(0x31, fixedRegs[0], 7, 7);

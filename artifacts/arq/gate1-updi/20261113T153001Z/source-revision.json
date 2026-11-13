@@ -1,0 +1,10 @@
+{
+  "repository_root": "/home/parinya/university/SENIOR_PROJECT_RCA",
+  "requested_legacy_path": "/home/parinya/university/iwing-tracker/gateway-lora/loraboard",
+  "git_head": "1e2dd303e2ca63b93826df030e8fd116683d7284",
+  "branch": "fix/receiver-rfm-rev1-pins",
+  "preexisting_dirty_entries": 691,
+  "python": "3.14.10 (main, Oct 26 2026, 00:00:00) [GCC 16.2.1 20260819 (Red Hat 16.2.1-2)]",
+  "run_directory": "/home/parinya/university/SENIOR_PROJECT_RCA/artifacts/arq/gate1-updi/20261113T153001Z",
+  "utc": "2026-11-13T15:26:03.174228+00:00"
+}

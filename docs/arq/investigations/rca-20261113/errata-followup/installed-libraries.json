@@ -1,0 +1,132 @@
+[
+  {
+    "environment": "sender",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "sender_hello",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "receiver",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "sender_hello_spi",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "receiver_spi",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "sender_mvp",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "receiver_mvp",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "sender_arq",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "receiver_arq",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "sender_arq_test",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "receiver_arq_test",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "sender_reverse_raw",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  },
+  {
+    "environment": "receiver_reverse_raw",
+    "version": "7.1.2",
+    "hashes": {
+      "BuildOpt.h": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615",
+      "modules/SX127x/SX127x.cpp": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c",
+      "modules/SX127x/SX1278.cpp": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d",
+      "modules/SX127x/SX1276.cpp": "e674592a91724fab9bbfefa32fcc9aa9206598b1c18e9edc1784d63e772db5f3"
+    }
+  }
+]

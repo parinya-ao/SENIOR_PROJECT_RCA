@@ -1,5 +1,14 @@
 # ARQ debugging
 
+Current reverse-raw investigation: [readiness/configuration audit](investigations/20261113T123510Z.md).
+The operator confirmed antenna attachment, connector/bridge selection and 915 MHz
+module markings after the historical inspection hold below. Reverse RF must pass
+before any further ACK/NACK trial. `RAW_RX_READY` now includes actual mode;
+`RAW_RX_ACTIVE` and `RAW_TX_PRE` capture operational configuration. Receiver
+`RAW_RX_DONE`/`RAW_RX_TIMEOUT` preserve IRQ, header/packet counters, ModemStat
+and HopChannel before cleanup. A final zero IRQ alone does not describe an entire
+window. Inspect accumulated `seen` flags and counters from the same window.
+
 เริ่มจาก evidence อย่าเปลี่ยน timing แบบสุ่ม. `STATUS` replays startup,
 build/config identity, counters, last result and RTT diagnostics.
 

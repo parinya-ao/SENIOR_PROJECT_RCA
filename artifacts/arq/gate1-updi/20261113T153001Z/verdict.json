@@ -1,0 +1,49 @@
+{
+  "verdict": "GATE1_INCONCLUSIVE",
+  "classification": "UPDI_RESPONSE_TIMEOUT",
+  "status_attempted": 0,
+  "status_successful": 0,
+  "status_failed": 0,
+  "response_timeouts": 1,
+  "response_mismatches": 0,
+  "monitor_exits": 0,
+  "identity_mismatches": 0,
+  "first_failure": {
+    "timestamp_utc": "2026-11-13T15:26:48.164277+00:00",
+    "timestamp_monotonic_ns": 113617434379715,
+    "transaction_index": null,
+    "operation_name": "UPDI_SYNCH_INSTRUCTION",
+    "exception_type": "TimeoutError",
+    "exception_message": "STATUS acquisition or transaction deadline",
+    "last_complete_request_hex": "5585",
+    "expected_response_length": null,
+    "expected_response_value_hex": null,
+    "actual_rx_hex": "5585",
+    "actual_rx_length": 1,
+    "previous_successful_transaction": null
+  },
+  "updi_break_count": 2,
+  "synch_count": 3006,
+  "ocd_initialization": "PASS",
+  "cpu_reset_observed": "UNKNOWN",
+  "cpu_reset_operation_count": 0,
+  "cpu_resume_count": 0,
+  "rf_transmissions": 0,
+  "flash_operations": 0,
+  "fuse_writes": 0,
+  "mcu_identity": {
+    "mcu_part": "AVR128DA28",
+    "silicon_signature_hex": "1e970a",
+    "serial_hex": "42032240221092150158013400000000",
+    "expected_serial_from_config": "42032240221092150158013400000000"
+  },
+  "firmware_identity": {
+    "build_id": "06f4f51a7a2e68867378779e34653fa228acc5ec4345bd1761358322eed7f250",
+    "config_hash": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+    "role": "receiver",
+    "signature_hex": "1e970a",
+    "serial_hex": "42032240221092150158013400000000"
+  },
+  "acquisition_duration_s": 45.09933448299125,
+  "status_duration_s": null
+}

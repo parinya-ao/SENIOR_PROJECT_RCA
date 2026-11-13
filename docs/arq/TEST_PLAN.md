@@ -62,8 +62,8 @@ antenna attachment and actual RF-module marking:
 python tools/arq_trial.py --mvp --rf-path-confirmed
 ```
 
-This executes one DATA→ACK (H01), then ten exchanges (H04), then application
-NACK (H02) and first-ACK suppression/recovery (H03), each with a fresh session.
+This executes one DATA→ACK (H01), then application NACK (H02), first-ACK
+suppression/recovery (H03), and ten exchanges (H04), each with a fresh session.
 Any failed gate stops subsequent gates. Normal unarmed standby firmware is
 restored in the runner's finally path. `--campaign --rf-path-confirmed` retains
 the original full sequential campaign including the separate 100-message trials.

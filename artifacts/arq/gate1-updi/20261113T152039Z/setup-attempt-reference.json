@@ -1,0 +1,5 @@
+{
+  "prior_runner_attempt": "artifacts/arq/gate1-updi/20261113T151540Z",
+  "classification": "HOST_TOOL_IMPORT_FAILURE_BEFORE_PORT_OPEN",
+  "port_opened": false
+}

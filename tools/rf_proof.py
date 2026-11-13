@@ -733,6 +733,8 @@ def application_bounds_for_environment(
         "receiver_arq": "receiver",
         "sender_arq_test": "gateway",
         "receiver_arq_test": "receiver",
+        "sender_reverse_raw": "gateway",
+        "receiver_reverse_raw": "receiver",
     }.get(environment)
     if not sections or role is None:
         return None

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "experiment_id": "20261113T142138Z",
+  "experiment_type": "GATE1_UPDI_PREFLIGHT_BLOCKED",
+  "created_utc": "2026-11-13T14:33:03.166538+00:00",
+  "root": "/home/parinya/university/SENIOR_PROJECT_RCA",
+  "verdict": "GATE1_BLOCKED",
+  "classification": "UNSAFE_COMMAND_PATH",
+  "diagnostic_code": "GATE1_BLOCKED_UNSAFE_COMMAND_PATH",
+  "transactions": 0,
+  "first_failure": null,
+  "raw_capture_note": "Empty monitor logs, transactions journal and transport trace intentionally represent no monitor/target access. Synthetic records appear only in offline tests.",
+  "files": [
+    "20261113T121506Z-reverse-raw-analysis.json",
+    "20261113T123620Z-reverse-raw-analysis.json",
+    "20261113T123837Z-standby-analysis.json",
+    "GATE1_STAR_REPORT.md",
+    "audited-source.txt",
+    "command-audit.md",
+    "commands.json",
+    "diff-check.txt",
+    "full-suite.txt",
+    "graph-update.log",
+    "historical-verification.json",
+    "host-events.jsonl",
+    "integrity-report.json",
+    "latency-red.txt",
+    "manifest.json",
+    "monitor.stderr.log",
+    "monitor.stdout.log",
+    "offline-scope.json",
+    "original-files-before.json",
+    "port-discovery.json",
+    "preflight.json",
+    "preservation-before.json",
+    "preservation.json",
+    "runtime-versions.json",
+    "sha256.json",
+    "source-hashes.json",
+    "source-revision.json",
+    "test-red.txt",
+    "test-results.txt",
+    "transactions.jsonl",
+    "transport-trace.jsonl",
+    "verdict.json",
+    "working-tree-after.txt"
+  ],
+  "file_count": 33,
+  "sha256_file": "sha256.json",
+  "hash_exclusions": [
+    "sha256.json",
+    "integrity-report.json"
+  ],
+  "exclusion_reason": "No circular self-hash; integrity report records sha256.json hash and independently checks its entries.",
+  "original_manifest": "../../20261113T123620Z-reverse-raw/bundle.json",
+  "source_revision": "source-revision.json",
+  "current_target_identity": "UNKNOWN",
+  "offline_tests": {
+    "focused": {
+      "run": 18,
+      "passed": 18,
+      "failed": 0
+    },
+    "full": {
+      "run": 250,
+      "passed": 249,
+      "skipped": 1,
+      "failed": 0
+    }
+  },
+  "historical_preservation_files": 1553,
+  "extended_original_preservation_files": 1929
+}

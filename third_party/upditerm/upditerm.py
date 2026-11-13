@@ -20,6 +20,7 @@ import serial
 import serial.tools.list_ports
 
 VERSION         = '1.1'
+TRACING         = False
 
 # Commandline defaults
 BAUDRATE        = 921600
@@ -106,6 +107,9 @@ def error(message):
     print(message)
     sys.exit(1)
 
+class TransportError(RuntimeError):
+    """A failed UPDI exchange invalidates this connection."""
+
 class SerialPort:
     "Serial port"
     def __init__(self, port, baudrate=BAUDRATE,
@@ -113,6 +117,8 @@ class SerialPort:
                  stopbits=serial.STOPBITS_ONE,
                  halfduplex=False):
         try:
+            self.failed = False
+            self.last_tx = b''
             self.dev = serial.Serial(port, baudrate,
                                      parity=parity,
                                      stopbits=stopbits,
@@ -121,15 +127,24 @@ class SerialPort:
         except (ValueError, serial.SerialException) as cause:
             error(f'Cannot open serial port: {cause}')
     def send(self, data):
+        if self.failed:
+            raise TransportError('UPDI connection already failed')
+        self.last_tx = bytes(data)
         if TRACING:
             print(f'send: {data.hex(sep=" ")}')
         self.dev.write(data)
         if self.halfduplex:
             echo = self.dev.read(len(data))
             if data != echo:
-                error('No echo')
-    def recv(self, length):
+                self.failed = True
+                raise TransportError('UPDI echo mismatch')
+    def recv(self, length, expected=None):
+        if self.failed:
+            raise TransportError('UPDI connection already failed')
         data = self.dev.read(length)
+        if len(data) != length or (expected is not None and data != expected):
+            self.failed = True
+            raise TransportError(f'UPDI response mismatch: expected {expected!r}, received {data!r}; last_tx={self.last_tx.hex(" ")}')
         if TRACING:
             print(f'recv: {data.hex(sep=" ")}')
         return data
@@ -170,14 +185,14 @@ class UPDI:
         if self.ser:
             try:
                 self.stcs(CTRLB, UPDIDIS) # disable UPDI on exit
-            except SystemExit:
+            except (SystemExit, TransportError):
                 pass
     def send(self, data):
         self.ser.send(bytes(data))
     def instr(self, data):
         self.send([SYNCH] + data)
-    def recv(self, length):
-        data = self.ser.recv(length)
+    def recv(self, length, expected=None):
+        data = self.ser.recv(length, expected)
         if len(data) != length:
             error('Short read')
         return data
@@ -189,9 +204,9 @@ class UPDI:
         return byte
     def sts8(self, address, value):
         self.instr([STS | (0 << 2), address])
-        self.recv(1) # ACK
+        self.recv(1, bytes([ACK]))
         self.send([value])
-        self.recv(1) # ACK
+        self.recv(1, bytes([ACK]))
     def lds8(self, address):
         self.instr([LDS | (0 << 2), address])
         return self.recv(1)[0]
@@ -223,7 +238,7 @@ class SerialUPDI:
         if self.updi:
             try:
                 self.updi.sts8(UART_FLAGS, 0)
-            except SystemExit:
+            except (SystemExit, TransportError):
                 pass
     def send1(self, byte, blocking=True):
         while True:
@@ -309,6 +324,7 @@ class Terminal:
         self.serport_lock = threading.Lock()
         self.reader_busy = threading.Lock()
         self.reader_busy.acquire()
+        self.failure = None
         self.writer_thread = threading.Thread(target=self.writer, daemon=True)
         self.writer_thread.start()
         self.reader_thread = threading.Thread(target=self.reader, daemon=True)
@@ -337,6 +353,9 @@ class Terminal:
                     if status or interactive:
                         break
                     time.sleep(0.010)
+            except TransportError as cause:
+                self.failure = cause
+                return
             except SystemExit:
                 pass
     def reader(self):
@@ -361,13 +380,19 @@ class Terminal:
                 if idle > IDLE_TIMEOUT:
                     if self.reader_busy.locked():
                         self.reader_busy.release()  # reader is idle
+            except TransportError as cause:
+                self.failure = cause
+                if self.reader_busy.locked():self.reader_busy.release()
+                return
             except SystemExit:
                 pass
         if last_byte != 0x0a:
             self.console.put(0x0a)
     def wait(self):
         "Wait for the termination of the writer and reader threads"
-        self.writer_thread.join()
+        while self.writer_thread.is_alive() and self.failure is None:
+            self.writer_thread.join(.1)
+        if self.failure is not None:raise self.failure
         self.reader_thread.join()
 
 def parse_arguments():
@@ -433,6 +458,9 @@ def main(arg):
                 print(f'>>>  Exit: {esc}+e  Reset: {esc}+r  {esc}: {esc}+{esc}', file=sys.stderr)
             terminal = Terminal(console, serport, escape=escape, logfile=arg.l)
             terminal.wait()
+    except TransportError as cause:
+        print(str(cause), file=sys.stderr)
+        sys.exit(1)
     except SystemExit:
         sys.exit(1)
 

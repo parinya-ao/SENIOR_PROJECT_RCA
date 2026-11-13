@@ -1,0 +1,12 @@
+{
+  "attempt_utc": "2026-11-13T15:15Z (runner invocation timestamp bounded by shell log)",
+  "result": "HOST_TOOL_IMPORT_FAILURE_BEFORE_PORT_OPEN",
+  "exception": "ModuleNotFoundError: No module named tools",
+  "port_opened": false,
+  "breaks_sent": 0,
+  "status_attempted": 0,
+  "rf": 0,
+  "flash": 0,
+  "source": "tools/rca/gate1_live.py import of tools.arq_trial before sys.path included repository root",
+  "correction": "Add active repository root to sys.path; T23 verifies --help starts without hardware."
+}

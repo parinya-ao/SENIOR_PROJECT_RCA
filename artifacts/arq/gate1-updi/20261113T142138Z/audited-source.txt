@@ -1,0 +1,422 @@
+third_party/upditerm/upditerm.py
+22: VERSION         = '1.1'
+23: TRACING         = False
+24: 
+25: # Commandline defaults
+26: BAUDRATE        = 921600
+40: SERIAL_TIMEOUT  = 1.0
+41: IDLE_TIMEOUT    = 0.25
+42: 
+43: # I/O memory addresses used for a virtual UART
+44: UART_FLAGS      = 0x1e          # GPIOR2
+45: UART_RX         = 0x1f          # GPIOR3
+46: # bit masks for the UART_FLAGS register
+47: FLAG_ENABLE     = 0x01          # UART is enabled
+48: FLAG_RX         = 0x02          # RX buffer full
+113: class SerialPort:
+114:     "Serial port"
+115:     def __init__(self, port, baudrate=BAUDRATE,
+116:                  parity=serial.PARITY_NONE,
+117:                  stopbits=serial.STOPBITS_ONE,
+118:                  halfduplex=False):
+119:         try:
+120:             self.failed = False
+121:             self.last_tx = b''
+122:             self.dev = serial.Serial(port, baudrate,
+123:                                      parity=parity,
+124:                                      stopbits=stopbits,
+125:                                      timeout=SERIAL_TIMEOUT)
+126:             self.halfduplex = halfduplex
+127:         except (ValueError, serial.SerialException) as cause:
+128:             error(f'Cannot open serial port: {cause}')
+129:     def send(self, data):
+130:         if self.failed:
+131:             raise TransportError('UPDI connection already failed')
+132:         self.last_tx = bytes(data)
+133:         if TRACING:
+134:             print(f'send: {data.hex(sep=" ")}')
+135:         self.dev.write(data)
+136:         if self.halfduplex:
+137:             echo = self.dev.read(len(data))
+138:             if data != echo:
+139:                 self.failed = True
+140:                 raise TransportError('UPDI echo mismatch')
+141:     def recv(self, length, expected=None):
+142:         if self.failed:
+143:             raise TransportError('UPDI connection already failed')
+144:         data = self.dev.read(length)
+145:         if len(data) != length or (expected is not None and data != expected):
+146:             self.failed = True
+147:             raise TransportError(f'UPDI response mismatch: expected {expected!r}, received {data!r}; last_tx={self.last_tx.hex(" ")}')
+148:         if TRACING:
+149:             print(f'recv: {data.hex(sep=" ")}')
+150:         return data
+151:     def send_break(self):
+152:         current_baudrate = self.dev.baudrate
+153:         self.dev.baudrate = 300
+154:         self.send(bytes([BREAK])) # 10 bits @ 300 baud = 33ms
+155:         self.dev.baudrate = current_baudrate
+156:     def send1(self, byte, blocking=True):
+157:         while True:
+158:             if self.dev.out_waiting == 0:
+159:                 self.send(bytes([byte]))
+160:                 return True
+161:             if not blocking:
+162:                 return False
+163:     def recv1(self, blocking=True):
+164:         while True:
+165:             if self.dev.in_waiting > 0:
+166:                 return self.recv(1)[0]
+167:             if not blocking:
+168:                 return None
+169: 
+170: class UPDI:
+171:     "UPDI connection over a serial port"
+172:     def __init__(self, port, baudrate=BAUDRATE):
+173:         self.ser = None
+174:         self.ser = SerialPort(port, min(baudrate, 115200),
+175:                               parity=serial.PARITY_EVEN,
+176:                               stopbits=serial.STOPBITS_TWO,
+177:                               halfduplex=True)
+178:         self.ser.send_break()
+179:         self.ser.send_break()
+180:         self.stcs(CTRLB, CCDETDIS) # disable contention detection
+181:         if baudrate > 115200:
+182:             self.stcs(ASI_CTRLA, UPDICLKSEL16) # switch AVR to 16MHz UPDI clock
+183:             self.ser.dev.baudrate = baudrate   # switch to requested baudrate
+184:     def __del__(self):
+185:         if self.ser:
+186:             try:
+187:                 self.stcs(CTRLB, UPDIDIS) # disable UPDI on exit
+188:             except (SystemExit, TransportError):
+189:                 pass
+190:     def send(self, data):
+191:         self.ser.send(bytes(data))
+192:     def instr(self, data):
+193:         self.send([SYNCH] + data)
+194:     def recv(self, length, expected=None):
+195:         data = self.ser.recv(length, expected)
+196:         if len(data) != length:
+197:             error('Short read')
+198:         return data
+199:     def stcs(self, address, value):
+200:         self.instr([STCS | address, value])
+201:     def ldcs(self, address):
+202:         self.instr([LDCS | address])
+203:         byte = self.recv(1)[0]
+204:         return byte
+205:     def sts8(self, address, value):
+206:         self.instr([STS | (0 << 2), address])
+207:         self.recv(1, bytes([ACK]))
+208:         self.send([value])
+209:         self.recv(1, bytes([ACK]))
+210:     def lds8(self, address):
+211:         self.instr([LDS | (0 << 2), address])
+212:         return self.recv(1)[0]
+213:     def sib(self):
+214:         self.instr([KEY | (1 << 2) | 2])
+215:         return self.recv(32).decode()
+216:     def reset(self):
+217:         self.stcs(ASI_RESET_REQ, RESET)
+218:         self.stcs(ASI_RESET_REQ, RUN)
+219:         for _ in range(self.ser.dev.baudrate // 12 // 3 // 10): # poll for 0.1 sec
+220:             if not self.ldcs(ASI_SYS_STATUS) & LOCKSTATUS:
+221:                 break
+222:     def key(self, key):
+223:         self.instr([KEY] + list(reversed(list(map(ord, key)))))
+224:         status = self.ldcs(ASI_KEY_STATUS)
+225:         if not status:
+226:             error(f'Key "{key}" not accepted')
+227: 
+228: class SerialUPDI:
+229:     "Virtual serial port over UPDI"
+230:     def __init__(self, port, baudrate=BAUDRATE, reset=False):
+231:         self.updi = None
+232:         self.updi = UPDI(port, baudrate)
+233:         self.updi.key(KEY_OCD)  # switch to OCD mode to enable stop on reset
+234:         if reset:
+235:             self.updi.reset()
+236:         self.updi.sts8(UART_FLAGS, FLAG_ENABLE)
+237:     def __del__(self):
+238:         if self.updi:
+239:             try:
+240:                 self.updi.sts8(UART_FLAGS, 0)
+241:             except (SystemExit, TransportError):
+242:                 pass
+243:     def send1(self, byte, blocking=True):
+244:         while True:
+245:             flags = self.updi.lds8(UART_FLAGS)
+246:             if not flags & FLAG_RX:
+247:                 self.updi.sts8(UART_RX, byte)
+248:                 self.updi.sts8(UART_FLAGS, flags | FLAG_RX)
+249:                 return True
+250:             if not blocking:
+251:                 return False
+252:     def recv1(self, blocking=True):
+253:         while True:
+254:             flags = self.updi.ldcs(ASI_OCD_STATUS)
+255:             # check for a stopped CPU which indicates that there was a RESET
+256:             if flags & OCD_STOPPED:
+257:                 self.updi.sts8(UART_FLAGS, FLAG_ENABLE) # reenable UART
+258:                 self.updi.stcs(ASI_OCD_CTRLA, OCD_RUN)  # restart CPU
+259:             # check for an OCD message byte
+260:             if flags & OCDMV:
+261:                 return self.updi.ldcs(ASI_OCD_MESSAGE)
+262:             if not blocking:
+263:                 return None
+332:     def writer(self):
+333:         "Copy from console to serial port"
+334:         while True:
+335:             interactive = not self.escape is None
+336:             try:
+337:                 key = self.console.get()
+338:                 if key is None:
+339:                     with self.reader_busy:  # wait until the reader is idle
+340:                         break
+341:                 if key == self.escape:
+342:                     key2 = self.console.get()
+343:                     if key2 == ESC_EXIT:
+344:                         break
+345:                     if key2 == ESC_RESET:
+346:                         with self.serport_lock:
+347:                             self.serport.reset()
+348:                     if key2 != self.escape:
+349:                         continue
+350:                 while True:
+351:                     with self.serport_lock:
+352:                         status = self.serport.send1(key, blocking=False)
+353:                     if status or interactive:
+354:                         break
+355:                     time.sleep(0.010)
+356:             except TransportError as cause:
+357:                 self.failure = cause
+358:                 return
+359:             except SystemExit:
+360:                 pass
+361:     def reader(self):
+362:         "Copy from serial port to console"
+363:         last_byte = None
+364:         last_time = time.time()
+365:         while self.writer_thread.is_alive():
+366:             try:
+367:                 with self.serport_lock:
+368:                     byte = self.serport.recv1(blocking=False)
+369:                 if byte:
+370:                     self.console.put(byte)
+371:                     last_byte = byte
+372:                     if self.log:
+373:                         self.log.write(chr(byte))
+374:                     last_time = time.time()
+375:                     if not self.reader_busy.locked():
+376:                         self.reader_busy.acquire()
+377:                     continue
+378:                 time.sleep(0.010)
+379:                 idle = time.time() - last_time
+380:                 if idle > IDLE_TIMEOUT:
+381:                     if self.reader_busy.locked():
+382:                         self.reader_busy.release()  # reader is idle
+383:             except TransportError as cause:
+384:                 self.failure = cause
+385:                 if self.reader_busy.locked():self.reader_busy.release()
+386:                 return
+387:             except SystemExit:
+388:                 pass
+389:         if last_byte != 0x0a:
+390:             self.console.put(0x0a)
+391:     def wait(self):
+392:         "Wait for the termination of the writer and reader threads"
+393:         while self.writer_thread.is_alive() and self.failure is None:
+394:             self.writer_thread.join(.1)
+395:         if self.failure is not None:raise self.failure
+396:         self.reader_thread.join()
+438: def main(arg):
+439:     try:
+440:         if arg.v:
+441:             print(VERSION)
+442:         elif arg.i:
+443:             updi = UPDI(arg.port, arg.baudrate)
+444:             print(updi.sib())
+445:         else:
+446:             if sys.stdin.isatty():
+447:                 escape = arg.e
+448:                 mapkeys = not arg.k
+449:                 showhelp = not arg.q
+450:             else:
+451:                 escape = None
+452:                 mapkeys = False
+453:                 showhelp = False
+454:             serport = SerialUPDI(arg.port, arg.baudrate, arg.r)
+455:             console = Console(mapkeys=mapkeys)
+456:             if showhelp:
+457:                 esc = f'^{0x40+arg.e:c}'
+458:                 print(f'>>>  Exit: {esc}+e  Reset: {esc}+r  {esc}: {esc}+{esc}', file=sys.stderr)
+459:             terminal = Terminal(console, serport, escape=escape, logfile=arg.l)
+460:             terminal.wait()
+461:     except TransportError as cause:
+462:         print(str(cause), file=sys.stderr)
+463:         sys.exit(1)
+464:     except SystemExit:
+465:         sys.exit(1)
+src/arq/main.cpp
+52: static void register_state(const char* name) {
+53:     static const uint8_t addresses[]={0x01,0x06,0x07,0x08,0x09,0x4d,0x1d,0x1e,
+54:         0x26,0x39,0x33,0x3b,0x12,0x13,0x10,0x1b,0x40,0x11,0x18,0x31};
+55:     uint8_t values[sizeof addresses];
+56:     for(uint8_t i=0;i<sizeof addresses;i++){
+57:         SPI.beginTransaction(SPISettings(ARQ_SPI_HZ,MSBFIRST,SPI_MODE0));
+58:         digitalWrite(board_ssot.cs,LOW);SPI.transfer(addresses[i]);values[i]=SPI.transfer(0);
+59:         digitalWrite(board_ssot.cs,HIGH);SPI.endTransaction();
+60:     }
+79: static void status() {
+80:     event("BOOT",startup_status,reset_flags);
+81:     char* identity=log_slot();if(identity)snprintf(identity,192,"A t=%lu e=IDENTITY s=%08lX build=%s config=%s\n",
+82:         (unsigned long)millis(),(unsigned long)session(),LORA_BUILD_ID,ARQ_CONFIG_HASH);
+83:     char* out=log_slot();if(out)snprintf(out,192,
+84:         "A t=%lu e=STATUS s=%08lX app=%lu dup=%lu gen=%lu sup=%lu att=%lu done=%lu crc=%lu overflow=%lu ready=%u\n",
+85:         (unsigned long)millis(),(unsigned long)session(),(unsigned long)receiver.deliveries,
+86:         (unsigned long)receiver.duplicates,(unsigned long)generated,(unsigned long)suppressed,
+87:         (unsigned long)attempted,(unsigned long)completed,(unsigned long)crc_errors,
+88:         (unsigned long)log_overflow,ready);
+89:     event("RESULT",sender.result,sender.state);
+90:     event("RTT_LAST",0,sender.rtt_last);
+91:     event("RTT_MIN",0,sender.rtt_min);event("RTT_MAX",0,sender.rtt_max);
+92:     event("RTT_COUNT",0,sender.rtt_count);
+93:     event("RX_DONE_COUNT",0,rx_done);event("DECODE_ERRORS",0,decode_errors);event("CONTROL_REJECTS",0,control_rejects);
+94:     if(ready){
+95:         // Read-only register evidence separates RX mode/configuration from RF path failure.
+96:         register_state("REG");
+97:     }
+98:     event("STATUS_END",0,log_overflow);
+99: }
+126: static void command(const char* text) {
+127:     if(!strcmp(text,"STATUS")){status();return;}
+128:     if(!strcmp(text,"X")){arq_sender_stop(&sender);receiver.stopped=true;event("STOP",0,0);return;}
+185: void setup() {
+186:     arq_sender_init(&sender);arq_receiver_init(&receiver);reset_flags=GPR_GPR0;
+187:     board_ssot_init();delay(10);
+188:     if(!SPI.swap(ARQ_SPI_ROUTE)){startup_status=-1;return;}SPI.begin();radio.reset();
+189:     bool supported=false;
+190:     for(uint8_t i=0;i<3;i++){
+191:         SPI.beginTransaction(SPISettings(ARQ_SPI_HZ,MSBFIRST,SPI_MODE0));
+192:         digitalWrite(board_ssot.cs,LOW);SPI.transfer(0x42);uint8_t version=SPI.transfer(0);
+193:         digitalWrite(board_ssot.cs,HIGH);SPI.endTransaction();
+194:         supported=version==RADIOLIB_SX1278_CHIP_VERSION || version==RADIOLIB_SX1278_CHIP_VERSION_ALT ||
+195:             version==RADIOLIB_SX1278_CHIP_VERSION_RFM9X;
+196:         if(supported)break;delay(10);
+197:     }
+198:     int16_t rc=supported?0:RADIOLIB_ERR_CHIP_NOT_FOUND;
+199:     if(!rc)rc=radio.begin(ARQ_FREQUENCY_HZ/1000000.0f,ARQ_BANDWIDTH_KHZ,
+200:         ARQ_SPREADING_FACTOR,ARQ_CODING_RATE,ARQ_SYNC_WORD,ARQ_TX_POWER_DBM,ARQ_PREAMBLE_SYMBOLS,0);
+201:     if(!rc)rc=radio.setOutputPower(ARQ_TX_POWER_DBM,false);
+202:     if(!rc)rc=radio.explicitHeader();if(!rc)rc=radio.setCRC(ARQ_CRC_ENABLED);
+203:     if(!rc)rc=radio.invertIQ(ARQ_IQ_INVERTED);
+204:     if(!rc)rc=radio.standby();startup_status=rc;ready=!rc;parked=!rc;
+205:     randomSeed(micros());
+206: }
+207: static void receive(uint32_t now,uint16_t flags) {
+208:     ++rx_done;last_rx_flags=flags;rx_diagnostics("RX_IRQ",flags);
+209:     int16_t rc=radio.standby();if(rc){fatal(rc);return;}
+210:     size_t length=radio.getPacketLength();uint8_t bytes[44];
+211:     if(length<12 || length>sizeof bytes){event("LENGTH_DISCARD",0,length);rx_restore();return;}
+212:     rc=radio.readData(bytes,length);
+244: void loop() {
+245:     if(updi_uart_enabled() && !attached)status();attached=updi_uart_enabled();
+246:     if(updi_uart_rx_poll())command_byte(updi_uart_rx());
+247:     uint32_t now=millis();arq_sender_state old=sender.state;
+248:     if(ready && !parked){
+249:         uint16_t flags=radio.getIRQFlags();
+250:         if(radio_tx){
+251:             bool done=flags & RADIOLIB_SX127X_CLEAR_IRQ_FLAG_TX_DONE;
+252:             if(done || now-tx_started>=ARQ_TX_MS){
+253:                 int16_t rc=radio.finishTransmit();radio_tx=false;
+254:                 event(done?"TX_DONE":"TX_TIMEOUT",rc,flags);
+255:                 bool rx=rx_restore();
+256: #if defined(LORA_ROLE_SENDER)
+257:                 arq_sender_tx_done(&sender,millis(),done && !rc && rx);
+258:                 if(sender.state==ARQ_WAITING_ACK)sender.tx_done=now;
+tools/arq_trial.py
+30: def parse_event(line):
+31:     if not line.startswith('A '): return None
+32:     pairs=dict(re.findall(r'(\w+)=([^\s]+)',line))
+33:     if not {'t','e','s'} <= pairs.keys(): raise ValueError('incomplete event')
+34:     # AVR printf_min ignores zero-padding; ARM input remains exactly eight hex digits.
+35:     if not re.fullmatch(r'[0-9A-F]{1,8}',pairs['s']): raise ValueError('invalid event session')
+36:     int(pairs['t']);return pairs
+76: def status_complete(events,role,session):
+77:     rows=[e for e in events if e['role']==role and int(e['s'],16)==session]
+78:     statuses=[i for i,e in enumerate(rows) if e['e']=='STATUS']
+79:     ends=[i for i,e in enumerate(rows) if e['e']=='STATUS_END']
+80:     return bool(statuses and ends and ends[-1]>statuses[-1] and rows[ends[-1]].get('v')=='0')
+81: 
+173:     def __init__(self,proof):
+174:         self.proof=proof;self.monitors={};self.queue=queue.Queue();self.events=[];self.commands=[];self.errors=[]
+175:     def start(self):
+176:         for role,target in (('receiver','receiver'),('sender','gateway')):
+177:             self.monitors[role]=rf.start_rf_monitor(self.proof,role,rf.PORTS[target],self.queue)
+178:     def command(self,role,text):
+179:         process=self.monitors[role]['process']
+180:         if process.poll() is not None:raise ValueError('monitor disconnected')
+181:         data=(text+'\n').encode('ascii')
+182:         if process.stdin.write(data)!=len(data):raise ValueError('short command write')
+183:         process.stdin.flush();self.commands.append(dict(role=role,text=text,host_ns=time.monotonic_ns()))
+184:     def wait(self,predicate,seconds=30):
+185:         deadline=time.monotonic()+seconds
+186:         while time.monotonic()<deadline:
+187:             if any(m['process'].poll() is not None for m in self.monitors.values()):raise ValueError('monitor exited')
+188:             if predicate():return
+189:             try:role,stream,raw=self.queue.get(timeout=.1)
+190:             except queue.Empty:continue
+196:         """Drain startup, then recover each missing status once within one deadline."""
+197:         deadline=time.monotonic()+seconds
+198:         def complete(role):
+199:             rows=[e for e in self.events if e['role']==role]
+200:             starts=[i for i,e in enumerate(rows) if e['e']=='BOOT']
+201:             if not starts:return False
+202:             block=rows[starts[-1]:]
+203:             for e in block:
+204:                 if int(e['s'],16)!=expected_session:raise ValueError('unexpected startup session before acquisition')
+205:                 if e['e']=='IDENTITY' and (e.get('build')!=programming[role]['build_id'] or e.get('config')!=config_hash):
+206:                     raise ValueError('installed firmware/config mismatch before ARM')
+207:                 if e['e']=='STATUS' and (e.get('ready')!='1' or e.get('overflow')!='0'):
+208:                     raise ValueError('startup radio failure or logger overflow')
+209:                 if e['e']=='STATUS_END' and e.get('v')!='0':raise ValueError('startup logger overflow')
+210:             return {'BOOT','IDENTITY','STATUS','REG','STATUS_END'}<={e['e'] for e in block} and status_complete(block,role,expected_session)
+211:         try:self.wait(lambda:all(complete(r) for r in programming),min(12,seconds))
+212:         except ValueError as error:
+213:             if str(error)!='incomplete evidence: capture deadline':raise
+214:         for role in programming:
+215:             if complete(role):continue
+216:             self.command(role,'STATUS')
+217:             self.wait(lambda:complete(role),max(0,deadline-time.monotonic()))
+tools/rf_proof.py
+1211: def start_rf_monitor(proof: ProofRun, role: str, port: str,
+1212:                      output_queue: queue.Queue):
+1213:     argv = ["uv", "run", "python", "-u", "third_party/upditerm/upditerm.py",
+1214:             port, "38400"]
+1215:     (proof.run_dir / f"rf-monitor-{role}.command.log").write_text(
+1216:         " ".join(argv) + "\n")
+1217:     environment = os.environ.copy()
+1218:     environment["PYTHONUNBUFFERED"] = "1"
+1219:     process = subprocess.Popen(
+1220:         argv, cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+1221:         stderr=subprocess.PIPE, bufsize=0, start_new_session=True, env=environment,
+1222:     )
+1223:     threads = []
+1224:     for stream_name in ("stdout", "stderr"):
+1225:         stream = getattr(process, stream_name)
+1226: 
+1227:         def pump(name=stream_name, source=stream):
+1228:             with (proof.run_dir / f"rf-monitor-{role}.{name}.log").open("wb") as log:
+1229:                 while True:
+1230:                     line = source.readline()
+1231:                     if not line:
+1232:                         break
+1233:                     log.write(line)
+1234:                     log.flush()
+1235:                     output_queue.put((role, name, line))
+1236:             output_queue.put((role, name, None))
+1237: 
+1238:         thread = threading.Thread(target=pump, daemon=True)
+1239:         thread.start()
+1240:         threads.append(thread)
+1241:     return {"process": process, "threads": threads}

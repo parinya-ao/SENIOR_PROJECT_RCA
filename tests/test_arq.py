@@ -124,11 +124,11 @@ class ArqTests(unittest.TestCase):
                 with self.assertRaises(SystemExit) as error:arq_trial.main()
                 self.assertEqual(error.exception.code,2);campaign.assert_not_called()
 
-    def test_mvp_order_is_one_then_ten_then_negative_and_recovery(self):
+    def test_mvp_order_is_one_then_negative_recovery_then_ten(self):
         from tools import arq_trial
         with patch.object(sys,'argv',['arq_trial','--mvp','--rf-path-confirmed']), patch.object(arq_trial,'campaign') as campaign:
             arq_trial.main()
-            campaign.assert_called_once_with((('H01',1),('H04',10),('H02',1),('H03',1)))
+            campaign.assert_called_once_with((('H01',1),('H02',1),('H03',1),('H04',10)))
 
     def test_application_bounds_include_arq(self):
         from tools.rf_proof import application_bounds_for_environment

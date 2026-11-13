@@ -1,0 +1,32 @@
+[
+  {
+    "url": "https://raw.githubusercontent.com/jgromes/RadioLib/7.1.2/src/BuildOpt.h",
+    "file": ".automation/ack-investigation/errata-followup/7.1.2-BuildOpt.h",
+    "sha256": "4dc41d4ea37fa4203b61767082b0e12af723f72cb643975ef5bd632e8dc18615"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/jgromes/RadioLib/7.1.2/src/modules/SX127x/SX1278.cpp",
+    "file": ".automation/ack-investigation/errata-followup/7.1.2-SX1278.cpp",
+    "sha256": "5e16d9a2b492f9fb150f3ba51c811eb218f55a4b007aae73c0b1b80ccef2b60d"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/jgromes/RadioLib/7.1.2/src/modules/SX127x/SX127x.cpp",
+    "file": ".automation/ack-investigation/errata-followup/7.1.2-SX127x.cpp",
+    "sha256": "85fed30065b51afa635635ea1157751725cc92965dbb51476880e1e6a01da87c"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/jgromes/RadioLib/master/src/BuildOpt.h",
+    "file": ".automation/ack-investigation/errata-followup/master-BuildOpt.h",
+    "sha256": "4418dc7734c5e49776784e0c3c15a7bf9f03882dd5262dfa937c630053ffe474"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/jgromes/RadioLib/master/src/modules/SX127x/SX1278.cpp",
+    "file": ".automation/ack-investigation/errata-followup/master-SX1278.cpp",
+    "sha256": "45933c04684adc409680f5feeac40a019076529e1392d8a139c92d59edaa825c"
+  },
+  {
+    "url": "https://raw.githubusercontent.com/jgromes/RadioLib/master/src/modules/SX127x/SX127x.cpp",
+    "file": ".automation/ack-investigation/errata-followup/master-SX127x.cpp",
+    "sha256": "fe71aa5319b03ac618371c196f09e470a900dedb803b1df470b58369ade1edc6"
+  }
+]

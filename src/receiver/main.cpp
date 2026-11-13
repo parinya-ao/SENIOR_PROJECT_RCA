@@ -150,7 +150,7 @@ void loop() {
         return;
     }
 
-    ssot_frame_t frame = {0};
+    ssot_frame_t frame = {};
     const uint16_t session = static_cast<uint16_t>(id) | (static_cast<uint16_t>(flags) << 8);
     const uint8_t reply = ssot_reply_for_data(destination, source, id, flags,
                                               packet, packet_size,

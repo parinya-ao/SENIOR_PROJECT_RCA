@@ -26,6 +26,8 @@ int main(int argc,char** argv) {
     for(uint8_t i=0;i<log_count;i++)if(strstr(log_slots[i].text,"e=REG ") && strlen(strstr(log_slots[i].text,"bytes=")+6)==41)dio_mapping_seen=true;
     assert(dio_mapping_seen);
     log_head=log_tail=log_count=log_offset=0;
+    /* Polling diagnostics survive destructive driver reads and logger loss. */
+    unsigned observed_before=rx_done;
     loop();assert(!tx_starts);
     send_command("SEND 48656C6C6F20576F726C64");assert(!tx_starts);
     send_command("ARM 12345678");assert(sender.armed || receiver.armed);
@@ -37,8 +39,22 @@ int main(int argc,char** argv) {
     send_command("ARM 00000001");assert(sender.session==0x12345678);
     irq_flags=8;loop();assert(sender.state==ARQ_WAITING_ACK);
     arq_frame ack={ARQ_ACK,2,1,0x12345678,0,0,0,{0}};
+    for(int bad=0;bad<5;bad++){
+        arq_frame rejected=ack;
+        if(bad==0)rejected.src=7;
+        if(bad==1)rejected.session++;
+        if(bad==2)rejected.sequence++;
+        if(bad==3)rejected.type=ARQ_DATA;
+        packet_length=arq_encode(&rejected,packet,44);
+        if(bad==4)packet[0]=0xff;
+        log_head=log_tail=log_count=log_offset=0;
+        int starts=rx_starts;irq_flags=0x40;loop();
+        assert(sender.state==ARQ_WAITING_ACK && rx_starts==starts+1 && !irq_flags);
+    }
+    assert(control_rejects==4 && decode_errors==1);
     packet_length=arq_encode(&ack,packet,44);irq_flags=0x40;
     clock_ms=sender.retry_at;loop();assert(sender.state==ARQ_DELIVERED);
+    assert(rx_done==observed_before+6 && last_rx_flags==0x40);
     send_command("X");send_command("SEND 00");assert(sender.state==ARQ_DELIVERED);
     loop();assert(parked && !radio_tx);
 #else
@@ -50,6 +66,8 @@ int main(int argc,char** argv) {
     }
     packet_length=arq_encode(&data,packet,44);data_status=-7;irq_flags=0x60;loop();
     assert(receiver.deliveries==0 && crc_errors==1);data_status=0;
+    assert(rx_done==observed_before+5 && last_rx_flags==0x60);
+    assert(irq_flags==0);
     log_head=log_tail=log_count=log_offset=0;log_overflow=0;
     send_command("FAULT 1 1");
     packet_length=arq_encode(&data,packet,44);irq_flags=0x40;loop();

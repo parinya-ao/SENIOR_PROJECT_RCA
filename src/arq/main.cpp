@@ -15,6 +15,8 @@ static bool ready,radio_tx,response_wait,attached,command_overflow,parked;
 static uint8_t wire[44],wire_length,reset_flags;
 static uint32_t tx_started,response_at;
 static uint32_t generated,suppressed,attempted,completed,crc_errors;
+static uint32_t rx_done,decode_errors,control_rejects;
+static uint16_t last_rx_flags;
 static uint16_t fault_stride,fault_budget;
 static char command_buffer[80];
 static uint8_t command_length;
@@ -58,6 +60,22 @@ static void register_state(const char* name) {
     }
     frame_event(name,values,sizeof values,0,0);
 }
+static void rx_diagnostics(const char* name,uint16_t flags) {
+    // Snapshot band counters before startReceive resets their observation window.
+    uint8_t values[6]={(uint8_t)(flags>>8),(uint8_t)flags,0,0,0,0};
+    for(uint8_t i=0;i<4;i++){
+        SPI.beginTransaction(SPISettings(ARQ_SPI_HZ,MSBFIRST,SPI_MODE0));
+        digitalWrite(board_ssot.cs,LOW);SPI.transfer(0x14+i);values[2+i]=SPI.transfer(0);
+        digitalWrite(board_ssot.cs,HIGH);SPI.endTransaction();
+    }
+    frame_event(name,values,sizeof values,0,0);
+}
+static void discard(const char* name,const arq_frame* f,uint8_t reason) {
+    char* out=log_slot();if(!out)return;
+    snprintf(out,192,"A t=%lu e=%s s=%08lX q=%u rc=%u src=%u dst=%u rs=%08lX rq=%u type=%u\n",
+        (unsigned long)millis(),name,(unsigned long)session(),sequence(),reason,
+        f->src,f->dst,(unsigned long)f->session,f->sequence,f->type);
+}
 static void status() {
     event("BOOT",startup_status,reset_flags);
     char* identity=log_slot();if(identity)snprintf(identity,192,"A t=%lu e=IDENTITY s=%08lX build=%s config=%s\n",
@@ -72,6 +90,7 @@ static void status() {
     event("RTT_LAST",0,sender.rtt_last);
     event("RTT_MIN",0,sender.rtt_min);event("RTT_MAX",0,sender.rtt_max);
     event("RTT_COUNT",0,sender.rtt_count);
+    event("RX_DONE_COUNT",0,rx_done);event("DECODE_ERRORS",0,decode_errors);event("CONTROL_REJECTS",0,control_rejects);
     if(ready){
         // Read-only register evidence separates RX mode/configuration from RF path failure.
         register_state("REG");
@@ -80,6 +99,7 @@ static void status() {
 }
 static bool rx_restore() {
     receiver.state=ARQ_RETURNING_TO_RX; // RX restoration is checked after every response/error.
+    rx_diagnostics("RX_RESTART",radio.getIRQFlags());
     int16_t rc=radio.startReceive();
     event("RX_READY",rc,0);
 #if defined(LORA_ROLE_SENDER)
@@ -118,6 +138,7 @@ static void command(const char* text) {
 #endif
         if(ok && previous!=value){
             generated=suppressed=attempted=completed=crc_errors=0;
+            rx_done=decode_errors=control_rejects=0;last_rx_flags=0;
             fault_stride=fault_budget=0;
         }
         if(ok && ready && parked){
@@ -184,6 +205,7 @@ void setup() {
     randomSeed(micros());
 }
 static void receive(uint32_t now,uint16_t flags) {
+    ++rx_done;last_rx_flags=flags;rx_diagnostics("RX_IRQ",flags);
     int16_t rc=radio.standby();if(rc){fatal(rc);return;}
     size_t length=radio.getPacketLength();uint8_t bytes[44];
     if(length<12 || length>sizeof bytes){event("LENGTH_DISCARD",0,length);rx_restore();return;}
@@ -194,12 +216,19 @@ static void receive(uint32_t now,uint16_t flags) {
     }
     frame_event("RX",bytes,length,(int16_t)(radio.getRSSI()*100),(int16_t)(radio.getSNR()*100));
     arq_frame frame;
-    if(!arq_decode(&frame,bytes,length)){rx_restore();return;}
+    if(!arq_decode(&frame,bytes,length)){++decode_errors;event("DECODE_DISCARD",0,length);rx_restore();return;}
 #if defined(LORA_ROLE_SENDER)
+    uint8_t reason=0;
+    if(frame.type!=ARQ_ACK && frame.type!=ARQ_NACK)reason=1;
+    else if(frame.src!=ARQ_RECEIVER_ID || frame.dst!=ARQ_SENDER_ID)reason=2;
+    else if(frame.session!=sender.session)reason=3;
+    else if(frame.sequence!=sender.sequence)reason=4;
+    else if((sender.state!=ARQ_WAITING_ACK && sender.state!=ARQ_BACKOFF) || !sender.attempts)reason=5;
+    if(reason){++control_rejects;discard("CONTROL_DISCARD",&frame,reason);}
     arq_sender_control(&sender,&frame,now);if(!rx_restore())fatal(-1);
 #else
     arq_frame response;uint32_t deliveries=receiver.deliveries;
-    if(!arq_receiver_data(&receiver,&frame,&response,false)){rx_restore();return;}
+    if(!arq_receiver_data(&receiver,&frame,&response,false)){discard("DATA_DISCARD",&frame,1);rx_restore();return;}
     ++generated;
     if(receiver.deliveries!=deliveries)event("ACCEPT",0,receiver.deliveries);
     else if(response.type==ARQ_ACK)event("DUPLICATE",0,receiver.duplicates);
@@ -234,6 +263,7 @@ void loop() {
             }
         }else if(!response_wait && (flags & RADIOLIB_SX127X_CLEAR_IRQ_FLAG_RX_DONE))receive(now,flags);
         // Read matching controls before evaluating deadlines or initiating a retry.
+        if(sender.state==ARQ_WAITING_ACK && arq_due(now,sender.retry_at))rx_diagnostics("RX_TIMEOUT",radio.getIRQFlags());
         arq_sender_poll(&sender,now);
 #if defined(LORA_ROLE_SENDER)
         bool start=sender.state==ARQ_TRANSMITTING && !radio_tx;
