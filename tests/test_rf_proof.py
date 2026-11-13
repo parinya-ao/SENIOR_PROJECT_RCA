@@ -193,13 +193,13 @@ class HardwareGateTests(unittest.TestCase):
     def test_campaign_build_skip_keeps_ready_gateway_on_normal_rx_path(self):
         source = (Path(__file__).resolve().parents[1] /
                   "src/sender/lib/lora_rx.cpp").read_text()
-        boot_gate = source.index("if (test_campaign.state() == lora_hello::State::TEST_IDLE)")
+        boot_gate = source.index("if (test_campaign.state == SSOT_TEST_IDLE)")
         for decision in ("AlreadyRun", "ReadbackFailed"):
             marker = f"if (_campaign_build_gate_result ==\n                    CampaignBuildGateResult::{decision})"
             start = source.index(marker, boot_gate)
             end = source.index("\n                }", start)
             branch = source[start:end]
-            self.assertIn("test_campaign.fail();", branch)
+            self.assertIn("ssot_campaign_fail(&test_campaign);", branch)
             self.assertIn("continue;", branch)
             self.assertNotIn("_started = false;", branch)
 
@@ -716,7 +716,7 @@ class RfEvidenceTests(unittest.TestCase):
         source = (Path(__file__).resolve().parents[1] /
                   "src/sender/lib/lora_rx.cpp").read_text()
         marker_write = source.find("EEPROM.put(kCampaignBuildMarkerAddress")
-        counter_allocation = source.find("if (!test_campaign.arm(_campaign_id)")
+        counter_allocation = source.find("if (!ssot_campaign_arm(&test_campaign, _campaign_id)")
         self.assertGreater(marker_write, -1, "firmware-build marker must be persistent")
         self.assertGreater(counter_allocation, -1, "fresh session arming is required")
         self.assertLess(marker_write, counter_allocation,

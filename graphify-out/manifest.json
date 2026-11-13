@@ -42,9 +42,9 @@
     "semantic_hash": ""
   },
   "src/receiver/main.cpp": {
-    "mtime": 1794217316.0137293,
-    "seen": 1794217963.1195526,
-    "ast_hash": "43fc431527727b87422a20f8a9cc4280",
+    "mtime": 1794543441.902992,
+    "seen": 1794544372.8263762,
+    "ast_hash": "008ca1c5d258ede92ed48890c5222476",
     "semantic_hash": ""
   },
   "src/sender/lib/espcomm.cpp": {
@@ -72,9 +72,9 @@
     "semantic_hash": ""
   },
   "src/sender/lib/lora_rx.cpp": {
-    "mtime": 1794217480.4375298,
-    "seen": 1794217963.1195586,
-    "ast_hash": "27b7ef5190067f94a3d5f51d04d6e240",
+    "mtime": 1794543925.5253944,
+    "seen": 1794544372.826381,
+    "ast_hash": "b89f801ffe84075556c473e48a738b12",
     "semantic_hash": ""
   },
   "src/sender/lib/lora_rx.h": {
@@ -107,28 +107,10 @@
     "ast_hash": "6ecdf630389020e4e73ad6fdf0c5f3f7",
     "semantic_hash": ""
   },
-  "src/shared/hello_protocol.cpp": {
-    "mtime": 1794210046.5575264,
-    "seen": 1794217963.1195648,
-    "ast_hash": "00743d68e3d61f0f8bbcdd003304fbfe",
-    "semantic_hash": ""
-  },
-  "src/shared/hello_protocol.h": {
-    "mtime": 1794210046.5575264,
-    "seen": 1794217963.1195655,
-    "ast_hash": "d255cc07c236cbd6f1075f31f1555b68",
-    "semantic_hash": ""
-  },
-  "tests/lora_hello_test.cpp": {
-    "mtime": 1794210046.5575264,
-    "seen": 1794217963.1195667,
-    "ast_hash": "80caf9d4ee2e6cdd7602fa83415ad53e",
-    "semantic_hash": ""
-  },
   "tests/test_rf_proof.py": {
-    "mtime": 1794217976.7759774,
-    "seen": 1794218127.1425633,
-    "ast_hash": "2ae545f775a9c9a4f07f5ad3d5e4b2b4",
+    "mtime": 1794543871.2757883,
+    "seen": 1794544372.826412,
+    "ast_hash": "7108e61ae494a255c5607e750dbe7605",
     "semantic_hash": ""
   },
   "third_party/upditerm/updi_uart.c": {
@@ -390,9 +372,9 @@
     "semantic_hash": ""
   },
   "generated/lora_manifest.json": {
-    "mtime": 1794222896.8714082,
-    "seen": 1794222924.6630766,
-    "ast_hash": "66afd3ac91407a0de2c69bb532d14a31",
+    "mtime": 1794544341.9908783,
+    "seen": 1794544372.8263383,
+    "ast_hash": "e5af250a2b65b28e40d9b42d4ea8155a",
     "semantic_hash": ""
   },
   "include/generated/lora_receiver_board.h": {
@@ -510,21 +492,21 @@
     "semantic_hash": ""
   },
   "tests/sender_one_shot_test.cpp": {
-    "mtime": 1794210046.5580893,
-    "seen": 1794217963.119582,
-    "ast_hash": "72809ab885d8a549a95f19b563ef5792",
+    "mtime": 1794543582.6745646,
+    "seen": 1794544372.8264005,
+    "ast_hash": "ed96a8af63952168cb791d2f2de3dfd3",
     "semantic_hash": ""
   },
   "tests/test_sender_one_shot.py": {
-    "mtime": 1794210046.5580893,
-    "seen": 1794217963.1195965,
-    "ast_hash": "fcfa1a45db9b7bc1e6009dccaaa89196",
+    "mtime": 1794543602.6517878,
+    "seen": 1794544372.8264134,
+    "ast_hash": "2e662133928322bb8f2fd45a5d20510d",
     "semantic_hash": ""
   },
   "tests/mvp_board.cpp": {
-    "mtime": 1794217495.1486907,
-    "seen": 1794217963.1195688,
-    "ast_hash": "1b389d639a019620fc5de3a82a98f7f2",
+    "mtime": 1794543610.6058767,
+    "seen": 1794544372.8263896,
+    "ast_hash": "b3602eb6d7c86af57e966be875e85e8c",
     "semantic_hash": ""
   },
   "tests/mvp_stub/Arduino.h": {
@@ -558,9 +540,9 @@
     "semantic_hash": ""
   },
   "tests/test_mvp_roundtrip.py": {
-    "mtime": 1794217924.3994007,
-    "seen": 1794217963.1195898,
-    "ast_hash": "06f594cd375c07292bc6c7a9d648c3ed",
+    "mtime": 1794543631.1031055,
+    "seen": 1794544372.826408,
+    "ast_hash": "132941d371880e1972f275b2687d00b6",
     "semantic_hash": ""
   },
   "AGENT.md": {
@@ -855,6 +837,30 @@
     "mtime": 1794218018.4718618,
     "seen": 1794218127.1424096,
     "ast_hash": "e40d8127cac3bf183a2e359f8d6d3dca",
+    "semantic_hash": ""
+  },
+  "src/ssot.c": {
+    "mtime": 1794544326.0318987,
+    "seen": 1794544372.8263862,
+    "ast_hash": "b96b0fc17a131fbdd469214cbb1e5296",
+    "semantic_hash": ""
+  },
+  "src/ssot.h": {
+    "mtime": 1794544331.3513558,
+    "seen": 1794544372.8263874,
+    "ast_hash": "85b4f4d45b0a3533ad4a33defdf4425b",
+    "semantic_hash": ""
+  },
+  "tests/ssot_protocol_test.c": {
+    "mtime": 1794544642.7518852,
+    "seen": 1794544660.1000676,
+    "ast_hash": "3a4f7d26ae206d3b7e102c52739f735b",
+    "semantic_hash": ""
+  },
+  "tests/test_ssot_protocol.py": {
+    "mtime": 1794544642.7518852,
+    "seen": 1794544660.1000812,
+    "ast_hash": "4c9f96b83be1153734416b551e03cc69",
     "semantic_hash": ""
   }
 }

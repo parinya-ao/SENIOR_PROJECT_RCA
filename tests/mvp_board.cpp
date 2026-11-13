@@ -47,13 +47,12 @@ iw::core::RingBuffer<4096> ringbuf;
 TaskScheduler scheduler;
 static void step() { scheduler.Loop(); }
 static const char* state_name() {
-    using lora_hello::State;
-    switch (test_campaign.state()) {
-        case State::TEST_IDLE: return "TEST_IDLE";
-        case State::TEST_ARMED: return "TEST_ARMED";
-        case State::TEST_RUNNING: return "TEST_RUNNING";
-        case State::TEST_COMPLETED: return "TEST_COMPLETED";
-        case State::TEST_FAILED: return "TEST_FAILED";
+    switch (test_campaign.state) {
+        case SSOT_TEST_IDLE: return "TEST_IDLE";
+        case SSOT_TEST_ARMED: return "TEST_ARMED";
+        case SSOT_TEST_RUNNING: return "TEST_RUNNING";
+        case SSOT_TEST_COMPLETED: return "TEST_COMPLETED";
+        case SSOT_TEST_FAILED: return "TEST_FAILED";
     }
     return "UNKNOWN";
 }

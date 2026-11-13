@@ -28,13 +28,24 @@ class SenderOneShotTests(unittest.TestCase):
         cls.binaries = {}
         for mode in (0, 1):
             binary = directory / ('sender_one_shot_' + str(mode))
+            c_object = directory / ('ssot_' + str(mode) + '.o')
+            defines = ['-DHELLO_TEST_MODE=1']
+            if mode:
+                defines.append('-DHELLO_RAM_ONLY_TEST=1')
+            c_result = subprocess.run([
+                'gcc', '-std=c11', '-Wall', '-Wextra', '-Werror',
+                *defines, '-I' + str(ROOT / 'src'), '-I' + str(ROOT / 'include'),
+                '-c', str(ROOT / 'src/ssot.c'), '-o', str(c_object),
+            ], capture_output=True, text=True)
+            if c_result.returncode:
+                raise AssertionError(c_result.stdout + c_result.stderr)
             result = subprocess.run([
                 'g++', '-std=c++11', '-Wall', '-Wextra', '-Werror',
-                '-DHELLO_TEST_MODE=1',
-                *(['-DHELLO_RAM_ONLY_TEST=1'] if mode else []),
-                '-I' + str(ROOT / 'src/shared'), '-I' + str(directory),
+                *defines, '-I' + str(ROOT / 'src/shared'),
+                '-I' + str(ROOT / 'src'), '-I' + str(ROOT / 'include'),
+                '-I' + str(directory),
                 str(ROOT / 'tests/sender_one_shot_test.cpp'),
-                str(ROOT / 'src/shared/hello_protocol.cpp'), '-o', str(binary),
+                str(c_object), '-o', str(binary),
             ], capture_output=True, text=True)
             if result.returncode:
                 raise AssertionError(result.stdout + result.stderr)

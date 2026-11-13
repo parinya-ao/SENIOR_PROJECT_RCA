@@ -11,7 +11,7 @@
 #include "debug.h"
 #include "io.h"
 #include "role_log.h"
-#include "hello_protocol.h"
+#include "ssot.h"
 #include "iw/tracker/radio/packets.h"
 #include "iw/tracker/radio/codec.h"
 
@@ -41,7 +41,8 @@ static bool probe_radio_version() {
 }
 
 #if HELLO_TEST_MODE
-static lora_hello::Campaign test_campaign(LORA_DEVICE_ADDR, LORA_TEST_PEER_ADDR, true);
+static ssot_campaign_t test_campaign;
+static ssot_control_input_t start_input;
 static constexpr int kCampaignBuildMarkerAddress = 2;
 
 enum class CampaignBuildGateResult : uint8_t {
@@ -59,7 +60,7 @@ static CampaignBuildGateResult claim_campaign_build() {
     return CampaignBuildGateResult::Ready;
 #else
     const uint32_t build_id =
-        lora_hello::campaign_build_id(LORA_BUILD_ID);
+        ssot_campaign_build_id(LORA_BUILD_ID);
     uint32_t stored_id = 0xffffffffUL;
     EEPROM.get(kCampaignBuildMarkerAddress, stored_id);
     if (stored_id == build_id) return CampaignBuildGateResult::AlreadyRun;
@@ -113,8 +114,7 @@ private:
     uint32_t _ack_airtime_us;
     uint32_t _minimum_data_interval_ms;
     uint32_t _data_tx_started_at;
-    lora_hello::Frame _hello_frame;
-    lora_hello::ControlInput _start_input{'S'};
+    ssot_frame_t _hello_frame;
 #endif
 
 public:
@@ -138,7 +138,7 @@ public:
             TASK_WAIT_UNTIL(_started);
 
 #if HELLO_TEST_MODE
-            if (test_campaign.state() == lora_hello::State::TEST_IDLE) {
+            if (test_campaign.state == SSOT_TEST_IDLE) {
                 TASK_WAIT_UNTIL(updi_uart_enabled());
                 updi_role_log_boot("GATEWAY", "sender_hello", __DATE__, __TIME__);
                 updi_role_log("GATEWAY", "CONFIG_FINGERPRINT=" LORA_CONFIG_FINGERPRINT);
@@ -153,7 +153,7 @@ public:
 #else
                 lora_rx_init_lora(LORA_DEVICE_ADDR);
                 if (!_radio_ready) {
-                    test_campaign.fail();
+                    ssot_campaign_fail(&test_campaign);
                     updi_role_log("GATEWAY", "RADIO_INIT_FAILED");
                     _test_result_logged = true;
                     _started = false;
@@ -163,26 +163,28 @@ public:
                 do {
                     TASK_WAIT_UNTIL(updi_uart_rx_poll() || !_started);
                     if (!_started) break;
-                } while (!_start_input.feed(updi_uart_rx(), millis(), &_campaign_id));
+                } while (!ssot_control_input_feed(&start_input, updi_uart_rx(),
+                                                  millis(), &_campaign_id));
                 if (!_started) continue;
                 _campaign_build_gate_result = claim_campaign_build();
                 if (_campaign_build_gate_result ==
                     CampaignBuildGateResult::AlreadyRun) {
-                    test_campaign.fail();
+                    ssot_campaign_fail(&test_campaign);
                     updi_role_log("GATEWAY", "TEST_ALREADY_RUN");
                     _test_result_logged = true;
                     continue;
                 }
                 if (_campaign_build_gate_result ==
                     CampaignBuildGateResult::ReadbackFailed) {
-                    test_campaign.fail();
+                    ssot_campaign_fail(&test_campaign);
                     updi_role_log("GATEWAY", "EEPROM_READBACK_FAILED");
                     _test_result_logged = true;
                     continue;
                 }
                 updi_role_log_campaign("GATEWAY", "S_RECEIVED", _campaign_id);
-                if (!test_campaign.arm(_campaign_id) || !test_campaign.start()) {
-                    test_campaign.fail();
+                if (!ssot_campaign_arm(&test_campaign, _campaign_id) ||
+                    !ssot_campaign_start(&test_campaign)) {
+                    ssot_campaign_fail(&test_campaign);
                     updi_role_log("GATEWAY", "TEST_START_FAILED");
                     _test_result_logged = true;
                     continue;
@@ -190,32 +192,32 @@ public:
                 _test_result_logged = false;
                 _has_data_tx = false;
                 updi_role_log_campaign("GATEWAY", "TEST_RUNNING",
-                                       test_campaign.campaign_id());
+                                       test_campaign.campaign_id);
 #endif
             }
 
-            while (test_campaign.state() == lora_hello::State::TEST_RUNNING) {
-                if (!lora_hello::encode_data_payload(test_campaign.sequence(), _pkt,
-                                                     sizeof(_pkt), &_payload_len) ||
-                    !test_campaign.mark_sent()) {
-                    test_campaign.fail();
+            while (test_campaign.state == SSOT_TEST_RUNNING) {
+                if (!ssot_encode_data_payload(test_campaign.sequence, _pkt,
+                                              sizeof(_pkt), &_payload_len) ||
+                    !ssot_campaign_mark_sent(&test_campaign)) {
+                    ssot_campaign_fail(&test_campaign);
                     break;
                 }
-                _campaign_attempt = test_campaign.attempts();
+                _campaign_attempt = test_campaign.attempts;
                 _data_airtime_us = lora.time_on_air_us(
                     static_cast<uint8_t>(_payload_len));
                 _ack_airtime_us = lora.time_on_air_us(
-                    lora_hello::kAckPayloadSize);
+                    SSOT_ACK_PAYLOAD_SIZE);
                 if (_data_airtime_us == 0 || _ack_airtime_us == 0) {
-                    test_campaign.fail();
+                    ssot_campaign_fail(&test_campaign);
                     updi_role_log_packet("GATEWAY", "AIRTIME_ESTIMATE_FAILED",
-                                         test_campaign.campaign_id(),
-                                         test_campaign.sequence(), _campaign_attempt);
+                                         test_campaign.campaign_id,
+                                         test_campaign.sequence, _campaign_attempt);
                     break;
                 }
                 // Count DATA plus ACK airtime and stay at the stricter 1% tier.
                 _minimum_data_interval_ms =
-                    lora_hello::min_interval_ms_for_one_percent(
+                    ssot_min_interval_ms_for_one_percent(
                         _data_airtime_us + _ack_airtime_us);
                 if (_has_data_tx) {
                     TASK_WAIT_UNTIL(millis() - _data_tx_started_at >=
@@ -225,43 +227,43 @@ public:
                 _has_data_tx = true;
                 _status = lora.send(
                     LORA_TEST_PEER_ADDR,
-                    static_cast<uint8_t>(test_campaign.campaign_id() & 0xffU),
-                    static_cast<uint8_t>(test_campaign.campaign_id() >> 8),
+                    static_cast<uint8_t>(test_campaign.campaign_id & 0xffU),
+                    static_cast<uint8_t>(test_campaign.campaign_id >> 8),
                     _pkt, static_cast<uint8_t>(_payload_len));
                 if (_status != RADIOLIB_ERR_NONE) {
                     updi_role_log_packet("GATEWAY", "DATA_START_FAILED",
-                                         test_campaign.campaign_id(),
-                                         test_campaign.sequence(), _campaign_attempt);
-                    if (!test_campaign.timeout()) break;
+                                          test_campaign.campaign_id,
+                                          test_campaign.sequence, _campaign_attempt);
+                    if (!ssot_campaign_timeout(&test_campaign)) break;
                     continue;
                 }
-                if (test_campaign.sequence() == 1 && _campaign_attempt == 1) {
+                if (test_campaign.sequence == 1U && _campaign_attempt == 1U) {
                     updi_role_log_payload("GATEWAY", "DATA_PAYLOAD",
-                                          test_campaign.campaign_id(),
-                                          test_campaign.sequence(), _pkt + 2,
-                                          lora_hello::kHelloPayloadSize);
+                                          test_campaign.campaign_id,
+                                          test_campaign.sequence, _pkt + 2,
+                                          SSOT_HELLO_PAYLOAD_SIZE);
                 }
                 updi_role_log_airtime("GATEWAY", "DATA_TX",
-                                      test_campaign.campaign_id(),
-                                      test_campaign.sequence(), _campaign_attempt,
+                                      test_campaign.campaign_id,
+                                      test_campaign.sequence, _campaign_attempt,
                                       _data_airtime_us);
 
                 _ts = millis();
                 TASK_WAIT_UNTIL(lora.send_done() ||
                                 (millis() - _ts >= LORA_TX_TIMEOUT_MS));
                 if (millis() - _ts >= LORA_TX_TIMEOUT_MS && !lora.send_done()) {
-                    test_campaign.fail();
+                    ssot_campaign_fail(&test_campaign);
                     updi_role_log_packet("GATEWAY", "DATA_TX_TIMEOUT",
-                                         test_campaign.campaign_id(),
-                                         test_campaign.sequence(), _campaign_attempt);
+                                          test_campaign.campaign_id,
+                                          test_campaign.sequence, _campaign_attempt);
                     _radio_ready = lora.init(LORA_DEVICE_ADDR);
                     _started = _radio_ready;
                     _test_result_logged = true;
                     break;
                 }
                 updi_role_log_packet("GATEWAY", "DATA_DONE",
-                                     test_campaign.campaign_id(),
-                                     test_campaign.sequence(), _campaign_attempt);
+                                      test_campaign.campaign_id,
+                                      test_campaign.sequence, _campaign_attempt);
 
                 _ts = millis();
                 TASK_WAIT_UNTIL(lora.available() ||
@@ -270,52 +272,52 @@ public:
                     _status = lora.recv(&_src, &_dst, &_id, &_flags, _pkt, &_len,
                                         sizeof(_pkt));
                     if (_status == RADIOLIB_ERR_NONE &&
-                        lora_hello::decode_payload(_dst, _src, _id, _flags,
-                                                   _pkt, _len, &_hello_frame) &&
-                        test_campaign.acknowledge(_hello_frame)) {
+                        ssot_decode_payload(_dst, _src, _id, _flags,
+                                            _pkt, _len, &_hello_frame) &&
+                        ssot_campaign_acknowledge(&test_campaign, &_hello_frame)) {
                         updi_role_log_rtt("GATEWAY", "ACK_RX",
-                                          test_campaign.campaign_id(),
+                                          test_campaign.campaign_id,
                                           _hello_frame.sequence,
                                           millis() - _data_tx_started_at);
                         if (_hello_frame.sequence == 1) {
                             updi_role_log_packet("GATEWAY", "PREFLIGHT_OK",
-                                                 test_campaign.campaign_id(),
+                                          test_campaign.campaign_id,
                                                  _hello_frame.sequence,
                                                  _campaign_attempt);
                         }
-                        if (test_campaign.state() == lora_hello::State::TEST_COMPLETED) {
+                        if (test_campaign.state == SSOT_TEST_COMPLETED) {
                             updi_role_log_campaign("GATEWAY", "TEST_COMPLETED",
-                                                   test_campaign.campaign_id());
+                                                    test_campaign.campaign_id);
                             _test_result_logged = true;
                         }
                         continue;
                     }
                     if (_status == RADIOLIB_ERR_NONE &&
-                        lora_hello::decode_payload(_dst, _src, _id, _flags,
-                                                  _pkt, _len, &_hello_frame) &&
-                        _hello_frame.type == lora_hello::kNackType) {
-                        lora_hello::Frame response = _hello_frame;
-                        response.type = lora_hello::kAckType;
-                        if (lora_hello::ack_matches(response, LORA_TEST_PEER_ADDR,
-                                LORA_DEVICE_ADDR, _campaign_id, 1)) {
+                        ssot_decode_payload(_dst, _src, _id, _flags,
+                                            _pkt, _len, &_hello_frame) &&
+                        _hello_frame.type == SSOT_NACK_TYPE) {
+                        ssot_frame_t response = _hello_frame;
+                        response.type = SSOT_ACK_TYPE;
+                        if (ssot_ack_matches(&response, LORA_TEST_PEER_ADDR,
+                                             LORA_DEVICE_ADDR, _campaign_id, 1U)) {
                             updi_role_log_packet("GATEWAY", "NACK_RX", _campaign_id, 1, _campaign_attempt);
-                            if (test_campaign.reject(_hello_frame)) continue;
+                            if (ssot_campaign_reject(&test_campaign, &_hello_frame)) continue;
                             break;
                         }
                     }
                 }
                 updi_role_log_packet("GATEWAY", "ACK_TIMEOUT",
-                                     test_campaign.campaign_id(),
-                                     test_campaign.sequence(), _campaign_attempt);
-                if (!test_campaign.timeout()) break;
+                                      test_campaign.campaign_id,
+                                      test_campaign.sequence, _campaign_attempt);
+                if (!ssot_campaign_timeout(&test_campaign)) break;
             }
 
-            if (test_campaign.state() == lora_hello::State::TEST_FAILED &&
+            if (test_campaign.state == SSOT_TEST_FAILED &&
                 !_test_result_logged) {
                 updi_role_log_packet("GATEWAY", "TEST_FAILED",
-                                     test_campaign.campaign_id(),
-                                     test_campaign.sequence(),
-                                     test_campaign.attempts());
+                                      test_campaign.campaign_id,
+                                      test_campaign.sequence,
+                                      test_campaign.attempts);
                 _test_result_logged = true;
             }
             // Standalone tests must never fall through to the production report/ACK service.
@@ -339,7 +341,7 @@ public:
             }
 #if HELLO_TEST_MODE
             if ((_id != 0 || _flags != 0) &&
-                (_type == lora_hello::kDataType || _type == lora_hello::kAckType)) {
+                (_type == SSOT_DATA_TYPE || _type == SSOT_ACK_TYPE)) {
                 continue;
             }
 #endif
@@ -379,6 +381,11 @@ public:
 } taskLoraRx;
 
 void lora_rx_setup() {
+#if HELLO_TEST_MODE
+    ssot_campaign_init(&test_campaign, LORA_DEVICE_ADDR, LORA_TEST_PEER_ADDR,
+                       true);
+    ssot_control_input_init(&start_input, 'S');
+#endif
     scheduler.Add(&taskLoraRx);
 }
 
@@ -419,7 +426,7 @@ void lora_rx_reject_config() {
 
 void lora_rx_start_lora() {
 #if HELLO_TEST_MODE
-    if (_started || test_campaign.state() != lora_hello::State::TEST_IDLE) {
+    if (_started || test_campaign.state != SSOT_TEST_IDLE) {
         updi_role_log("GATEWAY", "REPEATED_START_IGNORED");
         return;
     }

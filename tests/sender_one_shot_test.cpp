@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "hello_config.h"
-#include "hello_protocol.h"
+#include "ssot.h"
 
 #define LORA_BUILD_ID "host-test-build"
 struct EepromBoundary {
@@ -26,53 +26,56 @@ struct EepromBoundary {
     fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #condition); return 1; \
 } } while (0)
 
-static bool feed(lora_hello::ControlInput& input, const char* text, uint16_t& session) {
+static bool feed(ssot_control_input_t* input, const char* text, uint16_t& session) {
     bool accepted = false;
     uint32_t now = 10;
-    while (*text) accepted |= input.feed(*text++, now++, &session);
+    while (*text) accepted |= ssot_control_input_feed(input, *text++, now++, &session);
     return accepted;
 }
 
 int main(int argc, char** argv) {
-    using namespace lora_hello;
     CHECK(argc == 2);
-    ControlInput control('S');
-    Campaign campaign(0, 1, true);
+    ssot_control_input_t control;
+    ssot_control_input_init(&control, 'S');
+    ssot_campaign_t campaign;
+    ssot_campaign_init(&campaign, 0U, 1U, true);
     uint16_t session = 0;
     const char* name = argv[1];
     if (!strcmp(name, "first")) {
-        CHECK(feed(control, "SA17C", session) && session == 0xa17c);
+        CHECK(feed(&control, "SA17C", session) && session == 0xa17c);
         CHECK(claim_campaign_build() == CampaignBuildGateResult::Ready);
-        CHECK(campaign.arm(session) && campaign.start() && campaign.mark_sent());
+        CHECK(ssot_campaign_arm(&campaign, session) &&
+              ssot_campaign_start(&campaign) && ssot_campaign_mark_sent(&campaign));
     } else if (!strcmp(name, "repeat")) {
-        CHECK(feed(control, "SA17C", session));
+        CHECK(feed(&control, "SA17C", session));
         CHECK(claim_campaign_build() == CampaignBuildGateResult::Ready);
-        CHECK(!feed(control, "SA17C", session));
-        CHECK(!feed(control, "SBEEF", session));
+        CHECK(!feed(&control, "SA17C", session));
+        CHECK(!feed(&control, "SBEEF", session));
         CHECK(claim_campaign_build() == CampaignBuildGateResult::AlreadyRun);
     } else if (!strcmp(name, "invalid")) {
-        CHECK(!feed(control, "S0000", session));
-        CHECK(!feed(control, "SZZZZ", session));
-        CHECK(!feed(control, "Sa17c", session));
-        CHECK(!feed(control, "SA17\n", session));
-        CHECK(!feed(control, "R1234", session));
-        CHECK(EEPROM.writes == 0 && campaign.state() == State::TEST_IDLE);
-        CHECK(feed(control, "SA17C", session));
+        CHECK(!feed(&control, "S0000", session));
+        CHECK(!feed(&control, "SZZZZ", session));
+        CHECK(!feed(&control, "Sa17c", session));
+        CHECK(!feed(&control, "SA17\n", session));
+        CHECK(!feed(&control, "R1234", session));
+        CHECK(EEPROM.writes == 0 && campaign.state == SSOT_TEST_IDLE);
+        CHECK(feed(&control, "SA17C", session));
     } else if (!strcmp(name, "one_attempt")) {
-        CHECK(campaign.arm(0xa17c) && campaign.start());
-        CHECK(campaign.mark_sent());
-        CHECK(!campaign.mark_sent());
-        CHECK(campaign.attempts() == 1);
-        CHECK(!campaign.timeout());
-        CHECK(campaign.state() == State::TEST_FAILED);
-        CHECK(!campaign.mark_sent() && !campaign.start() && !campaign.arm(0xbeef));
+        CHECK(ssot_campaign_arm(&campaign, 0xa17c) && ssot_campaign_start(&campaign));
+        CHECK(ssot_campaign_mark_sent(&campaign));
+        CHECK(!ssot_campaign_mark_sent(&campaign));
+        CHECK(campaign.attempts == 1U);
+        CHECK(!ssot_campaign_timeout(&campaign));
+        CHECK(campaign.state == SSOT_TEST_FAILED);
+        CHECK(!ssot_campaign_mark_sent(&campaign) && !ssot_campaign_start(&campaign) &&
+              !ssot_campaign_arm(&campaign, 0xbeef));
     } else if (!strcmp(name, "boot")) {
-        CHECK(campaign.state() == State::TEST_IDLE);
-        CHECK(!campaign.start() && !campaign.mark_sent());
-        CHECK(!feed(control, "A17C", session));
-        CHECK(campaign.attempts() == 0 && EEPROM.writes == 0);
-        CHECK(feed(control, "SA17C", session));
-        CHECK(campaign.arm(session) && campaign.start());
+        CHECK(campaign.state == SSOT_TEST_IDLE);
+        CHECK(!ssot_campaign_start(&campaign) && !ssot_campaign_mark_sent(&campaign));
+        CHECK(!feed(&control, "A17C", session));
+        CHECK(campaign.attempts == 0U && EEPROM.writes == 0);
+        CHECK(feed(&control, "SA17C", session));
+        CHECK(ssot_campaign_arm(&campaign, session) && ssot_campaign_start(&campaign));
     } else if (!strcmp(name, "no_eeprom")) {
         CHECK(claim_campaign_build() == CampaignBuildGateResult::Ready);
         CHECK(claim_campaign_build() == CampaignBuildGateResult::AlreadyRun);
@@ -82,24 +85,28 @@ int main(int argc, char** argv) {
         CHECK(EEPROM.writes == 1 && EEPROM.written_bytes == 4 && !EEPROM.wrong_address);
         CHECK(claim_campaign_build() == CampaignBuildGateResult::AlreadyRun);
         CHECK(EEPROM.writes == 1);
-        Campaign legacy(0, 1, true);
-        CHECK(legacy.arm(0xa17c) && legacy.start() && legacy.mark_sent());
-        CHECK(legacy.timeout() && legacy.mark_sent());
+        ssot_campaign_t legacy;
+        ssot_campaign_init(&legacy, 0U, 1U, true);
+        CHECK(ssot_campaign_arm(&legacy, 0xa17c) &&
+              ssot_campaign_start(&legacy) && ssot_campaign_mark_sent(&legacy));
+        CHECK(ssot_campaign_timeout(&legacy) && ssot_campaign_mark_sent(&legacy));
     } else if (!strcmp(name, "ack")) {
-        CHECK(campaign.arm(0xa17c) && campaign.start() && campaign.mark_sent());
-        Frame ack{0, 1, 0xa17c, 3, 1};
+        CHECK(ssot_campaign_arm(&campaign, 0xa17c) &&
+              ssot_campaign_start(&campaign) && ssot_campaign_mark_sent(&campaign));
+        ssot_frame_t ack = {0U, 1U, 0xa17c, 3U, 1U};
         for (unsigned field = 0; field < 5; ++field) {
-            Frame bad = ack;
+            ssot_frame_t bad = ack;
             if (field == 0) bad.destination = 1;
             if (field == 1) bad.source = 0;
             if (field == 2) bad.campaign_id = 0xbeef;
             if (field == 3) bad.type = 9;
             if (field == 4) bad.sequence = 2;
-            CHECK(!campaign.acknowledge(bad));
+            CHECK(!ssot_campaign_acknowledge(&campaign, &bad));
         }
-        CHECK(campaign.acknowledge(ack));
-        CHECK(campaign.state() == State::TEST_COMPLETED && campaign.sequence() == 1);
-        CHECK(!campaign.mark_sent() && !campaign.acknowledge(ack));
+        CHECK(ssot_campaign_acknowledge(&campaign, &ack));
+        CHECK(campaign.state == SSOT_TEST_COMPLETED && campaign.sequence == 1U);
+        CHECK(!ssot_campaign_mark_sent(&campaign) &&
+              !ssot_campaign_acknowledge(&campaign, &ack));
     } else CHECK(false);
     puts("PASS sender one-shot case");
 }

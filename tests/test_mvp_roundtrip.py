@@ -65,6 +65,20 @@ class MvpRoundtripTests(unittest.TestCase):
         cls.binaries = {}
         for role in ('sender', 'receiver'):
             binary = Path(cls.directory.name) / role
+            ssot_object = Path(cls.directory.name) / (role + '_ssot.o')
+            role_defines = (
+                ['-DHELLO_TEST_MODE=1', '-DHELLO_RAM_ONLY_TEST=1']
+                if role == 'sender' else ['-DLORA_ROLE_RECEIVER=1']
+            )
+            c_result = subprocess.run([
+                'gcc', '-std=c11', '-Wall', '-Wextra', '-Wshadow', '-Wconversion',
+                '-Wstrict-prototypes', '-Wmissing-prototypes', '-Werror',
+                *role_defines,
+                '-I' + str(ROOT / 'src'), '-I' + str(ROOT / 'include'),
+                '-c', str(ROOT / 'src/ssot.c'), '-o', str(ssot_object),
+            ], capture_output=True, text=True, timeout=30)
+            if c_result.returncode:
+                raise AssertionError(c_result.stdout + c_result.stderr)
             command = [
                 'g++', '-std=c++17', '-Wall', '-Wextra', '-Werror',
                 '-Wno-implicit-fallthrough', '-Wno-unused-but-set-variable', '-D_Bool=bool',
@@ -72,16 +86,17 @@ class MvpRoundtripTests(unittest.TestCase):
                 '-I' + str(ROOT / 'tests/mvp_stub'),
                 '-I' + str(ROOT / 'tests/radio_stub'),
                 '-I' + str(ROOT / 'src/shared'),
+                '-I' + str(ROOT / 'src'),
+                '-I' + str(ROOT / 'include'),
                 '-I' + str(ROOT / 'lib/lora/src'),
                 '-I' + str(ROOT / 'lib/updi_uart/src'),
                 '-I' + str(PROJECT_LIB / 'task/src'),
                 '-I' + str(PROJECT_LIB / 'iw_core/src'),
                 '-I' + str(PROJECT_LIB / 'iw_tracker_radio_protocol/src'),
-                *(['-DHELLO_TEST_MODE=1', '-DHELLO_RAM_ONLY_TEST=1']
-                  if role == 'sender' else ['-DLORA_ROLE_RECEIVER=1']),
+                *role_defines,
                 str(ROOT / 'tests/mvp_board.cpp'),
                 str(ROOT / 'lib/lora/src/lora.cpp'),
-                str(ROOT / 'src/shared/hello_protocol.cpp'),
+                str(ssot_object),
                 str(Path(cls.directory.name) / 'task.o'),
                 str(PROJECT_LIB / 'iw_tracker_radio_protocol/src/codec.cpp'),
                 str(PROJECT_LIB / 'iw_core/src/byte_codec.cpp'),

@@ -4,7 +4,7 @@
 #include "role_log.h"
 #include "hello_config.h"
 #include "../../include/generated/lora_receiver_board.h"
-#include "hello_protocol.h"
+#include "ssot.h"
 #include "iw/tracker/radio/packets.h"
 #include "iw/tracker/radio/codec.h"
 
@@ -39,8 +39,8 @@ static uint8_t radio_version = 0;
 static int16_t radio_probe_status = RADIOLIB_ERR_UNKNOWN;
 static int16_t radio_init_status = RADIOLIB_ERR_UNKNOWN;
 static bool radio_init_attempted = false;
-static lora_hello::DuplicateTracker duplicates;
-static lora_hello::ControlInput arm_input('R');
+static ssot_duplicate_tracker_t duplicates;
+static ssot_control_input_t arm_input;
 static uint16_t armed_session = 0;
 
 static void init_receiver_gpio() {
@@ -69,6 +69,8 @@ static void init_receiver_gpio() {
 }
 
 void setup() {
+    ssot_duplicate_tracker_init(&duplicates);
+    ssot_control_input_init(&arm_input, 'R');
     init_receiver_gpio();
     radio_probe_status = lora.read_chip_version(&radio_version);
 #if !HELLO_RF_DIAGNOSTIC_ONLY
@@ -125,8 +127,9 @@ void loop() {
     }
 
     if (radio_ready && updi_uart_rx_poll() &&
-        arm_input.feed(updi_uart_rx(), millis(), &armed_session)) {
-        duplicates.reset();
+        ssot_control_input_feed(&arm_input, updi_uart_rx(), millis(),
+                                &armed_session)) {
+        ssot_duplicate_tracker_reset(&duplicates);
         updi_role_log_campaign("RECEIVER", "SESSION_READY", armed_session);
         updi_role_log("RECEIVER", "RX_READY");
     }
@@ -147,22 +150,23 @@ void loop() {
         return;
     }
 
-    lora_hello::Frame frame{};
+    ssot_frame_t frame = {0};
     const uint16_t session = static_cast<uint16_t>(id) | (static_cast<uint16_t>(flags) << 8);
-    const uint8_t reply = lora_hello::reply_for_data(destination, source, id, flags,
-                                                   packet, packet_size, armed_session, &frame);
+    const uint8_t reply = ssot_reply_for_data(destination, source, id, flags,
+                                              packet, packet_size,
+                                              armed_session, &frame);
     if (!reply) return;
-    const bool valid = reply == lora_hello::kAckType;
+    const bool valid = reply == SSOT_ACK_TYPE;
     if (valid) {
 
-    const bool duplicate = duplicates.observe(source, frame.campaign_id,
-                                               frame.sequence);
+    const bool duplicate = ssot_duplicate_tracker_observe(
+        &duplicates, source, frame.campaign_id, frame.sequence);
     updi_role_log_packet("RECEIVER", "PAYLOAD_MATCH", frame.campaign_id,
                          frame.sequence, 0);
     if (frame.sequence == 1) {
         updi_role_log_payload("RECEIVER", "PAYLOAD_BYTES", frame.campaign_id,
                               frame.sequence, packet + 2,
-                              lora_hello::kHelloPayloadSize);
+                              SSOT_HELLO_PAYLOAD_SIZE);
     }
     updi_role_log_packet("RECEIVER", duplicate ? "DATA_DUP" : "DATA_RX",
                          frame.campaign_id, frame.sequence, 0);
@@ -171,11 +175,13 @@ void loop() {
     }
 
 #if !HELLO_RF_DIAGNOSTIC_ONLY
-    uint8_t ack_bytes[lora_hello::kAckPayloadSize];
+    uint8_t ack_bytes[SSOT_ACK_PAYLOAD_SIZE];
     size_t ack_size = 0;
     const bool encoded = valid
-        ? lora_hello::encode_ack_payload(1, ack_bytes, sizeof(ack_bytes), &ack_size)
-        : lora_hello::encode_nack_payload(1, ack_bytes, sizeof(ack_bytes), &ack_size);
+        ? ssot_encode_ack_payload(SSOT_SEQUENCE, ack_bytes, sizeof(ack_bytes),
+                                  &ack_size)
+        : ssot_encode_nack_payload(SSOT_SEQUENCE, ack_bytes, sizeof(ack_bytes),
+                                   &ack_size);
     if (!encoded) {
         updi_role_log_packet("RECEIVER", "ACK_ENCODE_FAILED",
                              frame.campaign_id, frame.sequence, 0);
