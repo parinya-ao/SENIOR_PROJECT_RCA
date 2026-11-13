@@ -19,7 +19,7 @@ class ConfigurationTests(unittest.TestCase):
         self.assertNotIn("spi_route", config["sender_board"])
         for section, key, value in (
             ("protocol", "payload", "wrong"),
-            ("receiver_board", "image_start", 0),
+            ("receiver_board", "image_start", 22528),
             ("sender_board", "bootsize", 44),
         ):
             changed = copy.deepcopy(config)

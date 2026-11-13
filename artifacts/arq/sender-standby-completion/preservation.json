@@ -1,0 +1,16 @@
+{
+  "receiver": {
+    "full_image_verified": true,
+    "fuses_eeprom_identity_lock_preserved": true,
+    "flash_preserved_from": 37376,
+    "final_flash_sha256": "e530e28b5ee0d4f9ee69f274a61bdd53b0c57eb4860f21ffffebdeb04dd0f539",
+    "firmware_hex_sha256": "c7b35622e531467aac1880a4547bf2c893457d9d4db665a6f108d4cddae07d2b"
+  },
+  "sender": {
+    "full_image_verified": true,
+    "fuses_eeprom_identity_lock_preserved": true,
+    "flash_preserved_from": 35840,
+    "final_flash_sha256": "5347714855cedb18dd6b051f80003247c8f049a7871d48129224a3a5721d7d86",
+    "firmware_hex_sha256": "2944fc05db4e8c4f60de2635f9f6824608f74aa51b8e2f8d899d574d17116dc3"
+  }
+}

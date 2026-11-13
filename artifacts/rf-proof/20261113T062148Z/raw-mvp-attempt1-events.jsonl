@@ -1,0 +1,29 @@
+{"monotonic": 81975.189254672, "utc": "2026-11-13T06:39:25.919311+00:00", "role": "receiver", "line": "[MVP RECEIVER] BOOT rc=0 reset_flags=0x20"}
+{"monotonic": 81975.471633743, "utc": "2026-11-13T06:39:26.201610+00:00", "role": "receiver", "line": "[MVP RECEIVER] GPIO_INIT rc=0"}
+{"monotonic": 81975.841544101, "utc": "2026-11-13T06:39:26.571563+00:00", "role": "receiver", "line": "[MVP RECEIVER] RADIO_POWER_ENABLE rc=0"}
+{"monotonic": 81976.125580238, "utc": "2026-11-13T06:39:26.855606+00:00", "role": "receiver", "line": "[MVP RECEIVER] SPI1_INIT rc=0"}
+{"monotonic": 81976.427565691, "utc": "2026-11-13T06:39:27.157532+00:00", "role": "receiver", "line": "[MVP RECEIVER] RADIO_RESET rc=0"}
+{"monotonic": 81976.797597667, "utc": "2026-11-13T06:39:27.527649+00:00", "role": "receiver", "line": "[MVP RECEIVER] RADIO_VERSION_READ rc=0"}
+{"monotonic": 81977.099084285, "utc": "2026-11-13T06:39:27.829098+00:00", "role": "receiver", "line": "[MVP RECEIVER] RADIO_INIT rc=0"}
+{"monotonic": 81977.377472573, "utc": "2026-11-13T06:39:28.107537+00:00", "role": "receiver", "line": "[MVP RECEIVER] RX_READY rc=0"}
+{"monotonic": 81977.796617416, "utc": "2026-11-13T06:39:28.526620+00:00", "role": "receiver", "line": "[MVP RECEIVER] REG_VERSION try=1 value=0x12"}
+{"monotonic": 81978.094982535, "utc": "2026-11-13T06:39:28.825045+00:00", "role": "sender", "line": "[MVP SENDER] BOOT rc=0 reset_flags=0x20"}
+{"monotonic": 81978.355735369, "utc": "2026-11-13T06:39:29.085834+00:00", "role": "sender", "line": "[MVP SENDER] GPIO_INIT rc=0"}
+{"monotonic": 81978.699734625, "utc": "2026-11-13T06:39:29.429757+00:00", "role": "sender", "line": "[MVP SENDER] RADIO_POWER_ENABLE rc=0"}
+{"monotonic": 81978.764893092, "utc": "2026-11-13T06:39:29.494994+00:00", "role": "receiver", "line": "[MVP RECEIVER] PROFILE 915MHz BW125 SF7 CR4/5 SYNC=0x12 PREAMBLE=8 EXPLICIT CRC NORMAL_IQ PA_BOOST=2dBm"}
+{"monotonic": 81978.962315861, "utc": "2026-11-13T06:39:29.692347+00:00", "role": "sender", "line": "[MVP SENDER] SPI1_INIT rc=0"}
+{"monotonic": 81979.24217607, "utc": "2026-11-13T06:39:29.972328+00:00", "role": "sender", "line": "[MVP SENDER] RADIO_RESET rc=0"}
+{"monotonic": 81979.280556404, "utc": "2026-11-13T06:39:30.010646+00:00", "role": "receiver", "line": "[MVP RECEIVER] COUNTERS tx=0 rx=4 match=4 crc_errors=0"}
+{"monotonic": 81979.596274663, "utc": "2026-11-13T06:39:30.326423+00:00", "role": "sender", "line": "[MVP SENDER] RADIO_VERSION_READ rc=0"}
+{"monotonic": 81979.8696595, "utc": "2026-11-13T06:39:30.599706+00:00", "role": "sender", "line": "[MVP SENDER] RADIO_INIT rc=0"}
+{"monotonic": 81980.265815575, "utc": "2026-11-13T06:39:30.995818+00:00", "role": "sender", "line": "[MVP SENDER] REG_VERSION try=1 value=0x12"}
+{"monotonic": 81980.526824597, "utc": "2026-11-13T06:39:31.256950+00:00", "role": "receiver", "line": "[MVP RECEIVER] RX count=5 len=11 rc=0 irq=80 restart=0 match=5 crc_errors=0 rssi=-106.00 snr=9.00 PASS bytes=48656C6C6F20576F726C64"}
+{"monotonic": 81981.219618571, "utc": "2026-11-13T06:39:31.949623+00:00", "role": "sender", "line": "[MVP SENDER] PROFILE 915MHz BW125 SF7 CR4/5 SYNC=0x12 PREAMBLE=8 EXPLICIT CRC NORMAL_IQ PA_BOOST=2dBm"}
+{"monotonic": 81981.715628299, "utc": "2026-11-13T06:39:32.445595+00:00", "role": "sender", "line": "[MVP SENDER] COUNTERS tx=4 rx=0 match=0 crc_errors=0"}
+{"monotonic": 81982.232719165, "utc": "2026-11-13T06:39:32.962760+00:00", "role": "sender", "line": "[MVP SENDER] TX_START attempt=5 len=11 rc=0 cleanup=0"}
+{"monotonic": 81982.68664384, "utc": "2026-11-13T06:39:33.416831+00:00", "role": "sender", "line": "[MVP SENDER] TX_DONE attempt=5 cleanup=0 irq=8"}
+{"monotonic": 81983.028214901, "utc": "2026-11-13T06:39:33.758342+00:00", "role": "receiver", "line": "[MVP RECEIVER] RX count=6 len=11 rc=0 irq=80 restart=0 match=6 crc_errors=0 rssi=-107.00 snr=9.00 PASS bytes=48656C6C6F20576F726C64"}
+{"monotonic": 81985.223294801, "utc": "2026-11-13T06:39:35.953343+00:00", "role": "sender", "line": "[MVP SENDER] TX_START attempt=6 len=11 rc=0 cleanup=0"}
+{"monotonic": 81985.792136247, "utc": "2026-11-13T06:39:36.522279+00:00", "role": "sender", "line": "[MVP SENDER] TX_DONE attempt=6 cl[MVP SENDER] STOP tx=6"}
+{"monotonic": 81986.021071, "utc": "2026-11-13T06:39:36.751161+00:00", "role": "receiver", "line": "[MVP RECEIVER] RX count=7 len=11 rc=0 irq=80 restart=0 match=7 crc_errors=0 rssi=-107.00 snr=8.75 PASS bytes=48656C6C6F20576F726C64"}
+{"monotonic": 81995.767416771, "utc": "2026-11-13T06:39:46.497420+00:00", "role": "sender", "line": "[MVP SENDER] STOP tx=6"}

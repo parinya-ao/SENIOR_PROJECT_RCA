@@ -1,0 +1,11 @@
+[
+  {
+    "response_guard_ms": 50,
+    "config_hash": "5848e6adef06b668d3a9b3ba99f903fc495e47ccc7b2eca12421b2526e5fb3d2",
+    "firmware": {
+      "receiver": "10452d2d902409dd3b759563873dab6fb9033c61c0d5d5af92e6198cc817bddf",
+      "sender": "eaf872b9972f6263fa7b5858af20cc8bdbfaa5773beab9c6aa54b40ac1389965"
+    },
+    "failure": "transaction failed: TIMEOUT_EXHAUSTED"
+  }
+]

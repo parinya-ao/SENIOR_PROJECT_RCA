@@ -56,6 +56,33 @@ def hardware_blockers(
     return blockers
 
 
+def parse_raw_mvp_logs(sender_text: str, receiver_text: str) -> dict[str, object]:
+    """Validate raw MVP observations only; capture provenance remains separate."""
+    starts = {int(m[1]) for m in re.finditer(
+        r'^\[MVP SENDER\] TX_START attempt=(\d+) len=11 rc=0 cleanup=0$', sender_text, re.M)}
+    completed = [int(m[1]) for m in re.finditer(
+        r'^\[MVP SENDER\] TX_DONE attempt=(\d+) cleanup=0 irq=(\d+)$', sender_text, re.M)
+        if int(m[1]) in starts and int(m[2]) & 8]
+    ready = '[MVP RECEIVER] RX_READY rc=0' in receiver_text.splitlines()
+    packets = []
+    for line in receiver_text.splitlines():
+        if not line.startswith('[MVP RECEIVER] RX '):
+            continue
+        fields = dict(re.findall(r'(\w+)=([^ ]+)', line))
+        try:
+            if (int(fields['len']) == 11 and int(fields['rc']) == 0 and
+                    int(fields['restart']) == 0 and int(fields['irq']) & 0x40 and
+                    not int(fields['irq']) & 0x20 and ' PASS bytes=' in line and
+                    bytes.fromhex(fields['bytes']) == b'Hello World'):
+                packets.append(dict(rssi=float(fields['rssi']), snr=float(fields['snr'])))
+        except (ValueError, KeyError):
+            continue
+    return dict(passed=bool(ready and completed and packets), tx_completed=len(completed),
+                rx_matches=len(packets), rssi=[p['rssi'] for p in packets],
+                snr=[p['snr'] for p in packets],
+                limit='Log structure only; physical provenance and negative-control timing require capture evidence.')
+
+
 def parse_radio_spi_log(log_text: str, role: str) -> dict[str, object]:
     if role not in ("GATEWAY", "RECEIVER"):
         return {"role": role, "version": None, "tx_disabled": False,
@@ -700,6 +727,12 @@ def application_bounds_for_environment(
         "sender_hello_spi": "gateway",
         "receiver": "receiver",
         "receiver_spi": "receiver",
+        "sender_mvp": "gateway",
+        "receiver_mvp": "receiver",
+        "sender_arq": "gateway",
+        "receiver_arq": "receiver",
+        "sender_arq_test": "gateway",
+        "receiver_arq_test": "receiver",
     }.get(environment)
     if not sections or role is None:
         return None
@@ -1083,7 +1116,7 @@ def program_application(proof, environment, effective_config):
         code, out, err = proof.command(environment+'-programmer-version', [str(AVRDUDE), '--version'])
         if code or not re.search(rb'\bversion 8\.1\b', out+err):
             raise ValueError('page-write strategy requires reviewed AVRDUDE 8.1')
-        before = read_snapshot(proof, environment+'-before-page-write', role)
+        before = read_snapshot(proof, environment+'-before-page-write', role, current_target=True)
         expected = normalize_ihex_region(data.decode('ascii'), start, end)
         if before['flash'][start:end] == expected:
             proof.note(environment+'-program.log', 'SKIPPED: exact application page readback already matches; no repeat write.\n')
@@ -1098,7 +1131,7 @@ def program_application(proof, environment, effective_config):
         code, _, _ = proof.command(environment+'-page-program', command, 120)
         if code:
             return 1
-        after = read_snapshot(proof, environment+'-after-page-write', role)
+        after = read_snapshot(proof, environment+'-after-page-write', role, current_target=True)
         require_preserved(before, after, start, end)
         if after['flash'][start:end] != expected:
             raise ValueError('application full-page readback mismatch')
@@ -1693,10 +1726,11 @@ def rf_test(proof: ProofRun, args: argparse.Namespace, profile_ok: bool,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=("all", "config", "host-tests", "builds",
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--stage", choices=("all", "config", "host-tests", "builds",
                         "target-identification", "radio-spi-smoke", "preflight",
                         "upload", "rf-test", "boot-analysis", "receiver-boot-prepare",
-                        'receiver-boot-install', 'receiver-boot-restore'), required=True)
+                        'receiver-boot-install', 'receiver-boot-restore'))
     parser.add_argument("--physical-mapping-verified", action="store_true",
                         help='confirm current board-to-USB role mapping')
     parser.add_argument("--power-verified", action="store_true",
@@ -1719,7 +1753,13 @@ def main() -> int:
                         help='specific authorization for the exact reviewed package; required before BOOT writes')
     parser.add_argument('--authorize-receiver-boot-restore', metavar='RESTORE_HEX_SHA256',
                         help='specific authorization to restore original page 0 only')
+    mode.add_argument('--raw-mvp-logs', nargs=2, type=Path, metavar=('SENDER', 'RECEIVER'),
+                        help='validate raw-MVP log structure separately from ACK/NACK campaigns')
     args = parser.parse_args()
+    if args.raw_mvp_logs:
+        result = parse_raw_mvp_logs(*(path.read_text() for path in args.raw_mvp_logs))
+        print(json.dumps(result, indent=2))
+        return 0 if result['passed'] else 1
     args.boot_layout_verified = False
     args.target_identification_attempted = False
 

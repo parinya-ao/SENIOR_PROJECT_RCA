@@ -1,0 +1,6 @@
+{
+  "origin": "PHYSICAL_UPDI",
+  "passed": false,
+  "stop_sent_monotonic": 81985.527355278,
+  "error": "Stop not acknowledged"
+}

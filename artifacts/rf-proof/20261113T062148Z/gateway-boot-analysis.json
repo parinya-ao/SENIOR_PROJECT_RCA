@@ -1,0 +1,11 @@
+{
+  "reachable_instruction_count": 1,
+  "application_transfers": [
+    0
+  ],
+  "unresolved": [],
+  "verdict": "TRANSFER_PRESENT",
+  "backup_sha256": "2dd1d1716a229c8deb4dcf8f729d1b5e5e89ab56815b2c8ea0c1474bf1bc56b0",
+  "application_start": 0,
+  "limit": "Static reachability only; indirect targets and on-target boot require independent evidence."
+}

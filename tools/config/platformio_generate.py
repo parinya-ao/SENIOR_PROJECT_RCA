@@ -17,6 +17,8 @@ roles_by_environment = {
     for role, environments in radio['environments'].items()
     for environment in environments
 }
+roles_by_environment.update({f'{role}_arq{suffix}':role
+    for role in ('sender','receiver') for suffix in ('','_test')})
 try:
     role = roles_by_environment[env['PIOENV']]
 except KeyError as error:
@@ -38,6 +40,11 @@ if env.GetProjectOption('build_type') == 'release':
     env.Append(LINKFLAGS=['-Wl,--strip-debug'])
 manifest = json.loads((ROOT / 'generated/lora_manifest.json').read_text())
 identity = Path(env.subst('$BUILD_DIR')) / 'lora_build_identity.h'
-contents = '#pragma once\n#define LORA_BUILD_ID "' + manifest['environments'][env['PIOENV']]['build_id'] + '"\n'
+build_id = manifest['environments'].get(env['PIOENV'], {}).get('build_id')
+if build_id is None:
+    from generate_lora_config import digest
+    arq = json.loads((ROOT / 'generated/arq_manifest.json').read_text())
+    build_id = digest(dict(environment=env['PIOENV'], arq=arq))
+contents = '#pragma once\n#define LORA_BUILD_ID "' + build_id + '"\n'
 _write_atomic(identity, contents)
 env.Append(CCFLAGS=['-include', str(identity)])

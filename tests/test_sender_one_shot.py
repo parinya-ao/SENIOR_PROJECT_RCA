@@ -29,7 +29,7 @@ class SenderOneShotTests(unittest.TestCase):
         for mode in (0, 1):
             binary = directory / ('sender_one_shot_' + str(mode))
             c_object = directory / ('ssot_' + str(mode) + '.o')
-            defines = ['-DHELLO_TEST_MODE=1']
+            defines = ['-DHELLO_TEST_MODE=1', '-DLORA_ROLE_SENDER=1']
             if mode:
                 defines.append('-DHELLO_RAM_ONLY_TEST=1')
             c_result = subprocess.run([

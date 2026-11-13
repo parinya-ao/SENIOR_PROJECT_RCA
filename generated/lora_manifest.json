@@ -1,12 +1,12 @@
 {
   "boards": {
     "receiver": {
-      "bodcfg": 84,
-      "bootsize": 44,
-      "build_fingerprint": "d2d51348bb4210f3982088fd7555bcd3fe52616fe4fee31a4f9fa1425ca2b7a3",
+      "bodcfg": 0,
+      "bootsize": 0,
+      "build_fingerprint": "531949251c1fd7dba9a1cfac9658f7aaa5d2bc8b3bc032ba4400443ec52c35d9",
       "codesize": 0,
       "image_end_exclusive": 130048,
-      "image_start": 22528,
+      "image_start": 0,
       "mcu": "AVR128DA28",
       "pins": {
         "gps_enable": "PD5",
@@ -55,23 +55,31 @@
   },
   "environments": {
     "receiver": {
-      "build_id": "f3307d194e0a9c7dde0516dd86e3c81158c26f301902fbd380c29d9724a52bf3",
+      "build_id": "3384efcb634a776cde714b233da055262a132c6a545cb025009c6a99ed6711ad",
+      "role": "receiver"
+    },
+    "receiver_mvp": {
+      "build_id": "b25f4a7f92bc4caae668f845d555b757511c1f9bbde6953b1791b96025882147",
       "role": "receiver"
     },
     "receiver_spi": {
-      "build_id": "4c1a3121695d6394ee168e96a4e246df4155b6b8b67cec83178ab0254a1f67b3",
+      "build_id": "e39fb86f701c384d7cd39e53d57b9462b55f45ef5feeba66ee9b7488580b8eab",
       "role": "receiver"
     },
     "sender": {
-      "build_id": "9e855fc9ebd59902f085792e718abd2391582c0c5ee6c9d211e5a92506dc0b12",
+      "build_id": "5ba1b164665fa44adbde9e6cc1ee128ebf52db16dc66435473f5ea7fe5ca44c8",
       "role": "sender"
     },
     "sender_hello": {
-      "build_id": "563096ae3da8d267c119d3d4d235c3c46c018bcfa5963ea7114115f82b23cae3",
+      "build_id": "a0b2a075ca8d607d312648cb42750fedc24ef7e3d2e179ae54afcd8280ba5ab1",
       "role": "sender"
     },
     "sender_hello_spi": {
-      "build_id": "af18b7a1038456aeccfc9caff6c4c0f5d04b9a09e963e86f510f463405e20497",
+      "build_id": "95ec652852c20f2c03d7bfad0066f692029d9e06f34282c1a2ce24cbd293b3d3",
+      "role": "sender"
+    },
+    "sender_mvp": {
+      "build_id": "44ba743c44a244c4db906cf561bffa94f39d24a9ccf807b3fcf77e4e738d4c61",
       "role": "sender"
     }
   },
@@ -114,5 +122,5 @@
     }
   },
   "shared_fingerprint": "134ac64a410cd93c902c8eccb20a3639b7a4aae0c2b666e5dcec6868e1057811",
-  "source_fingerprint": "67f6ae7cd4e6da29a49d4a9db67c34e80257d3f3c72160d71f3d6b408ce7cff7"
+  "source_fingerprint": "b76a64dcfaff1e197eae43d0d6fa4ecda89514cf29b0302c1e7314139879ae52"
 }

@@ -67,7 +67,7 @@ class MvpRoundtripTests(unittest.TestCase):
             binary = Path(cls.directory.name) / role
             ssot_object = Path(cls.directory.name) / (role + '_ssot.o')
             role_defines = (
-                ['-DHELLO_TEST_MODE=1', '-DHELLO_RAM_ONLY_TEST=1']
+                ['-DHELLO_TEST_MODE=1', '-DHELLO_RAM_ONLY_TEST=1', '-DLORA_ROLE_SENDER=1']
                 if role == 'sender' else ['-DLORA_ROLE_RECEIVER=1']
             )
             c_result = subprocess.run([

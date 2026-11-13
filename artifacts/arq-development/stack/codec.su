@@ -1,0 +1,3 @@
+codec.c:4:6:arq_valid	2	static
+codec.c:11:8:arq_encode	8	static
+codec.c:19:6:arq_decode	54	static

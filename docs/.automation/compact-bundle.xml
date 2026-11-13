@@ -1,0 +1,838 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files and files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where comments have been removed, empty lines have been removed, content has been compressed (code blocks are separated by ⋮---- delimiter).
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: **/*
+- Files matching these patterns are excluded: .git/**, .venv/**, **/.venv/**, venv/**, **/venv/**, env/**, **/env/**, __pycache__/**, **/__pycache__/**, *.py[cod], **/*.py[cod], .mypy_cache/**, **/.mypy_cache/**, .pytest_cache/**, **/.pytest_cache/**, .ruff_cache/**, **/.ruff_cache/**, .tox/**, **/.tox/**, .nox/**, **/.nox/**, .cache/**, **/.cache/**, node_modules/**, **/node_modules/**, .next/**, **/.next/**, .nuxt/**, **/.nuxt/**, .svelte-kit/**, **/.svelte-kit/**, *.lock, **/*.lock, package-lock.json, **/package-lock.json, yarn.lock, **/yarn.lock, pnpm-lock.yaml, **/pnpm-lock.yaml, bun.lockb, **/bun.lockb, *.log, **/*.log, *.bkp, **/*.bkp, *.drawio, **/*.drawio, logs/**, **/logs/**, .coverage, **/.coverage, coverage/**, **/coverage/**, htmlcov/**, **/htmlcov/**, .vscode/**, **/.vscode/**, .idea/**, **/.idea/**, *.swp, **/*.swp, *.swo, **/*.swo, .DS_Store, **/.DS_Store, .env, **/.env, .env.*, **/.env.*, *.pem, **/*.pem, *.key, **/*.key, *.p12, **/*.p12, secrets/**, **/secrets/**, credentials.json, **/credentials.json, .codegraph/**, **/.codegraph/**, graphify-out/**, **/graphify-out/**, src/automation/graphify-out/**, .automation/**, dist/**, build/**, .pio/, .pioenvs/, .piolibdeps/, libdeps/, repomix-output.*, **/repomix-output.*
+- Files matching default ignore patterns are excluded
+- Code comments have been removed from supported file types
+- Empty lines have been removed from all files
+- Content has been compressed - code blocks are separated by ⋮---- delimiter
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+arq/
+  DEBUGGING.md
+  PROTOCOL.md
+  STANDARDS.md
+  STAR_REPORT.md
+  TEST_PLAN.md
+ssot/
+  GATEWAY_SSOT.md
+  TRACKER_SSOT.md
+UPDI_HELLO_WORLD_STAR.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="arq/DEBUGGING.md">
+# ARQ debugging
+
+เริ่มจาก evidence อย่าเปลี่ยน timing แบบสุ่ม. `STATUS` replays startup,
+build/config identity, counters, last result and RTT diagnostics.
+
+| Symptom | Check |
+| --- | --- |
+| No command ACK | UPDI owner, mailbox connection, newline, bounded hex syntax; both boards must ARM same session |
+| BOOT rc nonzero / ready=0 | RegVersion, SPI route generated from pin TOML, receiver power enable, PA_BOOST and RadioLib return codes |
+| No DATA | Unarmed/stopped Sender, SEND syntax, one outstanding transaction, 3 s spacing |
+| DATA but no ACK | CRC counter, exact case-sensitive Hello World, peer IDs/session/sequence, RX restoration, TX errors |
+| REJECTED | Wrong application bytes; expected for H02; new session before another request |
+| PROTOCOL_ERROR | Receiver expected sequence differs; do not force RF to change session; re-arm both with fresh session |
+| TIMEOUT_EXHAUSTED | Five attempts maximum; inspect immutable DATA and exponential intervals; separate suppression from RF loss |
+| Missing/partial lines | `overflow`, disconnected logger, UPDI byte readiness; trial invalid, protocol must still progress |
+| Duplicate application delivery | Acceptance/dedup state lost by reset, or wrong payload-validation ordering; invalidate trial on reset |
+
+`python tools/arq_trial.py --validate <bundle.json>` checks file integrity and
+exchange completeness, not authenticity. Keep acquired bundles and simulated
+fixtures separate. Raw logs alone are insufficient proof of physical RF.
+Use full-memory snapshots before any recovery; never erase whole Flash or
+alter fuses/BOOTSIZE/EEPROM to repair an ARQ test. Existing bounded application
+writer is reused; no changes to UPDI programming protocol.
+
+RTT is one MCU's TxDone-to-ACK interval, first attempts only. Compare sample
+counts and local timestamps; never subtract Receiver and Sender clocks.
+Power integrity has not been measured. Deduplication does not survive reset.
+
+## UPDI register evidence
+
+`REG`, `TX_STATE` and Sender `RX_STATE` contain bytes read directly over SPI,
+in this address order (not a protocol frame):
+
+`01 06 07 08 09 4D 1D 1E 26 39 33 3B 12 13 10 1B 40 11 18 31`.
+
+| Offset | Register | Interpretation |
+| --- | --- | --- |
+| 0 | OpMode 01 | Bit 7 LoRa; mode bits 2:0 = 3 TX, 5 continuous RX |
+| 1–3 | Frf 06–08 | E4 C0 00 = 915 MHz with 32 MHz reference |
+| 4–5 | PA_CONFIG / PA_DAC | F0 / 84 = selected 2 dBm PA_BOOST profile |
+| 6–11 | Modem1 / Modem2 / Modem3 / sync / IQ / IQ2 | 72 / 74 / 04 / 12 / 27 / 1D |
+| 12 | IrqFlags 12 | RxDone 40; payload CRC error 20; TxDone 08 |
+| 13–15 | RxNbBytes / FIFO RX current / RSSI value | Raw receive/FIFO/noise observations |
+| 16 | DioMapping1 40 | DIO0 bits 7:6 = 00 RxDone, 01 TxDone; IRQ polling does not require DIO interrupts |
+| 17–19 | IrqFlagsMask / ModemStatus / DetectOptimize | Raw IRQ mask, modem activity, detector configuration |
+
+`RX_READY rc=0` follows the actual `startReceive()` return. Compare local
+TX_DONE → RX_READY/RX_STATE times to test the turnaround boundary. Consult the
+[Semtech SX1276 datasheet](https://core-electronics.com.au/attachments/localcontent/SX1276_Datasheet_52573f9f913.pdf)
+for register definitions. RegVersion does not prove the physical module's
+frequency variant or its antenna connection.
+
+Sender board schematic routes ANT to SMA through SB1 or U.FL through SB2;
+an attached antenna also needs the corresponding bridge closed. See
+[Gateway SSOT](../ssot/GATEWAY_SSOT.md). The operator confirmed approximately
+one metre indoor separation on 2026-11-13. Later clarification supersedes
+the earlier antenna assumption: installed connector, SB1/SB2 continuity,
+antenna attachment and actual module/frequency marking are **PHYSICAL
+INSPECTION REQUIRED**. BOM/schematic specify RFM95W; they do not verify the
+populated module. Do not transmit again until the operator confirms inspection.
+</file>
+
+<file path="arq/PROTOCOL.md">
+# Raw LoRa ARQ V1
+
+ทั้งสองบอร์ดเริ่มแบบ unarmed ใน standby; host ต้อง ARM session ใหม่หลัง reset เสมอ.
+Raw MVP และ legacy `src/ssot.c` ยังคงเดิม.
+
+Wire bytes: version=1, type (DATA=1/ACK=2/NACK=3), source, destination,
+session uint32 LE, sequence uint16 LE, payload length, reason, payload.
+Header=12 bytes, payload<=32, frame<=44. DATA/ACK reason=0; ACK/NACK
+payload empty. NACK reason: 1 unexpected sequence, 2 application rejected,
+3 temporarily busy. Malformed/CRC/address/session failures are silent.
+
+Commands are newline terminated, bounded ASCII: `ARM 1234ABCD`,
+`SEND 48656C6C6F20576F726C64`, `STATUS`, `X`, and test receiver only
+`FAULT 10 10`. ARM same session is idempotent; session replacement while
+active is rejected. RF cannot arm devices. X stops new requests, lets an
+outstanding request finish, then parks the radio in standby. A new-session
+ARM clears stop and enables RX. Host reserves sessions
+monotonically on disk and waits for both ARM acknowledgements.
+
+Sender: IDLE -> TRANSMITTING -> WAITING_ACK -> BACKOFF -> TRANSMITTING.
+DELIVERED/FAILED retain result until explicit SEND. One immutable outstanding
+frame, initial RTO sampled once in [2000,3000] ms, doubles each retry, four
+retries. TxDone/cleanup/RX success precede RTO start. Controls are processed
+before deadlines. Matching ACK in WAITING_ACK/BACKOFF succeeds; matching
+application rejection -> REJECTED, unexpected sequence -> PROTOCOL_ERROR.
+BUSY uses the existing deadline (repetition cannot postpone retry).
+No second full wait in BACKOFF after timeout; DATA starts >=3000 ms apart.
+TX timeout=3000 ms, fatal adapter failure -> RADIO_ERROR, exhausted budget
+-> TIMEOUT_EXHAUSTED. Fixed transaction deadline bounds all attempts,
+including local TX and spacing. All intervals stay below half uint32 range.
+Sequence increments only on ACK, modulo 65536; sequence reuse requires a
+new session, including after a failed transaction. Reset aborts the trial.
+
+Receiver: LISTENING -> VALIDATING -> SENDING_RESPONSE -> RETURNING_TO_RX
+-> LISTENING. Exact configured payload accepted at expected sequence;
+record acceptance before response. Duplicate last accepted DATA replays ACK,
+without another delivery, only after exact payload validation. ACK failure
+does not erase deduplication. Initial response guard=75 ms; subsequent guard
+experiments come only from TOML with recorded evidence. Restore RX after response
+or recoverable error; controls never produce controls. Fault injection drops
+only selected first acceptance responses; duplicate replay remains enabled.
+
+Diagnostics use 16 fixed event slots, nonblocking byte flushing, retained
+startup/status, overflow count. RTT is local TxDone to matching ACK, only
+without retransmission. Report samples/count/min/max/average/P95. No clock
+subtraction between boards. Reset, overflow, missing terminal invalidates
+completeness. STATUS_END follows all diagnostics and carries the final overflow
+count; the host waits for that marker in the active session before closing.
+Text parser validation alone cannot prove physical origin.
+
+Deferred: adaptive RTO, FOTA, persistence, authentication. Deduplication is
+RAM only. Power integrity remains unmeasured.
+</file>
+
+<file path="arq/STANDARDS.md">
+# Standards mapping
+
+เป็นการประยุกต์แนวคิด reliability สำหรับ raw LoRa ไม่ใช่ CoAP/TCP/UDP
+หรือ LoRaWAN implementation. Sources checked 2026-11-13.
+
+| Source | Adaptation | Evidence |
+| --- | --- | --- |
+| [RFC 7252 §§4.2–4.8](https://www.rfc-editor.org/rfc/rfc7252.html#section-4.2) | One outstanding confirmable exchange, randomized initial interval, exponential retransmission, duplicate ACK replay, bounded retries and exchange lifetime | `sender.c`, `receiver.c`, core assertion harness |
+| [RFC 6298 §3](https://www.rfc-editor.org/rfc/rfc6298.html#section-3) | Karn-style exclusion of RTT after retransmission; no adaptive estimator yet | Sender `attempts==1` sample guard; RTT sample counts |
+| [RFC 8085 §3](https://www.rfc-editor.org/rfc/rfc8085.html#section-3) | Conservative pacing (3 seconds), retransmission backoff; control traffic never recursively acknowledged | Sender start spacing and receiver DATA-only gate |
+| [RFC 1982 §3](https://www.rfc-editor.org/rfc/rfc1982.html#section-3) | Modular sequence increment; exact equality rather than ordering distant sequence values; all timer intervals below half-range | Wrap tests; config timer-bound validation |
+| [LoRaWAN L2 1.0.4 §§4.3.1.2–4.3.1.3](https://lora-alliance.org/wp-content/uploads/2021/11/LoRaWAN-Link-Layer-Specification-v1.0.4.pdf) | Compare confirmed-frame ACK and bounded retransmission concept only | Separate ACK/NACK frames in custom 12-byte header |
+
+ไม่มี LoRaWAN receive windows, network server, join, MIC, encryption, ADR,
+frame counter inference หรือ regional MAC behavior. Session IDs isolate old
+traffic but do not authenticate peers. The 75 ms guard and 2–3 s RTO are
+experiment settings, not RFC-mandated LoRa timings.
+</file>
+
+<file path="arq/STAR_REPORT.md">
+# Raw LoRa ARQ V1 — STAR report
+
+## Situation
+
+งานเดิมมี raw Hello World MVP ที่ยังไม่อยู่ใน Git HEAD. ก่อนแก้ไขสำรอง
+339 files, firmware images, SHA-256 และ dirty diff ไว้ที่
+`/home/parinya/arq-backups/20261113T072630Z/`.
+ไม่ commit/push และไม่เปลี่ยน legacy `src/ssot.c` หรือค่าของ raw targets.
+
+## Task
+
+เพิ่ม command-driven ARQ: portable C codec/Sender/Receiver, generated board C,
+TOML timing/profile, bounded RadioLib adapter, test-only ACK suppression และ
+host evidence runner. ต้องพิสูจน์แต่ละ gate ด้วยฮาร์ดแวร์จริงและเก็บ failures
+ตามจริง โดยไม่แก้ fuses, BOOTSIZE, EEPROM หรือ Flash นอก image pages.
+
+## Action
+
+- Added `sender_arq`, `receiver_arq` and `_test` variants. Boards boot unarmed.
+- Codec and two state machines use explicit time, randomized transaction RTO,
+  radio completions and receive-frame seams. Tests run with Clang ASan/UBSan;
+  unsanitized portable objects have no malloc/calloc/realloc/free references.
+- Assertion tests cover golden bytes/bounds, matching controls, retry identity,
+  exponential backoff, bounded BUSY, clock/sequence wrap, dedup/session isolation,
+  dropped DATA/ACK/NACK, delayed/incorrect controls and radio/CRC failures.
+- Adapter tests exercise init return codes, malformed lengths, bounded commands,
+  duplicate replay, session counter reset, idempotent ARM, full logger and busy
+  mailbox. Sixteen event slots never wait for an UPDI reader.
+- Review fixes bind parsed events to raw capture streams and exact manifest
+  payload/IDs. Final `STATUS_END` includes overflow after diagnostics enqueue;
+  validation requires complete current-session status and matching RTT count.
+- ACK timer starts after cleanup/RX arming; RTT retains the observed local
+  TxDone time. Session changes retain minimum DATA start pacing.
+- Reused existing bounded page writer and full signature/serial/Flash/EEPROM/
+  fuses/lock snapshots. No programming protocol or fuse repair changes.
+
+## Result
+
+**Physical acceptance is blocked at H01. ไม่ได้รายงานว่า ARQ ผ่านฮาร์ดแวร์.**
+
+| Acquisition | Actual observation |
+| --- | --- |
+| `20261113T074154Z`, session 1 | Capture stopped before ARM because AVR printf_min emitted `s=0` instead of padded hex; parser fixed with regression test. No ARQ transaction. |
+| `20261113T074705Z`, session 2 | Five byte-identical 23-byte DATA transmissions; Receiver accepted once, detected four duplicates, transmitted five 12-byte matching ACKs with TxDone. Sender received zero controls and ended TIMEOUT_EXHAUSTED. |
+| `20261113T075357Z`, session 3 | Reproduced the same 5 DATA / 1 application delivery / 4 duplicates / 5 ACK TxDone / 0 Sender RX outcome. Final Receiver counters: gen=5, sup=0, att=5, done=5, crc=0, overflow=0, ready=1. |
+
+Session 3 initial readbacks matched: frequency registers E4C000 (915 MHz),
+PA_CONFIG F0, PA_DAC 84, modem configs 72/74/04, sync 12, IQ 27/1D.
+Sender final OpMode 8D has continuous-RX mode bits; IRQ=0 and RxNbBytes=0.
+Receiver observed DATA RSSI approximately −107 to −108 dBm, SNR 7.75–8.5 dB.
+This isolates the missing observation to the reverse RF/receive path; it does
+not identify a failed physical component or prove that TxDone radiated RF.
+No timer, power or PHY values were changed to mask this failure.
+
+H02–H06 were **not run** because H01 failed. Hundred-message delivery and
+first-attempt rates are unavailable. RTT sample count is zero; average/P95
+are unavailable. No injected-loss trial occurred and no natural RF loss rate
+was inferred. Failed bundles retain their exact images, hashes and streams;
+the earlier acquisition revisions lack the final-status marker and are not
+accepted as complete bundles by the stricter final validator.
+
+Fresh host verification: **169 tests run: 164 passed, 4 errors, 1 skipped**.
+The four errors are pre-existing UPDI tests: `test_ack_and_unrestricted_payload_are_accepted`
+(`recv` signature mismatch) and three bad-ACK subcases of
+`test_ack_is_compared_and_failed_connection_is_not_reused` (missing `TransportError`).
+UPDI repairs were intentionally deferred. All eleven focused ARQ tests passed.
+Full suite used a temporary external Clang 23/libstdc++ header setup because
+the system C++ driver/headers were absent; repository dependencies were not changed.
+All six ARQ/raw firmware targets built. Generator `--check`, graph update and
+`git diff --check` passed. Fresh review found no remaining important issue in
+the reviewed fixes. RED/GREEN, compiler and regression outputs are retained
+in `artifacts/arq-development/`.
+
+| Final target | Flash bytes (text + data) | Static SRAM bytes (data + bss) |
+| --- | ---: | ---: |
+| sender_arq | 35,678 | 5,035 |
+| receiver_arq | 35,096 | 5,033 |
+| sender_arq_test | 35,678 | 5,035 |
+| receiver_arq_test | 37,078 | 5,069 |
+
+Target limits: 131,072 physical Flash bytes (approved image end 130,048) and
+16,384 SRAM bytes. Separate non-LTO compilation of project files reports
+111-byte Sender loop, 154-byte Receiver loop and 91-byte status frames.
+These are per-function compiler figures, not a measured whole-program peak
+or complete nested-call bound. Full firmware keeps DxCore's required LTO.
+
+Raw regression and final idle readback are recorded below after acquisition.
+Acquisition firmware hashes remain in each bundle; later host/diagnostic
+hardening is not retroactive physical evidence. Baseline hashes confirmed
+`src/ssot.c`, `src/mvp/main.cpp`, `config/lora_system.json` and
+`config/radio_915.toml` unchanged by this implementation.
+
+## Limits and next physical check
+
+### Safe software completion and final device state
+
+All eleven focused ARQ tests pass; the full suite is 169 tests with 164 passes,
+four pre-existing UPDI transport errors and one skip. Normal/test Sender and
+Receiver plus both raw targets build. Latest source/config checks and a fresh
+review passed. No commits or pushes were made.
+
+Both normal ARQ images are installed with baseline 75 ms guard and independently
+verified. Receiver proof: `artifacts/arq/20261113T082243Z-standby/`; Sender and
+combined status proof: `artifacts/arq/sender-standby-completion/`.
+One Sender UPDI initialization failure occurred before writing; a separate
+read-only full preflight succeeded before the authorized installation resumed.
+
+Final actual register readback on **both** boards:
+
+`89E4C000F08472740412271D00000000000010C3`
+
+OpMode=89 (standby), IRQ=00, DIO0 mapping=00, IRQ mask=00. Both ready=1,
+STATUS_END overflow=0; Sender RESULT state=0 (IDLE), unarmed session=0.
+Only X/STATUS were sent during this final capture; there are zero TX events.
+Image hashes, raw UPDI streams and full-memory preservation checks are retained
+in `standby-verified.json`, `status.json` and `preservation.json` in the combined
+proof directory. EEPROM, fuses, lock and device identity remained unchanged;
+Flash beyond all authorized image pages was compared to the first ARQ backup.
+
+After physical antenna/module confirmation, the exact command is:
+
+```sh
+python tools/arq_trial.py --mvp --rf-path-confirmed
+```
+
+It runs one confirmed DATA→ACK, ten exchanges, NACK and ACK-loss recovery in
+that order, stopping at any failed gate. It has **not** been executed since the
+RF inspection hold. The 100/200 ms RF trials remain unrun; the 50 ms trial and
+earlier 75 ms trials did not receive an ACK. No RF success is claimed.
+
+### Operator stop for physical inspection (2026-11-13)
+
+The operator requires no further transmission until the actual Sender RF path
+is inspected. Connector selection, SB1/SB2 solder continuity, antenna
+attachment and populated radio model/frequency are **PHYSICAL INSPECTION
+REQUIRED**; earlier statements about connected antennas are not verification.
+BOMs specify RFM95W on Rudolph LoRa Board 2025-04-26 and Tracker RFM 2025-02-16.
+No multimeter, oscilloscope or logic analyzer is available.
+
+Before this stop, the 50 ms guard test (session 4) failed after five DATA
+attempts. Sender trace proves TX_DONE -> RX_READY rc=0 in 2–3 local milliseconds;
+RX_STATE = `8DE4C000F08472740412271D00000021000004C3` on the first attempt:
+OpMode 8D (continuous RX), IrqFlags 00, DioMapping1 00, IRQ mask 00.
+Receiver ACK TX_STATE has OpMode 8B (TX), matching frequency/PHY/PA registers
+and local TxDone. This does not prove actual ACK reception or RF radiation.
+Both final status markers reported overflow=0. No RTT samples were collected.
+Evidence: `artifacts/arq/20261113T081019Z-turnaround/guard-50/H01/`.
+
+The 100 ms run was stopped during programming/preflight before any ARM/SEND.
+The 200 ms run was not started. The partially prepared 50/100 ms image pair was
+not a completed configuration, and its batch was terminated after the active
+UPDI read finished. Baseline TOML guard is restored to 75 ms. Software work
+continues without RF: both roles now boot unarmed in standby; ARM enables RX,
+and X parks after the outstanding exchange finishes. Fresh standby installation
+and readback are recorded below. Resume with fresh identity, image/config
+checks and a new session after physical confirmation.
+
+Raw-MVP physical regression before these experiments passed with three logged
+TxDone events and three matching receptions (RSSI −109/−108/−109 dBm,
+SNR 8.0/8.25/8.25 dB). One Receiver independent readback failed at 74%; a
+subsequent read-only full snapshot verified its normal image and preserved
+signature/serial/EEPROM/fuses/lock and Flash outside the image. No repeat write
+was used for that read failure. Logs: `receiver-restore-readonly-check/` and
+`20261113T080205Z-raw-regression/` under `artifacts/arq/`.
+
+ตรวจ antenna connections, RF path and board power before a new fresh-session
+H01. The agent cannot inspect connections or measure power remotely. Power
+integrity remains unmeasured. Deduplication is RAM only and cannot survive
+reset. Authentication, persistence, adaptive RTO and FOTA remain deferred.
+</file>
+
+<file path="arq/TEST_PLAN.md">
+# ARQ test plan
+
+ทดสอบ host ก่อนเขียน Flash; RED logs อยู่ใน `artifacts/arq-development/`.
+
+1. `python -m unittest discover -s tests -p test_arq.py`: literal wire bytes,
+   truncated/oversized/unsupported frames, bounded buffers; matching controls,
+   wrong peer/session/sequence, immutable retries, exponential intervals,
+   repeated BUSY bound, terminal errors, sequence/time wrap, one outstanding;
+   payload rejection, duplicate ACK and single delivery, old session discard.
+2. Deterministic C fault harness: dropped DATA/ACK/NACK, incorrect controls,
+   delayed ACK in BACKOFF, CRC-discard boundary, BUSY, local TX error.
+   Portable logic executes under Clang ASan/UBSan and heap-symbol inspection.
+3. Adapter assertion harness: both roles, unarmed boot, command bounds,
+   ACK before retry at deadline, fault injection, response/RX cleanup,
+   nonblocking mailbox and sixteen-slot overflow. Host fixtures are synthetic.
+4. `pio run -e sender_arq -e receiver_arq -e sender_arq_test -e receiver_arq_test`.
+   Inspect AVR linker static SRAM/Flash, compile project objects separately
+   without LTO for `.su` reports (DxCore requires LTO in full firmware).
+5. `python tools/arq_trial.py --campaign --rf-path-confirmed`: fresh UPDI identification,
+   current-target serial/fuses check, bounded application-page erase/write,
+   independent full-memory comparisons. Receiver USB port 1, Sender port 4.
+
+| Gate | Required evidence |
+| --- | --- |
+| H01 | 23-byte Hello World DATA -> acceptance -> 12-byte matching ACK -> DELIVERED |
+| H02 | Wrong World -> APPLICATION_REJECTED NACK -> REJECTED, one attempt |
+| H03 | First ACK suppressed; byte-identical retry, duplicate replay, one delivery |
+| H04 | Ten unique sequences; complete outcomes/counters |
+| H05 | 100 messages, only after preceding gates pass; actual delivery and first-attempt rates |
+| H06 | Separate 100-message session; suppress ten selected first ACK opportunities, replay duplicate ACKs |
+
+Each gate uses a fresh monotonically reserved session. Bundle contains raw
+UPDI streams, host command times, MCU-local event times, exact frames,
+RSSI/SNR in hundredths, RTT samples and response counters, image/config hashes
+and programming snapshots. Do not subtract clocks across devices. Injected
+ACK suppression is not natural RF loss. Overflow, reset, missing terminal,
+hash or preservation mismatch invalidates completeness and stops later gates.
+
+After trials: raw-MVP physical regression, restore verified normal ARQ images,
+Sender unarmed/idle. Run generator `--check` and relevant existing host tests.
+Record unrelated transport/toolchain failures separately.
+
+## Immediate commands after physical inspection
+
+Software builds and standby preparation are safe before RF inspection:
+
+```sh
+python -m unittest discover -s tests -p test_arq.py
+python tools/config/generate_lora_config.py
+pio run -e sender_arq -e receiver_arq -e sender_arq_test -e receiver_arq_test
+python tools/arq_trial.py --prepare
+```
+
+`--prepare` sends only X and STATUS, verifies both OpMode standby, and performs
+no ARM/SEND. It programs only unarmed normal ARQ images through the existing
+bounded writer; full snapshots independently check image/preserved memory.
+
+Only after the operator confirms connector, correct SB1/SB2 selection,
+antenna attachment and actual RF-module marking:
+
+```sh
+python tools/arq_trial.py --mvp --rf-path-confirmed
+```
+
+This executes one DATA→ACK (H01), then ten exchanges (H04), then application
+NACK (H02) and first-ACK suppression/recovery (H03), each with a fresh session.
+Any failed gate stops subsequent gates. Normal unarmed standby firmware is
+restored in the runner's finally path. `--campaign --rf-path-confirmed` retains
+the original full sequential campaign including the separate 100-message trials.
+Neither RF mode runs without the explicit inspection flag.
+</file>
+
+<file path="ssot/GATEWAY_SSOT.md">
+# Gateway Hardware SSOT — Rudolph Gateway
+
+**Version:** 1.0 (2026-11-07)  
+**Target architecture:** **Main Board Rudolph GW** rev 1.0 dated **2026-02-21** + **LoRa Board Rudolph GW** rev 1.0 dated **2025-04-26**, with **four identical LoRa daughterboard slots** U5/U6/U7/U8.  
+**Status:** schematic-verified design intent. Physical population, revision, solder bridges, power and I2C host software still require verification.
+
+**Experiment role:** Gateway = **Sender** (`sender` / `sender_hello` / `sender_hello_spi`). Tracker = Receiver; its separate pins and power gates are defined in [TRACKER_SSOT.md](TRACKER_SSOT.md).
+
+## 1. System topology
+
+- Main board host **U11 Lilygo ESP32 WROVER E**.
+- Up to **4 × LoRa Board Rudolph GW**, U5–U8; each daughterboard contains its own **AVR128DA28 (U1)** and **RFM95/98 footprint (U2)**. The four radio boards **do not share an MCU**.
+- Main board supply: **VBAT**, switch **SW1**, **U10 AP2112K-3.3TRG1** for `3V3-LORA`, **Q3 SI2393DS** power path, and **Q1 RQ5C060BCTCL** for `3V3-OLED`. Exact VIN/EN states and the host VCC rail must be tested on assembled hardware; do not equate `VCC`, `VBAT` and `3V3-LORA` without measuring.
+- Daughterboard **VCC** is fed from main-board `3V3-LORA`; the daughterboard schematic itself **does not show a local regulator**.
+- Main-board radio-module fanout consists of per-module serial RX0..RX3, UPDI0..UPDI3, INT0..INT3; **shared SCL and SDA** with separate board-select/address signals A0/A1 held at board-specific levels.
+
+## 2. Daughterboard MCU and RFM95W SSOT
+
+| MCU | Net | Purpose |
+|---|---|---|
+| PA7 | A0 | Gateway I2C/address strap/control signal, **not radio power-enable**. |
+| PA6 | A1 | Gateway I2C/address strap/control signal. |
+| PA5 | LED1 | Active-low indicator (1 kΩ path to VCC). |
+| PA4 | LED2 | Active-low indicator (1 kΩ path to VCC). |
+| PA3 | SCL | TWI/I2C clock, host interface. |
+| PA2 | SDA | TWI/I2C data, host interface. |
+| PA1 | TX schematic net | **MCU USART0 RX** on referenced DxCore 28-pin core; connector label is opposite MCU direction. |
+| PA0 | RX schematic net | **MCU USART0 TX** on referenced DxCore 28-pin core; connector label is opposite MCU direction. |
+| PC0 | MOSI | Radio SPI MOSI. |
+| PC1 | MISO | Radio SPI MISO. |
+| PC2 | SCK | Radio SPI clock. |
+| PC3 | NSS | **Radio chip-select** (not Tracker SD select). |
+| PD0 | RST | **Radio reset**. |
+| PD1 | INT | Host-facing interrupt output; **not LoRa IRQ**. |
+| PD2 | DIO0 | **Radio IRQ**. |
+| PD3 | DIO1 | Radio additional GPIO. |
+| PD4 | DIO2 | Header pass-through; no established current firmware use. |
+| PD5 | DIO3 | Header pass-through; no established current firmware use. |
+| PD6 | DIO4 | Header pass-through; no established current firmware use. |
+| PD7 | DIO5 | Header pass-through; no established current firmware use. |
+| UPDI | UPDI | Flash/debug per module. |
+
+### Radio SPI and interrupt contract
+
+```cpp
+// Gateway daughterboard only, never Tracker:
+#define GW_LORA_CS    PIN_PC3
+#define GW_LORA_RST   PIN_PD0
+#define GW_LORA_IRQ   PIN_PD2 // RFM DIO0
+#define GW_LORA_DIO1  PIN_PD3
+#define GW_HOST_INT   PIN_PD1 // distinct from LoRa IRQ
+#define GW_LED1       PIN_PA5
+#define GW_LED2       PIN_PA4
+#define GW_ADDR_A0    PIN_PA7
+#define GW_ADDR_A1    PIN_PA6
+// SPI: MOSI=PC0, MISO=PC1, SCK=PC2.
+```
+
+The supplied repository's `PIN_MAPPING_AUDIT.md` records `SPI.swap(SPI1_SWAP_DEFAULT)` as the intended **DxCore 1.6.2 SPI1** route for PC0–PC2, before RadioLib initialization. Gateway radio NSS is PC3. `src/receiver/main.cpp` implements the **Tracker Receiver** and consumes its separately generated board pins; the common SPI peripheral does not imply common NSS, reset, interrupt or power-enable pins.
+
+## 3. Daughterboard external connectors
+
+### H1 (10-pin; only pins 1–5 used in the source schematic)
+
+| Pin | Schematic signal | Constraint |
+|---:|---|---|
+| 1 | VCC | 3.3V design rail, **live value unmeasured**. |
+| 2 | GND | common ground required. |
+| 3 | TX | connected to PA1; **MCU RX** according to installed DxCore audit. Do not assume label is host TX. |
+| 4 | RX | connected to PA0; **MCU TX** according to installed DxCore audit. |
+| 5 | UPDI | target-specific programmer connection. |
+| 6–10 | NC | not connected in referenced schematic. |
+
+### H2 (10-pin)
+
+| Pin | Signal | MCU |
+|---:|---|---|
+| 1 | A0 | PA7 |
+| 2 | A1 | PA6 |
+| 3 | INT | PD1 |
+| 4 | SCL | PA3 |
+| 5 | SDA | PA2 |
+| 6 | DIO1 | PD3 |
+| 7 | DIO2 | PD4 |
+| 8 | DIO3 | PD5 |
+| 9 | DIO4 | PD6 |
+| 10 | DIO5 | PD7 |
+
+## 4. Four module slot mappings from Main Board
+
+| Main slot | Daughterboard | Serial net from ESP32 | UPDI | Host interrupt | Shared I2C |
+|---|---|---|---|---|---|
+| U5 | LoRa Board 0 | RX0 | UPDI0 | INT0 | SCL, SDA |
+| U6 | LoRa Board 1 | RX1 | UPDI1 | INT1 | SCL, SDA |
+| U7 | LoRa Board 2 | RX2 | UPDI2 | INT2 | SCL, SDA |
+| U8 | LoRa Board 3 | RX3 | UPDI3 | INT3 | SCL, SDA |
+
+**A0/A1 strapping:** schematic shows per-slot 200 Ω networks R3–R10, with the A0/A1 bits at alternating high/low positions. Derive and confirm each actual two-bit I2C address combination from continuity and host-firmware setup before hardcoding addresses; the schematic alone does not define a complete I2C 7-bit slave-address constant.
+
+Main board also exposes **CN0–CN3** for RXn/UPDIn/service and **CN5** for ESP32 monitoring, along with P1/P2 power switches/connectors. The exact host ESP32 GPIO-number mapping is printed in the schematic; preserve this mapping in a separate host-software table after checking the assembled revision. In particular the host `SCL`, `SDA`, `INT0`...`INT3`, `EN-OLED` signal labels do not imply AVR pin equivalence.
+
+## 5. Power, RF and hardware safety
+
+- `3V3-LORA` is supplied by **AP2112K-3.3TRG1** on Main Board, not Tracker's U7 TPS7A02. The regulator is nominally a **600 mA** family, but this is an **overall shared rail rating**, **not 600 mA per installed daughterboard**. Validate datasheet limits, input voltage/dropout, power dissipation, peak simultaneous radio transmit load and temperature.
+- Each daughterboard RFM95/98 is connected directly to daughterboard VCC; there is **no per-board LoRa power-enable PA7**. PA7 is A0.
+- Radio ANT net selects SMA through SB1 or U.FL through SB2. Confirm which bridge is soldered and compatible antenna is attached. Module marking/frequency and applicable RF limits remain unknown.
+- Preserve `BOOT` and installed firmware until physical reset/power evidence is resolved. **Source audit/host unit tests are not live hardware tests.**
+- Historical report `HARDWARE_PREFLIGHT_REPORT.md`: RF-disabled Receiver APPCODE and BOOT readback passed, but normal startup remained unresolved with observed BORF resets and no physical radio response. Those are dated observations of the then-tested device, not blanket electrical proof for every board.
+
+## 6. Minimal validation gates
+
+- [ ] Confirm Main Board 2026-02-21 and LoRa Board 2025-04-26 on actual assemblies.
+- [ ] Verify each slot receives correct `3V3-LORA`, common GND, correct MCU orientation, correct A0/A1 strap state.
+- [ ] Validate 3V3-LORA current under **all populated radio boards** and inrush; do not divide AP2112K peak rating into per-board guarantees.
+- [ ] Confirm only one intended I2C address per populated slot, plus pull-ups and correct bus voltage.
+- [ ] Confirm correct role association of USB/UPDI per target using MCU identity; `/dev/ttyUSBn` alone is not an identity.
+- [ ] On each daughterboard test SPI1 PC0–PC2, CS PC3, RESET PD0, IRQ PD2, DIO1 PD3 with **read-only** radio register transaction.
+- [ ] Inspect RF module part marking and SB1/SB2 antenna path before any TX.
+- [ ] Test no unexpected reset / no BORF during MCU boot and radio init.
+
+## Sources
+
+- `Schematic_LoRa_Board_rudolph_gw_2025-04-26.pdf` (daughterboard, rev 1.0, 2025-04-26).
+- `Schematic_Main_Board_rudolph_gw_2026-02-21.pdf` (motherboard, rev 1.0, 2026-02-21).
+- Supplied `compact-bundle.xml`: `PIN_MAPPING_AUDIT.md`, `HARDWARE_PREFLIGHT_REPORT.md`, `platformio.ini`.
+- Microchip AVR128DA: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ProductDocuments/DataSheets/AVR128DA28-32-48-64-Data-Sheet-40002183C.pdf
+- HopeRF: https://www.hoperf.com/uploads/RFM95W-V2.0_1695351437.pdf
+</file>
+
+<file path="ssot/TRACKER_SSOT.md">
+# Tracker Hardware SSOT — LoRa Tracker RFM
+
+**Version:** 1.0 (2026-11-07)  
+**Target:** `LoRa Tracker RFM`, schematic revision 1.0, dated **2025-02-16**.  
+**Status:** schematic-verified design intent; **not** physical assembly or live electrical verification.  
+**Experiment role:** Tracker = **Receiver** (`receiver` / `receiver_spi`); Gateway = Sender.  
+**Authority order:** (1) correct board revision schematic + PCB, (2) manufacturer datasheets for behavior/limits, (3) measured physical board observations, (4) firmware as an implementation to audit—not as hardware truth. When physical wiring differs, record a new revision/exception instead of silently changing this file.
+
+## 1. Board identity and components
+
+- MCU: **U6 AVR128DA28**.
+- Radio: **U4 RFM95W**, SPI, separately power switched.
+- GNSS: **U1 SAM-M10Q**; IMU: **U2 LSM6DSOXTR**; EEPROM: **U3 24C512**; SD card: **CARD1 SD-01A**.
+- Power input: **JP1 Battery → U7 TPS7A0233DBV → 3V3**. U7 is a **200 mA** LDO by manufacturer rating. **This limit applies only to a current path actually supplied through U7.**
+- Switched rails: **3V3-LORA (Q1)**, **3V3-GPS (Q2)**, **3V3-SD (Q3)**; Q1/Q2/Q3 `RQ5C060BCTCL` P-channel high-side switches, with pull-up gates and 200 Ω MCU drive resistance.
+- External header **H1**: schematic shows 3V3, UART_TX, UART_RX, UPDI and GND. **H1 feeding 3V3 bypasses U7's input-to-output current path**. Verify which H1 pin, cable and voltage source actually powers the tested board; do not transpose the Gateway H1 pinout.
+
+## 2. AVR128DA28 pin and net SSOT
+
+| MCU | Board net | Function | Output/input, reset-safe guidance |
+|---|---|---|---|
+| PA7 | EN-LORA | Q1 high-side radio power gate | Output; **LOW = ON, HIGH = OFF** (active-low). Preload HIGH before output-enable if OFF is intended. |
+| PA6 | LED1 | LED1 via 1 kΩ to 3V3 | Output, **LOW = LED ON** (LED is tied toward 3V3). |
+| PA5 | LED2 | LED2 via 1 kΩ to 3V3 | Output, **LOW = LED ON**. |
+| PA4 | SD_DETECT | SD-card detect switch | **Input**, never use as LED or generic output. |
+| PA3 | SCL | TWI/I2C clock | Peripheral/TWI as used; shared IMU, EEPROM, GNSS. |
+| PA2 | SDA | TWI/I2C data | Peripheral/TWI as used. |
+| PA1 | UART_TX | UART net (schematic label) | Route/configure USART according to hardware/core mapping; inspect actual TX direction before enabling. |
+| PA0 | UART_RX | UART net (schematic label) | Route/configure USART according to hardware/core mapping; inspect actual RX direction before enabling. |
+| PC0 | MOSI | SPI to LoRa and SD | SPI master MOSI. |
+| PC1 | MISO | SPI from LoRa and SD | SPI master MISO. |
+| PC2 | SCLK | Shared SPI clock | SPI master SCK. |
+| PC3 | SD_SS | SD chip select | Output, idle inactive HIGH for active-low CS. |
+| PD0 | RF_SS | LoRa NSS/chip select | Output, idle **HIGH**. |
+| PD1 | RF_RST | LoRa hardware reset | Keep INPUT/high impedance during power-on reset; after power is valid the driver may pulse LOW/release for manual reset. Never drive an unpowered radio. |
+| PD2 | RF_DIO1 | LoRa DIO1 | Input (radio signaling). |
+| PD3 | RF_IRQ | LoRa DIO0 / IRQ | Input; attach the proper interrupt according to library. |
+| PD4 | GPS_PPS | GNSS timepulse | Input. |
+| PD5 | EN-GPS | Q2 GNSS power | Output, **LOW = ON, HIGH = OFF** by same P-channel topology. |
+| PD6 | EN-SD | Q3 SD power | Output, **LOW = ON, HIGH = OFF** by same P-channel topology. |
+| PD7 | BATT_PROBE | Battery divider R14=100k / R15=10k | Analog input; nominal divider ratio **1/11** ignoring loading and tolerance. |
+| PF0 | GPS_RX | MCU-side GPS receive net label | Check UART peripheral direction against schematic on integration. |
+| PF1 | GPS_TX | MCU-side GPS transmit net label | Check UART peripheral direction against schematic on integration. |
+| PF6 | IMU_INT | IMU interrupt | Input. **PF6 is also MCU RESET-capable according to device package labeling**; verify fuse/reset configuration before assuming ordinary GPIO. |
+| UPDI | UPDI | Programming/debug | Reserved for UPDI, not free GPIO. |
+
+### Exact LoRa RFM95W signal map
+
+| RFM95W pin | Radio signal | AVR pin |
+|---:|---|---|
+| 2 | MISO | PC1 |
+| 3 | MOSI | PC0 |
+| 4 | SCK | PC2 |
+| 5 | NSS | **PD0** |
+| 6 | RESET | **PD1** |
+| 13 | 3.3V | **3V3-LORA** switched rail |
+| 14 | DIO0 | **PD3** (`RF_IRQ`) |
+| 15 | DIO1 | **PD2** (`RF_DIO1`) |
+| 9 | ANT | Antenna net J1 |
+
+SPI is shared with SD; **radio NSS is PD0 and SD CS is PC3**. Ensure both chip-selects are inactive when the other slave is accessed.
+
+## 3. Power and startup contract
+
+1. The **3V3** base rail powers the MCU. Radio, GPS and SD are behind separately controlled high-side power switches.
+2. To keep switched peripherals OFF, set **PA7/PD5/PD6 HIGH before configuring their direction OUTPUT**. To enable a peripheral, drive its enable LOW; allow rail stabilization, then perform peripheral RESET or SPI operations. Actual rail rise/settling is **TBD by measurement**, not established by a fixed delay. The Receiver candidate includes the manufacturer's 10 ms POR guard, keeps RF_RST high impedance, and leaves GPS/SD power disabled; that software wait is not proof that the physical rail has settled.
+3. `3V3-LORA` has local 100 µF (`C11`) plus 100 nF (`C8`) decoupling in the schematic. Bulk capacitance does not prove the supply survives turn-on inrush.
+4. U7 `TPS7A0233DBV` is rated for **200 mA**, but when 3V3 is injected at **H1 downstream of U7**, the LDO rating is **not the available current budget**. The upstream external supply, cable, connector, regulator and return path become the relevant limits.
+5. A **BORF** reset flag supports an undervoltage/reset investigation, **not** proof that a particular regulator is undersized. Record oscilloscope min voltage at MCU VDD, 3V3-LORA and source during cold start and power-enable.
+
+The external USB -> CP2102 -> UPDI/UART SWITCHER -> H1 path is operator-reported. Switcher BOARD header mapping and power/signal selections remain unverified; do not infer them from wire colours or PASS/CUT labels. No further UPDI/OCD or programming is implied by this design mapping.
+
+## 4. Minimal firmware implementation contract
+
+```cpp
+// Board mapping only. Validate the correct DxCore PIN_P* aliases before build.
+#define TRK_LORA_EN    PIN_PA7  // active LOW
+#define TRK_LED1       PIN_PA6  // active LOW
+#define TRK_LED2       PIN_PA5  // active LOW
+#define TRK_SD_DETECT  PIN_PA4  // INPUT
+#define TRK_SPI_MOSI   PIN_PC0
+#define TRK_SPI_MISO   PIN_PC1
+#define TRK_SPI_SCK    PIN_PC2
+#define TRK_SD_CS      PIN_PC3
+#define TRK_LORA_CS    PIN_PD0
+#define TRK_LORA_RST   PIN_PD1
+#define TRK_LORA_DIO1  PIN_PD2
+#define TRK_LORA_IRQ   PIN_PD3 // DIO0
+#define TRK_GPS_EN     PIN_PD5 // active LOW
+#define TRK_SD_EN      PIN_PD6 // active LOW
+```
+
+Do **not** copy Gateway radio pin macros into this Tracker build. The correct SPI peripheral routing for PC0–PC2 must be selected explicitly in the installed core, rather than assuming a default SPI bus.
+
+## 5. Acceptance criteria / physical evidence
+
+- [ ] Physical PCB revision and assembled module markings match this 2025-02-16 schematic.
+- [ ] H1 power source, MCU 3V3, common GND, and backfeed paths measured and documented.
+- [ ] With radio OFF, PA7=HIGH and 3V3-LORA is off; with radio ON, PA7=LOW and rail settles before SPI access.
+- [ ] LED1 PA6 / LED2 PA5 toggle; **PA4 SD_DETECT remains input**.
+- [ ] SPI chip select inactive idle; read-only RFM register `0x42` returns a plausible device version **on real hardware**.
+- [ ] Reset cause captured; MCU VDD waveform checked for sag at switch-on.
+- [ ] No RF transmission until fitted antenna/module frequency are confirmed.
+
+## Sources
+
+- Local design: `Schematic_LoRa-Tracker-RFM_2025-02-16.pdf` (2025-02-16, sheet 1/1), `pcb-top.pdf`, `pcb-bottom.pdf`.
+- TI TPS7A02 official specs: https://www.ti.com/product/TPS7A02
+- HopeRF RFM95W manufacturer datasheet: https://www.hoperf.com/uploads/RFM95W-V2.0_1695351437.pdf
+- Microchip AVR128DA datasheet: https://ww1.microchip.com/downloads/aemDocuments/documents/MCU08/ProductDocuments/DataSheets/AVR128DA28-32-48-64-Data-Sheet-40002183C.pdf
+</file>
+
+<file path="UPDI_HELLO_WORLD_STAR.md">
+# UPDI-only Hello World MVP — STAR report
+
+Date: 2026-11-13. **Physical RF result: PASS.**
+
+## Situation
+
+The archived Receiver used BOOTSIZE `0x2c` and application origin `0x5800`.
+Fresh read-only UPDI checks instead found a replacement Receiver with serial
+`42032240221092150158013400000000` and BOOTSIZE `0x00`. The original identity
+guard rejected it before programming. The operator confirmed this replacement,
+USB port 1 = Receiver, USB port 4 = original Sender, and suitable 915 MHz modules
+and connected antenna paths.
+
+The latest available schematic was inspected as both extracted text and a rendered
+sheet: `../iwing-tracker/device-lora/pcb/2025-02-16/Schematic_LoRa-Tracker-RFM_2025-02-16.pdf`,
+revision 1.0. The operator confirmed it covers the replacement. Its mapping agrees
+with the archived Tracker design: PA7 active-low radio power, PD0 NSS, PD1 reset,
+PD3 DIO0, PD2 DIO1, PC0–PC2 SPI1, PC3 SD CS. GPS/SD power controls are PD5/PD6.
+
+Current identities and exact expected fuse bytes are recorded in
+[current_hardware.json](../config/current_hardware.json). Historical backups remain intact.
+
+## Task
+
+Transmit exactly the eleven bytes `Hello World`, hexadecimal
+`48 65 6C 6C 6F 20 57 6F 72 6C 64`, without application headers or a null terminator.
+Use 915 MHz, 2 dBm PA_BOOST, BW125, SF7, CR4/5, sync `0x12`, preamble 8,
+explicit LoRa header, CRC enabled, normal IQ, and UPDI-only diagnostics.
+
+## Action
+
+- Added isolated `receiver_mvp` / `sender_mvp` environments and the shared
+  [raw entrypoint](../src/mvp/main.cpp). Existing ACK/NACK targets remain available.
+  Their shared profile remains 10 dBm with lowercase protocol payload; that shared
+  manifest describes the existing protocol, **not the raw MVP profile**. The MVP's
+  actual settings are recorded in its physical logs and run metadata.
+- Updated the Receiver application origin to `0x0000` to match its existing
+  BOOTSIZE of zero. No BOOTSIZE, BOD, oscillator, other fuse, EEPROM, or lock writes
+  were made. The Sender configuration remains unchanged.
+- Selected SPI1 before SPI initialization; used Mode 0, MSB first, 1 MHz. Kept
+  reset high impedance until radio power stabilized and SD CS inactive. Reset and
+  probed the radio with bounded retries before RadioLib initialization.
+- Used binary RadioLib APIs, hardware IRQ polling without DIO interrupt handlers,
+  a bounded 32-byte receive buffer, exact length/content and integrity checks,
+  RX restart checks, a three-second TX timeout, and `X` to stop further attempts.
+- Retained startup stages in RAM for attachment. DxCore saves RSTFR in GPR0 before
+  clearing it; firmware copies that value. Logging permits up to 100 ms per byte
+  and three seconds per record, so detached/stalled logging cannot wait forever.
+- Programmed Receiver before Sender with explicit 512-byte page erasure, AVRDUDE
+  verification, fresh serial/fuse checks, independent full-memory readback, and
+  comparisons against the fresh baseline. The final written ranges were
+  Receiver `[0x0000, 0x7c00)` and Sender `[0x0000, 0x7a00)`.
+- Captured Receiver-ready evidence before Sender programming and again before
+  starting the Sender monitor. Separate UPDIterm captures used `-l` at 38400 baud.
+
+An initial monitor was started before independent readback completed, causing port
+contention. It was stopped; independent readback was repeated successfully before
+continuing. Initial 2 ms and then 20 ms byte waits also produced truncated logs.
+Both latency limits were reproduced with failing host checks, corrected, rebuilt,
+and physically retested. These failed captures are retained as attempt-1 evidence.
+
+## Result
+
+| Observation | Actual result |
+|---|---|
+| `pio run -e receiver_mvp` | PASS |
+| `pio run -e sender_mvp` | PASS |
+| Existing `sender_hello` and `receiver` builds | PASS |
+| Final Receiver programming + independent readback | PASS |
+| Final Sender programming + independent readback | PASS |
+| Signature, MCU serial, fuses, lock, EEPROM, Flash outside written pages | Preserved against fresh baseline, both boards |
+| Receiver RegVersion / Sender RegVersion | `0x12` / `0x12`, first probe on each |
+| Receiver startup | All eight stages successful, including `RX_READY rc=0` |
+| Sender startup | All applicable stages successful; `RADIO_INIT rc=0` |
+| Reset flags in final startup logs | Both `0x20` = UPDI reset; BORF bit absent |
+| Complete matching receptions captured | **3** |
+| Hardware lengths / readData status / IRQ flags | `11` / `0` / `80` (`0x50`: RxDone + ValidHeader), all three |
+| RX restart status | `0`, all three |
+| Final Receiver counters | RX `17`, matching `17`, CRC errors `0` |
+| Sender final attempt counter | `15`; stopped with `X` |
+| Complete TX start/TxDone pairs in final log | `2`, attempts `14` and `15`; cleanup `0` |
+| RSSI for the three captured packets | `-107.00`, `-107.00`, `-106.00` dBm |
+| SNR for the three captured packets | `9.00`, `8.75`, `9.00` dB |
+| Negative-control interval after STOP + 3.5 s grace | **15.000374 s**, zero new matching receptions and zero new TX starts |
+| Final state | Sender stopped; Receiver listening; monitors closed |
+
+A subsequent monitor attachment without reset still reported RX `17`, matching
+`17`, CRC errors `0`, and retained `RX_READY` startup status. This independently
+checks that packet counters did not advance during the negative control.
+
+RX and TX cumulative counters are local to each MCU's startup. The Receiver also
+heard packets around programmer-triggered Sender restarts and before monitor
+attachment; the cumulative totals are not a one-to-one capture correlation.
+The three complete final receive records provide the physical payload evidence.
+TX completion alone was not treated as delivery.
+
+### Evidence
+
+All evidence is in [artifacts/rf-proof/20261113T062148Z](../artifacts/rf-proof/20261113T062148Z):
+
+- [Receiver UPDIterm log](../artifacts/rf-proof/20261113T062148Z/receiver-final.upditerm.log)
+  and [Sender UPDIterm log](../artifacts/rf-proof/20261113T062148Z/sender-final.upditerm.log).
+- [Physical summary](../artifacts/rf-proof/20261113T062148Z/raw-mvp-physical-summary.json),
+  [timestamped event journal](../artifacts/rf-proof/20261113T062148Z/raw-mvp-events.jsonl),
+  and [run metadata](../artifacts/rf-proof/20261113T062148Z/raw-mvp-run-metadata.json).
+- [Preservation results and image hashes](../artifacts/rf-proof/20261113T062148Z/final-preservation.json),
+  baseline/final raw memory readbacks, final ELF/HEX images, and exact programming commands.
+- Build logs, full host-suite output, capture driver, and earlier failed diagnostics.
+
+Recheck the raw log structure separately from ACK/NACK campaigns:
+
+```bash
+uv run python tools/rf_proof.py --raw-mvp-logs \
+  artifacts/rf-proof/20261113T062148Z/sender-final.upditerm.log \
+  artifacts/rf-proof/20261113T062148Z/receiver-final.upditerm.log
+```
+
+That parser verifies log structure. Physical provenance and the negative-control
+duration are supplied separately by the readbacks and timestamped capture journal.
+Synthetic fixtures are host-test evidence only.
+
+### Verification and limits
+
+Seven focused MVP tests pass, covering raw bytes, length 0/10/11/12/oversized,
+lowercase/CRC/header rejection, interrupt-free polling, TX timeout/cleanup, RX
+restart, absent/stalled/delayed logging, current-target identity/fuse guards, and
+the raw evidence CLI. Host C++ checks used temporary Zig/Clang tooling because
+`g++` is unavailable; compatibility warning flags were needed for legacy tests.
+No project dependency was added. AVR builds used the installed AVR-GCC toolchain.
+
+The full host suite is **not green**: 158 tests ran; two pre-existing tests in
+`test_upditerm_transport.py` generate four error records because `TransportError`
+and the expected `recv(length, expected)` interface do not exist in the bundled
+UPDIterm. The archived BOOTSIZE=44 package-test class is skipped for the replacement
+Receiver. Its refusal to prepare that legacy repair for the current geometry is tested.
+
+Voltages, power integrity, calibrated RF frequency/output power: **NOT MEASURED**.
+Actual CRC-error injection, forced radio TX timeout, oversized physical packets,
+and stalled physical monitor: **NOT TESTED on hardware**; exercised with host stubs.
+Historical BORF on the removed board does not establish a new brownout here.
+No extra measurement equipment or physical UART was used.
+
+SRAM address-based diagnostic readback was unnecessary after complete UPDIterm
+logging worked; no SRAM retention across reset/power loss is assumed. ACK/NACK
+campaigns, FOTA, SD, gateway integration, boot changes, and commits remain deferred.
+The Sender's `X` stop is volatile: resetting or power-cycling it resumes attempts.
+</file>
+
+</files>

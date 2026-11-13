@@ -44,8 +44,8 @@ def valid_profile():
                      "enable": "PA7"},
         },
         "environments": {
-            "sender": ["sender", "sender_hello", "sender_hello_spi"],
-            "receiver": ["receiver", "receiver_spi"],
+            "sender": ["sender", "sender_hello", "sender_hello_spi", "sender_mvp"],
+            "receiver": ["receiver", "receiver_spi", "receiver_mvp"],
         },
     }
 

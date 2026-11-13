@@ -45,9 +45,9 @@ def validate(config):
                     'data_type': 8, 'ack_type': 3, 'nack_type': 9,
                     'sequence_bits': 8, 'sequence': 1, 'payload': 'hello world'}:
         raise ValueError('unsupported protocol framing or payload')
-    for role, boot in [('sender', 0), ('receiver', 44)]:
+    for role, boot in [('sender', 0), ('receiver', 0)]:
         board = config[f'{role}_board']
-        expected = dict(mcu='AVR128DA28', bootsize=boot, codesize=0, bodcfg=0 if role == 'sender' else 84,
+        expected = dict(mcu='AVR128DA28', bootsize=boot, codesize=0, bodcfg=0,
                         image_start=boot * 512, image_end_exclusive=130048)
         if role == 'receiver':
             expected['pins'] = dict(sd_cs='PC3', led1='PA6', led2='PA5',

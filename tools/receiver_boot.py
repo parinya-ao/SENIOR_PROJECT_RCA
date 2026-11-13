@@ -177,12 +177,17 @@ def load_package(path, check_apps=True):
     return report
 
 
-def read_snapshot(proof, name, role='receiver'):
+def read_snapshot(proof, name, role='receiver', *, current_target=False):
     import rf_proof
     if role not in rf_proof.PORTS:
         raise ValueError('unknown programming target')
     backup_name = 'receiver' if role == 'receiver' else 'gateway'
-    identity = json.loads(BACKUP.with_name('backup-summary.json').read_text())[backup_name+'-candidate']
+    if current_target:
+        identity = json.loads((ROOT / 'config/current_hardware.json').read_text())[role]
+        if identity['port_path'] != rf_proof.PORTS[role]:
+            raise ValueError('current target port differs from inventory')
+    else:
+        identity = json.loads(BACKUP.with_name('backup-summary.json').read_text())[backup_name+'-candidate']
     memories = ('signature', 'sernum', 'flash', 'eeprom', 'fuses', 'lock')
     command = [str(AVRDUDE), '-N', '-C', str(AVRDUDE_CONF), '-p', 'avr128da28',
                '-c', 'serialupdi', '-P', rf_proof.PORTS[role], '-b', '115200', '-D']
@@ -197,7 +202,8 @@ def read_snapshot(proof, name, role='receiver'):
             len(result['flash']) != FLASH_SIZE or len(result['fuses']) != 16 or
             len(result['eeprom']) != 512 or result['lock'] != bytes.fromhex('5cc5c55c')):
         raise ValueError('Receiver identity/length/unlocked-state mismatch')
-    expected_fuses = BACKUP.with_name(backup_name+'-candidate-backup-fuses.bin').read_bytes()
+    expected_fuses = (bytes.fromhex(identity['fuses_hex']) if current_target else
+                      BACKUP.with_name(backup_name+'-candidate-backup-fuses.bin').read_bytes())
     if result['fuses'] != expected_fuses:
         raise ValueError('Receiver fuses differ from the reviewed target; no fuse changes allowed')
     return result

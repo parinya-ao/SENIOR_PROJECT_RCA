@@ -1,0 +1,3 @@
+receiver.c:4:6:arq_receiver_init	2	static
+receiver.c:7:6:arq_receiver_arm	8	static
+receiver.c:12:6:arq_receiver_data	14	static

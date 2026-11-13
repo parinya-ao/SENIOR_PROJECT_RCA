@@ -1,4 +1,5 @@
 import unittest
+import json
 from pathlib import Path
 import subprocess
 import tempfile
@@ -123,6 +124,8 @@ class CompiledHandoffTests(unittest.TestCase):
 class BootPackageTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        if json.loads((boot.ROOT / 'config/lora_system.json').read_text())['receiver_board']['bootsize'] != 44:
+            raise unittest.SkipTest('archived BOOTSIZE=44 repair does not apply to the replacement Receiver')
         temporary = tempfile.TemporaryDirectory()
         cls.addClassCleanup(temporary.cleanup)
         cls.directory = Path(temporary.name)
@@ -244,7 +247,8 @@ class ApplicationPageWriteTests(unittest.TestCase):
                 simulated += ['-U', f'flash:r:{root/"after.bin"}:r']
                 result = subprocess.run(simulated, capture_output=True)
                 return result.returncode, result.stdout, result.stderr
-            def snapshot(proof, name, role):
+            def snapshot(proof, name, role, **options):
+                self.assertTrue(options.get('current_target'))
                 if 'before' in name:
                     return dict(before)
                 return dict(before, flash=(root/'after.bin').read_bytes())

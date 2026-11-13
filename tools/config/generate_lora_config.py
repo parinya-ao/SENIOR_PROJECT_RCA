@@ -39,8 +39,8 @@ RADIO_PROFILE = {
                  "rst": "PD1", "irq": "PD3", "dio1": "PD2", "enable": "PA7"},
     },
     "environments": {
-        "sender": ["sender", "sender_hello", "sender_hello_spi"],
-        "receiver": ["receiver", "receiver_spi"],
+        "sender": ["sender", "sender_hello", "sender_hello_spi", "sender_mvp"],
+        "receiver": ["receiver", "receiver_spi", "receiver_mvp"],
     },
 }
 
@@ -92,7 +92,8 @@ def source_fingerprint():
         "project/" + str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in sorted(paths)
         if path.is_file() and path.suffix in (".h", ".c", ".cpp", ".py", ".ini") and
-        not path.is_relative_to(ROOT / "include/generated")
+        not path.is_relative_to(ROOT / "include/generated") and
+        path != ROOT / "src/arq/board_ssot.c"
     })
 
 
@@ -232,6 +233,8 @@ def artifacts(config, radio_profile=None):
     outputs["generated/radio_915_profile.py"] = python_profile
     for integration in ("gateway-lora", "gateway-lora_dev"):
         outputs[f"../iwing-tracker/{integration}/mainboard/src/radio_915_profile.py"] = python_profile
+    from arq_config import load_arq, arq_artifacts
+    outputs.update(arq_artifacts(load_arq(), radio_profile, config, source_hash))
     return outputs
 
 
