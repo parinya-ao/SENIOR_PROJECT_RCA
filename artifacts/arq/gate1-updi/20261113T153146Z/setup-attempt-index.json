@@ -1,0 +1,39 @@
+{
+  "setup_and_acquisition_attempts": [
+    {
+      "run": "20261113T151540Z",
+      "status_attempted": 0,
+      "breaks": 0,
+      "verdict": null,
+      "classification": null,
+      "port_opened": false
+    },
+    {
+      "run": "20261113T152039Z",
+      "status_attempted": 0,
+      "breaks": 0,
+      "verdict": "GATE1_BLOCKED",
+      "classification": "IDENTITY_UNVERIFIED",
+      "port_opened": false
+    },
+    {
+      "run": "20261113T152318Z",
+      "status_attempted": 0,
+      "breaks": 2,
+      "verdict": "GATE1_INCONCLUSIVE",
+      "classification": "HOST_IDENTITY_CLASSIFIER_BUG",
+      "port_opened": true
+    },
+    {
+      "run": "20261113T153001Z",
+      "status_attempted": 0,
+      "breaks": 2,
+      "verdict": "GATE1_INCONCLUSIVE",
+      "classification": "UPDI_RESPONSE_TIMEOUT",
+      "port_opened": true
+    }
+  ],
+  "actual_status_attempts_in_this_gate": 1,
+  "automatic_reconnects": 0,
+  "previous_failures_preserved": true
+}

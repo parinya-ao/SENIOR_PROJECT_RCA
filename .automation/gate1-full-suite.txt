@@ -82,6 +82,8 @@ test_T21_port_trace_records_exact_write_and_timestamps (test_gate1_rca.Gate1Test
 test_T22_read_only_extended_LDS_uses_verified_sigrow_address (test_gate1_rca.Gate1Tests.test_T22_read_only_extended_LDS_uses_verified_sigrow_address) ... ok
 test_T23_live_cli_help_loads_without_opening_hardware (test_gate1_rca.Gate1Tests.test_T23_live_cli_help_loads_without_opening_hardware) ... ok
 test_T24_part_identity_comes_from_read_signature_not_SIB_label (test_gate1_rca.Gate1Tests.test_T24_part_identity_comes_from_read_signature_not_SIB_label) ... ok
+test_T25_status_output_timeout_is_not_a_low_level_updi_response_error (test_gate1_rca.Gate1Tests.test_T25_status_output_timeout_is_not_a_low_level_updi_response_error) ... ok
+test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes (test_gate1_rca.Gate1Tests.test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes) ... ok
 test_complete_correlated_structure (test_live_rf_proof.LiveProofTests.test_complete_correlated_structure) ... ok
 test_fresh_readback_rejects_wrong_image_or_target_serial (test_live_rf_proof.LiveProofTests.test_fresh_readback_rejects_wrong_image_or_target_serial) ... ok
 test_live_runner_routes_fresh_commands_and_stops_without_c (test_live_rf_proof.LiveProofTests.test_live_runner_routes_fresh_commands_and_stops_without_c) ... ok
@@ -227,8 +229,8 @@ test_hardware_stages_list_unverified_setup_and_missing_authorization (test_rf_pr
 test_led_and_debug_uart_macros_follow_schematic_and_dxcore_directions (test_rf_proof.HardwareGateTests.test_led_and_debug_uart_macros_follow_schematic_and_dxcore_directions) ... ok
 test_only_fuser_exit_one_means_port_is_clear (test_rf_proof.HardwareGateTests.test_only_fuser_exit_one_means_port_is_clear) ... ok
 test_preflight_reports_missing_stable_adapter_paths (test_rf_proof.HardwareGateTests.test_preflight_reports_missing_stable_adapter_paths) ... ok
-test_radio_spi_capture_reads_bounded_updi_log_stream (test_rf_proof.HardwareGateTests.test_radio_spi_capture_reads_bounded_updi_log_stream) ... <MagicMock name='campaign()' id='139928413484576'>
-{"standby_evidence": "/tmp/tmppmqbuxrh/standby"}
+test_radio_spi_capture_reads_bounded_updi_log_stream (test_rf_proof.HardwareGateTests.test_radio_spi_capture_reads_bounded_updi_log_stream) ... <MagicMock name='campaign()' id='140192098825760'>
+{"standby_evidence": "/tmp/tmpsesju3co/standby"}
 HOST_SIMULATION DATA_ACK=PASS DATA=1 PAYLOAD_MATCH=11/11 ACK=1 RETRIES=0 EEPROM_WRITES=0
 [gateway] [GATEWAY] RADIO_SPI_VERSION=0x12
 [gateway] [GATEWAY] RF_TX_DISABLED_DIAGNOSTIC
@@ -296,6 +298,6 @@ test_udev_monitor_is_used_with_polling_fallback_when_unavailable (test_usb_inven
 test_usb_instance_uses_live_sysfs_device_number (test_usb_inventory.USBInventoryTests.test_usb_instance_uses_live_sysfs_device_number) ... ok
 
 ----------------------------------------------------------------------
-Ran 256 tests in 11.119s
+Ran 258 tests in 10.508s
 
 OK (skipped=1)

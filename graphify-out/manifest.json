@@ -126,9 +126,9 @@
     "semantic_hash": ""
   },
   "third_party/upditerm/upditerm.py": {
-    "mtime": 1794573622.8318443,
-    "seen": 1794573906.3138788,
-    "ast_hash": "50c2ac660cebe4a304e1ab53a812f016",
+    "mtime": 1794600687.5121605,
+    "seen": 1794602612.2371056,
+    "ast_hash": "a4d18e1ec5629959ee08c5b1b6536dc5",
     "semantic_hash": ""
   },
   "tools/bootstrap/get-platformio.py": {
@@ -372,9 +372,9 @@
     "semantic_hash": ""
   },
   "generated/lora_manifest.json": {
-    "mtime": 1794573714.1311367,
-    "seen": 1794573906.3135042,
-    "ast_hash": "ecac0c0b1db146afe08144a8c6a71f48",
+    "mtime": 1794600704.1987197,
+    "seen": 1794602612.2367826,
+    "ast_hash": "ef947d29ffa082ed78abe8934dbca0aa",
     "semantic_hash": ""
   },
   "include/generated/lora_receiver_board.h": {
@@ -564,9 +564,9 @@
     "semantic_hash": ""
   },
   "tests/test_upditerm_transport.py": {
-    "mtime": 1794573607.388671,
-    "seen": 1794573906.313869,
-    "ast_hash": "c4e2af2dff3526431fc00d7f0d59ff86",
+    "mtime": 1794600676.7250524,
+    "seen": 1794602612.2370965,
+    "ast_hash": "c4a13a951328d92213472d73f8a76efd",
     "semantic_hash": ""
   },
   "get-platformio.py": {
@@ -1068,15 +1068,15 @@
     "semantic_hash": ""
   },
   "artifacts/arq/session.json": {
-    "mtime": 1794559642.447246,
-    "seen": 1794571745.7442539,
-    "ast_hash": "1dcca23355272056f04fe8bf20edfce0",
+    "mtime": 1794599679.9167278,
+    "seen": 1794602612.2366683,
+    "ast_hash": "9ae0ea9e3c9c6e1b9b6252c8395efdc1",
     "semantic_hash": ""
   },
   "generated/arq_manifest.json": {
-    "mtime": 1794573714.148405,
-    "seen": 1794573906.3135016,
-    "ast_hash": "5186f65185bb0cd662599901831fcf43",
+    "mtime": 1794600704.2173562,
+    "seen": 1794602612.23678,
+    "ast_hash": "032f0b8240510dc93268296caf9697f4",
     "semantic_hash": ""
   },
   "include/generated/arq_config.h": {
@@ -1170,9 +1170,9 @@
     "semantic_hash": ""
   },
   "tools/arq_trial.py": {
-    "mtime": 1794573622.8308442,
-    "seen": 1794573906.3138835,
-    "ast_hash": "4f19bb697840fbabe0c243762121c3cd",
+    "mtime": 1794604563.066092,
+    "seen": 1794604659.2292318,
+    "ast_hash": "bb8c087e83fe61082b9214d29424b177",
     "semantic_hash": ""
   },
   "tools/config/arq_config.py": {
@@ -1572,9 +1572,9 @@
     "semantic_hash": ""
   },
   "tests/test_arq_capture.py": {
-    "mtime": 1794572165.5725784,
-    "seen": 1794572426.2965379,
-    "ast_hash": "9015498aca88946a3a3c9ecf86bb6cf0",
+    "mtime": 1794604347.9189422,
+    "seen": 1794604659.2291605,
+    "ast_hash": "b6190e3b6285b6848350f0bdabe4807c",
     "semantic_hash": ""
   },
   "tests/test_radiolib_hal.py": {
@@ -2220,9 +2220,9 @@
     "semantic_hash": ""
   },
   "artifacts/arq/gate1-updi/20261113T142138Z/source-hashes.json": {
-    "mtime": 1794579948.1288111,
-    "seen": 1794580192.020616,
-    "ast_hash": "f5f63480595ffb11727629bffef55eb6",
+    "mtime": 1794580341.558197,
+    "seen": 1794589144.7567663,
+    "ast_hash": "078a440c5a60b64b7456e61d9886cfaf",
     "semantic_hash": ""
   },
   "artifacts/arq/gate1-updi/20261113T142138Z/source-revision.json": {
@@ -2232,9 +2232,9 @@
     "semantic_hash": ""
   },
   "tests/test_gate1_rca.py": {
-    "mtime": 1794580152.1905982,
-    "seen": 1794580192.0210714,
-    "ast_hash": "039e007396f17c539e0f669cd2b052aa",
+    "mtime": 1794597009.9485912,
+    "seen": 1794597028.8934486,
+    "ast_hash": "9902c699f296babbde3589ab7a207d54",
     "semantic_hash": ""
   },
   "tools/rca/gate1.py": {
@@ -2250,15 +2250,15 @@
     "semantic_hash": ""
   },
   "artifacts/arq/gate1-updi/20261113T142138Z/command-audit.md": {
-    "mtime": 1794580127.612311,
-    "seen": 1794580192.0212517,
-    "ast_hash": "0d02814af73ad4c20422b00f0f83738b",
+    "mtime": 1794580304.5203786,
+    "seen": 1794589144.7573202,
+    "ast_hash": "74f729569c711b6b166e0ec2c3bc2199",
     "semantic_hash": ""
   },
   "artifacts/arq/gate1-updi/20261113T142138Z/full-suite.txt": {
-    "mtime": 1794580190.108603,
-    "seen": 1794580192.0212538,
-    "ast_hash": "564de2909a8216d07ac6245f346d160f",
+    "mtime": 1794580199.303015,
+    "seen": 1794589144.7573245,
+    "ast_hash": "1a55ae472ec8d90bf98ba2b81b439564",
     "semantic_hash": ""
   },
   "artifacts/arq/gate1-updi/20261113T142138Z/latency-red.txt": {
@@ -2277,6 +2277,2454 @@
     "mtime": 1794580160.2022872,
     "seen": 1794580192.021261,
     "ast_hash": "30b9d01dbd9f22337f4a33611e0e075c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T142138Z/integrity-report.json": {
+    "mtime": 1794580383.3676445,
+    "seen": 1794589144.756743,
+    "ast_hash": "af0202aa6a5b49c543ce00489aeae525",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T142138Z/manifest.json": {
+    "mtime": 1794580383.166657,
+    "seen": 1794589144.7567463,
+    "ast_hash": "308ed8e2dc428e388714dfcbb5b13280",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T142138Z/preservation.json": {
+    "mtime": 1794580341.5578394,
+    "seen": 1794589144.75676,
+    "ast_hash": "e5331601c4462ebfff2af950bc4a1891",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T142138Z/runtime-versions.json": {
+    "mtime": 1794580203.2637663,
+    "seen": 1794589144.756762,
+    "ast_hash": "d87ac6b4c44b282110dbfee4d626378a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T142138Z/sha256.json": {
+    "mtime": 1794580383.1684492,
+    "seen": 1794589144.756764,
+    "ast_hash": "f875c4a54f6fecd0e1453a327ce27740",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T142138Z/verdict.json": {
+    "mtime": 1794580341.5583434,
+    "seen": 1794589144.75677,
+    "ast_hash": "aac6640533e554523684f2bd92bb9cd8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T151540Z/20261113T121506Z-reverse-raw-integrity.json": {
+    "mtime": 1794582940.5399787,
+    "seen": 1794589144.7567716,
+    "ast_hash": "0d53cf22aec7d5394bf79e7283c9b01a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T151540Z/20261113T123620Z-reverse-raw-integrity.json": {
+    "mtime": 1794582940.5426352,
+    "seen": 1794589144.7567732,
+    "ast_hash": "6eefc76884e11b9e1c62dbbc0940c0b6",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T151540Z/20261113T123837Z-standby-integrity.json": {
+    "mtime": 1794582940.5446055,
+    "seen": 1794589144.7567747,
+    "ast_hash": "33031c4636b3b81b9203195900c9d194",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T151540Z/preservation-before.json": {
+    "mtime": 1794582940.5372293,
+    "seen": 1794589144.7567763,
+    "ast_hash": "e6b472c1d69062f3e54f83c282bfc929",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T151540Z/setup-attempt.json": {
+    "mtime": 1794583239.159524,
+    "seen": 1794589144.756778,
+    "ast_hash": "dc522774e7abc7d342d71664a99a3cdf",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T151540Z/source-hashes.json": {
+    "mtime": 1794582940.5045834,
+    "seen": 1794589144.7567794,
+    "ast_hash": "238f7e24e56ad8864226515bd9fb6f81",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T151540Z/source-revision.json": {
+    "mtime": 1794582940.5348687,
+    "seen": 1794589144.756781,
+    "ast_hash": "4f7a4656d6461ba9edb8a82376c7c762",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152039Z/original-incident-integrity.json": {
+    "mtime": 1794583239.2504563,
+    "seen": 1794589144.7567828,
+    "ast_hash": "8711d2d9add9b7b409ff87be9450c77b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152039Z/preservation-before.json": {
+    "mtime": 1794583239.251789,
+    "seen": 1794589144.7567844,
+    "ast_hash": "b1ce96e15f10a19e0549c2d41ba860c1",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152039Z/setup-attempt-reference.json": {
+    "mtime": 1794583239.2372296,
+    "seen": 1794589144.756786,
+    "ast_hash": "f8f7ad3d292213685ea9dc603c66f6ed",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152039Z/source-hashes.json": {
+    "mtime": 1794583239.2074966,
+    "seen": 1794589144.756788,
+    "ast_hash": "7d9ca034a632f239d43d864868099be7",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152039Z/source-revision.json": {
+    "mtime": 1794583239.2360396,
+    "seen": 1794589144.7567894,
+    "ast_hash": "51683bb222ff005f9062e5b17f16640f",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152039Z/verdict.json": {
+    "mtime": 1794583252.1155248,
+    "seen": 1794589144.756791,
+    "ast_hash": "9f8e1407de14275e166091bc88922ac4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/acquisition-review.json": {
+    "mtime": 1794583545.0261142,
+    "seen": 1794589144.7567925,
+    "ast_hash": "0c511e1fe6d5f60ef5b3c6b69ed07080",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/first-failure.json": {
+    "mtime": 1794583409.6447213,
+    "seen": 1794589144.7567945,
+    "ast_hash": "b39f0123efaa7619055377fba232b963",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/latency-statistics.json": {
+    "mtime": 1794583409.7086418,
+    "seen": 1794589144.7567956,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/original-incident-integrity.json": {
+    "mtime": 1794583409.3740509,
+    "seen": 1794589144.7567976,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/preflight.json": {
+    "mtime": 1794583409.4675424,
+    "seen": 1794589144.756799,
+    "ast_hash": "eab818f493ed950e86b3c02c05db20a8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/preservation-before.json": {
+    "mtime": 1794583409.368057,
+    "seen": 1794589144.7568007,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/source-hashes.json": {
+    "mtime": 1794583409.321576,
+    "seen": 1794589144.7568026,
+    "ast_hash": "8bde5f09fca69866b073d8a9025bd3fa",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/source-revision.json": {
+    "mtime": 1794583409.3212101,
+    "seen": 1794589144.756804,
+    "ast_hash": "034f1df6645a264ea9f8ad75890e3ffc",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/verdict.json": {
+    "mtime": 1794583409.7096121,
+    "seen": 1794589144.7568057,
+    "ast_hash": "5480581ff2374475d1afc8073a0471c0",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/first-failure.json": {
+    "mtime": 1794583608.1948397,
+    "seen": 1794589144.756807,
+    "ast_hash": "52621c861798a914697d5c02f24493cc",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/latency-statistics.json": {
+    "mtime": 1794583608.260589,
+    "seen": 1794589144.756809,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/original-incident-integrity.json": {
+    "mtime": 1794583563.2271812,
+    "seen": 1794589144.7568107,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/preflight.json": {
+    "mtime": 1794583563.3240428,
+    "seen": 1794589144.7568126,
+    "ast_hash": "8aca95bad57fcfce65421f210e11d76c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/preservation-before.json": {
+    "mtime": 1794583563.2212822,
+    "seen": 1794589144.7568145,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/source-hashes.json": {
+    "mtime": 1794583563.175176,
+    "seen": 1794589144.7568166,
+    "ast_hash": "6530e039efafe4d4ae77d408c7fc9c28",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/source-revision.json": {
+    "mtime": 1794583563.1744516,
+    "seen": 1794589144.7568185,
+    "ast_hash": "5b061b5c06b6babbcff239d7a835f15d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/verdict.json": {
+    "mtime": 1794583608.26073,
+    "seen": 1794589144.75682,
+    "ast_hash": "6a64190a02ab1f993d91516ce79029f3",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/attempt-index.json": {
+    "mtime": 1794588776.31664,
+    "seen": 1794589144.7568219,
+    "ast_hash": "c24dda94eeff2e478716879c7bf38d6f",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/first-failure.json": {
+    "mtime": 1794588948.256119,
+    "seen": 1794589144.7568235,
+    "ast_hash": "bec3227fb40145d96ef333cf09cd4cf6",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/latency-statistics.json": {
+    "mtime": 1794588948.2561996,
+    "seen": 1794589144.756825,
+    "ast_hash": "e05d18ef0da44e42827a776ab54c7a0d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/original-incident-integrity.json": {
+    "mtime": 1794583918.2101355,
+    "seen": 1794589144.7568269,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/post-run-analysis-note.json": {
+    "mtime": 1794589124.0394492,
+    "seen": 1794589144.7568283,
+    "ast_hash": "7a95fac6190b955adc50a0a290421eb7",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/post-run-analysis-source-hashes.json": {
+    "mtime": 1794589124.0393312,
+    "seen": 1794589144.75683,
+    "ast_hash": "f5eabe58510edaee4ae50b5dde4bb080",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/preflight.json": {
+    "mtime": 1794583918.2942333,
+    "seen": 1794589144.7568314,
+    "ast_hash": "87fc5c6dace6e176796eecdfbfea18dc",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/preservation-before.json": {
+    "mtime": 1794583918.2043207,
+    "seen": 1794589144.7568333,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/preservation.json": {
+    "mtime": 1794589285.4660048,
+    "seen": 1794589396.0488377,
+    "ast_hash": "5b0bdda031cd8e0cfd7206f768e06dcc",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/runner-first-failure.json": {
+    "mtime": 1794588948.082951,
+    "seen": 1794589144.7568367,
+    "ast_hash": "f21176d721617a602d6d2e7292d9a958",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/setup-attempt-index.json": {
+    "mtime": 1794589124.0406234,
+    "seen": 1794589144.756838,
+    "ast_hash": "ff85486b591b70fec11e141f9830aa2b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/source-hashes.json": {
+    "mtime": 1794583918.1452315,
+    "seen": 1794589144.7568402,
+    "ast_hash": "c9918b62a848e58acc16461b855e76f8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/source-revision.json": {
+    "mtime": 1794583918.144173,
+    "seen": 1794589144.7568417,
+    "ast_hash": "89386aa1265c2b91eb635fc3ffde69ae",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/verdict.json": {
+    "mtime": 1794588948.2564175,
+    "seen": 1794589144.7568433,
+    "ast_hash": "6c2e9ef54b93733e8a3b1e209cedf38d",
+    "semantic_hash": ""
+  },
+  "tools/rca/gate1_live.py": {
+    "mtime": 1794598123.4897852,
+    "seen": 1794599022.4776351,
+    "ast_hash": "6aa67ea2d0a000dc46a0b8bc468bc9b7",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-cli-red.txt": {
+    "mtime": 1794583134.6143649,
+    "seen": 1794589144.7572885,
+    "ast_hash": "85ecd29a08248b8e143b3250b63dce43",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-full-suite.txt": {
+    "mtime": 1794592093.836861,
+    "seen": 1794593481.7956395,
+    "ast_hash": "6d84b388725668c51d0c10829ba49929",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-offline.txt": {
+    "mtime": 1794597159.9692774,
+    "seen": 1794597170.3214362,
+    "ast_hash": "dd04cf99fdfce1541559fd54ccf5830d",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-red.txt": {
+    "mtime": 1794582014.8643942,
+    "seen": 1794589144.7572935,
+    "ast_hash": "90884367aeffce9a715bd1173f2ba386",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-t22-red.txt": {
+    "mtime": 1794582784.8563175,
+    "seen": 1794589144.7572954,
+    "ast_hash": "4158bc292fc818eac7367e2423c55a6d",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-t24-red.txt": {
+    "mtime": 1794583469.294234,
+    "seen": 1794589144.7572968,
+    "ast_hash": "9ccbc83f9193e87ba21e72d983775294",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-t25-green.txt": {
+    "mtime": 1794588604.1413028,
+    "seen": 1794589144.7572987,
+    "ast_hash": "817e2bd6684d7288e07820c67a3a01ce",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-t25-red.txt": {
+    "mtime": 1794588511.9262621,
+    "seen": 1794589144.7573,
+    "ast_hash": "94130fdcd20541a843eb7045050cafed",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-test-redgreen.txt": {
+    "mtime": 1794582306.1517782,
+    "seen": 1794589144.7573018,
+    "ast_hash": "13f699e7167736bd875bddbd320d81a1",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T142138Z/GATE1_STAR_REPORT.md": {
+    "mtime": 1794580383.166737,
+    "seen": 1794589144.7573159,
+    "ast_hash": "c8f32bcd1308b497086a9e94ed3f0d31",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T142138Z/diff-check.txt": {
+    "mtime": 1794580341.5936918,
+    "seen": 1794589144.7573223,
+    "ast_hash": "837595e668d86d46dae9a411b5159921",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T142138Z/working-tree-after.txt": {
+    "mtime": 1794580383.1663635,
+    "seen": 1794589144.757333,
+    "ast_hash": "71366deb2e61a9cd78152af768dada50",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T151540Z/source-audit.md": {
+    "mtime": 1794582976.2065318,
+    "seen": 1794589144.7573347,
+    "ast_hash": "f5e53e9182a7a1d8e1d82b7312613ea0",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152039Z/focused-test-results.txt": {
+    "mtime": 1794583239.236603,
+    "seen": 1794589144.7573364,
+    "ast_hash": "3e6e4661f933d3211ba45dc96debd417",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152039Z/source-audit.md": {
+    "mtime": 1794583239.2368166,
+    "seen": 1794589144.757338,
+    "ast_hash": "f5e53e9182a7a1d8e1d82b7312613ea0",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152039Z/test-results.txt": {
+    "mtime": 1794583239.2363763,
+    "seen": 1794589144.7573397,
+    "ast_hash": "6a0f2785e7b9d9750778c538ee978b3f",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/focused-test-results.txt": {
+    "mtime": 1794583409.368374,
+    "seen": 1794589144.7573414,
+    "ast_hash": "f67a6e554803c7bcb2f94917746571cf",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/source-audit.md": {
+    "mtime": 1794583409.368411,
+    "seen": 1794589144.757343,
+    "ast_hash": "b5647bf5a708b0a6b197822f965fc2dc",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T152318Z/test-results.txt": {
+    "mtime": 1794583409.3683214,
+    "seen": 1794589144.7573447,
+    "ast_hash": "afbb9f3bbce1a29755728ff6859ae317",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/focused-test-results.txt": {
+    "mtime": 1794583563.2216027,
+    "seen": 1794589144.7573466,
+    "ast_hash": "81d54768c91033e4f53f435e304dd573",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/source-audit.md": {
+    "mtime": 1794583563.221641,
+    "seen": 1794589144.7573483,
+    "ast_hash": "8965c2e508ac431b3204aab31f3d9f00",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153001Z/test-results.txt": {
+    "mtime": 1794583563.221546,
+    "seen": 1794589144.7573504,
+    "ast_hash": "173a5984b4724f0541f0e56b4e022cdc",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/GATE1_STAR_REPORT.md": {
+    "mtime": 1794589346.3175888,
+    "seen": 1794589396.0492158,
+    "ast_hash": "4625a5a3bf0520fdf4e1774e527fefe2",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/focused-test-results.txt": {
+    "mtime": 1794583918.2046618,
+    "seen": 1794589144.757354,
+    "ast_hash": "08b5e0083fb0e12f4a670c8bcfb47662",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/post-run-focused-test-results.txt": {
+    "mtime": 1794588948.2566285,
+    "seen": 1794589144.7573557,
+    "ast_hash": "9e195d6978f363fe857c70a8f9380f95",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/post-run-test-results.txt": {
+    "mtime": 1794588948.2565663,
+    "seen": 1794589144.7573574,
+    "ast_hash": "cca2678d29efa2a8b5adcc7db474ec9b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/source-audit.md": {
+    "mtime": 1794583918.2046983,
+    "seen": 1794589144.757359,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/test-results.txt": {
+    "mtime": 1794583918.2045834,
+    "seen": 1794589144.757361,
+    "ast_hash": "7f3fa7a18514da7942c46c506b0e1740",
+    "semantic_hash": ""
+  },
+  "docs/arq/investigations/rca-20261113/GATE1_LIVE_REPORT.md": {
+    "mtime": 1794589285.466288,
+    "seen": 1794589396.049251,
+    "ast_hash": "4625a5a3bf0520fdf4e1774e527fefe2",
+    "semantic_hash": ""
+  },
+  "docs/arq/investigations/rca-20261113/GATE1_SOURCE_AUDIT.md": {
+    "mtime": 1794583767.0826764,
+    "seen": 1794589144.7574065,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/integrity-report.json": {
+    "mtime": 1794589368.2690048,
+    "seen": 1794589396.0488234,
+    "ast_hash": "5dfc2ac1c873078fb0c7780694889aad",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/manifest.json": {
+    "mtime": 1794589346.3196797,
+    "seen": 1794589396.0488276,
+    "ast_hash": "81b57f25f6dc2d22fdfda0139e792596",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/port-after.json": {
+    "mtime": 1794589285.282739,
+    "seen": 1794589396.0488305,
+    "ast_hash": "f4a7436ff4650fe894d7f7efae994860",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/runner-verdict.json": {
+    "mtime": 1794589177.012184,
+    "seen": 1794589396.0488403,
+    "ast_hash": "ecb034b37f2bc2c8a21e09f22fcc4d6b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/sha256.json": {
+    "mtime": 1794589346.3477302,
+    "seen": 1794589396.048843,
+    "ast_hash": "f3e5f7229b4d23088520d88bbc25f656",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T153146Z/GATE1_SOURCE_AUDIT.md": {
+    "mtime": 1794589320.9373934,
+    "seen": 1794589396.0492141,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/first-failure.json": {
+    "mtime": 1794592117.499369,
+    "seen": 1794593481.7951176,
+    "ast_hash": "2809b122e0e0044405e73bef942bff45",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/latency-statistics.json": {
+    "mtime": 1794592117.5954595,
+    "seen": 1794593481.7951214,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/original-incident-integrity.json": {
+    "mtime": 1794592107.0250301,
+    "seen": 1794593481.7951243,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/preflight.json": {
+    "mtime": 1794592107.0884397,
+    "seen": 1794593481.7951264,
+    "ast_hash": "c6422838fba84ea3f1373e3a09deb9e8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/preservation-before.json": {
+    "mtime": 1794592107.019086,
+    "seen": 1794593481.7951283,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/source-hashes.json": {
+    "mtime": 1794592106.9620776,
+    "seen": 1794593481.79513,
+    "ast_hash": "583bfda0d41dcb22236224d02a15bc19",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/source-revision.json": {
+    "mtime": 1794592106.9610977,
+    "seen": 1794593481.795132,
+    "ast_hash": "ef03926b17e56a348bba49b6ef4db59b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/verdict.json": {
+    "mtime": 1794592117.5959406,
+    "seen": 1794593481.7951336,
+    "ast_hash": "5f1e8b3edf1015c20269e1e1d37169ea",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/original_hashes.json": {
+    "mtime": 1794592035.2574596,
+    "seen": 1794593481.7952402,
+    "ast_hash": "b245326c81c1479b98010b980acac990",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-t26-green.txt": {
+    "mtime": 1794591687.8091767,
+    "seen": 1794593481.7956553,
+    "ast_hash": "a57220a4d43f5523562c7053bf644507",
+    "semantic_hash": ""
+  },
+  ".automation/gate1-t26-red.txt": {
+    "mtime": 1794591651.515758,
+    "seen": 1794593481.7956576,
+    "ast_hash": "c0adc13c0d25ede01d31f781f29cb7e5",
+    "semantic_hash": ""
+  },
+  ".automation/rca-full-suite.txt": {
+    "mtime": 1794592079.198898,
+    "seen": 1794593481.7956626,
+    "ast_hash": "6d84b388725668c51d0c10829ba49929",
+    "semantic_hash": ""
+  },
+  ".automation/rca-offline.txt": {
+    "mtime": 1794592062.2394962,
+    "seen": 1794593481.7956653,
+    "ast_hash": "5b8c177cd4bb9ce95ff79db10c6574e8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/focused-test-results.txt": {
+    "mtime": 1794592107.0196955,
+    "seen": 1794593481.795743,
+    "ast_hash": "5b8c177cd4bb9ce95ff79db10c6574e8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/source-audit.md": {
+    "mtime": 1794592107.0198445,
+    "seen": 1794593481.7957454,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T174900Z-mailbox-probe/test-results.txt": {
+    "mtime": 1794592107.019604,
+    "seen": 1794593481.7957473,
+    "ast_hash": "6d84b388725668c51d0c10829ba49929",
+    "semantic_hash": ""
+  },
+  "docs/arq/investigations/rca-20261113/SSOT_REVIEW.md": {
+    "mtime": 1794590252.014779,
+    "seen": 1794593481.7958157,
+    "ast_hash": "a9f4cb6cbe90de17f6b25fd89ff36f48",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/BASELINE.md": {
+    "mtime": 1794592035.257633,
+    "seen": 1794593481.795823,
+    "ast_hash": "73a62988d76f46393c2726ece18a09ef",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/EXECUTION_JOURNAL.md": {
+    "mtime": 1794592035.2578895,
+    "seen": 1794593481.7958252,
+    "ast_hash": "84bf156a6eb9a7decbc914a42486563c",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/FIXES.md": {
+    "mtime": 1794592035.2581549,
+    "seen": 1794593481.7958274,
+    "ast_hash": "aa6d6ffb78446ddc76d845b63da14638",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/GATE1_ROOT_CAUSE.md": {
+    "mtime": 1794592035.2579668,
+    "seen": 1794593481.7958295,
+    "ast_hash": "944a26c7de6c14a4c706907b09c42baa",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/HARDWARE_MEASUREMENTS.md": {
+    "mtime": 1794592035.2580917,
+    "seen": 1794593481.7958312,
+    "ast_hash": "25dc1cdcedf36c3b1ea0d050b2e738d2",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/HYPOTHESES.md": {
+    "mtime": 1794592035.2577643,
+    "seen": 1794593481.7958333,
+    "ast_hash": "f71dfdcd185cc469f35998a213e0b79d",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/LIVE_TOPOLOGY.md": {
+    "mtime": 1794592035.257698,
+    "seen": 1794593481.7958355,
+    "ast_hash": "70b6e6edc1215648e9e026524ce2e4de",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/README.md": {
+    "mtime": 1794592035.2575612,
+    "seen": 1794593481.7958374,
+    "ast_hash": "57ab03df004dbd24c18b0e7babddbb92",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/REGRESSION.md": {
+    "mtime": 1794592035.2582457,
+    "seen": 1794593481.7958395,
+    "ast_hash": "8979c8cf70617f5dfd10e017f0d351a0",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/REVERSE_RF_ROOT_CAUSE.md": {
+    "mtime": 1794592035.2580297,
+    "seen": 1794593481.7958412,
+    "ast_hash": "3a9aa90f104c580de028c0413b3ce1d6",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181125Z-enable-recovery/first-failure.json": {
+    "mtime": 1794593506.3652358,
+    "seen": 1794594014.263757,
+    "ast_hash": "e7fc0f1af5af1e832b3e71d3f7b8fb5a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181125Z-enable-recovery/latency-statistics.json": {
+    "mtime": 1794593506.4723275,
+    "seen": 1794594014.2637615,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181125Z-enable-recovery/original-incident-integrity.json": {
+    "mtime": 1794593495.9020672,
+    "seen": 1794594014.263764,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181125Z-enable-recovery/preflight.json": {
+    "mtime": 1794593495.9583611,
+    "seen": 1794594014.2637658,
+    "ast_hash": "c2131d6dde08f6e30aa8a3231d89abe1",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181125Z-enable-recovery/preservation-before.json": {
+    "mtime": 1794593495.896558,
+    "seen": 1794594014.2637677,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181125Z-enable-recovery/source-hashes.json": {
+    "mtime": 1794593495.8511543,
+    "seen": 1794594014.2637699,
+    "ast_hash": "e7eebeec9c0c81688303588b7460aea6",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181125Z-enable-recovery/source-revision.json": {
+    "mtime": 1794593495.8504426,
+    "seen": 1794594014.263772,
+    "ast_hash": "2b8557653cb9e1ad690d86cdb8e62f0d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181125Z-enable-recovery/verdict.json": {
+    "mtime": 1794593506.4727695,
+    "seen": 1794594014.2637742,
+    "ast_hash": "71e21a93cb199cacdceb05689aa08632",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181700Z-gateway-monitor-control/first-failure.json": {
+    "mtime": 1794593835.1404223,
+    "seen": 1794594014.2637765,
+    "ast_hash": "92db17bc29aa61cd37c5d753852a1d6d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181700Z-gateway-monitor-control/latency-statistics.json": {
+    "mtime": 1794593835.2258725,
+    "seen": 1794594014.2637784,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181700Z-gateway-monitor-control/original-incident-integrity.json": {
+    "mtime": 1794593824.6749058,
+    "seen": 1794594014.2637806,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181700Z-gateway-monitor-control/preflight.json": {
+    "mtime": 1794593824.7327142,
+    "seen": 1794594014.2637827,
+    "ast_hash": "e4a89534a7001aa330a8accd926c0b73",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181700Z-gateway-monitor-control/preservation-before.json": {
+    "mtime": 1794593824.6693826,
+    "seen": 1794594014.2637846,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181700Z-gateway-monitor-control/source-hashes.json": {
+    "mtime": 1794593824.625301,
+    "seen": 1794594014.2637866,
+    "ast_hash": "739970ebad702cbbf25bb8b1e316f24a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181700Z-gateway-monitor-control/source-revision.json": {
+    "mtime": 1794593824.624598,
+    "seen": 1794594014.2637885,
+    "ast_hash": "b38eed15fa8c6196bf61c0b3ba2a5475",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181700Z-gateway-monitor-control/verdict.json": {
+    "mtime": 1794593835.2261171,
+    "seen": 1794594014.2637906,
+    "ast_hash": "2159b81fed623c3752b2a8726a145028",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181125Z-enable-recovery/source-audit.md": {
+    "mtime": 1794593495.8967361,
+    "seen": 1794594014.2644067,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181125Z-enable-recovery/test-results.txt": {
+    "mtime": 1794593495.896698,
+    "seen": 1794594014.2644093,
+    "ast_hash": "43c2b70abf9b00d8414262ef8afb05f3",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181700Z-gateway-monitor-control/source-audit.md": {
+    "mtime": 1794593824.6695764,
+    "seen": 1794594014.2644112,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T181700Z-gateway-monitor-control/test-results.txt": {
+    "mtime": 1794593824.669531,
+    "seen": 1794594014.2644129,
+    "ast_hash": "bdc8ddbba6bcf73a8641a63a44aaadbb",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182020Z-gateway-gpr1/first-failure.json": {
+    "mtime": 1794594022.6621203,
+    "seen": 1794594265.1565812,
+    "ast_hash": "d2619e9782b1c3d3d28b283d0c7e40d2",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182020Z-gateway-gpr1/latency-statistics.json": {
+    "mtime": 1794594022.729646,
+    "seen": 1794594265.1565852,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182020Z-gateway-gpr1/original-incident-integrity.json": {
+    "mtime": 1794594022.2825496,
+    "seen": 1794594265.1565876,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182020Z-gateway-gpr1/preflight.json": {
+    "mtime": 1794594022.3393488,
+    "seen": 1794594265.1565895,
+    "ast_hash": "5282862331a9d6e8f1da79a8535abf97",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182020Z-gateway-gpr1/preservation-before.json": {
+    "mtime": 1794594022.27724,
+    "seen": 1794594265.1565917,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182020Z-gateway-gpr1/source-hashes.json": {
+    "mtime": 1794594022.2241201,
+    "seen": 1794594265.1565933,
+    "ast_hash": "0060fe2733e955e32bf86436fb1e8416",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182020Z-gateway-gpr1/source-revision.json": {
+    "mtime": 1794594022.2233984,
+    "seen": 1794594265.1565952,
+    "ast_hash": "760316652d331cfbfcd46020de1bfcab",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182020Z-gateway-gpr1/verdict.json": {
+    "mtime": 1794594022.7298243,
+    "seen": 1794594265.1565967,
+    "ast_hash": "f394b03cf824b13fbcf13c5039cc3228",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182020Z-gateway-gpr1/source-audit.md": {
+    "mtime": 1794594022.2774012,
+    "seen": 1794594265.157168,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182020Z-gateway-gpr1/test-results.txt": {
+    "mtime": 1794594022.2773597,
+    "seen": 1794594265.1571698,
+    "ast_hash": "66745073530d80d7ab7f161688e59fa1",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182430Z-tracker-gpr1-pesig/first-failure.json": {
+    "mtime": 1794594278.1710196,
+    "seen": 1794594565.2829385,
+    "ast_hash": "33b5c93a6c13d67dc1ee914359aeae61",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182430Z-tracker-gpr1-pesig/latency-statistics.json": {
+    "mtime": 1794594278.2367542,
+    "seen": 1794594565.282943,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182430Z-tracker-gpr1-pesig/original-incident-integrity.json": {
+    "mtime": 1794594277.734901,
+    "seen": 1794594565.282946,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182430Z-tracker-gpr1-pesig/preflight.json": {
+    "mtime": 1794594277.7977777,
+    "seen": 1794594565.282948,
+    "ast_hash": "92a711c9c9081701e40b5d834219c372",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182430Z-tracker-gpr1-pesig/preservation-before.json": {
+    "mtime": 1794594277.7295763,
+    "seen": 1794594565.2829502,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182430Z-tracker-gpr1-pesig/source-hashes.json": {
+    "mtime": 1794594277.678609,
+    "seen": 1794594565.2829518,
+    "ast_hash": "ef90ce0db8faee7b25a16347caca5503",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182430Z-tracker-gpr1-pesig/source-revision.json": {
+    "mtime": 1794594277.6769338,
+    "seen": 1794594565.282954,
+    "ast_hash": "d93849811ec7d7e10226a7f277539598",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182430Z-tracker-gpr1-pesig/verdict.json": {
+    "mtime": 1794594278.2369106,
+    "seen": 1794594565.282956,
+    "ast_hash": "fa153b96ec3ce8519f0e67b6a53b6385",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182430Z-tracker-gpr1-pesig/source-audit.md": {
+    "mtime": 1794594277.729761,
+    "seen": 1794594565.283551,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182430Z-tracker-gpr1-pesig/test-results.txt": {
+    "mtime": 1794594277.7297213,
+    "seen": 1794594565.2835531,
+    "ast_hash": "9d0c7b2379ea0317d7b059518e09f951",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182930Z-tracker-halted-gpr/first-failure.json": {
+    "mtime": 1794594578.4505346,
+    "seen": 1794594858.1025858,
+    "ast_hash": "8908724ae54d654924a4349d6b913d99",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182930Z-tracker-halted-gpr/latency-statistics.json": {
+    "mtime": 1794594578.5163145,
+    "seen": 1794594858.1025896,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182930Z-tracker-halted-gpr/original-incident-integrity.json": {
+    "mtime": 1794594577.9986339,
+    "seen": 1794594858.1025922,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182930Z-tracker-halted-gpr/preflight.json": {
+    "mtime": 1794594578.0546653,
+    "seen": 1794594858.1025949,
+    "ast_hash": "e573d23355d59e8da170d264503bcd1f",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182930Z-tracker-halted-gpr/preservation-before.json": {
+    "mtime": 1794594577.9933054,
+    "seen": 1794594858.1025968,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182930Z-tracker-halted-gpr/source-hashes.json": {
+    "mtime": 1794594577.9402006,
+    "seen": 1794594858.102599,
+    "ast_hash": "58bd4e7825788a501147fd1acb6e06a1",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182930Z-tracker-halted-gpr/source-revision.json": {
+    "mtime": 1794594577.9395013,
+    "seen": 1794594858.102601,
+    "ast_hash": "86c4f6b93d6ccfb82098463be1ff7611",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182930Z-tracker-halted-gpr/verdict.json": {
+    "mtime": 1794594578.5164702,
+    "seen": 1794594858.1026027,
+    "ast_hash": "fb700274a7495aabe67d0b918ef724c0",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182930Z-tracker-halted-gpr/source-audit.md": {
+    "mtime": 1794594577.993459,
+    "seen": 1794594858.1032305,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T182930Z-tracker-halted-gpr/test-results.txt": {
+    "mtime": 1794594577.9934213,
+    "seen": 1794594858.103233,
+    "ast_hash": "117f289ede9f472095581d7e343e5246",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183400Z-tracker-address-size-ab/first-failure.json": {
+    "mtime": 1794594881.4256644,
+    "seen": 1794595114.5696363,
+    "ast_hash": "bdbcc18c44f8279af526d737e4debe98",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183400Z-tracker-address-size-ab/latency-statistics.json": {
+    "mtime": 1794594881.5073264,
+    "seen": 1794595114.56964,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183400Z-tracker-address-size-ab/original-incident-integrity.json": {
+    "mtime": 1794594870.796717,
+    "seen": 1794595114.5696425,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183400Z-tracker-address-size-ab/preflight.json": {
+    "mtime": 1794594870.8535903,
+    "seen": 1794595114.5696445,
+    "ast_hash": "476c83e8feda1f37728a17ea6dd04530",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183400Z-tracker-address-size-ab/preservation-before.json": {
+    "mtime": 1794594870.7913659,
+    "seen": 1794595114.5696468,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183400Z-tracker-address-size-ab/source-hashes.json": {
+    "mtime": 1794594870.7479367,
+    "seen": 1794595114.5696487,
+    "ast_hash": "60b19d14aa60a6073d8ca366b42b5b3e",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183400Z-tracker-address-size-ab/source-revision.json": {
+    "mtime": 1794594870.7475207,
+    "seen": 1794595114.5696507,
+    "ast_hash": "ee90ae8e22788e7e5ed19bcd2d9246c0",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183400Z-tracker-address-size-ab/verdict.json": {
+    "mtime": 1794594881.5075648,
+    "seen": 1794595114.5696528,
+    "ast_hash": "f0f929710281fd959f9da8abf0fc1e3a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183400Z-tracker-address-size-ab/source-audit.md": {
+    "mtime": 1794594870.7915194,
+    "seen": 1794595114.5703092,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183400Z-tracker-address-size-ab/test-results.txt": {
+    "mtime": 1794594870.7914834,
+    "seen": 1794595114.5703113,
+    "ast_hash": "78030234ed3562969e5987adb2df241e",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183840Z-tracker-address-size-cross/first-failure.json": {
+    "mtime": 1794595133.9975686,
+    "seen": 1794595260.948632,
+    "ast_hash": "a88f77b10c0c87bb2729e4d1526721c2",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183840Z-tracker-address-size-cross/latency-statistics.json": {
+    "mtime": 1794595134.0815172,
+    "seen": 1794595260.9486356,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183840Z-tracker-address-size-cross/original-incident-integrity.json": {
+    "mtime": 1794595123.3424933,
+    "seen": 1794595260.9486384,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183840Z-tracker-address-size-cross/preflight.json": {
+    "mtime": 1794595123.3972442,
+    "seen": 1794595260.9486408,
+    "ast_hash": "4afb0555b7c1c2a5ae2f6f34124bed21",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183840Z-tracker-address-size-cross/preservation-before.json": {
+    "mtime": 1794595123.337162,
+    "seen": 1794595260.9486427,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183840Z-tracker-address-size-cross/source-hashes.json": {
+    "mtime": 1794595123.2940228,
+    "seen": 1794595260.9486446,
+    "ast_hash": "d6a73f884b33a8b8bd4b4146f41f38ae",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183840Z-tracker-address-size-cross/source-revision.json": {
+    "mtime": 1794595123.2933414,
+    "seen": 1794595260.9486465,
+    "ast_hash": "24fcdcd2a4212bf7278e1db3a68b5f80",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183840Z-tracker-address-size-cross/verdict.json": {
+    "mtime": 1794595134.0817676,
+    "seen": 1794595260.9486485,
+    "ast_hash": "c820f4b6b1f10b277d9763147497a661",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183840Z-tracker-address-size-cross/source-audit.md": {
+    "mtime": 1794595123.3373122,
+    "seen": 1794595260.9492738,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T183840Z-tracker-address-size-cross/test-results.txt": {
+    "mtime": 1794595123.337274,
+    "seen": 1794595260.9492764,
+    "ast_hash": "b92f7b8c4648bbbe22ea3d3a173f149d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T184115Z-tracker-wide-gpr-sts/first-failure.json": {
+    "mtime": 1794595289.2733665,
+    "seen": 1794595942.7632568,
+    "ast_hash": "2f37b7b41e9cc7b6a9d2bdf21f5c948e",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T184115Z-tracker-wide-gpr-sts/original-incident-integrity.json": {
+    "mtime": 1794595278.586621,
+    "seen": 1794595942.7632608,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T184115Z-tracker-wide-gpr-sts/preflight.json": {
+    "mtime": 1794595278.6506548,
+    "seen": 1794595942.7632635,
+    "ast_hash": "15c18f1758b49d89fa96c8d157aa6416",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T184115Z-tracker-wide-gpr-sts/preservation-before.json": {
+    "mtime": 1794595278.5812724,
+    "seen": 1794595942.7632656,
+    "ast_hash": "e7ccf9159ae8eb3e5560250015099c32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T184115Z-tracker-wide-gpr-sts/source-hashes.json": {
+    "mtime": 1794595278.536985,
+    "seen": 1794595942.7632675,
+    "ast_hash": "2976c9201307c26b38b3e36ee965ee53",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T184115Z-tracker-wide-gpr-sts/source-revision.json": {
+    "mtime": 1794595278.5361865,
+    "seen": 1794595942.7632697,
+    "ast_hash": "046ecbba2029cba436946b8bf8dd5b5c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T184115Z-tracker-wide-gpr-sts/source-audit.md": {
+    "mtime": 1794595278.5814366,
+    "seen": 1794595942.7638469,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T184115Z-tracker-wide-gpr-sts/test-results.txt": {
+    "mtime": 1794595278.5813992,
+    "seen": 1794595942.763849,
+    "ast_hash": "971638ebe540472ff98d1f5c5c06c491",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185230Z-tracker-fixed-sts1/preservation-before.json": {
+    "mtime": 1794595952.343141,
+    "seen": 1794596136.8966486,
+    "ast_hash": "d809d21e1545341066ce8300dabc5dd4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185230Z-tracker-fixed-sts1/source-hashes.json": {
+    "mtime": 1794595952.3001301,
+    "seen": 1794596136.896653,
+    "ast_hash": "14257232da3d05e25a4030cbade0a65b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185230Z-tracker-fixed-sts1/source-revision.json": {
+    "mtime": 1794595952.2993789,
+    "seen": 1794596136.8966556,
+    "ast_hash": "036146c22803b5ebf1795cf0cb23725a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185230Z-tracker-fixed-sts1/verdict.json": {
+    "mtime": 1794595952.344124,
+    "seen": 1794596136.8966575,
+    "ast_hash": "b1db5f497943aef0d9be4247b9266ed6",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185540Z-tracker-fixed-sts1/first-failure.json": {
+    "mtime": 1794596156.2662175,
+    "seen": 1794596422.9158306,
+    "ast_hash": "7feffe9352093069f6335851a3fb929a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185540Z-tracker-fixed-sts1/latency-statistics.json": {
+    "mtime": 1794596158.623067,
+    "seen": 1794596422.9158328,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185540Z-tracker-fixed-sts1/original-incident-integrity.json": {
+    "mtime": 1794596146.8209689,
+    "seen": 1794596422.9158344,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185540Z-tracker-fixed-sts1/preflight.json": {
+    "mtime": 1794596146.8773744,
+    "seen": 1794596422.9158356,
+    "ast_hash": "a613fc355a1e6bb7a4ab48b05d2f6ca8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185540Z-tracker-fixed-sts1/preservation-before.json": {
+    "mtime": 1794596146.8153718,
+    "seen": 1794596422.9158366,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185540Z-tracker-fixed-sts1/source-hashes.json": {
+    "mtime": 1794596146.7694278,
+    "seen": 1794596422.915838,
+    "ast_hash": "38db56338851adf2e736579da69f720c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185540Z-tracker-fixed-sts1/source-revision.json": {
+    "mtime": 1794596146.7687385,
+    "seen": 1794596422.915839,
+    "ast_hash": "e4f2d255f7e53af80e3c58a74cbe1e2d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185540Z-tracker-fixed-sts1/verdict.json": {
+    "mtime": 1794596158.6232982,
+    "seen": 1794596422.9158401,
+    "ast_hash": "86a4471429cc7a421632a0f2c8f202f9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185540Z-tracker-fixed-sts1/source-audit.md": {
+    "mtime": 1794596146.81553,
+    "seen": 1794596422.9162202,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T185540Z-tracker-fixed-sts1/test-results.txt": {
+    "mtime": 1794596146.8154893,
+    "seen": 1794596422.9162214,
+    "ast_hash": "40975d731a1e10e1d7207a0216bda2ed",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190030Z-tracker-sts-fixed-status/first-failure.json": {
+    "mtime": 1794596442.1160238,
+    "seen": 1794596636.5375624,
+    "ast_hash": "104eac45a2cff286883a28039cbd3905",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190030Z-tracker-sts-fixed-status/latency-statistics.json": {
+    "mtime": 1794596442.4488254,
+    "seen": 1794596636.5375664,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190030Z-tracker-sts-fixed-status/original-incident-integrity.json": {
+    "mtime": 1794596433.8088033,
+    "seen": 1794596636.5375693,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190030Z-tracker-sts-fixed-status/preflight.json": {
+    "mtime": 1794596433.8694785,
+    "seen": 1794596636.5375717,
+    "ast_hash": "3c7a5eb04952d6df4e0a6718c6c95edc",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190030Z-tracker-sts-fixed-status/preservation-before.json": {
+    "mtime": 1794596433.8032095,
+    "seen": 1794596636.5375733,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190030Z-tracker-sts-fixed-status/source-hashes.json": {
+    "mtime": 1794596433.759873,
+    "seen": 1794596636.5375752,
+    "ast_hash": "c33fb505ab3b08ae555031192ab8f261",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190030Z-tracker-sts-fixed-status/source-revision.json": {
+    "mtime": 1794596433.7594476,
+    "seen": 1794596636.537577,
+    "ast_hash": "babf39410cd2f015625a522d783bb73d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190030Z-tracker-sts-fixed-status/verdict.json": {
+    "mtime": 1794596442.449093,
+    "seen": 1794596636.537579,
+    "ast_hash": "fd04947781b6098654d5019de17fa75d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190030Z-tracker-sts-fixed-status/source-audit.md": {
+    "mtime": 1794596433.8034213,
+    "seen": 1794596636.5382106,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190030Z-tracker-sts-fixed-status/test-results.txt": {
+    "mtime": 1794596433.8033714,
+    "seen": 1794596636.5382125,
+    "ast_hash": "69157f9efd43cc082b0ff946dac4c213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190400Z-tracker-reset-status1/first-failure.json": {
+    "mtime": 1794596647.4437177,
+    "seen": 1794596794.651169,
+    "ast_hash": "1384543a37cc3ee1859d75be77c41cb3",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190400Z-tracker-reset-status1/latency-statistics.json": {
+    "mtime": 1794596647.5166557,
+    "seen": 1794596794.651173,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190400Z-tracker-reset-status1/original-incident-integrity.json": {
+    "mtime": 1794596645.817631,
+    "seen": 1794596794.6511753,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190400Z-tracker-reset-status1/preflight.json": {
+    "mtime": 1794596645.8761268,
+    "seen": 1794596794.6511772,
+    "ast_hash": "f7d455614c2092afeecd01d534e1f643",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190400Z-tracker-reset-status1/preservation-before.json": {
+    "mtime": 1794596645.8122082,
+    "seen": 1794596794.651179,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190400Z-tracker-reset-status1/source-hashes.json": {
+    "mtime": 1794596645.7666914,
+    "seen": 1794596794.651181,
+    "ast_hash": "786fcc417922efd8736c6d3715ce5872",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190400Z-tracker-reset-status1/source-revision.json": {
+    "mtime": 1794596645.7651143,
+    "seen": 1794596794.6511827,
+    "ast_hash": "4033c686c36eb03c553a14e3287535fa",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190400Z-tracker-reset-status1/verdict.json": {
+    "mtime": 1794596647.5170636,
+    "seen": 1794596794.6511843,
+    "ast_hash": "c72e0f736be1acf6acbc55f8b016f69b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190400Z-tracker-reset-status1/source-audit.md": {
+    "mtime": 1794596645.812402,
+    "seen": 1794596794.6517987,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190400Z-tracker-reset-status1/test-results.txt": {
+    "mtime": 1794596645.8123507,
+    "seen": 1794596794.6518006,
+    "ast_hash": "b866f67f1521cb6998115fb5d21c9791",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190640Z-tracker-reset-status1/first-failure.json": {
+    "mtime": 1794596820.8265376,
+    "seen": 1794596886.30494,
+    "ast_hash": "6b0d9a70f51634d92dc35cb5c30501de",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190640Z-tracker-reset-status1/latency-statistics.json": {
+    "mtime": 1794596820.8361046,
+    "seen": 1794596886.3049808,
+    "ast_hash": "f4c6ab5a205cb685f4ef5995511e684d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190640Z-tracker-reset-status1/original-incident-integrity.json": {
+    "mtime": 1794596802.869845,
+    "seen": 1794596886.304994,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190640Z-tracker-reset-status1/preflight.json": {
+    "mtime": 1794596802.9327593,
+    "seen": 1794596886.3049977,
+    "ast_hash": "dcde7c83f35a50f3756bb69b47d524ce",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190640Z-tracker-reset-status1/preservation-before.json": {
+    "mtime": 1794596802.8644567,
+    "seen": 1794596886.3050005,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190640Z-tracker-reset-status1/source-hashes.json": {
+    "mtime": 1794596802.8258846,
+    "seen": 1794596886.3050027,
+    "ast_hash": "319f11f28ab6fbed7c4d164e37bc8cf0",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190640Z-tracker-reset-status1/source-revision.json": {
+    "mtime": 1794596802.8252046,
+    "seen": 1794596886.305005,
+    "ast_hash": "78d92cc2bdcd013c060823c4604f9c75",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190640Z-tracker-reset-status1/verdict.json": {
+    "mtime": 1794596820.8362362,
+    "seen": 1794596886.3050075,
+    "ast_hash": "db6242a1397becb51286b276d4f2da19",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190640Z-tracker-reset-status1/source-audit.md": {
+    "mtime": 1794596802.864618,
+    "seen": 1794596886.3057303,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190640Z-tracker-reset-status1/test-results.txt": {
+    "mtime": 1794596802.8645797,
+    "seen": 1794596886.305733,
+    "ast_hash": "85b2e7c41d645c4a967dafd059a16a1c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190815Z-tracker-reset-status1/latency-statistics.json": {
+    "mtime": 1794596914.3113322,
+    "seen": 1794597028.8930616,
+    "ast_hash": "ea32a001a10b670cc9fa9e192baf89ed",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190815Z-tracker-reset-status1/original-incident-integrity.json": {
+    "mtime": 1794596896.1597018,
+    "seen": 1794597028.893066,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190815Z-tracker-reset-status1/preflight.json": {
+    "mtime": 1794596896.2231128,
+    "seen": 1794597028.8930683,
+    "ast_hash": "6e27d2883bb5aec41c7b502f0bb75d78",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190815Z-tracker-reset-status1/preservation-before.json": {
+    "mtime": 1794596896.1533556,
+    "seen": 1794597028.8930714,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190815Z-tracker-reset-status1/source-hashes.json": {
+    "mtime": 1794596896.1116204,
+    "seen": 1794597028.8930736,
+    "ast_hash": "86d046d0a8369e741121b96cf0c96fc8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190815Z-tracker-reset-status1/source-revision.json": {
+    "mtime": 1794596896.1103551,
+    "seen": 1794597028.8930757,
+    "ast_hash": "3a23ed2e99a50c59d2561526cced0db5",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190815Z-tracker-reset-status1/verdict.json": {
+    "mtime": 1794596914.3115752,
+    "seen": 1794597028.8930779,
+    "ast_hash": "bbd8362fa43fc418a6e02d74787a6c0e",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190815Z-tracker-reset-status1/source-audit.md": {
+    "mtime": 1794596896.1542535,
+    "seen": 1794597028.8937607,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T190815Z-tracker-reset-status1/test-results.txt": {
+    "mtime": 1794596896.1542084,
+    "seen": 1794597028.8937635,
+    "ast_hash": "b324a1d7c18dbf231415ed7de1b17491",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191050Z-tracker-gpr16-gate1-20/first-failure.json": {
+    "mtime": 1794597064.3638568,
+    "seen": 1794597170.3208797,
+    "ast_hash": "bb8e017b9feecb15fbbd5f82a89a607c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191050Z-tracker-gpr16-gate1-20/latency-statistics.json": {
+    "mtime": 1794597064.6960392,
+    "seen": 1794597170.320884,
+    "ast_hash": "62db48833fe4f753c7de041f6b156809",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191050Z-tracker-gpr16-gate1-20/original-incident-integrity.json": {
+    "mtime": 1794597056.527905,
+    "seen": 1794597170.3208864,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191050Z-tracker-gpr16-gate1-20/preflight.json": {
+    "mtime": 1794597056.5920978,
+    "seen": 1794597170.3208883,
+    "ast_hash": "b9b64748cde31699605b553996b01590",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191050Z-tracker-gpr16-gate1-20/preservation-before.json": {
+    "mtime": 1794597056.5225973,
+    "seen": 1794597170.3208902,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191050Z-tracker-gpr16-gate1-20/source-hashes.json": {
+    "mtime": 1794597056.4846861,
+    "seen": 1794597170.3208992,
+    "ast_hash": "07c33745b252666aa4ce38ecd255d8be",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191050Z-tracker-gpr16-gate1-20/source-revision.json": {
+    "mtime": 1794597056.4842348,
+    "seen": 1794597170.3209014,
+    "ast_hash": "243685c1fa7bc07926c6b15a863568dc",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191050Z-tracker-gpr16-gate1-20/verdict.json": {
+    "mtime": 1794597064.6962745,
+    "seen": 1794597170.320904,
+    "ast_hash": "0f4460fe8630662163a7568bb2e88752",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191050Z-tracker-gpr16-gate1-20/source-audit.md": {
+    "mtime": 1794597056.522759,
+    "seen": 1794597170.321609,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191050Z-tracker-gpr16-gate1-20/test-results.txt": {
+    "mtime": 1794597056.5227225,
+    "seen": 1794597170.3216112,
+    "ast_hash": "d175873a0858e9798fd57c5217bc561c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T193134Z-reverse-raw/bundle.json": {
+    "mtime": 1794598432.6328993,
+    "seen": 1794599022.4766026,
+    "ast_hash": "8b74beff4587d76899d5ee7284ee5e48",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T193134Z-reverse-raw/receiver_reverse_raw-program-command.json": {
+    "mtime": 1794598381.430904,
+    "seen": 1794599022.4766076,
+    "ast_hash": "e8a58017d30719bf2e0e56cd6aad1e0e",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T193134Z-reverse-raw/restore.json": {
+    "mtime": 1794598594.6621845,
+    "seen": 1794599022.47661,
+    "ast_hash": "fa8deb541107b08240613b1760bbc89d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T193134Z-reverse-raw/sender_reverse_raw-program-command.json": {
+    "mtime": 1794598315.8568413,
+    "seen": 1794599022.476612,
+    "ast_hash": "ca4293c9de9c3a0c3ef77c6f82c3bf41",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T193352Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794598453.807551,
+    "seen": 1794599022.4766145,
+    "ast_hash": "1407b12fa82830fc1761efdfa88fd2c7",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T193352Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794598522.564268,
+    "seen": 1794599022.4766166,
+    "ast_hash": "4f6346156ca944aa599da3b47f2941b6",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T193352Z-standby/standby-verified.json": {
+    "mtime": 1794598594.6616483,
+    "seen": 1794599022.4766185,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T193352Z-standby/status.json": {
+    "mtime": 1794598594.6590953,
+    "seen": 1794599022.4766204,
+    "ast_hash": "f5a929e832dc6a8db7e3f6312abef96b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191305Z-tracker-gate1-20-fixed/original-incident-integrity.json": {
+    "mtime": 1794597190.6971517,
+    "seen": 1794599022.4770806,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191305Z-tracker-gate1-20-fixed/preservation-before.json": {
+    "mtime": 1794597190.691565,
+    "seen": 1794599022.477084,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191305Z-tracker-gate1-20-fixed/source-hashes.json": {
+    "mtime": 1794597190.6543415,
+    "seen": 1794599022.4770863,
+    "ast_hash": "07c33745b252666aa4ce38ecd255d8be",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191305Z-tracker-gate1-20-fixed/source-revision.json": {
+    "mtime": 1794597190.6538873,
+    "seen": 1794599022.4770882,
+    "ast_hash": "e192ca7d0e63aad4167ff40bd578106c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191305Z-tracker-gate1-20-fixed/verdict.json": {
+    "mtime": 1794597190.6980016,
+    "seen": 1794599022.4770904,
+    "ast_hash": "820b77f0c366e78e76d63868349983a4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191315Z-tracker-gate1-20-fixed/latency-statistics.json": {
+    "mtime": 1794597358.9147964,
+    "seen": 1794599022.477092,
+    "ast_hash": "6b2b319c1ae41978c43962fcc0863c46",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191315Z-tracker-gate1-20-fixed/original-incident-integrity.json": {
+    "mtime": 1794597199.744967,
+    "seen": 1794599022.477094,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191315Z-tracker-gate1-20-fixed/preflight.json": {
+    "mtime": 1794597199.812548,
+    "seen": 1794599022.4770956,
+    "ast_hash": "7b8718688eb5b56fe4c628499c07081b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191315Z-tracker-gate1-20-fixed/preservation-before.json": {
+    "mtime": 1794597199.7391012,
+    "seen": 1794599022.477098,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191315Z-tracker-gate1-20-fixed/source-hashes.json": {
+    "mtime": 1794597199.6968572,
+    "seen": 1794599022.4771001,
+    "ast_hash": "07c33745b252666aa4ce38ecd255d8be",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191315Z-tracker-gate1-20-fixed/source-revision.json": {
+    "mtime": 1794597199.696083,
+    "seen": 1794599022.4771018,
+    "ast_hash": "c0cb8c1510551f1baa224843c7913434",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191315Z-tracker-gate1-20-fixed/verdict.json": {
+    "mtime": 1794597358.915039,
+    "seen": 1794599022.477104,
+    "ast_hash": "741c70457db544829eb6661693571d0e",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191835Z-tracker-gate1-20-fixed-reset/latency-statistics.json": {
+    "mtime": 1794597675.6486907,
+    "seen": 1794599022.4771059,
+    "ast_hash": "ce7cd9d66c3c85f1eb513f84f519943c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191835Z-tracker-gate1-20-fixed-reset/original-incident-integrity.json": {
+    "mtime": 1794597516.6460388,
+    "seen": 1794599022.477108,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191835Z-tracker-gate1-20-fixed-reset/preflight.json": {
+    "mtime": 1794597516.7108927,
+    "seen": 1794599022.4771097,
+    "ast_hash": "a6a9a4e3350108a94e397e09805e3066",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191835Z-tracker-gate1-20-fixed-reset/preservation-before.json": {
+    "mtime": 1794597516.6400828,
+    "seen": 1794599022.4771123,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191835Z-tracker-gate1-20-fixed-reset/source-hashes.json": {
+    "mtime": 1794597516.6016567,
+    "seen": 1794599022.4771142,
+    "ast_hash": "07c33745b252666aa4ce38ecd255d8be",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191835Z-tracker-gate1-20-fixed-reset/source-revision.json": {
+    "mtime": 1794597516.6008677,
+    "seen": 1794599022.477116,
+    "ast_hash": "43d927d34e6fd5dce5d5d66fc619dcf9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191835Z-tracker-gate1-20-fixed-reset/verdict.json": {
+    "mtime": 1794597675.6488886,
+    "seen": 1794599022.4771178,
+    "ast_hash": "c688f3194fb242dc47fd3fb2d59908e8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192250Z-gateway-fixed-status1/latency-statistics.json": {
+    "mtime": 1794597793.1065688,
+    "seen": 1794599022.4771197,
+    "ast_hash": "e07895e83363c9a5ffb17c69e64ee899",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192250Z-gateway-fixed-status1/original-incident-integrity.json": {
+    "mtime": 1794597774.983363,
+    "seen": 1794599022.4771218,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192250Z-gateway-fixed-status1/preflight.json": {
+    "mtime": 1794597775.0401723,
+    "seen": 1794599022.4771235,
+    "ast_hash": "2aaaa5629de323092624f4e6ea29e9df",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192250Z-gateway-fixed-status1/preservation-before.json": {
+    "mtime": 1794597774.978046,
+    "seen": 1794599022.4771256,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192250Z-gateway-fixed-status1/source-hashes.json": {
+    "mtime": 1794597774.936863,
+    "seen": 1794599022.4771278,
+    "ast_hash": "07c33745b252666aa4ce38ecd255d8be",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192250Z-gateway-fixed-status1/source-revision.json": {
+    "mtime": 1794597774.9359424,
+    "seen": 1794599022.4771297,
+    "ast_hash": "ea2b9913341abf359285445119177366",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192250Z-gateway-fixed-status1/verdict.json": {
+    "mtime": 1794597793.1068726,
+    "seen": 1794599022.4771318,
+    "ast_hash": "2d521614fe410cf5a4fce51686be0cd4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192535Z-gateway-fixed-status1/latency-statistics.json": {
+    "mtime": 1794597959.2021344,
+    "seen": 1794599022.4771338,
+    "ast_hash": "9f136cab158a3b68fa6df4dfc8a89efc",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192535Z-gateway-fixed-status1/original-incident-integrity.json": {
+    "mtime": 1794597940.9675086,
+    "seen": 1794599022.477136,
+    "ast_hash": "8685f1d485a2b83c37912b9bf068dfc4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192535Z-gateway-fixed-status1/preflight.json": {
+    "mtime": 1794597941.0292118,
+    "seen": 1794599022.4771376,
+    "ast_hash": "baa88b81ea7fdccf0af39a569b0d2535",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192535Z-gateway-fixed-status1/preservation-before.json": {
+    "mtime": 1794597940.962055,
+    "seen": 1794599022.4771397,
+    "ast_hash": "5356f67a8e5525f1fd752b671e92993a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192535Z-gateway-fixed-status1/source-hashes.json": {
+    "mtime": 1794597940.9246535,
+    "seen": 1794599022.4771416,
+    "ast_hash": "07c33745b252666aa4ce38ecd255d8be",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192535Z-gateway-fixed-status1/source-revision.json": {
+    "mtime": 1794597940.924308,
+    "seen": 1794599022.4771435,
+    "ast_hash": "638a9dad0261ada38f9c13b59f99fa91",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192535Z-gateway-fixed-status1/verdict.json": {
+    "mtime": 1794597959.202429,
+    "seen": 1794599022.4771457,
+    "ast_hash": "33966c4efcafe1fc7637479e1776b139",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/manifest.json": {
+    "mtime": 1794598156.4518337,
+    "seen": 1794599022.477255,
+    "ast_hash": "c12986d9b03eaf925cd8df2ef19bf88c",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq/lora_build_identity.h": {
+    "mtime": 1794573717.123902,
+    "seen": 1794599022.4772575,
+    "ast_hash": "8ab0189bcca12bcf8cad32c6391a7eab",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq_test/lora_build_identity.h": {
+    "mtime": 1794573722.1594021,
+    "seen": 1794599022.4772599,
+    "ast_hash": "a092968e0e3f7b92a56ee17f1fb8b453",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_reverse_raw/lora_build_identity.h": {
+    "mtime": 1794573727.0470457,
+    "seen": 1794599022.4772618,
+    "ast_hash": "728da75d1594ff5fa9bd4af6b68da771",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq/lora_build_identity.h": {
+    "mtime": 1794573714.5689023,
+    "seen": 1794599022.477264,
+    "ast_hash": "f63b5f71253a845248251cd57d18baf4",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq_test/lora_build_identity.h": {
+    "mtime": 1794573719.6462204,
+    "seen": 1794599022.4772658,
+    "ast_hash": "9bc040fb99f7c079e204e979ec415e2f",
+    "semantic_hash": ""
+  },
+  "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_reverse_raw/lora_build_identity.h": {
+    "mtime": 1794573724.637361,
+    "seen": 1794599022.4772677,
+    "ast_hash": "25a768c0c9f6bbb7ea4d6792aeb38855",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191305Z-tracker-gate1-20-fixed/source-audit.md": {
+    "mtime": 1794597190.691749,
+    "seen": 1794599022.477851,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191305Z-tracker-gate1-20-fixed/test-results.txt": {
+    "mtime": 1794597190.6917026,
+    "seen": 1794599022.4778533,
+    "ast_hash": "dd04cf99fdfce1541559fd54ccf5830d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191315Z-tracker-gate1-20-fixed/source-audit.md": {
+    "mtime": 1794597199.7392714,
+    "seen": 1794599022.4778552,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191315Z-tracker-gate1-20-fixed/test-results.txt": {
+    "mtime": 1794597199.7392292,
+    "seen": 1794599022.4778574,
+    "ast_hash": "dd04cf99fdfce1541559fd54ccf5830d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191835Z-tracker-gate1-20-fixed-reset/source-audit.md": {
+    "mtime": 1794597516.6403275,
+    "seen": 1794599022.477859,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T191835Z-tracker-gate1-20-fixed-reset/test-results.txt": {
+    "mtime": 1794597516.640284,
+    "seen": 1794599022.4778612,
+    "ast_hash": "dd04cf99fdfce1541559fd54ccf5830d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192250Z-gateway-fixed-status1/source-audit.md": {
+    "mtime": 1794597774.9782352,
+    "seen": 1794599022.4778628,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192250Z-gateway-fixed-status1/test-results.txt": {
+    "mtime": 1794597774.9781935,
+    "seen": 1794599022.477865,
+    "ast_hash": "dd04cf99fdfce1541559fd54ccf5830d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192535Z-gateway-fixed-status1/source-audit.md": {
+    "mtime": 1794597940.9622314,
+    "seen": 1794599022.4778666,
+    "ast_hash": "76d72003690190f6cd38ee97f9342213",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/gate1-updi/20261113T192535Z-gateway-fixed-status1/test-results.txt": {
+    "mtime": 1794597940.9621902,
+    "seen": 1794599022.4778688,
+    "ast_hash": "dd04cf99fdfce1541559fd54ccf5830d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T194423Z-reverse-raw/bundle.json": {
+    "mtime": 1794599219.1316147,
+    "seen": 1794602612.2360265,
+    "ast_hash": "21897e89ff3afeb737a86a41156e6f1a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T194423Z-reverse-raw/receiver_reverse_raw-program-command.json": {
+    "mtime": 1794599150.6035392,
+    "seen": 1794602612.236031,
+    "ast_hash": "8e2a9eee2da0da67a9e114aa027cb20a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T194423Z-reverse-raw/restore.json": {
+    "mtime": 1794599381.1885035,
+    "seen": 1794602612.2360342,
+    "ast_hash": "2b90bd1e2f80b31ecf067655885c83b8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T194423Z-reverse-raw/sender_reverse_raw-program-command.json": {
+    "mtime": 1794599084.8550575,
+    "seen": 1794602612.236036,
+    "ast_hash": "78a5f64cf6759126632d4830745ed997",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T194659Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794599240.335486,
+    "seen": 1794602612.2360384,
+    "ast_hash": "e8f838695370dc676ff35051396fc3cb",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T194659Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794599309.1251364,
+    "seen": 1794602612.2360404,
+    "ast_hash": "4ec826380cb9ea549cd651c1a784ac1b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T194659Z-standby/standby-verified.json": {
+    "mtime": 1794599381.1879466,
+    "seen": 1794602612.2360425,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T194659Z-standby/status.json": {
+    "mtime": 1794599381.186488,
+    "seen": 1794602612.236045,
+    "ast_hash": "a320d99a2f34dd7fe69e89f2579ebc31",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195218Z/H01/bundle.json": {
+    "mtime": 1794599693.2641182,
+    "seen": 1794602612.2360468,
+    "ast_hash": "d31f0a3b604faf3e51087f00d87e5933",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195218Z/H01/provenance/manifest.json": {
+    "mtime": 1794599679.903723,
+    "seen": 1794602612.2360487,
+    "ast_hash": "6b7eca919c142ea799c06b6182ef2c2a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195218Z/H01/provenance/receiver_arq_test-program-command.json": {
+    "mtime": 1794599560.1469028,
+    "seen": 1794602612.2360501,
+    "ast_hash": "67e07ca4b3bf4b65a8f95f6e40a3861b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195218Z/H01/provenance/sender_arq_test-program-command.json": {
+    "mtime": 1794599630.5214765,
+    "seen": 1794602612.236052,
+    "ast_hash": "5df2a1b8b007e71b331fd49d13a8ac3b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195218Z/campaign.json": {
+    "mtime": 1794599693.2651985,
+    "seen": 1794602612.2360537,
+    "ast_hash": "58e0494c51d30eb3494f7c9198986bb9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195218Z/manifest.json": {
+    "mtime": 1794599679.903723,
+    "seen": 1794602612.2360556,
+    "ast_hash": "6b7eca919c142ea799c06b6182ef2c2a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195218Z/receiver_arq_test-program-command.json": {
+    "mtime": 1794599560.1469028,
+    "seen": 1794602612.2360575,
+    "ast_hash": "67e07ca4b3bf4b65a8f95f6e40a3861b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195218Z/restore.json": {
+    "mtime": 1794599856.1213703,
+    "seen": 1794602612.2360594,
+    "ast_hash": "7c5908671eae605c722ffb65667f3894",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195218Z/sender_arq_test-program-command.json": {
+    "mtime": 1794599630.5214765,
+    "seen": 1794602612.2360613,
+    "ast_hash": "5df2a1b8b007e71b331fd49d13a8ac3b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195453Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794599714.464716,
+    "seen": 1794602612.2360637,
+    "ast_hash": "9eb11d9876d16b55c9ef068b095a7a62",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195453Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794599783.9103322,
+    "seen": 1794602612.2360659,
+    "ast_hash": "10ef82f7e13f86ef124a8effc86296b5",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195453Z-standby/standby-verified.json": {
+    "mtime": 1794599856.1210206,
+    "seen": 1794602612.2360678,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T195453Z-standby/status.json": {
+    "mtime": 1794599856.1202404,
+    "seen": 1794602612.23607,
+    "ast_hash": "6f89525f95f32c02138e81edeb62502a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T200454Z-reverse-raw/bundle.json": {
+    "mtime": 1794600449.3217905,
+    "seen": 1794602612.2360716,
+    "ast_hash": "5368278df5c9a1f5348cb3a627ef7fc8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T200454Z-reverse-raw/receiver_reverse_raw-program-command.json": {
+    "mtime": 1794600380.808103,
+    "seen": 1794602612.236074,
+    "ast_hash": "8f436d9d569f5dd7227f1c3e008e3f57",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T200454Z-reverse-raw/restore.json": {
+    "mtime": 1794600611.6453025,
+    "seen": 1794602612.2360759,
+    "ast_hash": "af0d7e7ab8d48432c0e65a477b694421",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T200454Z-reverse-raw/sender_reverse_raw-program-command.json": {
+    "mtime": 1794600315.1793706,
+    "seen": 1794602612.2360778,
+    "ast_hash": "1298fed11e404539b95475cf7563b53d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T200729Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794600470.5156624,
+    "seen": 1794602612.2360795,
+    "ast_hash": "aebaaa9c2466f702ec7dfd32cee587e1",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T200729Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794600539.4262094,
+    "seen": 1794602612.2360814,
+    "ast_hash": "9901613d98a5606dd1ee6763f79370f8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T200729Z-standby/standby-verified.json": {
+    "mtime": 1794600611.6447763,
+    "seen": 1794602612.2360835,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T200729Z-standby/status.json": {
+    "mtime": 1794600611.6433907,
+    "seen": 1794602612.2360852,
+    "ast_hash": "6b1244eaac87e37809a4d29f203a6b55",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T201155Z-reverse-raw/bundle.json": {
+    "mtime": 1794600882.970693,
+    "seen": 1794602612.236087,
+    "ast_hash": "6465da1bbeaca94c79952802bc4088aa",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T201155Z-reverse-raw/receiver_reverse_raw-program-command.json": {
+    "mtime": 1794600802.3791027,
+    "seen": 1794602612.2360892,
+    "ast_hash": "a233ca6424fd46cde214bb3ad6d1bc5e",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T201155Z-reverse-raw/restore.json": {
+    "mtime": 1794601045.2301388,
+    "seen": 1794602612.2360914,
+    "ast_hash": "716fff5773ef4452ee1af310efdacf26",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T201155Z-reverse-raw/sender_reverse_raw-program-command.json": {
+    "mtime": 1794600736.7697124,
+    "seen": 1794602612.2360933,
+    "ast_hash": "dabe16cbd9c81919e91a621158753792",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T201442Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794600904.1755197,
+    "seen": 1794602612.2360952,
+    "ast_hash": "5a31582bcdfa8213540f9d3eb770e596",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T201442Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794600972.8797474,
+    "seen": 1794602612.2360978,
+    "ast_hash": "38199853748625b0ac614f99987d8455",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T201442Z-standby/standby-verified.json": {
+    "mtime": 1794601045.2297707,
+    "seen": 1794602612.2360995,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T201442Z-standby/status.json": {
+    "mtime": 1794601045.2288232,
+    "seen": 1794602612.2361014,
+    "ast_hash": "31d6ed57db247953267f2d9dd0b199af",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T202649Z-reverse-raw/bundle.json": {
+    "mtime": 1794601760.2961562,
+    "seen": 1794602612.2361035,
+    "ast_hash": "7bd7840466131df81e43ae548f087ec4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T202649Z-reverse-raw/receiver_reverse_raw-program-command.json": {
+    "mtime": 1794601695.6575778,
+    "seen": 1794602612.2361052,
+    "ast_hash": "0b1c433ed02e83c8a7c4c34f26be58ba",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T202649Z-reverse-raw/restore.json": {
+    "mtime": 1794601922.3852217,
+    "seen": 1794602612.2361073,
+    "ast_hash": "8cb023c5c500f890d57173e620cdd4a2",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T202649Z-reverse-raw/sender_reverse_raw-program-command.json": {
+    "mtime": 1794601630.0880299,
+    "seen": 1794602612.236109,
+    "ast_hash": "6df357164452b2218256658cd089e6f8",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T202649Z-reverse-raw/tracker-direct-command.json": {
+    "mtime": 1794601745.4668274,
+    "seen": 1794602612.236111,
+    "ast_hash": "2d07ec26f234f86cf1304650bce5a11d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T202920Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794601781.32724,
+    "seen": 1794602612.2361128,
+    "ast_hash": "f90c7148a100d6ac0e9fd412e3caeb17",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T202920Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794601849.9891014,
+    "seen": 1794602612.2361147,
+    "ast_hash": "5ad35d30656fd6bb7896179d5efa85e1",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T202920Z-standby/standby-verified.json": {
+    "mtime": 1794601922.3846514,
+    "seen": 1794602612.2361162,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T202920Z-standby/status.json": {
+    "mtime": 1794601922.3826275,
+    "seen": 1794602612.236118,
+    "ast_hash": "5f0ea7b18b4e4068fa60d6af66ffd1b5",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T203405Z-reverse-raw/bundle.json": {
+    "mtime": 1794602207.0235014,
+    "seen": 1794602612.23612,
+    "ast_hash": "9b30fece946e96de9f1c069a61c3f181",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T203405Z-reverse-raw/receiver_reverse_raw-program-command.json": {
+    "mtime": 1794602132.6796055,
+    "seen": 1794602612.2361221,
+    "ast_hash": "c44265a4a0e177b55735f6812e623b39",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T203405Z-reverse-raw/restore.json": {
+    "mtime": 1794602369.2183585,
+    "seen": 1794602612.2361236,
+    "ast_hash": "83bbd047fadd56515ff72ae52d080e2c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T203405Z-reverse-raw/sender_reverse_raw-program-command.json": {
+    "mtime": 1794602067.0484803,
+    "seen": 1794602612.2361257,
+    "ast_hash": "a05bfb98b1fd13cc6e9e1f2c713cbff2",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T203405Z-reverse-raw/tracker-direct-command.json": {
+    "mtime": 1794602182.5222552,
+    "seen": 1794602612.2361279,
+    "ast_hash": "2c7233e48d34c1c8cbad61d63fd454c3",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T203647Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794602228.2172775,
+    "seen": 1794602612.2361298,
+    "ast_hash": "6261a6b4160852223a4b5d55330e7cec",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T203647Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794602297.0072758,
+    "seen": 1794602612.2361317,
+    "ast_hash": "2bb8601462a2e9dd12ac8fd6382d5a9c",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T203647Z-standby/standby-verified.json": {
+    "mtime": 1794602369.21806,
+    "seen": 1794602612.236133,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T203647Z-standby/status.json": {
+    "mtime": 1794602369.2173622,
+    "seen": 1794602612.236135,
+    "ast_hash": "5fe8d0082b75aa6fa176d90c16bdb420",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T204403Z-reverse-raw/bundle.json": {
+    "mtime": 1794602794.9354093,
+    "seen": 1794603081.8601542,
+    "ast_hash": "2dd077a0fe0b3d1e8f79b7b0a6e2e6e1",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T204403Z-reverse-raw/receiver_reverse_raw-program-command.json": {
+    "mtime": 1794602730.420202,
+    "seen": 1794603081.8601577,
+    "ast_hash": "7b2b632b3a55498cd8e0584d14f91922",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T204403Z-reverse-raw/restore.json": {
+    "mtime": 1794602958.776159,
+    "seen": 1794603081.8601594,
+    "ast_hash": "36126508deedab6559672c6bc2eb4b72",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T204403Z-reverse-raw/sender_reverse_raw-program-command.json": {
+    "mtime": 1794602664.798093,
+    "seen": 1794603081.8601613,
+    "ast_hash": "d8f48d0498219d4b672b8fe100083f16",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T204403Z-reverse-raw/tracker-direct-command.json": {
+    "mtime": 1794602794.679767,
+    "seen": 1794603081.8601627,
+    "ast_hash": "afc753a15ddde4c08eeabd0b7713726b",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T204634Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794602817.8148918,
+    "seen": 1794603081.8601642,
+    "ast_hash": "06290ef0e39dd11c9c2d2f7f0c6d7f82",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T204634Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794602886.57241,
+    "seen": 1794603081.8601656,
+    "ast_hash": "df2a975462edd698db1e6baaa70145a9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T204634Z-standby/standby-verified.json": {
+    "mtime": 1794602958.775621,
+    "seen": 1794603081.860167,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T204634Z-standby/status.json": {
+    "mtime": 1794602958.7743719,
+    "seen": 1794603081.860169,
+    "ast_hash": "e1cd79eea45f15b8ee57ad9e6b94bedc",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205138Z-reverse-raw/bundle.json": {
+    "mtime": 1794603261.5626292,
+    "seen": 1794603510.6354132,
+    "ast_hash": "dbdd4336f3e383284a14c747c4b33877",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205138Z-reverse-raw/receiver_reverse_raw-program-command.json": {
+    "mtime": 1794603184.7789443,
+    "seen": 1794603510.6354182,
+    "ast_hash": "3bd52b93561efe17adf9636f77ec8bbd",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205138Z-reverse-raw/restore.json": {
+    "mtime": 1794603425.4714909,
+    "seen": 1794603510.6354206,
+    "ast_hash": "d0bf17753a4a0506af2032b30a8145d2",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205138Z-reverse-raw/sender_reverse_raw-program-command.json": {
+    "mtime": 1794603119.1453688,
+    "seen": 1794603510.6354232,
+    "ast_hash": "1d8741bc922f7a4aca880c5a6949bc78",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205138Z-reverse-raw/tracker-direct-command.json": {
+    "mtime": 1794603261.333052,
+    "seen": 1794603510.6354253,
+    "ast_hash": "c4dfa8f94ca319f358655feb87604e32",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205421Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794603284.4468734,
+    "seen": 1794603510.6354272,
+    "ast_hash": "e494443ee16568203774bc58ff5f5c9d",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205421Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794603353.1885161,
+    "seen": 1794603510.6354291,
+    "ast_hash": "a708cb461eb2a3781e97fedc5bf6f80f",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205421Z-standby/standby-verified.json": {
+    "mtime": 1794603425.4707246,
+    "seen": 1794603510.6354308,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205421Z-standby/status.json": {
+    "mtime": 1794603425.469667,
+    "seen": 1794603510.635433,
+    "ast_hash": "63bb8e8a8017926ad0c1540e4cb620cf",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205844Z-reverse-raw/bundle.json": {
+    "mtime": 1794603676.134103,
+    "seen": 1794603956.9638238,
+    "ast_hash": "ec1ae9ae59dbd55e132b5b03a55038d7",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205844Z-reverse-raw/receiver_reverse_raw-program-command.json": {
+    "mtime": 1794603611.3768275,
+    "seen": 1794603956.9638276,
+    "ast_hash": "b29cddb70a5626b4c9b1555b0676840a",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205844Z-reverse-raw/restore.json": {
+    "mtime": 1794603839.8976676,
+    "seen": 1794603956.96383,
+    "ast_hash": "aa376ca92a4bce7586c9b38cf8c9f275",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205844Z-reverse-raw/sender_reverse_raw-program-command.json": {
+    "mtime": 1794603545.5351453,
+    "seen": 1794603956.9638324,
+    "ast_hash": "6865dfe086dcd9177167dc24f06eaaa0",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T205844Z-reverse-raw/tracker-direct-command.json": {
+    "mtime": 1794603675.9049578,
+    "seen": 1794603956.9638348,
+    "ast_hash": "ba96cceec06095cf3448ec11b134c5b6",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210116Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794603699.0115101,
+    "seen": 1794603956.963837,
+    "ast_hash": "c130e5042dd486cb1ef39d480e915a21",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210116Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794603767.7810209,
+    "seen": 1794603956.9638388,
+    "ast_hash": "0ec185775a99404f35407cbd98ea3f88",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210116Z-standby/standby-verified.json": {
+    "mtime": 1794603839.8972166,
+    "seen": 1794603956.963841,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210116Z-standby/status.json": {
+    "mtime": 1794603839.8959656,
+    "seen": 1794603956.9638429,
+    "ast_hash": "df7493af30da36fcf89c1ba2c97bbc34",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210613Z-reverse-raw/bundle.json": {
+    "mtime": 1794604125.1100142,
+    "seen": 1794604659.2283022,
+    "ast_hash": "b8b7102be42aa01ded5d710f76ab393e",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210613Z-reverse-raw/receiver_reverse_raw-program-command.json": {
+    "mtime": 1794604060.3206105,
+    "seen": 1794604659.2283063,
+    "ast_hash": "f40fe04e135658786619292faa4bb1a5",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210613Z-reverse-raw/restore.json": {
+    "mtime": 1794604288.19178,
+    "seen": 1794604659.2283084,
+    "ast_hash": "9a0a7b995128052aca1eb0601d444d81",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210613Z-reverse-raw/sender_reverse_raw-program-command.json": {
+    "mtime": 1794603994.7648752,
+    "seen": 1794604659.2283103,
+    "ast_hash": "95e2fa00d10782e9ddd19f9a6f2afcc9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210613Z-reverse-raw/tracker-direct-command.json": {
+    "mtime": 1794604124.8796234,
+    "seen": 1794604659.228312,
+    "ast_hash": "3a526be18c2dd613d040c4f955796ece",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210845Z-standby/receiver_arq-program-command.json": {
+    "mtime": 1794604147.0884883,
+    "seen": 1794604659.228314,
+    "ast_hash": "faef1c0c33710f5d96e507347692aa7e",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210845Z-standby/sender_arq-program-command.json": {
+    "mtime": 1794604216.0090952,
+    "seen": 1794604659.2283154,
+    "ast_hash": "a3ae6df4dbedadaa03b156ef787bb972",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210845Z-standby/standby-verified.json": {
+    "mtime": 1794604288.1912127,
+    "seen": 1794604659.2283173,
+    "ast_hash": "c1b6ae5897c11c7005acddd7e2f12ae9",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T210845Z-standby/status.json": {
+    "mtime": 1794604288.1897082,
+    "seen": 1794604659.228319,
+    "ast_hash": "6c777b94a9d21369be303befe73f6f3e",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T211610Z-updi-idle-control/idle-control.json": {
+    "mtime": 1794604585.609749,
+    "seen": 1794604659.2283208,
+    "ast_hash": "30ed8d018df125b057c3140fe2cd92b4",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T211610Z-updi-idle-control/idle_control.py": {
+    "mtime": 1794604585.6099076,
+    "seen": 1794604659.2283223,
+    "ast_hash": "73294a060a9f9cef26ca4b0e58cab18f",
+    "semantic_hash": ""
+  },
+  "artifacts/arq/20261113T211610Z-updi-idle-control/sha256.json": {
+    "mtime": 1794604585.6106856,
+    "seen": 1794604659.2283242,
+    "ast_hash": "cb8d31cc3ef31f065dd03fb2fd5d07d0",
+    "semantic_hash": ""
+  },
+  "tools/rca/updi_idle_control.py": {
+    "mtime": 1794604529.8127599,
+    "seen": 1794604659.2292728,
+    "ast_hash": "73294a060a9f9cef26ca4b0e58cab18f",
     "semantic_hash": ""
   }
 }

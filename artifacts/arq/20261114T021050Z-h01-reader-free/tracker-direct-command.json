@@ -1,0 +1,21 @@
+{
+  "port": "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0",
+  "firmware": "a0ab664615411a069e3a928598fc6d7228dda70e4e4425758bb9bd63801a93bc",
+  "command": "STATUS",
+  "request_hex": "5354415455530a",
+  "monitor_reader_running": false,
+  "normal_startup_breaks": 2,
+  "cpu_reset_requested": false,
+  "monotonic_start_ns": 152407708057856,
+  "utc_start": "2026-11-14T02:13:18.437972+00:00",
+  "baseline_reset_state": {
+    "gpior0": 32,
+    "rstfr": 0,
+    "uart_flags": 1
+  },
+  "result": "sent",
+  "accepted_hex": "5354415455530a",
+  "accepted_length": 7,
+  "monotonic_end_ns": 152407998671806,
+  "utc_end": "2026-11-14T02:13:18.728589+00:00"
+}

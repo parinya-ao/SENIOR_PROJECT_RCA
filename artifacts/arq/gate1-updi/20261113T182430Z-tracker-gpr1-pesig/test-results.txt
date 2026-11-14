@@ -1,0 +1,36 @@
+test_T01_twenty_successes (tests.test_gate1_rca.Gate1Tests.test_T01_twenty_successes) ... ok
+test_T02_first_failure_stops_consumption (tests.test_gate1_rca.Gate1Tests.test_T02_first_failure_stops_consumption) ... ok
+test_T03_empty_bytes_are_zero_length (tests.test_gate1_rca.Gate1Tests.test_T03_empty_bytes_are_zero_length) ... ok
+test_T04_original_exception_preserved (tests.test_gate1_rca.Gate1Tests.test_T04_original_exception_preserved) ... ok
+test_T05_incomplete_status_fails (tests.test_gate1_rca.Gate1Tests.test_T05_incomplete_status_fails) ... ok
+test_T06_response_value_mismatch (tests.test_gate1_rca.Gate1Tests.test_T06_response_value_mismatch) ... ok
+test_T07_timeout_is_failure (tests.test_gate1_rca.Gate1Tests.test_T07_timeout_is_failure) ... ok
+test_T08_monitor_exit_is_not_usb_disconnect (tests.test_gate1_rca.Gate1Tests.test_T08_monitor_exit_is_not_usb_disconnect) ... ok
+test_T09_wrong_identity_rejected (tests.test_gate1_rca.Gate1Tests.test_T09_wrong_identity_rejected) ... ok
+test_T10_existing_owner_blocks_without_consuming (tests.test_gate1_rca.Gate1Tests.test_T10_existing_owner_blocks_without_consuming) ... ok
+test_T11_non_status_and_rf_commands_rejected (tests.test_gate1_rca.Gate1Tests.test_T11_non_status_and_rf_commands_rejected) ... ok
+test_T12_offline_tool_has_no_hardware_or_process_api (tests.test_gate1_rca.Gate1Tests.test_T12_offline_tool_has_no_hardware_or_process_api) ... ok
+test_T13_unsafe_initialization_blocks_without_read (tests.test_gate1_rca.Gate1Tests.test_T13_unsafe_initialization_blocks_without_read) ... ok
+test_T14_detects_hash_corruption (tests.test_gate1_rca.Gate1Tests.test_T14_detects_hash_corruption) ... ok
+test_T15_verification_never_modifies_originals (tests.test_gate1_rca.Gate1Tests.test_T15_verification_never_modifies_originals) ... ok
+test_T16_monotonic_order_and_duplicate_index (tests.test_gate1_rca.Gate1Tests.test_T16_monotonic_order_and_duplicate_index) ... ok
+test_T17_missing_response_is_unknown (tests.test_gate1_rca.Gate1Tests.test_T17_missing_response_is_unknown) ... ok
+test_T18_deterministic_json_and_no_input_mutation (tests.test_gate1_rca.Gate1Tests.test_T18_deterministic_json_and_no_input_mutation) ... ok
+test_T19_normal_two_break_startup_is_authorized (tests.test_gate1_rca.Gate1Tests.test_T19_normal_two_break_startup_is_authorized) ... ok
+test_T20_trace_port_preserves_raw_empty_and_nonempty_reads (tests.test_gate1_rca.Gate1Tests.test_T20_trace_port_preserves_raw_empty_and_nonempty_reads) ... ok
+test_T21_port_trace_records_exact_write_and_timestamps (tests.test_gate1_rca.Gate1Tests.test_T21_port_trace_records_exact_write_and_timestamps) ... ok
+test_T22_read_only_extended_LDS_uses_verified_sigrow_address (tests.test_gate1_rca.Gate1Tests.test_T22_read_only_extended_LDS_uses_verified_sigrow_address) ... ok
+test_T23_live_cli_help_loads_without_opening_hardware (tests.test_gate1_rca.Gate1Tests.test_T23_live_cli_help_loads_without_opening_hardware) ... ok
+test_T24_part_identity_comes_from_read_signature_not_SIB_label (tests.test_gate1_rca.Gate1Tests.test_T24_part_identity_comes_from_read_signature_not_SIB_label) ... ok
+test_T25_status_output_timeout_is_not_a_low_level_updi_response_error (tests.test_gate1_rca.Gate1Tests.test_T25_status_output_timeout_is_not_a_low_level_updi_response_error) ... ok
+test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes (tests.test_gate1_rca.Gate1Tests.test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes) ... ok
+test_T27_missing_status_identity_is_not_reported_as_runtime_firmware_identity (tests.test_gate1_rca.Gate1Tests.test_T27_missing_status_identity_is_not_reported_as_runtime_firmware_identity) ... ok
+test_T28_reenable_uart_preserves_pending_rx_flag_and_reads_back (tests.test_gate1_rca.Gate1Tests.test_T28_reenable_uart_preserves_pending_rx_flag_and_reads_back) ... ok
+test_T29_gateway_target_uses_gateway_identity_and_sender_application (tests.test_gate1_rca.Gate1Tests.test_T29_gateway_target_uses_gateway_identity_and_sender_application) ... ok
+test_T30_gpr_roundtrip_restores_original_volatile_value (tests.test_gate1_rca.Gate1Tests.test_T30_gpr_roundtrip_restores_original_volatile_value) ... ok
+test_T31_pesig_is_read_once_from_statusb (tests.test_gate1_rca.Gate1Tests.test_T31_pesig_is_read_once_from_statusb) ... ok
+
+----------------------------------------------------------------------
+Ran 31 tests in 0.078s
+
+OK

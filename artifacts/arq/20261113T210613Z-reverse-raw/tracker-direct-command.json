@@ -1,0 +1,55 @@
+{
+  "port": "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0",
+  "firmware": {
+    "sha256": "0490223be444fe074d31a2381177347d192b801245752f0b3368ee1d6c6c4752",
+    "build_id": "55ed3ca7c0cfb37ec1437c2c6d9d4bedef9c065b1ca20a11c030d247254bba3a"
+  },
+  "command": "SEND 48656C6C6F20576F726C64",
+  "request_hex": "53454e4420343836353643364336463230353736463732364336340a",
+  "monitor_reader_running": false,
+  "normal_startup_breaks": 2,
+  "cpu_reset_requested": false,
+  "monotonic_start_ns": 134118615712564,
+  "utc_start": "2026-11-13T21:08:29.345629+00:00",
+  "baseline_reset_state": {
+    "gpior0": 32,
+    "rstfr": 0,
+    "uart_flags": 1
+  },
+  "result": "sent",
+  "accepted_hex": "53454e4420343836353643364336463230353736463732364336340a",
+  "accepted_length": 28,
+  "monotonic_end_ns": 134134149135585,
+  "utc_end": "2026-11-13T21:08:44.879058+00:00",
+  "post_window_error": "TransportError: UPDI response mismatch: expected None, received b''; requested_len=1, actual_len=0, read_timeout=1.0, read_duration_ns=1000405822; last_tx=55 00 1e",
+  "resync_break_count": 2,
+  "resync_cpu_reset_requested": false,
+  "resync_reset_state": {
+    "gpior0": 1,
+    "rstfr": 0,
+    "uart_flags": 0
+  },
+  "resync_uart_flags": 0,
+  "resync_final_newline_consumed": true,
+  "resync_ocd_status_reads": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "resync_output_hex": ""
+}

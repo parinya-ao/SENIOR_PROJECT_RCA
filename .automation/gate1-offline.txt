@@ -22,8 +22,26 @@ test_T21_port_trace_records_exact_write_and_timestamps (tests.test_gate1_rca.Gat
 test_T22_read_only_extended_LDS_uses_verified_sigrow_address (tests.test_gate1_rca.Gate1Tests.test_T22_read_only_extended_LDS_uses_verified_sigrow_address) ... ok
 test_T23_live_cli_help_loads_without_opening_hardware (tests.test_gate1_rca.Gate1Tests.test_T23_live_cli_help_loads_without_opening_hardware) ... ok
 test_T24_part_identity_comes_from_read_signature_not_SIB_label (tests.test_gate1_rca.Gate1Tests.test_T24_part_identity_comes_from_read_signature_not_SIB_label) ... ok
+test_T25_status_output_timeout_is_not_a_low_level_updi_response_error (tests.test_gate1_rca.Gate1Tests.test_T25_status_output_timeout_is_not_a_low_level_updi_response_error) ... ok
+test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes (tests.test_gate1_rca.Gate1Tests.test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes) ... ok
+test_T27_missing_status_identity_is_not_reported_as_runtime_firmware_identity (tests.test_gate1_rca.Gate1Tests.test_T27_missing_status_identity_is_not_reported_as_runtime_firmware_identity) ... ok
+test_T28_reenable_uart_preserves_pending_rx_flag_and_reads_back (tests.test_gate1_rca.Gate1Tests.test_T28_reenable_uart_preserves_pending_rx_flag_and_reads_back) ... ok
+test_T29_gateway_target_uses_gateway_identity_and_sender_application (tests.test_gate1_rca.Gate1Tests.test_T29_gateway_target_uses_gateway_identity_and_sender_application) ... ok
+test_T30_gpr_roundtrip_restores_original_volatile_value (tests.test_gate1_rca.Gate1Tests.test_T30_gpr_roundtrip_restores_original_volatile_value) ... ok
+test_T31_pesig_is_read_once_from_statusb (tests.test_gate1_rca.Gate1Tests.test_T31_pesig_is_read_once_from_statusb) ... ok
+test_T32_halted_gpr_probe_resumes_cpu_after_roundtrip (tests.test_gate1_rca.Gate1Tests.test_T32_halted_gpr_probe_resumes_cpu_after_roundtrip) ... ok
+test_T33_store_data_space_byte_uses_16_bit_address_and_strict_acks (tests.test_gate1_rca.Gate1Tests.test_T33_store_data_space_byte_uses_16_bit_address_and_strict_acks) ... ok
+test_T34_roundtrip_gpr16_restores_the_original_value (tests.test_gate1_rca.Gate1Tests.test_T34_roundtrip_gpr16_restores_the_original_value) ... ok
+test_T35_address_mode_probe_accepts_cross_mode_readback_only_when_restored (tests.test_gate1_rca.Gate1Tests.test_T35_address_mode_probe_accepts_cross_mode_readback_only_when_restored) ... ok
+test_T36_wide_gpr_counterfactual_uses_16_bit_sts_only_for_gprs (tests.test_gate1_rca.Gate1Tests.test_T36_wide_gpr_counterfactual_uses_16_bit_sts_only_for_gprs) ... ok
+test_T37_reader_idle_wait_is_bounded (tests.test_gate1_rca.Gate1Tests.test_T37_reader_idle_wait_is_bounded) ... ok
+test_T38_preservation_report_separates_explicit_host_fix_from_other_changes (tests.test_gate1_rca.Gate1Tests.test_T38_preservation_report_separates_explicit_host_fix_from_other_changes) ... ok
+test_T39_startup_block_discards_and_preserves_partial_prefix_before_boot (tests.test_gate1_rca.Gate1Tests.test_T39_startup_block_discards_and_preserves_partial_prefix_before_boot) ... ok
+test_T40_controlled_cpu_reset_is_one_reset_followed_by_ocd_rekey (tests.test_gate1_rca.Gate1Tests.test_T40_controlled_cpu_reset_is_one_reset_followed_by_ocd_rekey) ... ok
+test_T41_resume_helper_only_runs_a_confirmed_stopped_cpu (tests.test_gate1_rca.Gate1Tests.test_T41_resume_helper_only_runs_a_confirmed_stopped_cpu) ... ok
+test_T42_deadline_covers_twenty_measured_status_blocks (tests.test_gate1_rca.Gate1Tests.test_T42_deadline_covers_twenty_measured_status_blocks) ... ok
 
 ----------------------------------------------------------------------
-Ran 24 tests in 0.076s
+Ran 42 tests in 0.087s
 
 OK

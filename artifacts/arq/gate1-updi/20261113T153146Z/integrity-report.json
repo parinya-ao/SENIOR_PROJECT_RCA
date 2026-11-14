@@ -1,0 +1,23 @@
+{
+  "evidence_integrity": "PASS",
+  "file_count": 33,
+  "hashed_count": 31,
+  "hash_mismatches": [],
+  "sha256_manifest_hash": "ff8e14473f8bb54ffe89df97948d5a242bd288d27edd3dedf2326c4dd107462a",
+  "excluded_hash_files": [
+    "sha256.json",
+    "integrity-report.json"
+  ],
+  "acquisition_events_parsed": 14,
+  "transport_trace_records": 24388,
+  "status_records": 1,
+  "status_records_match_attempts": true,
+  "first_failure_present": true,
+  "original_1553_changed": [],
+  "incident_bundle_hash_mismatches": 0,
+  "local_report_links": "PASS",
+  "git_diff_check": true,
+  "status_payload_raw_hex": "5354415455530a",
+  "monitor_stdout_bytes": 0,
+  "evidence_completeness": "Complete for the single failed STATUS transaction; no further attempts were made."
+}

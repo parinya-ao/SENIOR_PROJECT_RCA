@@ -1,6 +1,8 @@
 {
-  "count": 0,
+  "successful_status_count": 0,
   "minimum_ms": null,
   "median_ms": null,
-  "maximum_ms": null
+  "maximum_ms": null,
+  "failed_status_transaction": 1,
+  "failed_duration_ms": 120004.03887
 }

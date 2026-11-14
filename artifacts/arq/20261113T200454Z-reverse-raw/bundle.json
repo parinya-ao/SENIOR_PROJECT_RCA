@@ -1,0 +1,211 @@
+{
+  "acquisition": "updi-live",
+  "synthetic": false,
+  "phase": "rf-trial",
+  "firmware": {
+    "sender": {
+      "sha256": "280878676e31cb35d8a54b5efc0285db019ff58bc3ea92359b42d53930db7fc2",
+      "build_id": "0ee4a32c28b9fd9f57f1a6cc6ec6648e1e2091338308e2631a41be4cd4234dd3"
+    },
+    "receiver": {
+      "sha256": "02d799e44c9df2c4bf84bac761e47501b70656c7397ab5649f5ba1647c7f8096",
+      "build_id": "2becf83539f5a2fbf61efa3555747e26853219a92a8c41899708a4cef1581cbc"
+    }
+  },
+  "failure_reason": "incomplete evidence: capture deadline",
+  "cleanup_error": "receiver: monitor disconnected; receiver monitor exited",
+  "events": [
+    {
+      "t": "226",
+      "e": "IDENTITY",
+      "s": "0",
+      "build": "2becf83539f5a2fbf61efa3555747e26853219a92a8c41899708a4cef1581cbc",
+      "config": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+      "role": "receiver",
+      "host_ns": 130436057859690
+    },
+    {
+      "t": "64630",
+      "e": "IDENTITY",
+      "s": "0",
+      "build": "0ee4a32c28b9fd9f57f1a6cc6ec6648e1e2091338308e2631a41be4cd4234dd3",
+      "config": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+      "role": "sender",
+      "host_ns": 130436074387546
+    },
+    {
+      "t": "226",
+      "e": "RAW_STATUS",
+      "s": "0",
+      "rc": "0",
+      "flags": "0",
+      "overflow": "0",
+      "role": "receiver",
+      "host_ns": 130436503530394
+    },
+    {
+      "t": "64631",
+      "e": "RAW_STATUS",
+      "s": "0",
+      "rc": "0",
+      "flags": "0",
+      "overflow": "0",
+      "role": "sender",
+      "host_ns": 130436540706424
+    },
+    {
+      "t": "227",
+      "e": "RAW_CONFIG",
+      "s": "0",
+      "bytes": "1289E4C000F084727404000812271D00000023C30A0009",
+      "role": "receiver",
+      "host_ns": 130437217563258
+    },
+    {
+      "t": "64631",
+      "e": "RAW_CONFIG",
+      "s": "0",
+      "bytes": "1289E4C000F084727404000812271D00000023C30A0009",
+      "role": "sender",
+      "host_ns": 130437271171169
+    },
+    {
+      "t": "67433",
+      "e": "RAW_RX_ACTIVE",
+      "s": "0",
+      "bytes": "128DE4C000F084727404000812271D00000023C30A0009",
+      "role": "sender",
+      "host_ns": 130438113595577
+    },
+    {
+      "t": "67436",
+      "e": "RAW_RX_READY",
+      "s": "0",
+      "rc": "0",
+      "flags": "0",
+      "headers": "0",
+      "packets": "0",
+      "mode": "141",
+      "stat": "4",
+      "hop": "0",
+      "seen": "0",
+      "overflow": "0",
+      "role": "sender",
+      "host_ns": 130439043127936
+    },
+    {
+      "t": "82433",
+      "e": "RAW_RX_TIMEOUT",
+      "s": "0",
+      "rc": "0",
+      "flags": "0",
+      "headers": "0",
+      "packets": "0",
+      "mode": "141",
+      "stat": "4",
+      "hop": "0",
+      "seen": "0",
+      "overflow": "0",
+      "role": "sender",
+      "host_ns": 130453327026331
+    },
+    {
+      "t": "82434",
+      "e": "RAW_STANDBY",
+      "s": "0",
+      "rc": "0",
+      "flags": "0",
+      "overflow": "0",
+      "role": "sender",
+      "host_ns": 130453803064690
+    }
+  ],
+  "commands": [
+    {
+      "role": "sender",
+      "text": "RX",
+      "host_ns": 130437271884506
+    },
+    {
+      "role": "receiver",
+      "text": "SEND 48656C6C6F20576F726C64",
+      "host_ns": 130439043321480
+    },
+    {
+      "role": "sender",
+      "text": "X",
+      "host_ns": 130458416103962
+    }
+  ],
+  "monitor_exits": [
+    {
+      "role": "receiver",
+      "exit_code": 1
+    }
+  ],
+  "capture_errors": [],
+  "files": {
+    "sender_reverse_raw.hex": "280878676e31cb35d8a54b5efc0285db019ff58bc3ea92359b42d53930db7fc2",
+    "sender_reverse_raw.elf": "2013d62930527a79c72fe5f87399b6a3ebe9bc5df433a096be42403eb0058bbc",
+    "sender_reverse_raw-preflight-gateway-owners.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sender_reverse_raw-preflight-gateway-owners.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sender_reverse_raw-preflight-receiver-owners.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sender_reverse_raw-preflight-receiver-owners.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sender_reverse_raw-programmer-version.stdout.log": "38efa5418b34b5715a116d3f75f544a17d2aab94ae6cd47b5e0d759e6db5df7f",
+    "sender_reverse_raw-programmer-version.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sender_reverse_raw-before-page-write-signature.bin": "5c7d2a6d06a179d44782fce2d945408394c264f62072f1d179a4fd26b6216415",
+    "sender_reverse_raw-before-page-write-sernum.bin": "a0d8e86a65e2268101bf47a39c4fc222a8d3506195d0c5a6eceefe5fc011bd77",
+    "sender_reverse_raw-before-page-write-flash.bin": "c8ea1b6cf08142eb7100acbdae7f3b1068bb80a1a81243591a0b7988bdc9706d",
+    "sender_reverse_raw-before-page-write-eeprom.bin": "9f56cda75fefeab90f6fa5d5ddc9601544b121732c5ecccab32e631060453a5d",
+    "sender_reverse_raw-before-page-write-fuses.bin": "6cb1106d42f21dec7a4295dc49dc211e96f6840198710d5eec571678ba530af7",
+    "sender_reverse_raw-before-page-write-lock.bin": "b4ea62193b54249527763a098eb6d0bb7d97af93761ba80cf14a956461c40347",
+    "sender_reverse_raw-before-page-write.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sender_reverse_raw-before-page-write.stderr.log": "e033c117be8ba985774b19c5bb84aeda083441223726926fc520ae174144683f",
+    "sender_reverse_raw-full-pages.hex": "a45c59360bb17aa3f13e875875f457fad5bdf1c2c83d812605a9353076adbced",
+    "sender_reverse_raw-program-command.json": "fc5479cb5cff1c3206b8093e612bbc7c0a50d6e54abd39e2104394896cf9f05c",
+    "sender_reverse_raw-page-program.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sender_reverse_raw-page-program.stderr.log": "0edd3ab06414083bac5abefd516994943917b7b5de3c4ac1a56c819d7764c12c",
+    "sender_reverse_raw-after-page-write-signature.bin": "5c7d2a6d06a179d44782fce2d945408394c264f62072f1d179a4fd26b6216415",
+    "sender_reverse_raw-after-page-write-sernum.bin": "a0d8e86a65e2268101bf47a39c4fc222a8d3506195d0c5a6eceefe5fc011bd77",
+    "sender_reverse_raw-after-page-write-flash.bin": "fda02167356178bcc73bfabfa775c977b67d5dd37a3f6e75742157f623bc5135",
+    "sender_reverse_raw-after-page-write-eeprom.bin": "9f56cda75fefeab90f6fa5d5ddc9601544b121732c5ecccab32e631060453a5d",
+    "sender_reverse_raw-after-page-write-fuses.bin": "6cb1106d42f21dec7a4295dc49dc211e96f6840198710d5eec571678ba530af7",
+    "sender_reverse_raw-after-page-write-lock.bin": "b4ea62193b54249527763a098eb6d0bb7d97af93761ba80cf14a956461c40347",
+    "sender_reverse_raw-after-page-write.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sender_reverse_raw-after-page-write.stderr.log": "c943de4d0a1a0ae3d3de370482177111968a22da2a17da12825ef59b867beef7",
+    "receiver_reverse_raw.hex": "02d799e44c9df2c4bf84bac761e47501b70656c7397ab5649f5ba1647c7f8096",
+    "receiver_reverse_raw.elf": "170b81c60873a384c2ef8e6aacc4b7c173a9520103c226a7068acde9f43388af",
+    "receiver_reverse_raw-preflight-gateway-owners.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "receiver_reverse_raw-preflight-gateway-owners.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "receiver_reverse_raw-preflight-receiver-owners.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "receiver_reverse_raw-preflight-receiver-owners.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "receiver_reverse_raw-programmer-version.stdout.log": "38efa5418b34b5715a116d3f75f544a17d2aab94ae6cd47b5e0d759e6db5df7f",
+    "receiver_reverse_raw-programmer-version.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "receiver_reverse_raw-before-page-write-signature.bin": "5c7d2a6d06a179d44782fce2d945408394c264f62072f1d179a4fd26b6216415",
+    "receiver_reverse_raw-before-page-write-sernum.bin": "a79bba3a3927ce6747eeb9a39476374ebded161159599c4c189c850dc1834bb5",
+    "receiver_reverse_raw-before-page-write-flash.bin": "ff58011e9317eb2b26de36ded8954adae92de0147bf8131a9cb3477ebc8a2ec7",
+    "receiver_reverse_raw-before-page-write-eeprom.bin": "9f56cda75fefeab90f6fa5d5ddc9601544b121732c5ecccab32e631060453a5d",
+    "receiver_reverse_raw-before-page-write-fuses.bin": "6cb1106d42f21dec7a4295dc49dc211e96f6840198710d5eec571678ba530af7",
+    "receiver_reverse_raw-before-page-write-lock.bin": "b4ea62193b54249527763a098eb6d0bb7d97af93761ba80cf14a956461c40347",
+    "receiver_reverse_raw-before-page-write.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "receiver_reverse_raw-before-page-write.stderr.log": "1bb21ab0e397712bba58e58834e0501a0de20524e5b86a83b6c0b178551f560a",
+    "receiver_reverse_raw-full-pages.hex": "9ed4992d0a54e5b70bafbfacdf0dc329d28410241c7f24319d5a92096a16e472",
+    "receiver_reverse_raw-program-command.json": "4aa40b62708994ef47e73ea7e42dc0610a99952438eb106485d7401a8974146f",
+    "receiver_reverse_raw-page-program.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "receiver_reverse_raw-page-program.stderr.log": "4b00b45d7b405898ae9d111510ef624524fab477026770daae3d1941b45170ef",
+    "receiver_reverse_raw-after-page-write-signature.bin": "5c7d2a6d06a179d44782fce2d945408394c264f62072f1d179a4fd26b6216415",
+    "receiver_reverse_raw-after-page-write-sernum.bin": "a79bba3a3927ce6747eeb9a39476374ebded161159599c4c189c850dc1834bb5",
+    "receiver_reverse_raw-after-page-write-flash.bin": "ec529374c273bfb3ae0b4a107a401492edec08a358891ba8e9fe151e2e8737f8",
+    "receiver_reverse_raw-after-page-write-eeprom.bin": "9f56cda75fefeab90f6fa5d5ddc9601544b121732c5ecccab32e631060453a5d",
+    "receiver_reverse_raw-after-page-write-fuses.bin": "6cb1106d42f21dec7a4295dc49dc211e96f6840198710d5eec571678ba530af7",
+    "receiver_reverse_raw-after-page-write-lock.bin": "b4ea62193b54249527763a098eb6d0bb7d97af93761ba80cf14a956461c40347",
+    "receiver_reverse_raw-after-page-write.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "receiver_reverse_raw-after-page-write.stderr.log": "815f7c59cfdebea73378617df5e270d2e3347ec604541752b2bb3a35cbc1ca4d",
+    "rf-monitor-receiver.command.log": "ed7f53d78356bf8a5889827dda8b74e7e837cae5a8f5ebf170da75cdba80deb4",
+    "rf-monitor-receiver.stdout.log": "eb8a95f787e24055af2b9151046d21593c58aeefc39bb7ea07390b83f934058e",
+    "rf-monitor-receiver.stderr.log": "61e86734ad6a8b96a252a4a25c380c545794a0b2270fe598ef8e293f1e8921e0",
+    "rf-monitor-sender.command.log": "3bb6e24490aaa9e0cae732eb53792d7387b6b470cd0063272fad19b8a79b9e50",
+    "rf-monitor-sender.stdout.log": "0d92b19f26def890066ff1f6a3b7324e63cc9e1cb003ea2301c32b372c701571",
+    "rf-monitor-sender.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

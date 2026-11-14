@@ -137,14 +137,23 @@ class SerialPort:
             echo = self.dev.read(len(data))
             if data != echo:
                 self.failed = True
-                raise TransportError('UPDI echo mismatch')
+                raise TransportError(
+                    f'UPDI echo mismatch: expected {data!r}, received {echo!r}; '
+                    f'expected_len={len(data)}, actual_len={len(echo)}, '
+                    f'read_timeout={self.dev.timeout!r}')
     def recv(self, length, expected=None):
         if self.failed:
             raise TransportError('UPDI connection already failed')
+        read_start_ns = time.monotonic_ns()
         data = self.dev.read(length)
+        read_duration_ns = time.monotonic_ns() - read_start_ns
         if len(data) != length or (expected is not None and data != expected):
             self.failed = True
-            raise TransportError(f'UPDI response mismatch: expected {expected!r}, received {data!r}; last_tx={self.last_tx.hex(" ")}')
+            raise TransportError(
+                f'UPDI response mismatch: expected {expected!r}, received {data!r}; '
+                f'requested_len={length}, actual_len={len(data)}, '
+                f'read_timeout={self.dev.timeout!r}, read_duration_ns={read_duration_ns}; '
+                f'last_tx={self.last_tx.hex(" ")}')
         if TRACING:
             print(f'recv: {data.hex(sep=" ")}')
         return data
@@ -203,7 +212,7 @@ class UPDI:
         byte = self.recv(1)[0]
         return byte
     def sts8(self, address, value):
-        self.instr([STS | (0 << 2), address])
+        self.instr([STS | (1 << 2), address & 0xff, address >> 8])
         self.recv(1, bytes([ACK]))
         self.send([value])
         self.recv(1, bytes([ACK]))
@@ -381,6 +390,10 @@ class Terminal:
                     if self.reader_busy.locked():
                         self.reader_busy.release()  # reader is idle
             except TransportError as cause:
+                self.failure = cause
+                if self.reader_busy.locked():self.reader_busy.release()
+                return
+            except Exception as cause:
                 self.failure = cause
                 if self.reader_busy.locked():self.reader_busy.release()
                 return

@@ -1,0 +1,28 @@
+{
+  "1": {
+    "run": "20261113T151540Z",
+    "status_attempted": 0,
+    "result": "HOST_TOOL_IMPORT_FAILURE_BEFORE_OPEN",
+    "port_opened": false
+  },
+  "2": {
+    "run": "20261113T152039Z",
+    "status_attempted": 0,
+    "result": "RUN_DIRECTORY_PRECREATED"
+  },
+  "3": {
+    "run": "20261113T152318Z",
+    "status_attempted": 0,
+    "result": "HOST_SIB_CLASSIFIER_BUG"
+  },
+  "4": {
+    "run": "20261113T153001Z",
+    "status_attempted": 0,
+    "result": "HARNESS_WAITED_FOR_UNSOLICITED_STARTUP_STATUS; 45s elapsed; identity/Monitor setup passed"
+  },
+  "5": {
+    "run": "20261113T153146Z",
+    "status_attempted": 1,
+    "result": "STATUS_RESPONSE_TIMEOUT; stopped at first failed request"
+  }
+}

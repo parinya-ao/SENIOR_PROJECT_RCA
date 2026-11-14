@@ -1,0 +1,8 @@
+{
+  "standby": true,
+  "rf_transmissions": 0,
+  "firmware": {
+    "sender": "e292a45790a68d588ee97864e309aa16e2510d704ed7c8b4bf1c2baa3912ad52",
+    "receiver": "e80d918bfb5174052cbda07287d7b77574492ee0a0158cf9b06520844e29d50a"
+  }
+}

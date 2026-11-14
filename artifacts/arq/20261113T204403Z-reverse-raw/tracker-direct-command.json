@@ -1,0 +1,22 @@
+{
+  "port": "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0",
+  "firmware": {
+    "sha256": "0490223be444fe074d31a2381177347d192b801245752f0b3368ee1d6c6c4752",
+    "build_id": "55ed3ca7c0cfb37ec1437c2c6d9d4bedef9c065b1ca20a11c030d247254bba3a"
+  },
+  "command": "SEND 48656C6C6F20576F726C64",
+  "request_hex": "53454e4420343836353643364336463230353736463732364336340a",
+  "monitor_reader_running": false,
+  "normal_startup_breaks": 2,
+  "cpu_reset_requested": false,
+  "monotonic_start_ns": 132788693764824,
+  "utc_start": "2026-11-13T20:46:19.423679+00:00",
+  "result": "sent",
+  "accepted_hex": "53454e4420343836353643364336463230353736463732364336340a",
+  "accepted_length": 28,
+  "monotonic_end_ns": 132803949211732,
+  "utc_end": "2026-11-13T20:46:34.679134+00:00",
+  "post_window_error": "TransportError: UPDI response mismatch: expected None, received b''; requested_len=1, actual_len=0, read_timeout=1.0, read_duration_ns=1000628429; last_tx=55 00 1e",
+  "ocd_status_reads": [],
+  "output_hex": ""
+}

@@ -1,0 +1,4 @@
+{
+  "reason": "Corrected report-layer classification after observing the run: a terminal STATUS-output timeout is not a low-level UPDI read timeout. The acquisition source hash used by hardware remains in source-hashes.json. No target access occurred after the first STATUS failure.",
+  "hardware_reopened_after_failure": false
+}

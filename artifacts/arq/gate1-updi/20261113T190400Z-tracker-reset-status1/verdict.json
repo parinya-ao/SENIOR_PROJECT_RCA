@@ -1,0 +1,80 @@
+{
+  "verdict": "MAILBOX_DIAGNOSTIC_FAIL",
+  "classification": "UPDI_RESPONSE_TIMEOUT",
+  "status_attempted": 0,
+  "status_successful": 0,
+  "status_failed": 0,
+  "response_timeouts": 0,
+  "response_mismatches": 1,
+  "monitor_exits": 1,
+  "identity_mismatches": 0,
+  "first_failure": {
+    "timestamp_utc": "2026-11-13T19:04:07.441554+00:00",
+    "timestamp_monotonic_ns": 126656711661939,
+    "transaction_index": null,
+    "operation_name": "SerialPort.recv",
+    "exception_type": "TransportError",
+    "exception_message": "UPDI response mismatch: expected None, received b''; last_tx=55 00 1f",
+    "last_complete_request_hex": "55001f",
+    "expected_response_length": 1,
+    "expected_response_value_hex": null,
+    "actual_rx_hex": "",
+    "actual_rx_length": 0,
+    "previous_successful_transaction": null
+  },
+  "status_response_timeouts": 0,
+  "mailbox_probe": true,
+  "updi_break_count": 3,
+  "synch_count": 69,
+  "startup_break_count": 2,
+  "diagnostic_break_count": 1,
+  "ocd_initialization": "PASS",
+  "cpu_reset_observed": "UNKNOWN",
+  "cpu_reset_operation_count": 1,
+  "controlled_cpu_reset_requested": true,
+  "cpu_resume_count": 1,
+  "rf_transmissions": 0,
+  "flash_operations": 0,
+  "fuse_writes": 0,
+  "mcu_identity": {
+    "mcu_part": "AVR128DA28",
+    "silicon_signature_hex": "1e970a",
+    "serial_hex": "42032240221092150158013400000000",
+    "expected_serial_from_config": "42032240221092150158013400000000"
+  },
+  "firmware_identity": null,
+  "expected_firmware_identity": {
+    "build_id": "06f4f51a7a2e68867378779e34653fa228acc5ec4345bd1761358322eed7f250",
+    "config_hash": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+    "role": "receiver",
+    "signature_hex": "1e970a",
+    "serial_hex": "42032240221092150158013400000000"
+  },
+  "acquisition_duration_s": 1.7742985359946033,
+  "status_duration_s": null,
+  "halt_write_probe": false,
+  "wide_gpr_access": false,
+  "mailbox_snapshots": [
+    {
+      "stage": "after_ocd_before_uart_enable",
+      "monotonic_ns": 126655637369592,
+      "uart_flags": 0,
+      "uart_rx": 0,
+      "app_reset_flags": 0,
+      "rstfr": 32,
+      "ocd_status": 1,
+      "ocd_message_status": 0
+    },
+    {
+      "stage": "after_uart_enable",
+      "monotonic_ns": 126655679653844,
+      "uart_flags": 1,
+      "uart_rx": 0,
+      "app_reset_flags": 0,
+      "rstfr": 32,
+      "ocd_status": 1,
+      "ocd_message_status": 0
+    }
+  ],
+  "host_status_bytes_accepted": []
+}

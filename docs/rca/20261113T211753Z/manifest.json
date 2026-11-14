@@ -1,0 +1,269 @@
+{
+  "branch": "fix/receiver-rfm-rev1-pins",
+  "confirmed_findings": [
+    "Gate1: short STS address width prevented AVR128DA GPR mailbox writes; 16-bit STS correction passed 20/20 STATUS.",
+    "RF: PORF was observed in 2/2 reader-free Tracker SEND trials; the matched 15.029-second no-RF idle control had no reset."
+  ],
+  "documents": [
+    "00_scope_and_baseline.md",
+    "01_hardware_topology.md",
+    "02_incident_timeline.md",
+    "03_source_audit.md",
+    "04_hypothesis_register.md",
+    "05_experiment_plan.md",
+    "06_execution_journal.md",
+    "07_hardware_measurements.md",
+    "08_rf_register_analysis.md",
+    "09_arq_protocol_analysis.md",
+    "10_cross_experiment_comparison.md",
+    "11_root_cause_analysis.md",
+    "12_corrective_actions.md",
+    "13_regression_results.md",
+    "FINAL_RCA.md",
+    "README.md",
+    "experiments/EXPERIMENT_MATRIX.csv",
+    "final_hashes.json",
+    "firmware/README.md",
+    "firmware/focused-test-output.txt",
+    "firmware/full-suite-output.txt",
+    "instruments/README.md",
+    "manifest.json",
+    "original_hashes.json",
+    "plots/README.md",
+    "preservation_summary.json",
+    "radio/README.md",
+    "raw/README.md",
+    "references/SOURCE_LOG.md",
+    "serial/README.md",
+    "updi/README.md"
+  ],
+  "fuse_readback": {
+    "bodcfg": "0x00; ACTIVE/SLEEP mode disabled",
+    "bytes_hex": "0000f0ffffd2f80000ffffffffffffff",
+    "lock_hex": "5cc5c55c",
+    "writes": "none"
+  },
+  "fuses_or_eeprom_written": false,
+  "gate1": {
+    "attempted": 20,
+    "failed": 0,
+    "monitor_exits": 0,
+    "passed": 20,
+    "response_mismatches": 0,
+    "response_timeouts": 0,
+    "run": "artifacts/arq/gate1-updi/20261113T191315Z-tracker-gate1-20-fixed"
+  },
+  "git_head": "cad40a9923f36b76b6531417e2e432bc66467636",
+  "git_state": {
+    "active_src_lib_dirty_rows": 0,
+    "branch": "fix/receiver-rfm-rev1-pins",
+    "commit_created": false,
+    "dirty_rows_at_continuation_start": 513,
+    "dirty_rows_at_finalization": 513,
+    "head": "cad40a9923f36b76b6531417e2e432bc66467636",
+    "legacy_dirty_rows_observed": 19
+  },
+  "hardware_reset_evidence": {
+    "baseline_gprior0": "0x20 (UPDIRF)",
+    "idle_control": "GPIOR0=0x20, RSTFR=0, UART_FLAGS=1 before and after 15.029 seconds",
+    "porf_runs": [
+      "artifacts/arq/20261113T210613Z-reverse-raw/tracker-direct-command.json",
+      "artifacts/arq/20261113T211753Z-reverse-raw/tracker-direct-command.json"
+    ],
+    "post_window_gprior0": "0x01 (PORF)",
+    "post_window_rstfr": "0x00 after DxCore startup clear"
+  },
+  "historical_incidents": {
+    "A": "20261113T121506Z; local Tracker TxDone, Gateway 15 s RX timeout; remains unisolated.",
+    "B": "20261113T123620Z; UPDI empty response before a confirmed TX event; RF inconclusive."
+  },
+  "idle_control": {
+    "duration_ns": 15029488137,
+    "path": "artifacts/arq/20261113T211610Z-updi-idle-control/idle-control.json",
+    "result": "NO_RESET_OBSERVED"
+  },
+  "measurement_gaps": [
+    "Tracker MCU VDD minimum/ripple during SEND",
+    "3V3-LORA at RFM95W during SEND",
+    "PA7/RESET/UPDI synchronized waveform",
+    "independent 915 MHz RF output/reception"
+  ],
+  "original_incident_integrity": [
+    {
+      "files_checked": 64,
+      "files_listed": 64,
+      "hash_mismatches": 0,
+      "manifest": "artifacts/arq/20261113T121506Z-reverse-raw/integrity-sha256.json",
+      "missing": 0,
+      "run": "20261113T121506Z-reverse-raw"
+    },
+    {
+      "files_checked": 90,
+      "files_listed": 90,
+      "hash_mismatches": 0,
+      "manifest": "artifacts/arq/20261113T123620Z-reverse-raw/integrity-sha256.json",
+      "missing": 0,
+      "run": "20261113T123620Z-reverse-raw"
+    },
+    {
+      "files_checked": 67,
+      "files_listed": 67,
+      "hash_mismatches": 0,
+      "manifest": "artifacts/arq/20261113T123837Z-standby/integrity-sha256.json",
+      "missing": 0,
+      "run": "20261113T123837Z-standby"
+    }
+  ],
+  "production_firmware_source_changed": false,
+  "reader_free_summary": {
+    "command_bytes_accepted_each": 28,
+    "gateway_rx_timeouts": 7,
+    "porf_changes": 2,
+    "send_attempts": 7,
+    "tracker_tx_events_captured": 0,
+    "valid_gateway_payloads": 0
+  },
+  "repository": "/home/parinya/university/SENIOR_PROJECT_RCA",
+  "restoration": "artifacts/arq/20261113T212027Z-standby/standby-verified.json",
+  "reverse_raw_bundle_integrity": [
+    {
+      "bundle": "artifacts/arq/20261113T193134Z-reverse-raw/bundle.json",
+      "failure_reason": "monitor exited",
+      "files_listed": 62,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T193134Z-reverse-raw"
+    },
+    {
+      "bundle": "artifacts/arq/20261113T194423Z-reverse-raw/bundle.json",
+      "failure_reason": "incomplete evidence: capture deadline",
+      "files_listed": 62,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T194423Z-reverse-raw"
+    },
+    {
+      "bundle": "artifacts/arq/20261113T200454Z-reverse-raw/bundle.json",
+      "failure_reason": "incomplete evidence: capture deadline",
+      "files_listed": 62,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T200454Z-reverse-raw"
+    },
+    {
+      "bundle": "artifacts/arq/20261113T201155Z-reverse-raw/bundle.json",
+      "failure_reason": "incomplete evidence: capture deadline",
+      "files_listed": 62,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T201155Z-reverse-raw"
+    },
+    {
+      "bundle": "artifacts/arq/20261113T202649Z-reverse-raw/bundle.json",
+      "failure_reason": "Gateway did not receive a valid Tracker packet: RX_TIMEOUT",
+      "files_listed": 60,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T202649Z-reverse-raw"
+    },
+    {
+      "bundle": "artifacts/arq/20261113T203405Z-reverse-raw/bundle.json",
+      "failure_reason": "Gateway did not receive a valid Tracker packet: RX_TIMEOUT",
+      "files_listed": 63,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T203405Z-reverse-raw"
+    },
+    {
+      "bundle": "artifacts/arq/20261113T204403Z-reverse-raw/bundle.json",
+      "failure_reason": "Gateway did not receive a valid Tracker packet: RX_TIMEOUT",
+      "files_listed": 60,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T204403Z-reverse-raw"
+    },
+    {
+      "bundle": "artifacts/arq/20261113T205138Z-reverse-raw/bundle.json",
+      "failure_reason": "Gateway did not receive a valid Tracker packet: RX_TIMEOUT",
+      "files_listed": 61,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T205138Z-reverse-raw"
+    },
+    {
+      "bundle": "artifacts/arq/20261113T205844Z-reverse-raw/bundle.json",
+      "failure_reason": "Gateway did not receive a valid Tracker packet: RX_TIMEOUT",
+      "files_listed": 61,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T205844Z-reverse-raw"
+    },
+    {
+      "bundle": "artifacts/arq/20261113T210613Z-reverse-raw/bundle.json",
+      "failure_reason": "Gateway did not receive a valid Tracker packet: RX_TIMEOUT",
+      "files_listed": 61,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T210613Z-reverse-raw"
+    },
+    {
+      "bundle": "artifacts/arq/20261113T211753Z-reverse-raw/bundle.json",
+      "failure_reason": "Gateway did not receive a valid Tracker packet: RX_TIMEOUT",
+      "files_listed": 61,
+      "hash_mismatches": 0,
+      "missing": 0,
+      "run": "20261113T211753Z-reverse-raw"
+    }
+  ],
+  "run_id": "20261113T211753Z",
+  "source_preservation": {
+    "baseline_file_count": 1553,
+    "changed": [
+      {
+        "baseline_sha256": "399fbacc21a64c201c211262d937612811df01a4ecb3588a9333189d5f02dae0",
+        "current_sha256": "04aa51523dfc2680c68a22f44d53f515895827d15cdcea02cdb103ff7b409c09",
+        "path": "tools/arq_trial.py"
+      },
+      {
+        "baseline_sha256": "fa9c5ffb47c7e23922d8668e3f98426ed9d1b203604a0111e7a1de207962a944",
+        "current_sha256": "26c861a2e8e025d244f67a5342f9558e76081a6e6964aff522ec3bf9b93746b6",
+        "path": "tools/__pycache__/arq_trial.cpython-314.pyc"
+      },
+      {
+        "baseline_sha256": "063f066383954f18fddd48364b442494026f29d1b68ebcbe73ddaf44cfa42ec8",
+        "current_sha256": "b740767ba6daf146254d0e96c69d5089e362cf47a5c7900570199c330b3dd8e0",
+        "path": "third_party/upditerm/upditerm.py"
+      },
+      {
+        "baseline_sha256": "c0104d3ff65db1d4f9e0463f54a4c954dc8174ee69d0bbfc1d0890d48aab79e1",
+        "current_sha256": "c494fe7944ff83e8f911523da12832d73b2ff64418e27da8c0265c84586aef32",
+        "path": "third_party/upditerm/__pycache__/upditerm.cpython-314.pyc"
+      },
+      {
+        "baseline_sha256": "4f550147c12c73f9b173eecd8e236b86d31b81b88544bc20535276a568e9450a",
+        "current_sha256": "45b3dda1b626975ea5a2d6e5b162c0f5c327a8b55d001d260722a441023ae4ac",
+        "path": "generated/lora_manifest.json"
+      },
+      {
+        "baseline_sha256": "a52063d34d3bb30b7c47655fe80a8c357ea70d2b2e9f1f181ad5cb076b476d03",
+        "current_sha256": "67b4c533a020a87e1c85650981c48134416a212bcb3b3bd639907329ebe38928",
+        "path": "generated/arq_manifest.json"
+      },
+      {
+        "baseline_sha256": "f0b5c2c2211c8d67ed15e75e656c7862d086e9245420892a7de62cd9ec582a06",
+        "current_sha256": "06e9d52c1720fca412803e3b07c4b228ff113e303f4c7ab94665319d832bbfb7",
+        "path": "artifacts/arq/session.json"
+      }
+    ],
+    "details": "original_hashes.json and preservation_summary.json",
+    "missing": [],
+    "unchanged": 1546
+  },
+  "verdict": "PARTIALLY_ISOLATED",
+  "verification": {
+    "firmware_builds": "6/6 PlatformIO environments succeeded",
+    "focused_tests": "67 passed",
+    "full_suite": "272 run, 2 skipped, 7 errors because host g++ is unavailable",
+    "ssot": "valid; physical suitability unverified"
+  }
+}

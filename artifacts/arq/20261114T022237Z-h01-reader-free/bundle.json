@@ -1,0 +1,40 @@
+{
+  "acquisition": "updi-live",
+  "synthetic": false,
+  "experiment": "H01",
+  "direction": "Gateway DATA TX -> Tracker RX/ACK TX -> Gateway RX",
+  "tracker_output_reader": false,
+  "config_hash": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0",
+  "firmware": {},
+  "tracker_commands": [],
+  "tracker_output": {},
+  "tracker_reset_before": null,
+  "tracker_reset_after": null,
+  "classification": "INCOMPLETE_CAPTURE",
+  "failure_type": "ValueError",
+  "failure_reason": "UPDI ports owned",
+  "result": {
+    "gateway_data_tx_done": null,
+    "tracker_data_rx": null,
+    "tracker_data_accepted": null,
+    "tracker_ack_tx_started": null,
+    "tracker_ack_tx_done": null,
+    "gateway_ack_rx": null,
+    "gateway_terminal": null,
+    "reset_state_before": null,
+    "reset_state_after": null,
+    "porf_before": null,
+    "porf_after": null,
+    "porf_transition_to_set": null,
+    "malformed_frames": []
+  },
+  "events": [],
+  "monitor_exits": [],
+  "capture_errors": [],
+  "files": {
+    "h01-reader-free-preflight-gateway-owners.stdout.log": "c82826bc7364a44657f91231b1a0e882e0c2cc1082e92b950a1216403aba329d",
+    "h01-reader-free-preflight-gateway-owners.stderr.log": "c02c607112b91461a09129300646bb5788bb7940751b888cb89a89a8a706e005",
+    "h01-reader-free-preflight-receiver-owners.stdout.log": "fbdbaba20dbe95882cd6ca65430a7afd92d2db088f962706e4b0e80e8e4e8719",
+    "h01-reader-free-preflight-receiver-owners.stderr.log": "81a21673f42760de5c28bc6b376412c67e36fe109ae136f66bf058158aad7bc5"
+  }
+}

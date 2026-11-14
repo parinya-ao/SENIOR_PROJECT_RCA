@@ -1,0 +1,13 @@
+{
+  "repository_root": "/home/parinya/university/SENIOR_PROJECT_RCA",
+  "requested_legacy_path": "/home/parinya/university/iwing-tracker/gateway-lora/loraboard",
+  "git_head": "cad40a9923f36b76b6531417e2e432bc66467636",
+  "branch": "fix/receiver-rfm-rev1-pins",
+  "preexisting_dirty_entries": 541,
+  "python": "3.14.10 (main, Oct 26 2026, 00:00:00) [GCC 16.2.1 20260819 (Red Hat 16.2.1-2)]",
+  "run_directory": "/home/parinya/university/SENIOR_PROJECT_RCA/artifacts/arq/gate1-updi/20261113T192250Z-gateway-fixed-status1",
+  "target": "gateway",
+  "firmware_role": "sender",
+  "controlled_cpu_reset_requested": true,
+  "utc": "2026-11-13T19:22:54.935669+00:00"
+}

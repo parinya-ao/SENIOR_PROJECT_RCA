@@ -1,0 +1,10 @@
+{
+  "utc": "2026-11-13T17:01:25.282528+00:00",
+  "port": "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0",
+  "fuser_returncode": 1,
+  "fuser_stdout": "",
+  "fuser_stderr": "",
+  "udev_returncode": 0,
+  "serial_port_reopened": false,
+  "interpretation": "read-only OS check; fuser return1 means no process owner"
+}
