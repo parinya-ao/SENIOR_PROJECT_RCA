@@ -437,3 +437,8 @@ $RECYCLE.BIN/
 *.json
 *.jsonl
 *.hex
+artifacts/
+*.elf
+.agents/
+.automation/
+.claude/

@@ -1,9 +1,0 @@
-sender.c:4:6:arq_due	2	static
-sender.c:5:6:arq_sender_init	2	static
-sender.c:6:6:arq_sender_active	2	static
-sender.c:9:6:arq_sender_arm	13	static
-sender.c:25:6:arq_sender_request	19	static
-sender.c:42:6:arq_sender_tx_done	2	static
-sender.c:48:6:arq_sender_control	10	static
-sender.c:69:6:arq_sender_poll	8	static
-sender.c:84:6:arq_sender_stop	2	static

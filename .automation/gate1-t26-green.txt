@@ -1,6 +1,0 @@
-test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes (tests.test_gate1_rca.Gate1Tests.test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes) ... ok
-
-----------------------------------------------------------------------
-Ran 1 test in 0.000s
-
-OK
