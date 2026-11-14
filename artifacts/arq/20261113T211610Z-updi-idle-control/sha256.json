@@ -1,8 +1,0 @@
-{
-  "idle-control-gateway-owners.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "idle-control-gateway-owners.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "idle-control-receiver-owners.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "idle-control-receiver-owners.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "idle-control.json": "e8ee5ffd5cc89e4e13463c2c128fc67d932b6a1f951a0c0f7c432f0dff9c687a",
-  "idle_control.py": "316822562389f2869dcea0a13b6c5e45db8fa73273a30fc65a7789c83e6aa09d"
-}

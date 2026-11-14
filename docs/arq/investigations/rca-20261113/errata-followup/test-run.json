@@ -1,5 +1,0 @@
-{
-  "command": "uv run python -m unittest discover -v -s tests",
-  "exit_code": 0,
-  "elapsed_s": 11.45
-}

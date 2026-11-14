@@ -1,9 +1,0 @@
-{
-  "schema_version": 1,
-  "experiment": {"mode": "single_packet", "radio_inventory": null, "antenna_inventory": null},
-  "protocol": {"version": 2, "encoding": "existing_radio_header", "sender_address": 0, "receiver_address": 1, "data_type": 8, "ack_type": 3, "nack_type": 9, "sequence_bits": 8, "sequence": 1, "payload": "hello world"},
-  "sender_board": {"mcu": "AVR128DA28", "bootsize": 0, "codesize": 0, "bodcfg": 0, "image_start": 0, "image_end_exclusive": 130048},
-  "receiver_board": {"mcu": "AVR128DA28", "bootsize": 0, "codesize": 0, "bodcfg": 0, "image_start": 0, "image_end_exclusive": 130048, "pins": {"sd_cs": "PC3", "led1": "PA6", "led2": "PA5", "gps_enable": "PD5", "sd_enable": "PD6", "sd_detect": "PA4"}},
-  "timeouts": {"ack_ms": 3000, "tx_ms": 3000},
-  "retries": {"max_retries": 3}
-}

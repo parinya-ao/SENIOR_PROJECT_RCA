@@ -1,6 +1,0 @@
-{
-  "tools/rca/gate1_live.py": "230851ac44e97a6a4693a5746feb351853f1c57582e17b22c8a875028ebe2de2",
-  "tools/rca/gate1.py": "2790d2cf53efc2a2bf91cd996eb94441db2a89dd3efcf619b09195603427c93e",
-  "tests/test_gate1_rca.py": "c4299a83ad8db858105b11097115900c37625ed86b982dcf5b0fa2484c077b2c",
-  "docs/arq/investigations/rca-20261113/GATE1_LIVE_REPORT.md": "0d737d1074dbac476a1894f7ebd7f42339339014aedbfc85a0f6632570fdc7e4"
-}

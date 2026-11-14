@@ -1,3 +1,0 @@
-{"event": "PREFLIGHT_AUDIT_RECORDED", "utc": "2026-11-13T14:28:47.407406+00:00", "host_monotonic_ns": 110136677501130, "host_process_id": 989411, "details": {"safe_path": false}}
-{"event": "LIVE_EXECUTION_BLOCKED", "utc": "2026-11-13T14:28:47.407425+00:00", "host_monotonic_ns": 110136677515132, "host_process_id": 989411, "details": {"reason": "UNSAFE_COMMAND_PATH", "attempted": 0}}
-{"event": "OFFLINE_TEST_RESULT_RECORDED", "utc": "2026-11-13T14:28:47.407433+00:00", "host_monotonic_ns": 110136677522143, "host_process_id": 989411, "details": {"focused_run": 18, "focused_passed": 18, "full_run": 250, "full_passed": 249, "full_skipped": 1}}
