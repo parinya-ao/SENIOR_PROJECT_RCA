@@ -3,7 +3,6 @@ import json
 import unittest
 from unittest.mock import patch
 
-
 evidence = importlib.import_module("tools.device_detection.evidence")
 identity = importlib.import_module("tools.device_detection.firmware_identity")
 detector = importlib.import_module("tools.device_detection.role_detector")
@@ -25,10 +24,19 @@ class DetectionIntegrationTests(unittest.TestCase):
         exit_code = require(self, output, "exit_code_for")
         if any(x is None for x in (usb_cls, classify, encode, exit_code)):
             return
-        result = classify([usb_cls(device_node="/dev/ttyUSB1",
-                                   real_device_path="/dev/ttyUSB1",
-                                   usb_path="usb-0:4:1.0", vid="10c4", pid="ea60",
-                                   serial_number="0001", present=True)])
+        result = classify(
+            [
+                usb_cls(
+                    device_node="/dev/ttyUSB1",
+                    real_device_path="/dev/ttyUSB1",
+                    usb_path="usb-0:4:1.0",
+                    vid="10c4",
+                    pid="ea60",
+                    serial_number="0001",
+                    present=True,
+                )
+            ]
+        )
         payload = json.loads(encode(result))
         self.assertEqual(payload["status"], "UNKNOWN")
         self.assertEqual(payload["devices"][0]["role"], "UNKNOWN")
@@ -42,8 +50,12 @@ class DetectionIntegrationTests(unittest.TestCase):
         render = require(self, output, "format_text")
         if any(x is None for x in (usb_cls, probe_cls, classify, render)):
             return
-        dev = usb_cls(device_node="/dev/ttyUSB0", real_device_path="/dev/ttyUSB0",
-                      usb_path="usb-0:1:1.0", present=True)
+        dev = usb_cls(
+            device_node="/dev/ttyUSB0",
+            real_device_path="/dev/ttyUSB0",
+            usb_path="usb-0:1:1.0",
+            present=True,
+        )
         result = classify([dev], {dev.device_node: probe_cls(mcu_identity="AVR128DA28")})
         text = render(result, explain=True)
         self.assertIn("UNKNOWN", text)
@@ -51,17 +63,28 @@ class DetectionIntegrationTests(unittest.TestCase):
 
     def test_passive_scan_does_not_open_a_serial_port(self):
         cli = importlib.import_module("tools.detect_devices")
-        inventory_cls = require(self, importlib.import_module("tools.device_detection.usb_inventory"),
-                                "InventoryResult")
+        inventory_cls = require(
+            self, importlib.import_module("tools.device_detection.usb_inventory"), "InventoryResult"
+        )
         usb_cls = require(self, evidence, "USBDevice")
         if inventory_cls is None or usb_cls is None:
             return
         args = cli.build_parser().parse_args(["--scan"])
-        inventory = inventory_cls((usb_cls(device_node="/dev/ttyUSB0",
-                                           real_device_path="/dev/ttyUSB0",
-                                           usb_path="usb-1", present=True),), (), {})
-        with patch.object(cli, "_probe_device",
-                          side_effect=AssertionError("passive scan opened UPDI")):
+        inventory = inventory_cls(
+            (
+                usb_cls(
+                    device_node="/dev/ttyUSB0",
+                    real_device_path="/dev/ttyUSB0",
+                    usb_path="usb-1",
+                    present=True,
+                ),
+            ),
+            (),
+            {},
+        )
+        with patch.object(
+            cli, "_probe_device", side_effect=AssertionError("passive scan opened UPDI")
+        ):
             result, _ = cli._scan(args, inventory_fn=lambda: inventory)
         self.assertEqual(result.devices[0].role, "UNKNOWN")
 
@@ -71,12 +94,32 @@ class DetectionIntegrationTests(unittest.TestCase):
         if scan is None or code is None:
             return
         self.assertEqual(code(scan([])), 2)
-        self.assertEqual(code(type("Result", (), {
-            "status": "CONFLICT", "devices": (),
-        })()), 3)
-        self.assertEqual(code(type("Result", (), {
-            "status": "ERROR", "devices": (),
-        })()), 4)
+        self.assertEqual(
+            code(
+                type(
+                    "Result",
+                    (),
+                    {
+                        "status": "CONFLICT",
+                        "devices": (),
+                    },
+                )()
+            ),
+            3,
+        )
+        self.assertEqual(
+            code(
+                type(
+                    "Result",
+                    (),
+                    {
+                        "status": "ERROR",
+                        "devices": (),
+                    },
+                )()
+            ),
+            4,
+        )
 
     def test_cli_refuses_target_probe_without_hardware_safety_assertion(self):
         cli = importlib.import_module("tools.detect_devices")
@@ -92,14 +135,15 @@ class DetectionIntegrationTests(unittest.TestCase):
         if sib is None or flash is None:
             return
         calls = []
+
         def runner(*args, **kwargs):
             calls.append(args[0])
             raise AssertionError("blocked probe must not run a command")
+
         with self.assertRaises(PermissionError):
             sib("/dev/fake", hardware_safe=False, command_runner=runner)
         with self.assertRaises(PermissionError):
-            flash("/dev/fake", hardware_safe=False, flash_size=1024,
-                  command_runner=runner)
+            flash("/dev/fake", hardware_safe=False, flash_size=1024, command_runner=runner)
         self.assertEqual(calls, [])
 
     def test_occupied_port_is_not_opened_for_an_updi_probe(self):
@@ -107,11 +151,14 @@ class DetectionIntegrationTests(unittest.TestCase):
         if probe is None:
             return
         opened = []
+
         def runner(argv, **kwargs):
             return type("Completed", (), {"returncode": 0, "stdout": "", "stderr": "python 42"})()
+
         def pio(argv, **kwargs):
             opened.append(argv)
             raise AssertionError("busy device must not be opened")
+
         result = probe("/dev/fake", hardware_safe=True, command_runner=runner, popen=pio)
         self.assertEqual(result.access_status, "INACCESSIBLE")
         self.assertEqual(opened, [])
@@ -121,15 +168,20 @@ class DetectionIntegrationTests(unittest.TestCase):
         if probe is None:
             return
         seen = []
+
         class Process:
             returncode = 0
+
             def communicate(self, timeout=None):
                 return "AVR128DA28 SIB", ""
+
         def pio(argv, **kwargs):
             seen.append(argv)
             return Process()
+
         def runner(argv, **kwargs):
             return type("Completed", (), {"returncode": 1, "stdout": "", "stderr": ""})()
+
         result = probe("/dev/fake", hardware_safe=True, command_runner=runner, popen=pio)
         self.assertEqual(result.mcu_identity, "AVR128DA28")
         self.assertEqual(result.firmware_identity, None)
@@ -141,18 +193,23 @@ class DetectionIntegrationTests(unittest.TestCase):
         if probe is None:
             return
         seen = []
+
         class Process:
             returncode = 0
+
             def communicate(self, timeout=None):
                 return "", ""
+
         def pio(argv, **kwargs):
             seen.extend(argv)
             log_path = argv[argv.index("-l") + 1]
             with open(log_path, "wb") as stream:
                 stream.write(b"[SENDER] ID V1 sender Nov  6 2026 05:00:00 CRC=15\r\n")
             return Process()
+
         def runner(argv, **kwargs):
             return type("Completed", (), {"returncode": 1, "stdout": "", "stderr": ""})()
+
         result = probe("/dev/fake", hardware_safe=True, command_runner=runner, popen=pio)
         self.assertEqual(result.firmware_status, "OK")
         self.assertIsNotNone(result.firmware_identity)

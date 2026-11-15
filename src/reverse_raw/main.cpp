@@ -85,8 +85,12 @@ void setup() {
     board_ssot_init();delay(10);
     if(!SPI.swap(ARQ_SPI_ROUTE))return;
     SPI.begin();radio.reset();
-    int16_t rc=radio.begin(915.0f,125.0f,7,5,0x12,2,8,0);
-    if(!rc)rc=radio.setOutputPower(2,false);
+    int16_t rc=radio.begin(ARQ_FREQUENCY_HZ/1000000.0f,ARQ_BANDWIDTH_KHZ,
+        ARQ_SPREADING_FACTOR,ARQ_CODING_RATE,ARQ_SYNC_WORD,ARQ_TX_POWER_DBM,
+        ARQ_PREAMBLE_SYMBOLS,0);
+    // RadioLib leaves the reset-default LF bank selected; clear only bit 3 for 915 MHz.
+    if(!rc)rc=module.SPIsetRegValue(RADIOLIB_SX127X_REG_OP_MODE,0,3,3);
+    if(!rc)rc=radio.setOutputPower(ARQ_TX_POWER_DBM,false);
     if(!rc)rc=radio.explicitHeader();
     if(!rc)rc=radio.setCRC(true);
     if(!rc)rc=radio.invertIQ(false);

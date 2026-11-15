@@ -5,6 +5,7 @@
 #include "arq.h"
 #include "generated/board_ssot.h"
 #include "diagnostics.h"
+#include "radio_only.h"
 
 static Module module(board_ssot.cs,board_ssot.irq,board_ssot.rst,board_ssot.dio1,
     SPI,SPISettings(ARQ_SPI_HZ,MSBFIRST,SPI_MODE0));
@@ -21,16 +22,17 @@ static uint16_t fault_stride,fault_budget;
 static char command_buffer[80];
 static uint8_t command_length;
 static int16_t startup_status;
+static uint8_t status_next;
 
 static uint32_t session() {
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
     return sender.session;
 #else
     return receiver.session;
 #endif
 }
 static uint16_t sequence() {
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
     return sender.frame.sequence;
 #else
     return receiver.last_sequence;
@@ -51,7 +53,7 @@ static void frame_event(const char* name,const uint8_t* bytes,size_t length,int1
 }
 static void register_state(const char* name) {
     static const uint8_t addresses[]={0x01,0x06,0x07,0x08,0x09,0x4d,0x1d,0x1e,
-        0x26,0x39,0x33,0x3b,0x12,0x13,0x10,0x1b,0x40,0x11,0x18,0x31};
+        0x26,0x39,0x33,0x3b,0x12,0x13,0x10,0x1b,0x40,0x11,0x18,0x31,0x42,0x20,0x21,0x41};
     uint8_t values[sizeof addresses];
     for(uint8_t i=0;i<sizeof addresses;i++){
         SPI.beginTransaction(SPISettings(ARQ_SPI_HZ,MSBFIRST,SPI_MODE0));
@@ -77,32 +79,52 @@ static void discard(const char* name,const arq_frame* f,uint8_t reason) {
         f->src,f->dst,(unsigned long)f->session,f->sequence,f->type);
 }
 static void status() {
-    event("BOOT",startup_status,reset_flags);
-    char* identity=log_slot();if(identity)snprintf(identity,192,"A t=%lu e=IDENTITY s=%08lX build=%s config=%s\n",
+    if(!status_next)status_next=1;
+}
+static void status_flush() {
+    // Yield between status lines so an RX/response burst retains the bounded logger.
+    if(!status_next || log_count)return;
+    switch(status_next++){
+    case 1: event("BOOT",startup_status,reset_flags);break;
+    case 2:
+#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC)
+        event("RADIO_ONLY",startup_status,1);
+#endif
+        break;
+    case 3: {
+        char* identity=log_slot();if(identity)snprintf(identity,192,"A t=%lu e=IDENTITY s=%08lX build=%s config=%s\n",
         (unsigned long)millis(),(unsigned long)session(),LORA_BUILD_ID,ARQ_CONFIG_HASH);
-    char* out=log_slot();if(out)snprintf(out,192,
+        break;
+    }
+    case 4: {
+        char* out=log_slot();if(out)snprintf(out,192,
         "A t=%lu e=STATUS s=%08lX app=%lu dup=%lu gen=%lu sup=%lu att=%lu done=%lu crc=%lu overflow=%lu ready=%u\n",
         (unsigned long)millis(),(unsigned long)session(),(unsigned long)receiver.deliveries,
         (unsigned long)receiver.duplicates,(unsigned long)generated,(unsigned long)suppressed,
         (unsigned long)attempted,(unsigned long)completed,(unsigned long)crc_errors,
         (unsigned long)log_overflow,ready);
-    event("RESULT",sender.result,sender.state);
-    event("RTT_LAST",0,sender.rtt_last);
-    event("RTT_MIN",0,sender.rtt_min);event("RTT_MAX",0,sender.rtt_max);
-    event("RTT_COUNT",0,sender.rtt_count);
-    event("RX_DONE_COUNT",0,rx_done);event("DECODE_ERRORS",0,decode_errors);event("CONTROL_REJECTS",0,control_rejects);
-    if(ready){
-        // Read-only register evidence separates RX mode/configuration from RF path failure.
-        register_state("REG");
+        break;
     }
-    event("STATUS_END",0,log_overflow);
+    case 5: event("RESULT",sender.result,sender.state);break;
+    case 6: event("RTT_LAST",0,sender.rtt_last);break;
+    case 7: event("RTT_MIN",0,sender.rtt_min);break;
+    case 8: event("RTT_MAX",0,sender.rtt_max);break;
+    case 9: event("RTT_COUNT",0,sender.rtt_count);break;
+    case 10: event("RX_DONE_COUNT",0,rx_done);break;
+    case 11: event("DECODE_ERRORS",0,decode_errors);break;
+    case 12: event("CONTROL_REJECTS",0,control_rejects);break;
+    case 13:
+        // Read-only register evidence separates RX mode/configuration from RF path failure.
+        if(ready)register_state("REG");break;
+    case 14: event("STATUS_END",0,log_overflow);status_next=0;break;
+    }
 }
 static bool rx_restore() {
     receiver.state=ARQ_RETURNING_TO_RX; // RX restoration is checked after every response/error.
     rx_diagnostics("RX_RESTART",radio.getIRQFlags());
     int16_t rc=radio.startReceive();
     event("RX_READY",rc,0);
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
     if(!rc)register_state("RX_STATE");
 #endif
     receiver.state=ARQ_LISTENING;
@@ -130,7 +152,7 @@ static void command(const char* text) {
         uint32_t value=0;
         for(uint8_t i=4;i<12;i++){int c=unhex(text[i]);if(c<0){event("COMMAND_ERROR",-1,0);return;}value=(value<<4)|c;}
         bool ok=false;uint32_t previous=session();
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
         ok=arq_sender_arm(&sender,value);
 #else
         if(receiver.armed && receiver.session==value)ok=true;
@@ -142,7 +164,7 @@ static void command(const char* text) {
             fault_stride=fault_budget=0;
         }
         if(ok && ready && parked){
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
             if(!sender.stopped)ok=rx_restore();
 #else
             if(!receiver.stopped)ok=rx_restore();
@@ -150,7 +172,7 @@ static void command(const char* text) {
         }
         event(ok?"ARM":"ARM_REJECT",ready?0:-1,value);return;
     }
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
     if(!strncmp(text,"SEND ",5)){
         size_t n=strlen(text+5);uint8_t bytes[32];
         if(n>64 || (n&1)){event("COMMAND_ERROR",-1,0);return;}
@@ -184,6 +206,12 @@ static void command_byte(char c) {
 void onPreMain(){_PROTECTED_WRITE(CPUINT.CTRLA,0);}
 void setup() {
     arq_sender_init(&sender);arq_receiver_init(&receiver);reset_flags=GPR_GPR0;
+#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC) && defined(LORA_ROLE_RECEIVER)
+    if(!radio_only_prepare_tracker()){
+        startup_status=-1;event("SD_PRESENT_BLOCKED",startup_status,0);return;
+    }
+#endif
+    // Tracker board init keeps EN-LORA low through DATA/ACK; omit the diagnostic flag to restore normal setup.
     board_ssot_init();delay(10);
     if(!SPI.swap(ARQ_SPI_ROUTE)){startup_status=-1;return;}SPI.begin();radio.reset();
     bool supported=false;
@@ -198,6 +226,8 @@ void setup() {
     int16_t rc=supported?0:RADIOLIB_ERR_CHIP_NOT_FOUND;
     if(!rc)rc=radio.begin(ARQ_FREQUENCY_HZ/1000000.0f,ARQ_BANDWIDTH_KHZ,
         ARQ_SPREADING_FACTOR,ARQ_CODING_RATE,ARQ_SYNC_WORD,ARQ_TX_POWER_DBM,ARQ_PREAMBLE_SYMBOLS,0);
+    // The 915 MHz profile uses the HF bank; clear only bit 3 and preserve mode bits.
+    if(!rc)rc=module.SPIsetRegValue(RADIOLIB_SX127X_REG_OP_MODE,0,3,3);
     if(!rc)rc=radio.setOutputPower(ARQ_TX_POWER_DBM,false);
     if(!rc)rc=radio.explicitHeader();if(!rc)rc=radio.setCRC(ARQ_CRC_ENABLED);
     if(!rc)rc=radio.invertIQ(ARQ_IQ_INVERTED);
@@ -217,13 +247,14 @@ static void receive(uint32_t now,uint16_t flags) {
     frame_event("RX",bytes,length,(int16_t)(radio.getRSSI()*100),(int16_t)(radio.getSNR()*100));
     arq_frame frame;
     if(!arq_decode(&frame,bytes,length)){++decode_errors;event("DECODE_DISCARD",0,length);rx_restore();return;}
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
     uint8_t reason=0;
     if(frame.type!=ARQ_ACK && frame.type!=ARQ_NACK)reason=1;
     else if(frame.src!=ARQ_RECEIVER_ID || frame.dst!=ARQ_SENDER_ID)reason=2;
     else if(frame.session!=sender.session)reason=3;
     else if(frame.sequence!=sender.sequence)reason=4;
     else if((sender.state!=ARQ_WAITING_ACK && sender.state!=ARQ_BACKOFF) || !sender.attempts)reason=5;
+    else if(arq_due(now,sender.terminal_at))reason=6;
     if(reason){++control_rejects;discard("CONTROL_DISCARD",&frame,reason);}
     arq_sender_control(&sender,&frame,now);if(!rx_restore())fatal(-1);
 #else
@@ -232,6 +263,7 @@ static void receive(uint32_t now,uint16_t flags) {
     ++generated;
     if(receiver.deliveries!=deliveries)event("ACCEPT",0,receiver.deliveries);
     else if(response.type==ARQ_ACK)event("DUPLICATE",0,receiver.duplicates);
+    else event("DATA_REJECT",response.reason,0);
 #if defined(ARQ_TEST_MODE)
     if(receiver.deliveries!=deliveries && fault_budget && fault_stride && receiver.deliveries%fault_stride==0){
         --fault_budget;++suppressed;event("SUPPRESS",0,suppressed);rx_restore();return;
@@ -253,7 +285,7 @@ void loop() {
                 int16_t rc=radio.finishTransmit();radio_tx=false;
                 event(done?"TX_DONE":"TX_TIMEOUT",rc,flags);
                 bool rx=rx_restore();
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
                 arq_sender_tx_done(&sender,millis(),done && !rc && rx);
                 if(sender.state==ARQ_WAITING_ACK)sender.tx_done=now;
 #else
@@ -265,7 +297,7 @@ void loop() {
         // Read matching controls before evaluating deadlines or initiating a retry.
         if(sender.state==ARQ_WAITING_ACK && arq_due(now,sender.retry_at))rx_diagnostics("RX_TIMEOUT",radio.getIRQFlags());
         arq_sender_poll(&sender,now);
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
         bool start=sender.state==ARQ_TRANSMITTING && !radio_tx;
         if(start)wire_length=arq_encode(&sender.frame,wire,sizeof wire);
 #else
@@ -277,7 +309,7 @@ void loop() {
             ++attempted;
             if(rc){
                 int16_t cleanup=radio.finishTransmit();bool rx=rx_restore();event("TX_ERROR",rc,cleanup);
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
                 fatal(cleanup?cleanup:rc);
 #else
                 if(cleanup || !rx)fatal(cleanup?cleanup:rc);
@@ -291,7 +323,7 @@ void loop() {
         event(names[sender.result],0,sender.attempts);
         if(sender.result==ARQ_OK && sender.attempts==1)event("RTT",0,sender.rtt_last);
     }
-#if defined(LORA_ROLE_SENDER)
+#if defined(ARQ_ROLE_SENDER)
     bool stopped=sender.stopped;
 #else
     bool stopped=receiver.stopped;
@@ -301,5 +333,5 @@ void loop() {
         int16_t rc=radio.standby();if(rc)fatal(rc);else parked=true;
         event("STANDBY",rc,0);if(!rc)register_state("PARKED");
     }
-    log_flush();
+    status_flush();log_flush();
 }

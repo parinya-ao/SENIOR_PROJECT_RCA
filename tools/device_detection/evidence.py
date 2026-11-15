@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from typing import Any
 
-
 ROLES = ("SENDER", "RECEIVER")
 
 
@@ -119,9 +118,11 @@ class ScanResult:
     issues: tuple[str, ...] = ()
 
     def _unique_role(self, role: str) -> DetectedDevice | None:
-        matches = [device for device in self.devices
-                   if device.role == role and
-                   device.identity_status == f"VERIFIED_{role}"]
+        matches = [
+            device
+            for device in self.devices
+            if device.role == role and device.identity_status == f"VERIFIED_{role}"
+        ]
         return matches[0] if len(matches) == 1 else None
 
     @property

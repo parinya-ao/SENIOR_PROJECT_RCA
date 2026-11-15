@@ -1,0 +1,37 @@
+test_soak_rerun_marks_a_dead_stage_process_interrupted (test_arq_soak.ArqSoakPlanTests.test_soak_rerun_marks_a_dead_stage_process_interrupted) ... FAIL
+test_soak_rerun_refuses_to_replace_a_live_stage_process (test_arq_soak.ArqSoakPlanTests.test_soak_rerun_refuses_to_replace_a_live_stage_process) ... ERROR
+
+======================================================================
+ERROR: test_soak_rerun_refuses_to_replace_a_live_stage_process (test_arq_soak.ArqSoakPlanTests.test_soak_rerun_refuses_to_replace_a_live_stage_process)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 226, in test_soak_rerun_refuses_to_replace_a_live_stage_process
+    arq_trial.soak_campaign("1-session",confirmed_rf_preflight())
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tools/arq_trial.py", line 1231, in soak_campaign
+    results,progress,starts,completes,span_s=read_run_evidence()
+                                             ~~~~~~~~~~~~~~~~~^^
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tools/arq_trial.py", line 1211, in read_run_evidence
+    results=json.loads(results_path.read_text()) if results_path.is_file() else []
+            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/json/__init__.py", line 345, in loads
+    raise TypeError(f'the JSON object must be str, bytes or bytearray, '
+                    f'not {s.__class__.__name__}')
+TypeError: the JSON object must be str, bytes or bytearray, not MagicMock
+
+======================================================================
+FAIL: test_soak_rerun_marks_a_dead_stage_process_interrupted (test_arq_soak.ArqSoakPlanTests.test_soak_rerun_marks_a_dead_stage_process_interrupted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 250, in test_soak_rerun_marks_a_dead_stage_process_interrupted
+    self.assertEqual(record["history"][0]["status"],"INTERRUPTED")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'RUNNING' != 'INTERRUPTED'
+- RUNNING
++ INTERRUPTED
+
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.018s
+
+FAILED (failures=1, errors=1)

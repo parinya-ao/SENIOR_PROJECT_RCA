@@ -1,0 +1,20 @@
+ARQ core: PASS
+<MagicMock name='campaign()' id='140494798540816'>
+run-dir
+run-dir
+{"standby_evidence": "/tmp/tmp14mz53x6/standby"}
+..........usage: arq_trial [-h] (--campaign | --mvp | --prepare | --validate VALIDATE |
+                 --reverse-raw | --reverse-raw-no-tracker-reader |
+                 --reader-free-h01 | --tracker-rx-idle-control)
+                 [--rf-path-confirmed]
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+usage: arq_trial [-h] (--campaign | --mvp | --prepare | --validate VALIDATE |
+                 --reverse-raw | --reverse-raw-no-tracker-reader |
+                 --reader-free-h01 | --tracker-rx-idle-control)
+                 [--rf-path-confirmed]
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+..........................................................................
+----------------------------------------------------------------------
+Ran 84 tests in 3.172s
+
+OK

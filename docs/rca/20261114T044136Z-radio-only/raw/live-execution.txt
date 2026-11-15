@@ -1,0 +1,23 @@
+receiver 1 STATUS_PASS
+receiver 2 STATUS_PASS
+receiver 3 STATUS_PASS
+receiver 4 STATUS_PASS
+receiver 5 STATUS_PASS
+receiver 6 STATUS_PASS
+receiver 7 STATUS_PASS
+receiver 8 STATUS_PASS
+receiver 9 STATUS_PASS
+receiver 10 STATUS_PASS
+receiver 11 STATUS_PASS
+receiver 12 STATUS_PASS
+receiver 13 STATUS_PASS
+receiver 14 STATUS_PASS
+receiver 15 STATUS_PASS
+receiver 16 STATUS_PASS
+receiver 17 STATUS_PASS
+receiver 18 STATUS_PASS
+receiver 19 STATUS_PASS
+receiver 20 STATUS_PASS
+{"result": "PASS", "status_attempted": 20, "status_passed": 20, "status_failed": 0, "rf_transmissions": 0, "firmware_flashes": 0, "fuse_writes": 0, "first_failure": null, "signature": "1e970a", "mcu_serial": "42032240221092150158013400000000", "firmware_identity": {"role": "receiver", "build_id": "4293e4113a19129f0af7af0c66217dccb6be1a795bcedf952e13be238bee8e91", "config_hash": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0"}, "reset_before": 1, "reset_after": 1, "break_count": 2, "synch_count": 33481, "cpu_resumes": 0, "cpu_resets_requested": 0}
+gateway 1 STATUS_PASS
+{"result": "PASS", "status_attempted": 1, "status_passed": 1, "status_failed": 0, "rf_transmissions": 0, "firmware_flashes": 0, "fuse_writes": 0, "first_failure": null, "signature": "1e970a", "mcu_serial": "42032240221023150129012600000000", "firmware_identity": {"role": "sender", "build_id": "b0b5b359329e362ae3bca7ae487856c1f9eb9c73209d90663f92f3e7b8882ec1", "config_hash": "0572273186b1ecb1dcd5dc9fa09318d42beec2352485eb323b32c2bbe0e309c0"}, "reset_before": 32, "reset_after": 32, "break_count": 2, "synch_count": 3288, "cpu_resumes": 0, "cpu_resets_requested": 0}

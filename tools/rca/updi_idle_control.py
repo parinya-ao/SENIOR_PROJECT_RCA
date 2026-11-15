@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import hashlib
 import json
-from pathlib import Path
 import sys
+from datetime import UTC, datetime
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -21,7 +21,7 @@ from arq_trial import close_updi_without_recovery, read_reset_state, sample_updi
 
 def run() -> Path:
     artifacts = ROOT / "artifacts" / "arq"
-    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-updi-idle-control")
+    run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-updi-idle-control")
     run_dir = artifacts / run_id
     suffix = 0
     while run_dir.exists():
@@ -65,8 +65,9 @@ def run() -> Path:
             else "RESET_STATE_CHANGED"
         )
     except Exception as error:
-        record.update(result="ERROR", exception_type=type(error).__name__,
-                      exception_message=str(error))
+        record.update(
+            result="ERROR", exception_type=type(error).__name__, exception_message=str(error)
+        )
     finally:
         if session and session.updi:
             try:
@@ -75,7 +76,7 @@ def run() -> Path:
             except Exception as error:
                 record["uart_cleanup_error"] = f"{type(error).__name__}: {error}"
             close_updi_without_recovery(session)
-        record["utc_end"] = datetime.now(timezone.utc).isoformat()
+        record["utc_end"] = datetime.now(UTC).isoformat()
         (run_dir / "idle-control.json").write_text(json.dumps(record, indent=2) + "\n")
         (run_dir / "idle_control.py").write_bytes(Path(__file__).read_bytes())
         hashes = {

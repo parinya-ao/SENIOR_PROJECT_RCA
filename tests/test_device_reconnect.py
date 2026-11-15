@@ -2,7 +2,6 @@ import importlib
 import unittest
 from unittest.mock import patch
 
-
 evidence = importlib.import_module("tools.device_detection.evidence")
 identity = importlib.import_module("tools.device_detection.firmware_identity")
 detector = importlib.import_module("tools.device_detection.role_detector")
@@ -18,8 +17,13 @@ def make_device(port, path):
     cls = getattr(evidence, "USBDevice", None)
     if cls is None:
         return None
-    return cls(device_node=port, real_device_path=port, usb_path=path,
-               usb_by_path=(f"/dev/serial/by-path/{path}-port0",), present=True)
+    return cls(
+        device_node=port,
+        real_device_path=port,
+        usb_path=path,
+        usb_by_path=(f"/dev/serial/by-path/{path}-port0",),
+        present=True,
+    )
 
 
 def make_probe(role):
@@ -36,14 +40,16 @@ class DeviceReconnectTests(unittest.TestCase):
         diff = require(self, detector, "diff_device_presence")
         if classify is None or diff is None or make_device("/dev/ttyUSB1", "usb-4") is None:
             return
-        old = classify([make_device("/dev/ttyUSB1", "usb-4")],
-                       {"/dev/ttyUSB1": make_probe("SENDER")})
+        old = classify(
+            [make_device("/dev/ttyUSB1", "usb-4")], {"/dev/ttyUSB1": make_probe("SENDER")}
+        )
         disconnected = classify([])
         events = diff(old.devices, disconnected.devices)
         self.assertEqual(events[0]["event"], "disconnected")
         self.assertEqual(events[0]["identity_status"], "MISSING")
-        reconnected = classify([make_device("/dev/ttyUSB2", "usb-4")],
-                               {"/dev/ttyUSB2": make_probe("SENDER")})
+        reconnected = classify(
+            [make_device("/dev/ttyUSB2", "usb-4")], {"/dev/ttyUSB2": make_probe("SENDER")}
+        )
         events = diff(disconnected.devices, reconnected.devices)
         self.assertIn(events[0]["event"], {"connected", "updated"})
         self.assertEqual(reconnected.devices[0].identity_status, "VERIFIED_SENDER")
@@ -53,19 +59,21 @@ class DeviceReconnectTests(unittest.TestCase):
         classify = require(self, detector, "classify_devices")
         if classify is None or make_device("/dev/ttyUSB0", "usb-1") is None:
             return
-        both = classify([make_device("/dev/ttyUSB0", "usb-1"),
-                         make_device("/dev/ttyUSB1", "usb-4")],
-                        {"/dev/ttyUSB0": make_probe("RECEIVER"),
-                         "/dev/ttyUSB1": make_probe("SENDER")})
-        one = classify([make_device("/dev/ttyUSB1", "usb-4")],
-                       {"/dev/ttyUSB1": make_probe("SENDER")})
+        both = classify(
+            [make_device("/dev/ttyUSB0", "usb-1"), make_device("/dev/ttyUSB1", "usb-4")],
+            {"/dev/ttyUSB0": make_probe("RECEIVER"), "/dev/ttyUSB1": make_probe("SENDER")},
+        )
+        one = classify(
+            [make_device("/dev/ttyUSB1", "usb-4")], {"/dev/ttyUSB1": make_probe("SENDER")}
+        )
         none = classify([])
         removed_receiver = diff = require(self, detector, "diff_device_presence")
         if removed_receiver is None:
             return
         events = diff(both.devices, one.devices)
-        self.assertTrue(any(e["event"] == "disconnected" and
-                            e["identity_status"] == "MISSING" for e in events))
+        self.assertTrue(
+            any(e["event"] == "disconnected" and e["identity_status"] == "MISSING" for e in events)
+        )
         self.assertEqual(len(diff(both.devices, none.devices)), 2)
         self.assertEqual(one.status, "PARTIAL")
         self.assertEqual(one.missing_roles, ("RECEIVER",))
@@ -82,10 +90,15 @@ class DeviceReconnectTests(unittest.TestCase):
 
     def test_reenumerated_usb_instance_with_same_tty_gets_fresh_identity(self):
         cli = importlib.import_module("tools.detect_devices")
-        inventory_cls = require(self, importlib.import_module("tools.device_detection.usb_inventory"),
-                                "InventoryResult")
+        inventory_cls = require(
+            self, importlib.import_module("tools.device_detection.usb_inventory"), "InventoryResult"
+        )
         probe_cls = require(self, evidence, "ProbeEvidence")
-        if inventory_cls is None or probe_cls is None or make_device("/dev/ttyUSB0", "usb-4") is None:
+        if (
+            inventory_cls is None
+            or probe_cls is None
+            or make_device("/dev/ttyUSB0", "usb-4") is None
+        ):
             return
         first = make_device("/dev/ttyUSB0", "usb-4")
         second = importlib.import_module("dataclasses").replace(first, usb_instance="3:19")
@@ -93,8 +106,9 @@ class DeviceReconnectTests(unittest.TestCase):
         inventories = iter([inventory_cls((first,), (), {}), inventory_cls((second,), (), {})])
         args = cli.build_parser().parse_args(["--scan", "--probe-firmware", "--hardware-safe"])
         cache = {}
-        with patch.object(cli, "_probe_device", side_effect=[make_probe("SENDER"),
-                                                              make_probe("RECEIVER")]) as call:
+        with patch.object(
+            cli, "_probe_device", side_effect=[make_probe("SENDER"), make_probe("RECEIVER")]
+        ) as call:
             old, _ = cli._scan(args, inventory_fn=lambda: next(inventories), probe_cache=cache)
             new, _ = cli._scan(args, inventory_fn=lambda: next(inventories), probe_cache=cache)
         self.assertEqual(call.call_count, 2)

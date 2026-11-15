@@ -56,7 +56,8 @@ static void sender(void) {
     assert(!arq_sender_request(&s,hello,11,200,1999));
     assert(arq_sender_request(&s,hello,11,200,2000));
     assert(s.state==ARQ_BACKOFF);arq_sender_poll(&s,3099);assert(s.attempts==0);
-    arq_sender_poll(&s,3100);assert(s.state==ARQ_TRANSMITTING);
+    arq_sender_poll(&s,99+ARQ_SPACING_MS);assert(s.attempts==0);
+    arq_sender_poll(&s,100+ARQ_SPACING_MS);assert(s.state==ARQ_TRANSMITTING);
     arq_sender_tx_done(&s,3150,false);assert(s.result==ARQ_RADIO_ERROR);
     assert(!arq_sender_request(&s,hello,11,4000,2000));
     for(int r=1;r<=2;r++) {
@@ -77,7 +78,7 @@ static void sender(void) {
         uint32_t done=s.last_start+10;arq_sender_tx_done(&s,done,true);
         assert(s.interval==((uint32_t)2000<<(attempt-1)));
         arq_sender_poll(&s,s.retry_at);
-        if(s.state==ARQ_BACKOFF)arq_sender_poll(&s,s.last_start+3000);
+        if(s.state==ARQ_BACKOFF)arq_sender_poll(&s,s.last_start+ARQ_SPACING_MS);
     }
     assert(s.result==ARQ_TIMEOUT_EXHAUSTED && s.rtt_count==0);
     s=fresh(UINT32_MAX-100);arq_sender_tx_done(&s,UINT32_MAX-50,true);
@@ -94,9 +95,88 @@ static void sender(void) {
     s=fresh(0);arq_sender_tx_done(&s,10,true);ack.sequence=0;
     arq_sender_control(&s,&ack,20);assert(arq_sender_arm(&s,0x12345679));
     assert(arq_sender_request(&s,hello,11,30,2000));
-    assert(s.state==ARQ_BACKOFF);arq_sender_poll(&s,3000);
+    assert(s.state==ARQ_BACKOFF);arq_sender_poll(&s,ARQ_SPACING_MS-1);
+    assert(s.state==ARQ_BACKOFF);arq_sender_poll(&s,ARQ_SPACING_MS);
     assert(s.state==ARQ_TRANSMITTING);
 }
+static void absolute_deadline(void) {
+    arq_frame ack=control(ARQ_ACK,0);
+    const uint32_t starts[]={0,UINT32_MAX-100};
+    for(size_t i=0;i<sizeof starts/sizeof starts[0];i++) {
+        for(int offset=-1;offset<=1;offset++) {
+            arq_sender s=fresh(starts[i]);
+            arq_sender_tx_done(&s,starts[i]+10,true);
+            uint32_t now=s.terminal_at+offset;
+            arq_sender_control(&s,&ack,now);
+            if(offset<0) assert(s.state==ARQ_DELIVERED && s.result==ARQ_OK && s.sequence==1);
+            else assert(s.state==ARQ_FAILED && s.result==ARQ_TIMEOUT_EXHAUSTED && s.sequence==0 && s.rtt_count==0);
+        }
+    }
+}
+
+static void ack_matrix(void) {
+    arq_sender s;arq_receiver r;arq_sender_init(&s);arq_receiver_init(&r);
+    assert(arq_sender_arm(&s,0x12345678) && arq_receiver_arm(&r,0x12345678));
+    uint32_t now=0;
+    for(uint32_t sequence=0;sequence<=UINT16_MAX;sequence++,now+=ARQ_SPACING_MS) {
+        assert(arq_sender_request(&s,hello,11,now,ARQ_ACK_MIN_MS));
+        assert(s.state==ARQ_TRANSMITTING && s.frame.sequence==sequence);
+        arq_frame ack=control(ARQ_ACK,0);ack.sequence=(uint16_t)sequence;
+        arq_sender_control(&s,&ack,now+1);assert(s.state==ARQ_TRANSMITTING);
+        arq_sender_tx_done(&s,now+10,true);
+        for(unsigned field=0;field<8;field++) {
+            arq_frame bad=ack;
+            if(field==0)bad.src++;if(field==1)bad.dst++;if(field==2)bad.session++;
+            if(field==3)bad.sequence--;if(field==4)bad.type=ARQ_DATA;
+            if(field==5)bad.length=1;if(field==6)bad.reason=ARQ_BUSY;
+            if(field==7)bad.type=0;
+            arq_sender_control(&s,&bad,now+15);
+            assert(s.state==ARQ_WAITING_ACK && s.sequence==sequence && s.rtt_count==sequence);
+        }
+        arq_frame response;
+        assert(arq_receiver_data(&r,&s.frame,&response,false) && response.type==ARQ_ACK);
+        arq_sender_control(&s,&response,now+20);
+        assert(s.state==ARQ_DELIVERED && s.result==ARQ_OK);
+        assert(s.frame.sequence==sequence && s.sequence==(uint16_t)(sequence+1));
+        assert(s.rtt_count==sequence+1 && r.deliveries==sequence+1);
+        arq_sender_control(&s,&response,now+21);
+        assert(s.rtt_count==sequence+1 && s.state==ARQ_DELIVERED);
+    }
+    assert(s.used_up && !arq_sender_request(&s,hello,11,now,ARQ_ACK_MIN_MS));
+    s=fresh(0);arq_sender_tx_done(&s,10,true);
+    arq_frame old=control(ARQ_ACK,0);arq_sender_init(&s);
+    arq_sender_control(&s,&old,20);assert(s.state==ARQ_IDLE && !s.armed);
+    assert(arq_sender_arm(&s,0x12345679));
+    assert(arq_sender_request(&s,hello,11,ARQ_SPACING_MS,ARQ_ACK_MIN_MS));
+    arq_sender_tx_done(&s,ARQ_SPACING_MS+10,true);
+    arq_sender_control(&s,&old,ARQ_SPACING_MS+20);
+    assert(s.state==ARQ_WAITING_ACK && s.rtt_count==0);
+    arq_sender_poll(&s,s.terminal_at);
+    old.session=s.session;arq_sender_control(&s,&old,s.terminal_at+1);
+    assert(s.state==ARQ_FAILED && s.result==ARQ_TIMEOUT_EXHAUSTED && s.sequence==0);
+    puts("ACK matrix: all 65536 sequences, mismatches, duplicates, reset and stale sessions PASS");
+}
+
+static void parser_fuzz(void) {
+    uint32_t seed=0x4c4f5241;
+    for(unsigned iteration=0;iteration<50000;iteration++) {
+        uint8_t input[64],encoded[44];
+        seed=seed*1664525U+1013904223U;size_t length=seed%65;
+        for(size_t i=0;i<length;i++){seed=seed*1664525U+1013904223U;input[i]=(uint8_t)(seed>>24);}
+        if(iteration%4==0) {
+            arq_frame f=data();f.length=(uint8_t)(seed%33);
+            length=arq_encode(&f,input,sizeof input);
+            if(iteration%8==0)input[seed%length]^=0x80;
+        }
+        arq_frame result,original;memset(&result,0xA5,sizeof result);original=result;
+        if(arq_decode(&result,input,length)) {
+            assert(arq_valid(&result));size_t n=arq_encode(&result,encoded,sizeof encoded);
+            assert(n==length && !memcmp(input,encoded,n));
+        } else assert(!memcmp(&result,&original,sizeof result));
+    }
+    puts("Parser fuzz: 50000 bounded inputs, seed 0x4c4f5241 PASS");
+}
+
 static void receiver(void) {
     arq_receiver r;arq_receiver_init(&r);arq_frame f=data(), response;
     assert(!arq_receiver_data(&r,&f,&response,false));
@@ -138,12 +218,13 @@ static void fault_harness(void) {
             if(fault==6){arq_sender_poll(&s,2010);arq_sender_control(&s,&response,2500);}
         }
         if(s.state==ARQ_DELIVERED)continue;
-        arq_sender_poll(&s,3010);assert(s.state==ARQ_TRANSMITTING);
-        if(fault==7){arq_sender_tx_done(&s,3020,false);assert(s.result==ARQ_RADIO_ERROR);continue;}
-        arq_sender_tx_done(&s,3020,true);
+        uint32_t retry_start=s.last_start+ARQ_SPACING_MS;
+        arq_sender_poll(&s,retry_start);assert(s.state==ARQ_TRANSMITTING);
+        if(fault==7){arq_sender_tx_done(&s,retry_start+10,false);assert(s.result==ARQ_RADIO_ERROR);continue;}
+        arq_sender_tx_done(&s,retry_start+10,true);
         assert(arq_receiver_data(&r,&s.frame,&response,false));
         arq_sender_control(&s,&response,3100);
         assert(s.state==ARQ_DELIVERED && r.deliveries==1 && s.rtt_count==0);
     }
 }
-int main(void){codec();sender();receiver();fault_harness();puts("ARQ core: PASS");}
+int main(void){codec();sender();absolute_deadline();ack_matrix();parser_fuzz();receiver();fault_harness();puts("ARQ core: PASS");}

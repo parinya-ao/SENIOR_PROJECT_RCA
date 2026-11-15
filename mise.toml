@@ -12,3 +12,16 @@ run = "uv run third_party/upditerm/upditerm.py /dev/serial/by-path/pci-0000:00:1
 
 [tasks."monitor_sender"]
 run = "uv run third_party/upditerm/upditerm.py /dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0 38400"
+
+[tasks."lint:python"]
+description = "Strict Python lint, formatting, and type checks (read-only)"
+depends = ["lint:python:ruff", "lint:python:format", "lint:python:types"]
+
+[tasks."lint:python:ruff"]
+run = "uv run --locked ruff check src/lora tools tests"
+
+[tasks."lint:python:format"]
+run = "uv run --locked ruff format --check src/lora tools tests"
+
+[tasks."lint:python:types"]
+run = "uv run --locked mypy"

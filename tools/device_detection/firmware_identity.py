@@ -1,11 +1,10 @@
 """Strict firmware identity framing and readback fingerprint comparison."""
 
+import re
 from dataclasses import dataclass
 from datetime import datetime
-import re
 
-from .evidence import FirmwareIdentity, ROLES
-
+from .evidence import ROLES, FirmwareIdentity
 
 _V1_MARKER = re.compile(
     rb"^\[(SENDER|RECEIVER)\] ID V1 (sender|sender_hello|receiver) "
@@ -65,7 +64,7 @@ def _valid_timestamp(date: bytes, time: bytes) -> bool:
         normalized_date = " ".join(date.decode("ascii").split())
         datetime.strptime(f"{normalized_date} {time.decode('ascii')}", "%b %d %Y %H:%M:%S")
         return True
-    except (UnicodeDecodeError, ValueError):
+    except UnicodeDecodeError, ValueError:
         return False
 
 
@@ -102,9 +101,9 @@ def parse_identity_stream(data: bytes | str) -> IdentityParseResult:
                 malformed.append("V1 identity checksum mismatch")
                 continue
             date_text = " ".join(date.decode().split())
-            found.append(FirmwareIdentity(
-                role, f"{build}@{date_text}T{time.decode()}", 1, expected, "crc8"
-            ))
+            found.append(
+                FirmwareIdentity(role, f"{build}@{date_text}T{time.decode()}", 1, expected, "crc8")
+            )
         else:
             match = _LEGACY_MARKER.fullmatch(line)
             if match is None:
@@ -117,9 +116,11 @@ def parse_identity_stream(data: bytes | str) -> IdentityParseResult:
                 malformed.append("legacy role/build/timestamp mismatch")
                 continue
             date_text = " ".join(date.decode().split())
-            found.append(FirmwareIdentity(
-                role, f"{build}@{date_text}T{time.decode()}", 0, None, "line-framed"
-            ))
+            found.append(
+                FirmwareIdentity(
+                    role, f"{build}@{date_text}T{time.decode()}", 0, None, "line-framed"
+                )
+            )
 
     if malformed:
         return IdentityParseResult("MALFORMED", details=tuple(malformed))
@@ -133,8 +134,9 @@ def parse_identity_stream(data: bytes | str) -> IdentityParseResult:
     if not identities:
         return IdentityParseResult("NONE")
     if len(identities) != 1:
-        return IdentityParseResult("AMBIGUOUS", identities=identities,
-                                   details=("conflicting firmware identities",))
+        return IdentityParseResult(
+            "AMBIGUOUS", identities=identities, details=("conflicting firmware identities",)
+        )
     return IdentityParseResult("VALID", identity=identities[0], identities=identities)
 
 
@@ -154,7 +156,7 @@ def _parse_ihex(text: str) -> dict[int, int]:
         if len(record) < 5 or record[0] != len(record) - 5 or sum(record) & 0xFF:
             raise ValueError(f"invalid Intel HEX length/checksum at line {line_number}")
         length, offset, record_type = record[0], int.from_bytes(record[1:3], "big"), record[3]
-        data = record[4:4 + length]
+        data = record[4 : 4 + length]
         if record_type == 0:
             start = upper + offset
             for index, byte in enumerate(data):
@@ -185,7 +187,7 @@ def normalize_ihex_region(text: str, app_start: int, app_end: int) -> bytes:
     if app_start < 0 or app_end <= app_start:
         raise ValueError("invalid application flash region")
     memory = _parse_ihex(text)
-    normalized = bytearray(b"\xFF" * (app_end - app_start))
+    normalized = bytearray(b"\xff" * (app_end - app_start))
     for address, byte in memory.items():
         if app_start <= address < app_end:
             normalized[address - app_start] = byte
@@ -214,7 +216,9 @@ def match_flash_fingerprint(
     matches: list[FirmwareIdentity] = []
     for reference in references:
         if (reference.flash_size, reference.app_start, reference.app_end) != (
-            flash_size, app_start, app_end
+            flash_size,
+            app_start,
+            app_end,
         ):
             continue
         try:
@@ -222,14 +226,16 @@ def match_flash_fingerprint(
         except ValueError:
             continue
         if actual == expected and reference.role in ROLES:
-            matches.append(FirmwareIdentity(reference.role, reference.build_id,
-                                            0, None, "flash-fingerprint"))
+            matches.append(
+                FirmwareIdentity(reference.role, reference.build_id, 0, None, "flash-fingerprint")
+            )
     if not matches:
         return FingerprintResult("NO_MATCH", details=("no exact application image match",))
     unique = {(identity.role, identity.build_id): identity for identity in matches}
     if len(unique) != 1:
         identities = tuple(unique.values())
-        return FingerprintResult("AMBIGUOUS", matches=identities,
-                                 details=("multiple references match the same image",))
+        return FingerprintResult(
+            "AMBIGUOUS", matches=identities, details=("multiple references match the same image",)
+        )
     identity = next(iter(unique.values()))
     return FingerprintResult("MATCH", identity=identity, matches=(identity,))

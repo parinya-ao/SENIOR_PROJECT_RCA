@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq.py", line 58, in test_config_and_board_generation
+~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 3000 not greater than or equal to 9242
+
+FAILED (failures=1)
+[full output: rtk recall f01a4b6a85b54e49]

@@ -28,7 +28,7 @@ void Task::Resume() { is_paused_ = false; }
 
 void Task::Restart() {
   Initialize();
-  PT_RESTART(&pt_);
+  PT_INIT(&pt_);
 }
 
 void TaskScheduler::Add(Task* task) {

@@ -17,7 +17,12 @@ bool arq_receiver_data(arq_receiver* r,const arq_frame* f,arq_frame* response,bo
     memset(response,0,sizeof *response);response->type=ARQ_NACK;
     response->src=ARQ_RECEIVER_ID;response->dst=ARQ_SENDER_ID;
     response->session=r->session;response->sequence=f->sequence;
-    if (f->length!=sizeof(ARQ_PAYLOAD)-1 || memcmp(f->payload,ARQ_PAYLOAD,sizeof(ARQ_PAYLOAD)-1))
+    bool payload_ok=f->length==sizeof(ARQ_PAYLOAD)-1 && !memcmp(f->payload,ARQ_PAYLOAD,sizeof(ARQ_PAYLOAD)-1);
+#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC)
+    payload_ok=payload_ok || (f->length==sizeof(ARQ_DIRECTION_PAYLOAD)-1 &&
+        !memcmp(f->payload,ARQ_DIRECTION_PAYLOAD,sizeof(ARQ_DIRECTION_PAYLOAD)-1));
+#endif
+    if (!payload_ok)
         response->reason=ARQ_APPLICATION_REJECTED;
     else if (r->accepted && f->sequence==r->last_sequence) {
         response->type=ARQ_ACK;++r->duplicates;

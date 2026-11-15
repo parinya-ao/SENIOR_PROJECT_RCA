@@ -1,0 +1,2 @@
+#pragma once
+#define LORA_BUILD_ID "b12d257abcb5694feaa7a1eeb80391d49564f6c39acd613c528984108c735f1a"

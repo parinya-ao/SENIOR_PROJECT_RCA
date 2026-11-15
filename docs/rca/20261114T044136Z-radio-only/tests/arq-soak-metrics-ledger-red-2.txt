@@ -1,0 +1,13 @@
+ERROR: test_soak_campaign_persists_pass_receipt_for_next_stage (test_arq_soak.ArqSoakPlanTests.test_soak_campaign_persists_pass_receipt_for_next_stage)
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 89, in test_soak_campaign_persists_pass_receipt_for_next_stage
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tools/arq_trial.py", line 1101, in soak_campaign
+File "/usr/lib64/python3.14/unittest/mock.py", line 1176, in __call__
+File "/usr/lib64/python3.14/unittest/mock.py", line 1180, in _mock_call
+File "/usr/lib64/python3.14/unittest/mock.py", line 1247, in _execute_mock_call
+result = effect(*args, **kwargs)
+TypeError: ArqSoakPlanTests.test_soak_campaign_persists_pass_receipt_for_next_stage.<locals>.fake_campaign() missing 1 required keyword-only argument: 'run_dir'
+
+FAILED (errors=1)
+[full output: rtk recall 55415f75701a3624]

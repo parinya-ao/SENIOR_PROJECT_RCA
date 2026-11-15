@@ -21,4 +21,5 @@ exp*
 *.map
 LICENSE
 *.json*
-*.md
+artifacts
+**/rca/**

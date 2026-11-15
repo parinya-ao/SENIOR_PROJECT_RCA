@@ -4,6 +4,28 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include "generated/arq_config.h"
+#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC)
+// This lab diagnostic permits one DATA attempt; normal ARQ keeps its configured retries.
+#undef ARQ_MAX_RETRIES
+#define ARQ_MAX_RETRIES 0UL
+#undef ARQ_PAYLOAD
+#define ARQ_PAYLOAD "HELLO_LORA"
+#if defined(ARQ_REVERSE_DIAGNOSTIC)
+// Endpoint IDs stay bound to the physical boards when DATA direction reverses.
+#undef ARQ_SENDER_ID
+#undef ARQ_RECEIVER_ID
+#define ARQ_SENDER_ID 2UL
+#define ARQ_RECEIVER_ID 1UL
+#define ARQ_DIRECTION_PAYLOAD "HELLO_LORA_TR"
+#else
+#define ARQ_DIRECTION_PAYLOAD "HELLO_LORA_GW"
+#endif
+#elif defined(ARQ_REVERSE_DIAGNOSTIC)
+#error "Role reversal is restricted to radio-only diagnostics"
+#endif
+#if defined(LORA_ROLE_SENDER) != defined(ARQ_REVERSE_DIAGNOSTIC)
+#define ARQ_ROLE_SENDER 1
+#endif
 #ifdef __cplusplus
 extern "C" {
 #endif

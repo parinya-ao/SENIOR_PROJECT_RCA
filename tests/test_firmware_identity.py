@@ -1,7 +1,6 @@
 import importlib
 import unittest
 
-
 identity = importlib.import_module("tools.device_detection.firmware_identity")
 
 
@@ -67,7 +66,7 @@ class FirmwareIdentityTests(unittest.TestCase):
             return
         good = marker()
         bad_crc = good.replace(good[-4:-2], b"00")
-        self.assertEqual(parse(b"[SENDER] ID V1 sender" ).status, "MALFORMED")
+        self.assertEqual(parse(b"[SENDER] ID V1 sender").status, "MALFORMED")
         self.assertEqual(parse(bad_crc).status, "MALFORMED")
         self.assertEqual(parse(good[:-2]).status, "MALFORMED")
 
@@ -75,8 +74,9 @@ class FirmwareIdentityTests(unittest.TestCase):
         parse = require(self, "parse_identity_stream")
         if parse is None:
             return
-        self.assertEqual(parse(marker("SENDER", "sender") + marker("RECEIVER", "receiver")).status,
-                         "AMBIGUOUS")
+        self.assertEqual(
+            parse(marker("SENDER", "sender") + marker("RECEIVER", "receiver")).status, "AMBIGUOUS"
+        )
 
     def test_flash_readback_unavailable_returns_unknown(self):
         match = require(self, "match_flash_fingerprint")
@@ -90,19 +90,29 @@ class FirmwareIdentityTests(unittest.TestCase):
         reference_cls = require(self, "FirmwareReference")
         if match is None or reference_cls is None:
             return
-        hex_text = "\n".join([
-            ihex_record(0, 4, b"\x00\x00"),
-            ihex_record(8, 0, b"ABC"),
-            ihex_record(0, 1),
-        ]) + "\n"
+        hex_text = (
+            "\n".join(
+                [
+                    ihex_record(0, 4, b"\x00\x00"),
+                    ihex_record(8, 0, b"ABC"),
+                    ihex_record(0, 1),
+                ]
+            )
+            + "\n"
+        )
         actual = bytearray([0x00] * 32)
         actual[4:24] = b"\xff" * 20
         actual[8:11] = b"ABC"
         actual[24:28] = b"BOOT"
-        reference = reference_cls(role="SENDER", build_id="sender-x", ihex=hex_text,
-                                 flash_size=32, app_start=4, app_end=24)
-        result = match(bytes(actual), [reference], flash_size=32,
-                       app_start=4, app_end=24)
+        reference = reference_cls(
+            role="SENDER",
+            build_id="sender-x",
+            ihex=hex_text,
+            flash_size=32,
+            app_start=4,
+            app_end=24,
+        )
+        result = match(bytes(actual), [reference], flash_size=32, app_start=4, app_end=24)
         self.assertEqual(result.status, "MATCH")
         self.assertEqual(result.identity.role, "SENDER")
 
@@ -112,8 +122,10 @@ class FirmwareIdentityTests(unittest.TestCase):
         if match is None or reference_cls is None:
             return
         ihex = "\n".join([ihex_record(4, 0, b"same"), ihex_record(0, 1)]) + "\n"
-        refs = [reference_cls("SENDER", "same-a", ihex, 16, 4, 12),
-                reference_cls("RECEIVER", "same-b", ihex, 16, 4, 12)]
+        refs = [
+            reference_cls("SENDER", "same-a", ihex, 16, 4, 12),
+            reference_cls("RECEIVER", "same-b", ihex, 16, 4, 12),
+        ]
         actual = b"\xff" * 4 + b"same" + b"\xff" * 4 + b"\x00" * 4
         result = match(actual, refs, flash_size=16, app_start=4, app_end=12)
         self.assertEqual(result.status, "AMBIGUOUS")

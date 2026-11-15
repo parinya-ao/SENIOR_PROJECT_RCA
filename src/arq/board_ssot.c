@@ -19,7 +19,11 @@ void board_ssot_init(void) {
  pinMode(PIN_PD6, OUTPUT);
  digitalWrite(PIN_PC3, HIGH);
  pinMode(PIN_PC3, OUTPUT);
+#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC)
+ pinMode(PIN_PA4, INPUT_PULLUP);
+#else
  pinMode(PIN_PA4, INPUT);
+#endif
  digitalWrite(PIN_PA7, HIGH);
  pinMode(PIN_PA7, OUTPUT);
  digitalWrite(PIN_PA7, 0);

@@ -1,8 +1,7 @@
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -11,18 +10,34 @@ class SsotProtocolTests(unittest.TestCase):
     def compile_and_run(self, flags=()):
         with tempfile.TemporaryDirectory(prefix="ssot-protocol-") as directory:
             binary = Path(directory) / "ssot_protocol_test"
-            compile_result = subprocess.run([
-                "gcc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Wshadow",
-                "-Wconversion", "-Wstrict-prototypes", "-Wmissing-prototypes",
-                "-Werror", *flags,
-                "-I" + str(ROOT / "src"), "-I" + str(ROOT / "include"),
-                str(ROOT / "tests/ssot_protocol_test.c"),
-                str(ROOT / "src/ssot.c"), "-o", str(binary),
-            ], capture_output=True, text=True, timeout=30)
-            self.assertEqual(compile_result.returncode, 0,
-                             compile_result.stdout + compile_result.stderr)
-            result = subprocess.run([str(binary)], capture_output=True,
-                                    text=True, timeout=10)
+            compile_result = subprocess.run(
+                [
+                    "gcc",
+                    "-std=c11",
+                    "-O2",
+                    "-Wall",
+                    "-Wextra",
+                    "-Wshadow",
+                    "-Wconversion",
+                    "-Wstrict-prototypes",
+                    "-Wmissing-prototypes",
+                    "-Werror",
+                    *flags,
+                    "-I" + str(ROOT / "src"),
+                    "-I" + str(ROOT / "include"),
+                    str(ROOT / "tests/ssot_protocol_test.c"),
+                    str(ROOT / "src/ssot.c"),
+                    "-o",
+                    str(binary),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(
+                compile_result.returncode, 0, compile_result.stdout + compile_result.stderr
+            )
+            result = subprocess.run([str(binary)], capture_output=True, text=True, timeout=10)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn("PASS C protocol tests", result.stdout)
 

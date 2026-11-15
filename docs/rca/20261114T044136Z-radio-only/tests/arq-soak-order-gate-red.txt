@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 53, in test_soak_campaign_blocks_a_later_stage_without_prior_pass_receipts
+~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+FAILED (failures=1)
+[full output: rtk recall d43ccdaf4cf9b37c]

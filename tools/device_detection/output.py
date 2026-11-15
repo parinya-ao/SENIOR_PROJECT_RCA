@@ -15,8 +15,7 @@ def exit_code_for(result: ScanResult) -> int:
     if result.status in {"AMBIGUOUS", "CONFLICT"}:
         return 3
     if result.status == "ERROR" or any(
-        device.identity_status in {"INACCESSIBLE", "PROBE_FAILED"}
-        for device in result.devices
+        device.identity_status in {"INACCESSIBLE", "PROBE_FAILED"} for device in result.devices
     ):
         return 4
     return 2
@@ -43,7 +42,11 @@ def format_text(result: ScanResult, *, explain: bool = False) -> str:
         lines.append(f"  MCU: {detected.mcu or 'unknown'}")
         lines.append(f"  Firmware role: {detected.role}")
         lines.append(f"  Evidence: {detected.evidence_type}")
-        status = "VERIFIED" if detected.identity_status.startswith("VERIFIED_") else detected.identity_status
+        status = (
+            "VERIFIED"
+            if detected.identity_status.startswith("VERIFIED_")
+            else detected.identity_status
+        )
         lines.append(f"  Status: {status}")
         if detected.build_id:
             lines.append(f"  Build: {detected.build_id}")
@@ -54,14 +57,21 @@ def format_text(result: ScanResult, *, explain: bool = False) -> str:
                 lines.append(f"  Warning: {item}")
         lines.append("")
 
-    lines.extend(("RESULT", f"  Sender: {result.sender.port if result.sender else 'UNKNOWN'}",
-                  f"  Receiver: {result.receiver.port if result.receiver else 'UNKNOWN'}",
-                  f"  Detection: {result.status}"))
+    lines.extend(
+        (
+            "RESULT",
+            f"  Sender: {result.sender.port if result.sender else 'UNKNOWN'}",
+            f"  Receiver: {result.receiver.port if result.receiver else 'UNKNOWN'}",
+            f"  Detection: {result.status}",
+        )
+    )
     if result.missing_roles:
         lines.append(f"  Missing roles: {', '.join(result.missing_roles)}")
     for issue in result.issues:
         lines.append(f"  Issue: {issue}")
     if explain and result.status == "UNKNOWN":
-        lines.append("  Reason: MCU or USB adapter identity alone does not establish firmware role.")
+        lines.append(
+            "  Reason: MCU or USB adapter identity alone does not establish firmware role."
+        )
         lines.append("  UPDI probes are opt-in and require --hardware-safe after physical checks.")
     return "\n".join(lines)

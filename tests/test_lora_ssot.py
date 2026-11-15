@@ -1,9 +1,9 @@
 import copy
 import json
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,12 +42,17 @@ class ConfigurationTests(unittest.TestCase):
         from rf_proof import shared_identity_matches
 
         fingerprint = "a" * 64
-        logs = {role: f"[{role}] CONFIG_FINGERPRINT={fingerprint}\n[{role}] PROTOCOL_VERSION=1"
-                for role in ("GATEWAY", "RECEIVER")}
+        logs = {
+            role: f"[{role}] CONFIG_FINGERPRINT={fingerprint}\n[{role}] PROTOCOL_VERSION=1"
+            for role in ("GATEWAY", "RECEIVER")
+        }
         self.assertTrue(shared_identity_matches(logs, fingerprint, 1))
-        for invalid in ("", logs["RECEIVER"] + "\n" + logs["RECEIVER"],
-                        logs["RECEIVER"].replace(fingerprint, "b" * 64),
-                        logs["RECEIVER"].replace("VERSION=1", "VERSION=2")):
+        for invalid in (
+            "",
+            logs["RECEIVER"] + "\n" + logs["RECEIVER"],
+            logs["RECEIVER"].replace(fingerprint, "b" * 64),
+            logs["RECEIVER"].replace("VERSION=1", "VERSION=2"),
+        ):
             self.assertFalse(shared_identity_matches(dict(logs, RECEIVER=invalid), fingerprint, 1))
 
     def test_generation_is_deterministic_and_check_rejects_missing_or_stale_artifacts(self):
@@ -57,12 +62,21 @@ class ConfigurationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "project"
             (root / "config").mkdir(parents=True)
-            (root / "config/lora_system.json").write_text((ROOT / "config/lora_system.json").read_text())
-            (root / "config/radio_915.toml").write_text((ROOT / "config/radio_915.toml").read_text())
-            with patch.object(generator, "ROOT", root), patch.object(validate_lora_ssot, "ROOT", root):
+            (root / "config/lora_system.json").write_text(
+                (ROOT / "config/lora_system.json").read_text()
+            )
+            (root / "config/radio_915.toml").write_text(
+                (ROOT / "config/radio_915.toml").read_text()
+            )
+            with (
+                patch.object(generator, "ROOT", root),
+                patch.object(validate_lora_ssot, "ROOT", root),
+            ):
                 config = validate_lora_ssot.load(root / "config/lora_system.json")
                 radio = generator.load_radio_profile(root / "config/radio_915.toml")
-                self.assertEqual(generator.artifacts(config, radio), generator.artifacts(config, radio))
+                self.assertEqual(
+                    generator.artifacts(config, radio), generator.artifacts(config, radio)
+                )
                 generator.generate()
                 generator.generate(check=True)
                 path = root / "include/generated/radio_915_config.h"

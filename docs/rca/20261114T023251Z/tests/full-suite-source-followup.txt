@@ -1,0 +1,82 @@
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+
+python -m unittest: error: UPDI probes require --hardware-safe after physical wiring checks
+
+python -m unittest: error: the following arguments are required: evidence
+
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+
+ERROR: setUpClass (test_mvp_roundtrip.MvpRoundtripTests)
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_mvp_roundtrip.py", line 109, in setUpClass
+File "/usr/lib64/python3.14/subprocess.py", line 555, in run
+File "/usr/lib64/python3.14/subprocess.py", line 1039, in __init__
+File "/usr/lib64/python3.14/subprocess.py", line 1990, in _execute_child
+raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'g++'
+
+ERROR: test_real_sx1276_public_hal (test_radiolib_hal.RadioLibHalTests.test_real_sx1276_public_hal)
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_radiolib_hal.py", line 19, in test_real_sx1276_public_hal
+File "/usr/lib64/python3.14/subprocess.py", line 555, in run
+File "/usr/lib64/python3.14/subprocess.py", line 1039, in __init__
+File "/usr/lib64/python3.14/subprocess.py", line 1990, in _execute_child
+raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'g++'
+
+ERROR: test_real_entrypoint (test_raw_mvp.RawMvpTests.test_real_entrypoint)
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_raw_mvp.py", line 70, in test_real_entrypoint
+File "/usr/lib64/python3.14/subprocess.py", line 555, in run
+File "/usr/lib64/python3.14/subprocess.py", line 1039, in __init__
+File "/usr/lib64/python3.14/subprocess.py", line 1990, in _execute_child
+raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'g++'
+
+ERROR: test_installed_driver_errata_switch (test_rca.RCATests.test_installed_driver_errata_switch)
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_rca.py", line 23, in test_installed_driver_errata_switch
+File "/usr/lib64/python3.14/subprocess.py", line 555, in run
+File "/usr/lib64/python3.14/subprocess.py", line 1039, in __init__
+File "/usr/lib64/python3.14/subprocess.py", line 1990, in _execute_child
+raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'g++'
+
+ERROR: test_real_driver_bw125_register_writes (test_rca_errata_audit.ErrataDiagnosticsTests.test_real_driver_bw125_register_writes)
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_rca_errata_audit.py", line 21, in test_real_driver_bw125_register_writes
+File "/usr/lib64/python3.14/subprocess.py", line 555, in run
+File "/usr/lib64/python3.14/subprocess.py", line 1039, in __init__
+File "/usr/lib64/python3.14/subprocess.py", line 1990, in _execute_child
+raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'g++'
+
+ERROR: test_gpio_powers_radio_before_spi_without_driving_sd_detect_or_unpowered_reset (test_receiver_hardware.ReceiverHardwareTests.test_gpio_powers_radio_before_spi_without_driving_sd_detect_or_un...
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_receiver_hardware.py", line 63, in test_gpio_powers_radio_before_spi_without_driving_sd_detect_o...
+File "/usr/lib64/python3.14/subprocess.py", line 555, in run
+File "/usr/lib64/python3.14/subprocess.py", line 1039, in __init__
+File "/usr/lib64/python3.14/subprocess.py", line 1990, in _execute_child
+raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'g++'
+
+ERROR: setUpClass (test_sender_one_shot.SenderOneShotTests)
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_sender_one_shot.py", line 42, in setUpClass
+File "/usr/lib64/python3.14/subprocess.py", line 555, in run
+File "/usr/lib64/python3.14/subprocess.py", line 1039, in __init__
+File "/usr/lib64/python3.14/subprocess.py", line 1990, in _execute_child
+raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'g++'
+
+FAILED (errors=7, skipped=2)
+[full output: rtk recall 309b9fed518c3abe]

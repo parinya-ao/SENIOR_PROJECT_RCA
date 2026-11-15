@@ -1,10 +1,10 @@
-import unittest
-from contextlib import redirect_stderr
 import hashlib
-from io import StringIO
-from pathlib import Path
 import sys
 import tempfile
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
+from pathlib import Path
 from types import ModuleType
 from unittest.mock import patch
 
@@ -51,7 +51,8 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
 
     def test_por_transition_is_only_reported_from_before_and_after_reset_state(self):
         result = self.summarize(
-            [], {"gpior0": 0x20, "rstfr": 0, "uart_flags": 1},
+            [],
+            {"gpior0": 0x20, "rstfr": 0, "uart_flags": 1},
             {"gpior0": 0x01, "rstfr": 0, "uart_flags": 0},
         )
 
@@ -77,27 +78,68 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         run_hardware.assert_not_called()
 
     def test_confirmed_reader_free_h01_mode_dispatches_exactly_once(self):
-        with patch.object(arq_trial, "reader_free_h01", return_value="run-dir", create=True) as run, \
-             patch.object(sys, "argv", ["arq_trial.py", "--reader-free-h01", "--rf-path-confirmed"]):
+        argv = [
+            "arq_trial.py",
+            "--reader-free-h01",
+            "--rf-path-confirmed",
+            "--physical-mapping-verified",
+            "--power-verified",
+            "--rf-hardware-verified",
+            "--authorize-rf-test",
+        ]
+        with (
+            patch.object(arq_trial, "reader_free_h01", return_value="run-dir", create=True) as run,
+            patch.object(sys, "argv", argv),
+        ):
             arq_trial.main()
 
         run.assert_called_once_with()
+
+    def test_soak_stage_fails_closed_without_power_and_rf_conditions(self):
+        argv = ["arq_trial.py", "--soak-stage", "10-sessions", "--rf-path-confirmed"]
+        error = StringIO()
+        with patch.object(arq_trial, "campaign") as campaign, patch.object(sys, "argv", argv):
+            with redirect_stderr(error), self.assertRaises(SystemExit) as exit_info:
+                arq_trial.main()
+        self.assertEqual(exit_info.exception.code, 2)
+        self.assertIn("safe power", error.getvalue())
+        campaign.assert_not_called()
+
+    def test_soak_stage_dispatches_plan_only_after_all_hardware_gates(self):
+        argv = [
+            "arq_trial.py",
+            "--soak-stage",
+            "10-sessions",
+            "--rf-path-confirmed",
+            "--physical-mapping-verified",
+            "--power-verified",
+            "--rf-hardware-verified",
+            "--authorize-rf-test",
+        ]
+        with (
+            patch.object(arq_trial, "soak_campaign", return_value="run-dir") as campaign,
+            patch.object(sys, "argv", argv),
+            redirect_stdout(StringIO()),
+        ):
+            arq_trial.main()
+        self.assertEqual(campaign.call_args.args[0], "10-sessions")
+        self.assertTrue(campaign.call_args.args[1].power_verified)
 
     def test_reader_free_h01_firmware_metadata_binds_identity_to_hex_hash(self):
         describe = getattr(arq_trial, "reader_free_h01_firmware", None)
         self.assertTrue(callable(describe), "reader-free H01 firmware metadata helper is missing")
         with tempfile.TemporaryDirectory() as directory:
-            build = Path(directory) / ".pio/build/receiver_arq_test"
+            build = Path(directory) / ".pio/build/receiver_arq_radio_only"
             build.mkdir(parents=True)
             image = build / "firmware.hex"
             image.write_bytes(b":00000001FF\n")
             (build / "lora_build_identity.h").write_text(
-                '#define LORA_BUILD_ID "' + 'a' * 64 + '"\n'
+                '#define LORA_BUILD_ID "' + "a" * 64 + '"\n'
             )
 
             result = describe(Path(directory), "receiver")
 
-        self.assertEqual(result["environment"], "receiver_arq_test")
+        self.assertEqual(result["environment"], "receiver_arq_radio_only")
         self.assertEqual(result["sha256"], hashlib.sha256(b":00000001FF\n").hexdigest())
         self.assertEqual(result["build_id"], "a" * 64)
 
@@ -115,6 +157,47 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertIs(actual_session, session)
         self.assertIs(actual_protocol, upditerm)
         self.assertEqual(calls, [("/dev/test-tracker", 38400)])
+
+    def test_rx_idle_summary_keeps_missing_after_state_unknown(self):
+        summarize = getattr(arq_trial, "reader_free_rx_idle_summary", None)
+        self.assertTrue(callable(summarize), "reader-free RX idle summary is missing")
+
+        result = summarize({"before": {"gpior0": 0x20}, "after": None})
+
+        self.assertEqual(result["classification"], "UNKNOWN")
+        self.assertIsNone(result["porf_after"])
+
+    def test_rx_idle_summary_recognizes_only_new_por_flag(self):
+        summarize = getattr(arq_trial, "reader_free_rx_idle_summary", None)
+        self.assertTrue(callable(summarize), "reader-free RX idle summary is missing")
+
+        result = summarize(
+            {
+                "before": {"gpior0": 0x20, "rstfr": 0, "uart_flags": 1},
+                "after": {"gpior0": 0x01, "rstfr": 0, "uart_flags": 0},
+            }
+        )
+
+        self.assertEqual(result["classification"], "POR_OBSERVED")
+        self.assertTrue(result["porf_transition_to_set"])
+
+    def test_tracker_rx_idle_mode_runs_without_rf_transmission_authorization(self):
+        with (
+            patch.object(arq_trial, "reader_free_h01", return_value="run-dir") as run,
+            patch.object(
+                sys,
+                "argv",
+                [
+                    "arq_trial.py",
+                    "--tracker-rx-idle-control",
+                    "--physical-mapping-verified",
+                    "--power-verified",
+                ],
+            ),
+        ):
+            arq_trial.main()
+
+        run.assert_called_once_with(rx_idle_seconds=120)
 
 
 if __name__ == "__main__":

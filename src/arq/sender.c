@@ -49,6 +49,8 @@ void arq_sender_control(arq_sender* s,const arq_frame* f,uint32_t now) {
     if ((s->state!=ARQ_WAITING_ACK && s->state!=ARQ_BACKOFF) || !s->attempts ||
         !arq_valid(f) || f->src!=ARQ_RECEIVER_ID || f->dst!=ARQ_SENDER_ID ||
         f->session!=s->session || f->sequence!=s->sequence) return;
+    // A queued control must not revive a transaction past its absolute lifetime.
+    if (arq_due(now,s->terminal_at)) { fail(s,ARQ_TIMEOUT_EXHAUSTED);return; }
     if (f->type==ARQ_ACK) {
         if (s->attempts==1) {
             s->rtt_last=now-s->tx_done;

@@ -107,18 +107,26 @@ class RepositoryIsolationTests(unittest.TestCase):
 
     def test_tracked_symlink_is_checked_even_when_missing_from_worktree(self):
         subprocess.run(["git", "init", "-q", str(self.root)], check=True)
-        subprocess.run(["git", "-C", str(self.root), "config", "user.email", "test@example.com"], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "config", "user.email", "test@example.com"], check=True
+        )
         subprocess.run(["git", "-C", str(self.root), "config", "user.name", "Test"], check=True)
         (self.root / "src").mkdir()
         tracked = self.root / "src/tracked.h"
         tracked.symlink_to("../../../outside.h")
-        subprocess.run(["git", "-C", str(self.root), "add", "platformio.ini", "src/tracked.h"], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "add", "platformio.ini", "src/tracked.h"], check=True
+        )
         tracked.unlink()
 
         errors = validate_repo(self.root)
 
-        self.assertTrue(any("tracked symlink" in error and "escapes the repository" in error
-                            for error in errors), errors)
+        self.assertTrue(
+            any(
+                "tracked symlink" in error and "escapes the repository" in error for error in errors
+            ),
+            errors,
+        )
 
     def test_agent_environment_symlinks_are_excluded(self):
         subprocess.run(["git", "init", "-q", str(self.root)], check=True)
@@ -144,7 +152,10 @@ class RepositoryIsolationTests(unittest.TestCase):
         self.assertTrue(any("extra_scripts" in error for error in errors), errors)
 
     def test_examples_in_test_data_are_not_treated_as_build_configuration(self):
-        self.write("tests/fixtures/example.ini", "symlink://../../outside\n-I../../../outside\nlibrary.json\n")
+        self.write(
+            "tests/fixtures/example.ini",
+            "symlink://../../outside\n-I../../../outside\nlibrary.json\n",
+        )
 
         self.assertEqual(validate_repo(self.root), [])
 

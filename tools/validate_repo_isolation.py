@@ -7,7 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 LIBRARY_MANIFESTS = {"library.json", "library.properties", "module.json"}
 SOURCE_DIRS = ("src", "lib", "include", "generated", "config", "third_party", "tools")
 INCLUDE_FLAGS = ("-I", "-isystem", "-iquote")
@@ -29,7 +28,7 @@ def _label(root, path):
 
 
 def _resolved(root, source, value, kind, errors, must_exist=False):
-    value = value.strip().strip('"\'')
+    value = value.strip().strip("\"'")
     for variable in ("${PROJECT_DIR}", "${project_dir}", "${platformio.project_dir}"):
         value = value.replace(variable, str(root))
     if "$" in value:
@@ -45,7 +44,9 @@ def _resolved(root, source, value, kind, errors, must_exist=False):
         errors.append(f"{_label(root, source)}: invalid {kind} reference {value!r}: {error}")
         return None
     if not _inside(root, result):
-        errors.append(f"{_label(root, source)}: {kind} reference {value!r} escapes the repository ({result})")
+        errors.append(
+            f"{_label(root, source)}: {kind} reference {value!r} escapes the repository ({result})"
+        )
         return None
     if must_exist and not result.exists():
         errors.append(f"{_label(root, source)}: missing {kind} reference {value!r}")
@@ -66,13 +67,15 @@ def _source_symlinks(root):
                 path = Path(current) / name
                 if path.is_symlink():
                     yield path
-            directories[:] = [name for name in directories if not (Path(current) / name).is_symlink()]
+            directories[:] = [
+                name for name in directories if not (Path(current) / name).is_symlink()
+            ]
 
 
 def _check_symlink(root, path, errors, label):
     try:
         target = path.resolve(strict=True)
-    except (OSError, RuntimeError):
+    except OSError, RuntimeError:
         errors.append(f"{label} {_label(root, path)} is broken or cyclic")
         return
     if not _inside(root, target):
@@ -81,8 +84,11 @@ def _check_symlink(root, path, errors, label):
 
 def _tracked_symlinks(root, errors, physical):
     result = subprocess.run(
-        ["git", "ls-files", "-s", "-z"], cwd=root,
-        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False,
+        ["git", "ls-files", "-s", "-z"],
+        cwd=root,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
     )
     if result.returncode:
         return
@@ -98,11 +104,18 @@ def _tracked_symlinks(root, errors, physical):
         if path in physical and path.is_symlink():
             continue
         try:
-            target_text = subprocess.run(
-                ["git", "cat-file", "blob", object_id.decode("ascii")], cwd=root,
-                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True,
-            ).stdout.decode("utf-8").strip()
-        except (subprocess.CalledProcessError, UnicodeError):
+            target_text = (
+                subprocess.run(
+                    ["git", "cat-file", "blob", object_id.decode("ascii")],
+                    cwd=root,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    check=True,
+                )
+                .stdout.decode("utf-8")
+                .strip()
+            )
+        except subprocess.CalledProcessError, UnicodeError:
             errors.append(f"tracked symlink {_label(root, path)} cannot be read from the index")
             continue
         target = Path(target_text)
@@ -110,23 +123,30 @@ def _tracked_symlinks(root, errors, physical):
             target = path.parent / target
         try:
             resolved = target.resolve(strict=False)
-        except (OSError, RuntimeError):
+        except OSError, RuntimeError:
             errors.append(f"tracked symlink {_label(root, path)} is broken or cyclic")
             continue
         if not _inside(root, resolved):
-            errors.append(f"tracked symlink {_label(root, path)} escapes the repository ({resolved})")
+            errors.append(
+                f"tracked symlink {_label(root, path)} escapes the repository ({resolved})"
+            )
         elif not path.is_symlink():
             errors.append(f"tracked symlink {_label(root, path)} is missing from the worktree")
 
 
 def _items(value):
-    return [item.strip().strip('"\'') for line in value.splitlines() for item in line.split(",") if item.strip()]
+    return [
+        item.strip().strip("\"'")
+        for line in value.splitlines()
+        for item in line.split(",")
+        if item.strip()
+    ]
 
 
 def _local_dependency(value):
     for scheme in ("symlink://", "file://"):
         if value.startswith(scheme):
-            return value[len(scheme):]
+            return value[len(scheme) :]
     if value.startswith(("./", "../", "/", "~/")):
         return value
     return None
@@ -164,7 +184,9 @@ def _check_config(root, path, errors, visited):
                 _resolved(root, path, local, "local library dependency", errors, must_exist=True)
 
         try:
-            flags = shlex.split(parser.get(section, "build_flags", fallback="").replace("\\\n", " "))
+            flags = shlex.split(
+                parser.get(section, "build_flags", fallback="").replace("\\\n", " ")
+            )
         except ValueError as error:
             errors.append(f"{_label(root, path)}: invalid build_flags in [{section}]: {error}")
             continue
@@ -178,7 +200,7 @@ def _check_config(root, path, errors, visited):
             else:
                 for flag in INCLUDE_FLAGS:
                     if token.startswith(flag) and len(token) > len(flag):
-                        include = token[len(flag):]
+                        include = token[len(flag) :]
                         break
             if include is not None:
                 _resolved(root, path, include, "build include", errors, must_exist=True)
@@ -192,7 +214,9 @@ def validate_repo(project_root):
     for directory, _, files in os.walk(root / "lib") if (root / "lib").is_dir() else ():
         for name in files:
             if name in LIBRARY_MANIFESTS:
-                errors.append(f"first-party library metadata is forbidden: {_label(root, Path(directory) / name)}")
+                errors.append(
+                    f"first-party library metadata is forbidden: {_label(root, Path(directory) / name)}"
+                )
 
     physical = set(_source_symlinks(root))
     for path in sorted(physical):

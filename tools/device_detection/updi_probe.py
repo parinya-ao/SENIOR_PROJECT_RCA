@@ -1,16 +1,16 @@
 """Explicit, bounded UPDI probes through the repository's upditerm tool."""
 
-from pathlib import Path
 import re
 import signal
 import subprocess
 import sys
 import tempfile
-from typing import Any, Callable
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
 from .evidence import ProbeEvidence
 from .firmware_identity import match_flash_fingerprint, parse_identity_stream
-
 
 ROOT = Path(__file__).resolve().parents[2]
 UPDITERM = ROOT / "third_party" / "upditerm" / "upditerm.py"
@@ -23,15 +23,22 @@ def _require_safe(hardware_safe: bool) -> None:
 
 def _port_busy(port: str, runner: Callable[..., Any]) -> bool:
     try:
-        result = runner(["fuser", "-v", port], capture_output=True, text=True,
-                        timeout=1.0, check=False)
-    except (OSError, subprocess.SubprocessError, TypeError):
+        result = runner(
+            ["fuser", "-v", port], capture_output=True, text=True, timeout=1.0, check=False
+        )
+    except OSError, subprocess.SubprocessError, TypeError:
         return False
     return result.returncode == 0 and bool((result.stdout or "") + (result.stderr or ""))
 
 
 def _is_access_error(text: str) -> bool:
-    return bool(re.search(r"cannot open serial port|permission denied|resource busy|device or resource busy|access is denied", text, re.I))
+    return bool(
+        re.search(
+            r"cannot open serial port|permission denied|resource busy|device or resource busy|access is denied",
+            text,
+            re.IGNORECASE,
+        )
+    )
 
 
 def _run_bounded(
@@ -39,8 +46,14 @@ def _run_bounded(
 ) -> tuple[int | None, str, str, bool]:
     timeout = max(0.1, min(float(timeout), 10.0))
     try:
-        process = popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE, text=True, bufsize=1)
+        process = popen(
+            argv,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
     except OSError as exc:
         return None, "", str(exc), False
     try:
@@ -50,7 +63,7 @@ def _run_bounded(
         try:
             process.send_signal(signal.SIGINT)
             stdout, stderr = process.communicate(timeout=1.0)
-        except (OSError, subprocess.TimeoutExpired):
+        except OSError, subprocess.TimeoutExpired:
             process.kill()
             stdout, stderr = process.communicate()
         return process.returncode, stdout or "", stderr or "", True
@@ -75,15 +88,21 @@ def probe_target_sib(
     """Use upditerm -i without its reset option; only run after explicit safety check."""
     _require_safe(hardware_safe)
     if _port_busy(port, command_runner):
-        return ProbeEvidence(access_status="INACCESSIBLE", mcu_status="INACCESSIBLE",
-                             error=f"serial port is already held: {port}")
+        return ProbeEvidence(
+            access_status="INACCESSIBLE",
+            mcu_status="INACCESSIBLE",
+            error=f"serial port is already held: {port}",
+        )
     argv = [sys.executable, str(upditerm_script), "-i", port, str(baudrate)]
     code, stdout, stderr, timed_out = _run_bounded(argv, timeout=timeout, popen=popen)
     combined = f"{stdout}\n{stderr}".strip()
     if timed_out or code != 0:
         status = "INACCESSIBLE" if _is_access_error(combined) else "PROBE_FAILED"
-        return ProbeEvidence(access_status=status, mcu_status=status,
-                             error=combined or "upditerm SIB query failed or timed out")
+        return ProbeEvidence(
+            access_status=status,
+            mcu_status=status,
+            error=combined or "upditerm SIB query failed or timed out",
+        )
     sib = stdout.strip()
     if not sib:
         return ProbeEvidence(mcu_status="UNKNOWN", error="upditerm returned an empty SIB")
@@ -103,12 +122,14 @@ def probe_firmware_identity(
     """Capture UPDI virtual-UART output without requesting a target reset."""
     _require_safe(hardware_safe)
     if _port_busy(port, command_runner):
-        return ProbeEvidence(access_status="INACCESSIBLE", firmware_status="INACCESSIBLE",
-                             error=f"serial port is already held: {port}")
+        return ProbeEvidence(
+            access_status="INACCESSIBLE",
+            firmware_status="INACCESSIBLE",
+            error=f"serial port is already held: {port}",
+        )
     with tempfile.TemporaryDirectory(prefix="lora-role-") as temp:
         logfile = Path(temp) / "upditerm.log"
-        argv = [sys.executable, str(upditerm_script), "-q", "-l", str(logfile),
-                port, str(baudrate)]
+        argv = [sys.executable, str(upditerm_script), "-q", "-l", str(logfile), port, str(baudrate)]
         code, stdout, stderr, timed_out = _run_bounded(argv, timeout=timeout, popen=popen)
         try:
             captured = logfile.read_bytes()
@@ -118,9 +139,12 @@ def probe_firmware_identity(
     combined = f"{stdout}\n{stderr}".strip()
     if timed_out or code != 0:
         status = "INACCESSIBLE" if _is_access_error(combined) else "PROBE_FAILED"
-        return ProbeEvidence(access_status=status, firmware_status=status,
-                             parse_status=parsed.status,
-                             error=combined or "upditerm identity capture failed or timed out")
+        return ProbeEvidence(
+            access_status=status,
+            firmware_status=status,
+            parse_status=parsed.status,
+            error=combined or "upditerm identity capture failed or timed out",
+        )
     return ProbeEvidence(
         firmware_identity=parsed.identity,
         firmware_status="OK",
@@ -154,12 +178,22 @@ def read_firmware_flash(
         raise PermissionError(f"serial port is already held: {port}")
     with tempfile.TemporaryDirectory(prefix="lora-flash-read-") as temp:
         raw_path = Path(temp) / "flash.bin"
-        argv = [avrdude, "-p", "avr128da28", "-c", "serialupdi", "-P", port,
-                "-U", f"flash:r:{raw_path}:r"]
+        argv = [
+            avrdude,
+            "-p",
+            "avr128da28",
+            "-c",
+            "serialupdi",
+            "-P",
+            port,
+            "-U",
+            f"flash:r:{raw_path}:r",
+        ]
         try:
-            completed = command_runner(argv, capture_output=True, text=True,
-                                       timeout=timeout, check=False)
-        except (OSError, subprocess.SubprocessError) as exc:
+            completed = command_runner(
+                argv, capture_output=True, text=True, timeout=timeout, check=False
+            )
+        except OSError, subprocess.SubprocessError:
             return None
         if completed.returncode != 0 or not raw_path.is_file():
             return None
@@ -175,13 +209,18 @@ def firmware_fingerprint_evidence(
     app_start: int,
     app_end: int,
 ) -> ProbeEvidence:
-    result = match_flash_fingerprint(actual_flash, references, flash_size=flash_size,
-                                     app_start=app_start, app_end=app_end)
+    result = match_flash_fingerprint(
+        actual_flash, references, flash_size=flash_size, app_start=app_start, app_end=app_end
+    )
     return ProbeEvidence(
         fingerprint_identity=result.identity,
-        fingerprint_status={"MATCH": "OK", "UNAVAILABLE": "NOT_ATTEMPTED",
-                            "AMBIGUOUS": "AMBIGUOUS", "INCOMPLETE": "PROBE_FAILED",
-                            "NO_MATCH": "OK"}.get(result.status, "PROBE_FAILED"),
+        fingerprint_status={
+            "MATCH": "OK",
+            "UNAVAILABLE": "NOT_ATTEMPTED",
+            "AMBIGUOUS": "AMBIGUOUS",
+            "INCOMPLETE": "PROBE_FAILED",
+            "NO_MATCH": "OK",
+        }.get(result.status, "PROBE_FAILED"),
         parse_status=result.status,
         error="; ".join(result.details) if result.details else None,
     )

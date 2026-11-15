@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /home/parinya/.local/share/mise/installs/clang/latest/.mise-bins/clang --driver-mode=g++ -no-pie -Wno-unused-command-line-argument -isystem /tmp/rca-host-toolchain/extracted/usr/include/c++/16 -isystem /tmp/rca-host-toolchain/extracted/usr/include/c++/16/x86_64-redhat-linux -isystem /tmp/rca-host-toolchain/extracted/usr/include/c++/16/backward -L/tmp/rca-host-toolchain/lib "$@"

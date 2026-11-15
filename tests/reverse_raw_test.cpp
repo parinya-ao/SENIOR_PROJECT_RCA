@@ -9,10 +9,12 @@ static const char* logged(const char* name){
 }
 int main(int argc,char** argv){
     setup();assert(ready && !active && !tx_starts);
+    assert(last_begin_frequency_mhz == 915.0f);
+    assert((raw_regs[RADIOLIB_SX127X_REG_OP_MODE] & 0x08) == 0);
     if(argc>1){
 #if defined(LORA_ROLE_SENDER)
         if(!strcmp(argv[1],"diagnostics")){
-            cmd("RX");assert(strstr(logged("RAW_RX_READY"),"mode=141"));
+            cmd("RX");assert(strstr(logged("RAW_RX_READY"),"mode=133"));
             raw_regs[0x14]=0x12;raw_regs[0x15]=0x34;raw_regs[0x16]=0;raw_regs[0x17]=1;
             raw_regs[0x18]=0x10;raw_regs[0x1c]=0x40;
             memcpy(packet,"Hello World",11);packet_length=11;irq_flags=0x50;
