@@ -10,9 +10,10 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import rf_proof
 from rf_proof import hardware_blockers, parse_test_counts, unresolved_adapter_paths
+from typing import Never
 
 
-def packet_event(role, name, campaign, sequence=None, attempt=None, rtt=None, toa_us=None):
+def packet_event(role, name, campaign, sequence=None, attempt=None, rtt=None, toa_us=None) -> str:
     fields = [f"C={campaign:04X}"]
     if sequence is not None:
         fields.append(f"S={sequence:02X}")
@@ -25,7 +26,7 @@ def packet_event(role, name, campaign, sequence=None, attempt=None, rtt=None, to
     return f"[{role}] {name} {' '.join(fields)}"
 
 
-def payload_event(role, name, campaign, sequence, payload=b"hello world"):
+def payload_event(role, name, campaign, sequence, payload=b"hello world") -> str:
     return (
         f"[{role}] {name} C={campaign:04X} S={sequence:02X} "
         f"LEN={len(payload)} HEX={payload.hex().upper()} "
@@ -199,7 +200,7 @@ def effective_platformio_config(
 
 
 class TargetLayoutTests(unittest.TestCase):
-    def test_target_layout_uses_live_per_board_fuses_and_application_boundaries(self):
+    def test_target_layout_uses_live_per_board_fuses_and_application_boundaries(self) -> None:
         config = effective_platformio_config()
 
         self.assertEqual(
@@ -225,19 +226,19 @@ class TargetLayoutTests(unittest.TestCase):
             rf_proof.application_bounds_for_environment(config, "receiver"), (0x05800, 0x1FC00)
         )
 
-    def test_receiver_image_must_start_at_the_live_boot_boundary(self):
+    def test_receiver_image_must_start_at_the_live_boot_boundary(self) -> None:
         config = effective_platformio_config(receiver_app_start="0x04000")
 
         self.assertIsNone(rf_proof.application_bounds_for_environment(config, "receiver"))
 
 
 class HardwareGateTests(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         readiness = patch.object(rf_proof, "physical_readiness_errors", return_value=[])
         readiness.start()
         self.addCleanup(readiness.stop)
 
-    def test_hello_radio_images_keep_sx127x_hf_errata_enabled(self):
+    def test_hello_radio_images_keep_sx127x_hf_errata_enabled(self) -> None:
         config = subprocess.check_output(
             ["pio", "project", "config", "--json-output"], cwd=rf_proof.ROOT, text=True
         )
@@ -249,7 +250,7 @@ class HardwareGateTests(unittest.TestCase):
                     sections[environment]["build_flags"],
                 )
 
-    def test_full_application_receiver_does_not_need_boot_handoff(self):
+    def test_full_application_receiver_does_not_need_boot_handoff(self) -> None:
         proof = SimpleNamespace(note=lambda *_: None)
         args = SimpleNamespace(boot_layout_verified=True, receiver_boot_evidence=None)
         with (
@@ -261,11 +262,9 @@ class HardwareGateTests(unittest.TestCase):
             ),
             patch.object(rf_proof.subprocess, "check_output", return_value=""),
         ):
-            self.assertTrue(
-                rf_proof.receiver_boot_handoff_supported(proof, args, "active config")
-            )
+            self.assertTrue(rf_proof.receiver_boot_handoff_supported(proof, args, "active config"))
 
-    def test_campaign_build_skip_keeps_ready_gateway_on_normal_rx_path(self):
+    def test_campaign_build_skip_keeps_ready_gateway_on_normal_rx_path(self) -> None:
         source = (Path(__file__).resolve().parents[1] / "src/sender/lib/lora_rx.cpp").read_text()
         boot_gate = source.index("if (test_campaign.state == SSOT_TEST_IDLE)")
         for decision in ("AlreadyRun", "ReadbackFailed"):
@@ -277,7 +276,7 @@ class HardwareGateTests(unittest.TestCase):
             self.assertIn("continue;", branch)
             self.assertNotIn("_started = false;", branch)
 
-    def test_sender_and_receiver_lora_pins_match_board_revision_1(self):
+    def test_sender_and_receiver_lora_pins_match_board_revision_1(self) -> None:
         gateway = {
             "CS": "PIN_PC3",
             "RST": "PIN_PD0",
@@ -309,7 +308,7 @@ class HardwareGateTests(unittest.TestCase):
         receiver = sources[1].read_text()
         self.assertIn("#define PIN_LORA_EN LORA_PIN_ENABLE", receiver)
 
-    def test_both_radio_setups_keep_dio1_input_and_reset_deasserted(self):
+    def test_both_radio_setups_keep_dio1_input_and_reset_deasserted(self) -> None:
         root = Path(__file__).resolve().parents[1]
         sender = (root / "src/sender/lib/io.cpp").read_text()
         self.assertIn("pinModeFast(PIN_LORA_DIO1, INPUT);", sender)
@@ -317,7 +316,7 @@ class HardwareGateTests(unittest.TestCase):
         receiver = (root / "src/receiver/main.cpp").read_text()
         self.assertIn("pinModeFast(PIN_LORA_RST, INPUT);", receiver)
 
-    def test_led_and_debug_uart_macros_follow_schematic_and_dxcore_directions(self):
+    def test_led_and_debug_uart_macros_follow_schematic_and_dxcore_directions(self) -> None:
         root = Path(__file__).resolve().parents[1]
         expected_leds = {"PIN_LED1": "PIN_PA5", "PIN_LED2": "PIN_PA4"}
         for relative in ("src/sender/lib/io.h",):
@@ -333,7 +332,7 @@ class HardwareGateTests(unittest.TestCase):
         self.assertIn("#define PIN_DEBUG_TX  PIN_PA0", sender_io)
         self.assertIn("#define PIN_DEBUG_RX  PIN_PA1", sender_io)
 
-    def test_shared_rf_profile_only_accepts_the_generated_915_mhz_profile(self):
+    def test_shared_rf_profile_only_accepts_the_generated_915_mhz_profile(self) -> None:
         validator = getattr(rf_proof, "valid_rf_profile_config", None)
         self.assertTrue(callable(validator), "shared RF profile validation is required")
         config = effective_platformio_config()
@@ -361,7 +360,7 @@ class HardwareGateTests(unittest.TestCase):
             validator("""[env]\nbuild_flags =\n    -DHELLO_RF_FREQUENCY_MHZ=923.0f\n""")
         )
 
-    def test_spi_diagnostic_environments_are_separate_and_rf_disabled(self):
+    def test_spi_diagnostic_environments_are_separate_and_rf_disabled(self) -> None:
         disabled = effective_platformio_config()
         checker = getattr(rf_proof, "rf_spi_diagnostic_config", None)
         self.assertTrue(callable(checker), "dedicated RF-disabled SPI config check is required")
@@ -380,7 +379,7 @@ class HardwareGateTests(unittest.TestCase):
             )
         )
 
-    def test_effective_profile_validator_rejects_role_specific_overrides(self):
+    def test_effective_profile_validator_rejects_role_specific_overrides(self) -> None:
         validator = getattr(rf_proof, "valid_rf_profile_config", None)
         self.assertTrue(callable(validator))
         profile = effective_platformio_config()
@@ -408,13 +407,13 @@ class HardwareGateTests(unittest.TestCase):
             )
         )
 
-    def test_wrapper_host_compile_uses_effective_platformio_profile(self):
+    def test_wrapper_host_compile_uses_effective_platformio_profile(self) -> None:
         flags = rf_proof.radio_profile_compile_flags(effective_platformio_config())
         self.assertEqual(flags, ["-DLORA_ROLE_SENDER=1"])
 
-    def test_host_test_stage_uses_only_checked_in_sources(self):
+    def test_host_test_stage_uses_only_checked_in_sources(self) -> None:
         class RecordingProof:
-            def __init__(self, run_dir):
+            def __init__(self, run_dir) -> None:
                 self.run_dir = run_dir
                 self.commands = []
 
@@ -447,7 +446,7 @@ class HardwareGateTests(unittest.TestCase):
             )
             self.assertIn("-DLORA_ROLE_SENDER=1", diagnostic_argv)
 
-    def test_effective_upload_flags_and_ports_are_checked(self):
+    def test_effective_upload_flags_and_ports_are_checked(self) -> None:
         config = effective_platformio_config()
         preserves = getattr(rf_proof, "upload_config_preserves_flash", None)
         ports_match = getattr(rf_proof, "upload_ports_match", None)
@@ -472,9 +471,9 @@ class HardwareGateTests(unittest.TestCase):
             )
         )
 
-    def test_rf_enabled_upload_programs_receiver_before_boot_campaign_sender(self):
+    def test_rf_enabled_upload_programs_receiver_before_boot_campaign_sender(self) -> None:
         class RecordingProof:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.commands = []
                 self.notes = []
 
@@ -482,7 +481,7 @@ class HardwareGateTests(unittest.TestCase):
                 self.commands.append((name, argv))
                 return 0, b"", b""
 
-            def note(self, _name, message):
+            def note(self, _name, message) -> None:
                 self.notes.append(message)
 
         proof = RecordingProof()
@@ -510,9 +509,9 @@ class HardwareGateTests(unittest.TestCase):
             [call.args[1] for call in program.call_args_list], ["receiver", "sender_hello"]
         )
 
-    def test_rf_enabled_upload_does_not_require_rf_authorization(self):
+    def test_rf_enabled_upload_does_not_require_rf_authorization(self) -> None:
         class RecordingProof:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.commands = []
                 self.notes = []
 
@@ -520,7 +519,7 @@ class HardwareGateTests(unittest.TestCase):
                 self.commands.append((name, argv))
                 return 0, b"", b""
 
-            def note(self, _name, message):
+            def note(self, _name, message) -> None:
                 self.notes.append(message)
 
         proof = RecordingProof()
@@ -549,7 +548,7 @@ class HardwareGateTests(unittest.TestCase):
             [call.args[1] for call in program.call_args_list], ["receiver", "sender_hello"]
         )
 
-    def test_hardware_blockers_only_represent_physical_and_action_gates(self):
+    def test_hardware_blockers_only_represent_physical_and_action_gates(self) -> None:
         self.assertEqual(
             hardware_blockers(
                 "radio-spi-smoke",
@@ -586,7 +585,7 @@ class HardwareGateTests(unittest.TestCase):
             [],
         )
 
-    def test_radio_spi_log_requires_version_and_diagnostic_only_marker(self):
+    def test_radio_spi_log_requires_version_and_diagnostic_only_marker(self) -> None:
         parser = getattr(rf_proof, "parse_radio_spi_log", None)
         self.assertTrue(callable(parser), "SPI smoke evidence parser is required")
         result = parser(
@@ -606,7 +605,7 @@ class HardwareGateTests(unittest.TestCase):
             )["passed"]
         )
 
-    def test_radio_spi_capture_reads_bounded_updi_log_stream(self):
+    def test_radio_spi_capture_reads_bounded_updi_log_stream(self) -> None:
         class Proof:
             run_dir = Path()
 
@@ -626,16 +625,16 @@ class HardwareGateTests(unittest.TestCase):
         self.assertEqual(evidence["version"], 0x12)
         self.assertEqual(len(evidence["log_lines"]), 2)
 
-    def test_spi_smoke_stage_refuses_non_diagnostic_builds_before_commands(self):
+    def test_spi_smoke_stage_refuses_non_diagnostic_builds_before_commands(self) -> None:
         class Proof:
             commands = []
             notes = []
 
-            def command(self, *args, **kwargs):
+            def command(self, *args, **kwargs) -> Never:
                 self.commands.append((args, kwargs))
                 raise AssertionError("unsafe config must block before hardware commands")
 
-            def note(self, _name, value):
+            def note(self, _name, value) -> None:
                 self.notes.append(value)
 
         proof = Proof()
@@ -659,9 +658,9 @@ class HardwareGateTests(unittest.TestCase):
         self.assertEqual(proof.commands, [])
         self.assertIn("diagnostic", proof.notes[-1].lower())
 
-    def test_spi_smoke_uploads_receiver_then_rf_disabled_diagnostic_sender(self):
+    def test_spi_smoke_uploads_receiver_then_rf_disabled_diagnostic_sender(self) -> None:
         class RecordingProof:
-            def __init__(self, run_dir):
+            def __init__(self, run_dir) -> None:
                 self.run_dir = Path(run_dir)
                 self.commands = []
                 self.notes = []
@@ -670,7 +669,7 @@ class HardwareGateTests(unittest.TestCase):
                 self.commands.append((name, argv))
                 return 0, b"", b""
 
-            def note(self, _name, message):
+            def note(self, _name, message) -> None:
                 self.notes.append(message)
 
         with tempfile.TemporaryDirectory() as run_dir:
@@ -705,15 +704,15 @@ class HardwareGateTests(unittest.TestCase):
             report = json.loads((Path(run_dir) / "radio-spi-measurements.json").read_text())
             self.assertFalse(report["rf_transmission_enabled"])
 
-    def test_preflight_reports_missing_stable_adapter_paths(self):
+    def test_preflight_reports_missing_stable_adapter_paths(self) -> None:
         self.assertEqual(
             unresolved_adapter_paths([("gateway", 0), ("receiver", 1)]),
             ["receiver adapter path"],
         )
 
-    def test_usb_topology_capture_records_read_only_inventory_commands(self):
+    def test_usb_topology_capture_records_read_only_inventory_commands(self) -> None:
         class RecordingProof:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.commands = []
 
             def command(self, name, argv):
@@ -760,13 +759,13 @@ class HardwareGateTests(unittest.TestCase):
             [["pio", "device", "list"]],
         )
 
-    def test_test_counts_parse_protocol_stdout_and_unittest_stderr(self):
+    def test_test_counts_parse_protocol_stdout_and_unittest_stderr(self) -> None:
         self.assertEqual(
             parse_test_counts(b"PASS 142 checks\n", b"Ran 3 tests in 0.001s\n"),
             (142, 3),
         )
 
-    def test_hardware_stages_list_unverified_setup_and_missing_authorization(self):
+    def test_hardware_stages_list_unverified_setup_and_missing_authorization(self) -> None:
         self.assertEqual(
             hardware_blockers(
                 "upload",
@@ -783,7 +782,7 @@ class HardwareGateTests(unittest.TestCase):
             ],
         )
 
-    def test_rf_test_requires_separate_authorization(self):
+    def test_rf_test_requires_separate_authorization(self) -> None:
         self.assertEqual(
             hardware_blockers(
                 "rf-test",
@@ -795,7 +794,7 @@ class HardwareGateTests(unittest.TestCase):
             ["BOOTSIZE/CODESIZE/BODCFG fuse verification", "RF-test authorization"],
         )
 
-    def test_stage_unblocks_only_when_every_gate_is_explicit(self):
+    def test_stage_unblocks_only_when_every_gate_is_explicit(self) -> None:
         self.assertEqual(
             hardware_blockers(
                 "upload",
@@ -807,7 +806,7 @@ class HardwareGateTests(unittest.TestCase):
             [],
         )
 
-    def test_only_fuser_exit_one_means_port_is_clear(self):
+    def test_only_fuser_exit_one_means_port_is_clear(self) -> None:
         checker = getattr(rf_proof, "unavailable_ports", None)
         self.assertTrue(callable(checker), "serial ownership preflight is required")
         self.assertEqual(
@@ -815,26 +814,26 @@ class HardwareGateTests(unittest.TestCase):
             ["receiver", "unknown"],
         )
 
-    def test_role_log_test_count_is_parsed_from_its_actual_result_line(self):
+    def test_role_log_test_count_is_parsed_from_its_actual_result_line(self) -> None:
         parser = getattr(rf_proof, "parse_role_log_count", None)
         self.assertTrue(callable(parser), "role-log proof count parser is required")
         self.assertEqual(parser(b"PASS 4 role-log checks\n"), 4)
         self.assertIsNone(parser(b"no test summary\n"))
 
-    def test_radio_wrapper_test_count_is_parsed_from_its_actual_result_line(self):
+    def test_radio_wrapper_test_count_is_parsed_from_its_actual_result_line(self) -> None:
         parser = getattr(rf_proof, "parse_wrapper_check_count", None)
         self.assertTrue(callable(parser), "radio-wrapper proof count parser is required")
         self.assertEqual(parser(b"PASS 24 radio-wrapper checks\n"), 24)
         self.assertIsNone(parser(b"no test summary\n"))
 
-    def test_serialupdi_upload_config_disables_chip_erase_without_fuse_writes(self):
+    def test_serialupdi_upload_config_disables_chip_erase_without_fuse_writes(self) -> None:
         checker = getattr(rf_proof, "upload_config_preserves_flash", None)
         self.assertTrue(callable(checker), "safe serialupdi upload config check is required")
         self.assertTrue(checker("[env]\nupload_flags = -D\n"))
         self.assertFalse(checker("[env]\nupload_flags = -e\n"))
         self.assertFalse(checker("[env]\nupload_flags = -D -U lfuse:w:0x00:m\n"))
 
-    def test_repository_upload_config_preserves_flash_and_fuses(self):
+    def test_repository_upload_config_preserves_flash_and_fuses(self) -> None:
         config = (Path(__file__).resolve().parents[1] / "platformio.ini").read_text()
         self.assertTrue(rf_proof.upload_config_preserves_flash(config))
 
@@ -845,7 +844,7 @@ class RfEvidenceTests(unittest.TestCase):
         self.assertTrue(callable(parser), "campaign evidence parser is required")
         return parser
 
-    def test_preflight_is_proven_before_campaign_continuation(self):
+    def test_preflight_is_proven_before_campaign_continuation(self) -> None:
         gateway, receiver = complete_campaign_logs(stop_after_preflight=True)
         evidence = self.parser()(gateway, receiver)
         self.assertTrue(evidence["preflight_complete"])
@@ -853,7 +852,7 @@ class RfEvidenceTests(unittest.TestCase):
         self.assertFalse(evidence["continued"])
         self.assertFalse(evidence["passed"])
 
-    def test_single_packet_acceptance_rejects_a_retried_data_frame(self):
+    def test_single_packet_acceptance_rejects_a_retried_data_frame(self) -> None:
         gateway, receiver = complete_campaign_logs(stop_after_preflight=True)
         retry = packet_event("GATEWAY", "DATA_TX", 0x1234, 1, 2, toa_us=1200000)
         gateway = gateway.replace(
@@ -866,14 +865,14 @@ class RfEvidenceTests(unittest.TestCase):
         self.assertEqual(evidence["retry_count"], 1)
         self.assertFalse(rf_proof.single_packet_evidence_passed(evidence))
 
-    def test_campaign_requires_all_correlated_data_and_ack_events(self):
+    def test_campaign_requires_all_correlated_data_and_ack_events(self) -> None:
         gateway, receiver = complete_campaign_logs(omit_final_ack=True)
         evidence = self.parser()(gateway, receiver)
         self.assertFalse(evidence["passed"])
         self.assertEqual(evidence["delivery_sequences"], list(range(1, 20)))
         self.assertEqual(evidence["missing_sequences"], [20])
 
-    def test_campaign_requires_payload_validation_for_every_sequence(self):
+    def test_campaign_requires_payload_validation_for_every_sequence(self) -> None:
         gateway, receiver = complete_campaign_logs()
         receiver = receiver.replace(packet_event("RECEIVER", "PAYLOAD_MATCH", 0x1234, 7) + "\n", "")
         evidence = self.parser()(gateway, receiver)
@@ -881,7 +880,7 @@ class RfEvidenceTests(unittest.TestCase):
         self.assertNotIn(7, evidence["delivery_sequences"])
         self.assertIn(7, evidence["missing_sequences"])
 
-    def test_campaign_requires_exact_first_payload_bytes_on_both_sides(self):
+    def test_campaign_requires_exact_first_payload_bytes_on_both_sides(self) -> None:
         gateway, receiver = complete_campaign_logs()
         evidence = self.parser()(gateway, receiver)
         self.assertTrue(evidence["sender_payload_bytes_match"])
@@ -896,7 +895,7 @@ class RfEvidenceTests(unittest.TestCase):
         self.assertFalse(wrong_evidence["sender_payload_bytes_match"])
         self.assertIn("sender sequence-1 payload mismatch", wrong_evidence["issues"])
 
-    def test_campaign_reports_attempts_duplicates_timeouts_and_rtt(self):
+    def test_campaign_reports_attempts_duplicates_timeouts_and_rtt(self) -> None:
         gateway, receiver = complete_campaign_logs()
         gateway = gateway.replace(
             packet_event("GATEWAY", "DATA_TX", 0x1234, 1, 1, toa_us=1200000),
@@ -941,14 +940,14 @@ class RfEvidenceTests(unittest.TestCase):
             },
         )
 
-    def test_mixed_campaign_ids_cannot_be_counted_as_one_success(self):
+    def test_mixed_campaign_ids_cannot_be_counted_as_one_success(self) -> None:
         gateway, receiver = complete_campaign_logs()
         receiver += "\n" + packet_event("RECEIVER", "DATA_RX", 0x9999, 1)
         evidence = self.parser()(gateway, receiver)
         self.assertFalse(evidence["passed"])
         self.assertIn("multiple campaign IDs", evidence["issues"])
 
-    def test_build_marker_is_committed_before_session_start(self):
+    def test_build_marker_is_committed_before_session_start(self) -> None:
         source = (Path(__file__).resolve().parents[1] / "src/sender/lib/lora_rx.cpp").read_text()
         marker_write = source.find("EEPROM.put(kCampaignBuildMarkerAddress")
         counter_allocation = source.find("if (!ssot_campaign_arm(&test_campaign, _campaign_id)")
@@ -962,7 +961,7 @@ class RfEvidenceTests(unittest.TestCase):
 
 
 class RfTestContinuationTests(unittest.TestCase):
-    def test_rf_test_blocks_without_verified_upload_evidence(self):
+    def test_rf_test_blocks_without_verified_upload_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             proof = SimpleNamespace(run_dir=Path(directory), note=lambda *_: None)
             args = SimpleNamespace(
@@ -983,7 +982,7 @@ class RfTestContinuationTests(unittest.TestCase):
 
 
 class FlashSafetyTests(unittest.TestCase):
-    def test_no_meter_identity_uses_live_unique_serial_without_checklist(self):
+    def test_no_meter_identity_uses_live_unique_serial_without_checklist(self) -> None:
         backup = json.loads((rf_proof.ROOT / "config/current_hardware.json").read_text())
         for wrong_serial in (False, True):
             with (
@@ -1031,7 +1030,7 @@ class FlashSafetyTests(unittest.TestCase):
                 self.assertTrue(any("-U" in argv for argv in commands))
                 self.assertTrue(args.no_meter_mode)
 
-    def test_no_meter_retains_authorization_and_boot_gates(self):
+    def test_no_meter_retains_authorization_and_boot_gates(self) -> None:
         blockers = hardware_blockers(
             "radio-spi-smoke",
             mapping_verified=False,
@@ -1044,7 +1043,7 @@ class FlashSafetyTests(unittest.TestCase):
             blockers, ["BOOTSIZE/CODESIZE/BODCFG fuse verification", "upload authorization"]
         )
 
-    def test_no_meter_does_not_skip_rf_hardware_suitability(self):
+    def test_no_meter_does_not_skip_rf_hardware_suitability(self) -> None:
         args = SimpleNamespace(
             no_meter_mode=True,
             physical_mapping_verified=True,
@@ -1059,7 +1058,7 @@ class FlashSafetyTests(unittest.TestCase):
         args.rf_hardware_verified = True
         self.assertEqual(rf_proof.physical_readiness_errors(args, require_rf=True), [])
 
-    def test_no_meter_does_not_bypass_mapping_or_electrical_safety(self):
+    def test_no_meter_does_not_bypass_mapping_or_electrical_safety(self) -> None:
         for key in ("physical_mapping_verified", "power_verified"):
             with self.subTest(key=key):
                 args = SimpleNamespace(
@@ -1073,7 +1072,7 @@ class FlashSafetyTests(unittest.TestCase):
                 self.assertTrue(rf_proof.physical_readiness_errors(args))
                 self.assertEqual(rf_proof.identify_targets(proof, args), 2)
 
-    def test_intel_hex_parser_checks_checksum_and_address_range(self):
+    def test_intel_hex_parser_checks_checksum_and_address_range(self) -> None:
         parser = getattr(rf_proof, "parse_ihex_range", None)
         self.assertTrue(callable(parser), "upload hex range verifier is required")
         image = (
@@ -1098,7 +1097,7 @@ class FlashSafetyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parser(bad_image)
 
-    def test_application_link_origins_follow_each_targets_live_boot_fuse(self):
+    def test_application_link_origins_follow_each_targets_live_boot_fuse(self) -> None:
         config = effective_platformio_config()
         self.assertEqual(
             rf_proof.application_bounds_for_environment(config, "sender_hello"), (0x00000, 0x1FC00)
@@ -1112,7 +1111,7 @@ class FlashSafetyTests(unittest.TestCase):
             )
         )
 
-    def test_firmware_hex_must_fit_only_inside_generated_appcode(self):
+    def test_firmware_hex_must_fit_only_inside_generated_appcode(self) -> None:
         checker = getattr(rf_proof, "image_fits_application", None)
         self.assertTrue(callable(checker), "BOOT-overwrite range check is required")
         gateway_bounds = (0x00000, 0x1FC00)
@@ -1123,7 +1122,7 @@ class FlashSafetyTests(unittest.TestCase):
         self.assertFalse(checker({"start": 0x04000, "end_exclusive": 0x9000}, receiver_bounds))
         self.assertFalse(checker({"start": 0x05800, "end_exclusive": 0x20000}, receiver_bounds))
 
-    def test_target_boot_and_bod_fuses_match_their_live_layouts(self):
+    def test_target_boot_and_bod_fuses_match_their_live_layouts(self) -> None:
         parse_fuses = getattr(rf_proof, "target_fuses", None)
         compare_fuses = getattr(rf_proof, "boot_fuses_match", None)
         self.assertTrue(callable(parse_fuses), "target-specific BOOT fuse values are required")
@@ -1137,16 +1136,16 @@ class FlashSafetyTests(unittest.TestCase):
         self.assertTrue(compare_fuses(receiver, receiver))
         self.assertFalse(compare_fuses({"bootsize": 0x20, "codesize": 0, "bodcfg": 0x54}, gateway))
 
-    def test_target_identification_opens_no_port_without_physical_gates(self):
+    def test_target_identification_opens_no_port_without_physical_gates(self) -> None:
         class Proof:
             commands = 0
             notes = []
 
-            def command(self, *args, **kwargs):
+            def command(self, *args, **kwargs) -> Never:
                 self.commands += 1
                 raise AssertionError("serial command must remain blocked")
 
-            def note(self, _name, value):
+            def note(self, _name, value) -> None:
                 self.notes.append(value)
 
         for mapping, power in ((False, False), (True, False), (False, True)):

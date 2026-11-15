@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / "tools/config"))
 
 
 class ArqTests(unittest.TestCase):
-    def test_adapter(self):
+    def test_adapter(self) -> None:
         self.assertTrue((ROOT / "src/arq/main.cpp").exists(), "ARQ adapter missing")
         with tempfile.TemporaryDirectory() as directory:
             objects = []
@@ -72,7 +72,7 @@ class ArqTests(unittest.TestCase):
                 for failure in ("begin", "power", "header", "crc", "iq", "rx", "standby"):
                     subprocess.run([binary, failure], check=True)
 
-    def test_portable_core(self):
+    def test_portable_core(self) -> None:
         self.assertTrue((ROOT / "src/arq/arq.h").exists(), "ARQ core missing")
         with tempfile.TemporaryDirectory() as directory:
             binary = Path(directory) / "core"
@@ -101,7 +101,7 @@ class ArqTests(unittest.TestCase):
             )
             subprocess.run([str(binary)], check=True)
 
-    def test_config_and_board_generation(self):
+    def test_config_and_board_generation(self) -> None:
         from arq_config import arq_artifacts, load_arq, validate_arq
         from generate_lora_config import load_radio_profile
         from validate_lora_ssot import load
@@ -137,14 +137,14 @@ class ArqTests(unittest.TestCase):
         self.assertEqual(manifest_radio["frequency_hz"], 915_000_000)
         self.assertEqual(manifest_radio["tx_power_dbm"], 2)
 
-    def test_evidence_rejects_text_and_synthetic(self):
+    def test_evidence_rejects_text_and_synthetic(self) -> None:
         from tools.arq_trial import validate_bundle
 
         for value in ({}, {"physical": True}, {"synthetic": True, "events": []}):
             with self.assertRaises(ValueError):
                 validate_bundle(value)
 
-    def test_event_and_session_boundaries(self):
+    def test_event_and_session_boundaries(self) -> None:
         from tools.arq_trial import parse_event, reserve_session, wire_frame
 
         self.assertIsNone(parse_event("transport banner"))
@@ -162,7 +162,7 @@ class ArqTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 wire_frame(raw)
 
-    def test_evidence_events_must_match_raw_capture(self):
+    def test_evidence_events_must_match_raw_capture(self) -> None:
         from tools.arq_trial import checked_events
 
         with tempfile.TemporaryDirectory() as d:
@@ -180,7 +180,7 @@ class ArqTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 checked_events(events, directory)
 
-    def test_capture_close_keeps_final_stream_events(self):
+    def test_capture_close_keeps_final_stream_events(self) -> None:
         from tools.arq_trial import Capture
 
         capture = Capture(None)
@@ -188,7 +188,7 @@ class ArqTests(unittest.TestCase):
         capture.close()
         self.assertEqual(len(capture.events), 1)
 
-    def test_final_status_requires_current_session_and_no_overflow(self):
+    def test_final_status_requires_current_session_and_no_overflow(self) -> None:
         from tools.arq_trial import status_complete
 
         events = [
@@ -204,7 +204,7 @@ class ArqTests(unittest.TestCase):
         events.append(dict(role="sender", e="STATUS", s="1"))
         self.assertFalse(status_complete(events, "sender", 1))
 
-    def test_rf_cli_requires_physical_confirmation(self):
+    def test_rf_cli_requires_physical_confirmation(self) -> None:
         from tools import arq_trial
 
         for mode in ("--mvp", "--campaign"):
@@ -217,7 +217,7 @@ class ArqTests(unittest.TestCase):
                 self.assertEqual(error.exception.code, 2)
                 campaign.assert_not_called()
 
-    def test_mvp_order_is_one_then_negative_recovery_then_ten(self):
+    def test_mvp_order_is_one_then_negative_recovery_then_ten(self) -> None:
         from tools import arq_trial
 
         with (
@@ -239,7 +239,7 @@ class ArqTests(unittest.TestCase):
             arq_trial.main()
             campaign.assert_called_once_with((("H01", 1), ("H02", 1), ("H03", 1), ("H04", 10)))
 
-    def test_application_bounds_include_arq(self):
+    def test_application_bounds_include_arq(self) -> None:
         from tools.rf_proof import application_bounds_for_environment
 
         config = subprocess.check_output(

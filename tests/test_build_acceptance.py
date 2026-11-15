@@ -9,7 +9,7 @@ from test_rf_proof import effective_platformio_config
 
 
 class BuildAcceptanceTests(unittest.TestCase):
-    def test_unsafe_image_makes_build_stage_fail(self):
+    def test_unsafe_image_makes_build_stage_fail(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             proof = SimpleNamespace(
                 run_dir=Path(directory), command=lambda *_: (0, b"", b""), note=lambda *_: None

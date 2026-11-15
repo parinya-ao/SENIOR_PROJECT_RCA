@@ -298,7 +298,7 @@ def read_snapshot(proof, name, role="receiver", *, current_target=False, include
     return result
 
 
-def require_preserved(before, after, first, end):
+def require_preserved(before, after, first, end) -> None:
     names = ("signature", "sernum", "fuses", "eeprom", "lock")
     if "usersig" in before or "usersig" in after:
         names += ("usersig",)
@@ -312,7 +312,7 @@ def require_preserved(before, after, first, end):
         raise ValueError("Flash outside approved page range changed; stop for recovery inspection")
 
 
-def install(proof, args, restore=False):
+def install(proof, args, restore=False) -> int:
     """Explicitly authorized write only; never called from an ordinary app upload."""
     token = getattr(
         args,
@@ -461,7 +461,7 @@ def verify_live_receipt(proof, path):
     )
 
 
-def prepare(proof):
+def prepare(proof) -> int:
     """Compile, inspect and simulate the exact proposed overwrite and restoration."""
     directory = proof.run_dir
     original = BACKUP.read_bytes()

@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / "tools/config"))
 
 
 class ConfigurationTests(unittest.TestCase):
-    def test_protocol_and_board_configuration_rejects_invalid_or_radio_fields(self):
+    def test_protocol_and_board_configuration_rejects_invalid_or_radio_fields(self) -> None:
         from validate_lora_ssot import load, validate
 
         config = load(ROOT / "config/lora_system.json")
@@ -31,13 +31,13 @@ class ConfigurationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(changed)
 
-    def test_duplicate_keys(self):
+    def test_duplicate_keys(self) -> None:
         from validate_lora_ssot import unique_object
 
         with self.assertRaises(ValueError):
             json.loads('{"sf":7,"sf":8}', object_pairs_hook=unique_object)
 
-    def test_identity_requires_exact_unique_hash_and_protocol(self):
+    def test_identity_requires_exact_unique_hash_and_protocol(self) -> None:
         sys.path.insert(0, str(ROOT / "tools"))
         from rf_proof import shared_identity_matches
 
@@ -55,7 +55,7 @@ class ConfigurationTests(unittest.TestCase):
         ):
             self.assertFalse(shared_identity_matches(dict(logs, RECEIVER=invalid), fingerprint, 1))
 
-    def test_generation_is_deterministic_and_check_rejects_missing_or_stale_artifacts(self):
+    def test_generation_is_deterministic_and_check_rejects_missing_or_stale_artifacts(self) -> None:
         import generate_lora_config as generator
         import validate_lora_ssot
 

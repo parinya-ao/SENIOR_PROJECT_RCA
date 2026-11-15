@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / "tools/config"))
 
 
 class ReceiverHardwareTests(unittest.TestCase):
-    def test_receiver_configuration_matches_rfm_rev1_and_keeps_gateway_separate(self):
+    def test_receiver_configuration_matches_rfm_rev1_and_keeps_gateway_separate(self) -> None:
         config = json.loads((ROOT / "config/lora_system.json").read_text())
         from generate_lora_config import load_radio_profile
 
@@ -54,7 +54,7 @@ class ReceiverHardwareTests(unittest.TestCase):
             },
         )
 
-    def test_validator_accepts_receiver_hardware_without_relaxing_gateway_spi(self):
+    def test_validator_accepts_receiver_hardware_without_relaxing_gateway_spi(self) -> None:
         from validate_lora_ssot import validate
 
         config = json.loads((ROOT / "config/lora_system.json").read_text())
@@ -73,7 +73,7 @@ class ReceiverHardwareTests(unittest.TestCase):
             with self.subTest(section=section, pin=pin), self.assertRaises(ValueError):
                 validate(changed)
 
-    def test_gpio_powers_radio_before_spi_without_driving_sd_detect_or_unpowered_reset(self):
+    def test_gpio_powers_radio_before_spi_without_driving_sd_detect_or_unpowered_reset(self) -> None:
         # Compile the actual static GPIO function, replacing only Arduino I/O.
         source = (ROOT / "src/receiver/main.cpp").read_text()
         first = source.index("static void init_receiver_gpio()")

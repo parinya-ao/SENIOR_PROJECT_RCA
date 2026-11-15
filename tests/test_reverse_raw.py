@@ -9,13 +9,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReverseRawTests(unittest.TestCase):
-    def test_radio_profile_audit_accepts_the_915_mhz_arq_candidate(self):
+    def test_radio_profile_audit_accepts_the_915_mhz_arq_candidate(self) -> None:
         from tools.arq_trial import audit_raw_configuration
 
         values = bytes.fromhex("1281E4C000F084727404000812271D00000023C3000009")
         audit_raw_configuration(dict(bytes=values.hex()))
 
-    def test_cleanup_parks_live_peer_when_other_monitor_has_exited(self):
+    def test_cleanup_parks_live_peer_when_other_monitor_has_exited(self) -> None:
         from unittest.mock import Mock
 
         from tools import arq_trial as a
@@ -30,7 +30,7 @@ class ReverseRawTests(unittest.TestCase):
         )
         self.assertTrue(any("monitor disconnected" in e for e in errors))
 
-    def test_radio_profile_audit_rejects_iq_modem_and_carrier_mismatch(self):
+    def test_radio_profile_audit_rejects_iq_modem_and_carrier_mismatch(self) -> None:
         from tools.arq_trial import audit_raw_configuration
 
         values = bytes.fromhex("1281E4C000F084727404000812271D00000023C3000009")
@@ -41,7 +41,7 @@ class ReverseRawTests(unittest.TestCase):
                 audit_raw_configuration(dict(bytes=altered.hex()))
         audit_raw_configuration(dict(bytes=values.hex()))
 
-    def test_send_waits_for_active_rx_and_retains_device_timeout(self):
+    def test_send_waits_for_active_rx_and_retains_device_timeout(self) -> None:
         from types import SimpleNamespace
 
         from tools import arq_trial as a
@@ -52,7 +52,7 @@ class ReverseRawTests(unittest.TestCase):
                 r: {"process": SimpleNamespace(poll=lambda: None)} for r in ("sender", "receiver")
             }
 
-            def command(role, text):
+            def command(role, text) -> None:
                 c.commands.append(dict(role=role, text=text))
                 rows = []
                 if text == "RX":
@@ -83,7 +83,7 @@ class ReverseRawTests(unittest.TestCase):
             self.assertEqual(bool(c.seen("sender", "RAW_RX_TIMEOUT")), mode == 0x85)
             self.assertEqual(any(x["text"].startswith("SEND") for x in c.commands), mode == 0x85)
 
-    def test_expired_window_never_sends(self):
+    def test_expired_window_never_sends(self) -> None:
         from tools import arq_trial as a
 
         c = a.Capture(None)
@@ -97,7 +97,7 @@ class ReverseRawTests(unittest.TestCase):
                 a.reverse_exchange(c)
         command.assert_called_once_with("sender", "RX")
 
-    def test_rf_validation_requires_actual_matching_packet_and_txdone(self):
+    def test_rf_validation_requires_actual_matching_packet_and_txdone(self) -> None:
         from tools.arq_trial import validate_reverse
 
         events = [
@@ -126,7 +126,7 @@ class ReverseRawTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_reverse(events + [events[0]])
 
-    def test_reverse_cli_requires_physical_gate(self):
+    def test_reverse_cli_requires_physical_gate(self) -> None:
         from tools import arq_trial
 
         with (
@@ -137,7 +137,7 @@ class ReverseRawTests(unittest.TestCase):
                 arq_trial.main()
             run.assert_not_called()
 
-    def test_command_gating_payload_crc_timeout_and_cleanup(self):
+    def test_command_gating_payload_crc_timeout_and_cleanup(self) -> None:
         with tempfile.TemporaryDirectory() as d:
             for role in ("SENDER", "RECEIVER"):
                 binary = str(Path(d) / role)
@@ -171,7 +171,7 @@ class ReverseRawTests(unittest.TestCase):
                 ):
                     subprocess.run([binary, case], check=True)
 
-    def test_registered_target_bounds(self):
+    def test_registered_target_bounds(self) -> None:
         from tools.rf_proof import application_bounds_for_environment
 
         config = subprocess.check_output(

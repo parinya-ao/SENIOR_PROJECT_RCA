@@ -92,7 +92,7 @@ def parse_raw_mvp_logs(sender_text: str, receiver_text: str) -> dict[str, object
                 and bytes.fromhex(fields["bytes"]) == b"Hello World"
             ):
                 packets.append(dict(rssi=float(fields["rssi"]), snr=float(fields["snr"])))
-        except (ValueError, KeyError):
+        except ValueError, KeyError:
             continue
     return dict(
         passed=bool(ready and completed and packets),
@@ -558,7 +558,7 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
                 "codesize": codesize_path.read_bytes()[0],
                 "bodcfg": bodcfg_path.read_bytes()[0],
             }
-        except (OSError, IndexError):
+        except OSError, IndexError:
             observed = None
         (proof.run_dir / f"target-{role}-layout.json").write_text(
             json.dumps({"expected": expected_fuses[role], "observed": observed}, indent=2) + "\n"
@@ -575,7 +575,7 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
                 or serial_path.read_bytes() != expected_serial
             ):
                 all_ok = False
-        except (OSError, ValueError, KeyError):
+        except OSError, ValueError, KeyError:
             all_ok = False
 
     ports_after = check_port_owners(proof, "identify-postflight")
@@ -597,7 +597,7 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
 def effective_project_sections(config_text: str) -> dict[str, dict[str, object]] | None:
     try:
         configuration = json.loads(config_text)
-    except (TypeError, json.JSONDecodeError):
+    except TypeError, json.JSONDecodeError:
         return None
     if not isinstance(configuration, list):
         return None
@@ -689,7 +689,7 @@ def shared_rf_profile(config_text: str) -> dict[str, object] | None:
         generate(check=True)
         manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
         return dict(manifest["shared"]["radio"])
-    except (KeyError, OSError, ValueError):
+    except KeyError, OSError, ValueError:
         return None
 
 
@@ -713,7 +713,7 @@ def radio_profile_compile_flags(config_text: str) -> list[str] | None:
         if role not in ("sender", "receiver"):
             return None
         return [f"-DLORA_ROLE_{role.upper()}=1"]
-    except (KeyError, OSError, ValueError):
+    except KeyError, OSError, ValueError:
         return None
 
 
@@ -940,7 +940,7 @@ def application_layout_verified(environments: tuple[str, ...], effective_config:
         hex_path = ROOT / ".pio" / "build" / env / "firmware.hex"
         try:
             image_range = parse_ihex_range(hex_path.read_bytes())
-        except (OSError, ValueError):
+        except OSError, ValueError:
             return False
         if not image_fits_application(image_range, bounds):
             return False
@@ -948,7 +948,7 @@ def application_layout_verified(environments: tuple[str, ...], effective_config:
 
 
 class ProofRun:
-    def __init__(self, run_dir: Path):
+    def __init__(self, run_dir: Path) -> None:
         self.run_dir = run_dir
         self.run_dir.mkdir(parents=True, exist_ok=False)
 
@@ -977,7 +977,7 @@ class ProofRun:
             print(stderr.decode(errors="replace"), end="", file=sys.stderr)
         return code, stdout, stderr
 
-    def note(self, name: str, content: str):
+    def note(self, name: str, content: str) -> None:
         data = content.encode()
         (self.run_dir / name).write_bytes(data)
         print(content, end="")
@@ -1286,7 +1286,7 @@ def receiver_boot_handoff_supported(proof, args=None, effective_config=None):
             from receiver_boot import verify_live_receipt
 
             return verify_live_receipt(proof, receipt)
-        except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+        except OSError, ValueError, KeyError, subprocess.SubprocessError:
             return False
     if getattr(args, "boot_layout_verified", False) and effective_config is not None:
         bounds = application_bounds_for_environment(effective_config, "receiver")
@@ -1317,7 +1317,7 @@ def receiver_boot_handoff_supported(proof, args=None, effective_config=None):
             )
             return False
         return audit["application_transfers"] == [0x5800] and not audit["unresolved"]
-    except (OSError, ValueError, subprocess.SubprocessError):
+    except OSError, ValueError, subprocess.SubprocessError:
         return False
 
 
@@ -1349,8 +1349,15 @@ def program_receiver_boot(proof, args, restore=False):
         return 1
 
 
-def program_application(proof, environment, effective_config, *, approved_sha=None,
-                        approved_serial=None, approved_pages=None):
+def program_application(
+    proof,
+    environment,
+    effective_config,
+    *,
+    approved_sha=None,
+    approved_serial=None,
+    approved_pages=None,
+) -> int | None:
     """AVRDUDE -D suppresses auto erase; explicitly erase only the validated image pages."""
     from device_detection.firmware_identity import normalize_ihex_region
     from receiver_boot import AVRDUDE, AVRDUDE_CONF, ihex, read_snapshot, require_preserved
@@ -1365,8 +1372,9 @@ def program_application(proof, environment, effective_config, *, approved_sha=No
         start, end = region["start"], (region["end_exclusive"] + 511) // 512 * 512
         if end > bounds[1]:
             raise ValueError("last application page exceeds approved Flash region")
-        if approved_sha is not None and (hashlib.sha256(data).hexdigest() != approved_sha or
-                                         approved_pages != (start, end)):
+        if approved_sha is not None and (
+            hashlib.sha256(data).hexdigest() != approved_sha or approved_pages != (start, end)
+        ):
             raise ValueError("image hash or application pages differ from authorization")
         code, out, err = proof.command(
             environment + "-programmer-version", [str(AVRDUDE), "--version"]
@@ -1421,6 +1429,8 @@ def program_application(proof, environment, effective_config, *, approved_sha=No
     except (OSError, ValueError, KeyError) as error:
         proof.note(environment + "-program.log", f"FAIL: {error}; no automatic retry.\n")
         return 1
+
+
 def tracker_app_upload(proof, args, effective_config):
     try:
         identity = json.loads((ROOT / "config/current_hardware.json").read_text())["receiver"]
@@ -1428,20 +1438,31 @@ def tracker_app_upload(proof, args, effective_config):
         region = parse_ihex_range(data)
         bounds = application_bounds_for_environment(effective_config, "receiver")
         pages = (region["start"], (region["end_exclusive"] + 511) // 512 * 512)
-        if (not args.authorize_upload or args.target_role != "receiver" or
-            args.target_serial != identity["device_serial_hex"] or
-            identity["port_path"] != PORTS["receiver"] or
-            not re.fullmatch(r"[0-9a-f]{64}", args.image_sha256 or "") or
-            hashlib.sha256(data).hexdigest() != args.image_sha256 or
-            pages != (args.page_start, args.page_end) or
-            not image_fits_application(region, bounds) or pages[1] > bounds[1]):
+        if (
+            not args.authorize_upload
+            or args.target_role != "receiver"
+            or args.target_serial != identity["device_serial_hex"]
+            or identity["port_path"] != PORTS["receiver"]
+            or not re.fullmatch(r"[0-9a-f]{64}", args.image_sha256 or "")
+            or hashlib.sha256(data).hexdigest() != args.image_sha256
+            or pages != (args.page_start, args.page_end)
+            or not image_fits_application(region, bounds)
+            or pages[1] > bounds[1]
+        ):
             raise ValueError("target, image, page range, or authorization mismatch")
-        if (proof.command("tracker-path", ["readlink", "-e", PORTS["receiver"]])[0] != 0 or
-            proof.command("tracker-owners", ["fuser", PORTS["receiver"]])[0] != 1):
+        if (
+            proof.command("tracker-path", ["readlink", "-e", PORTS["receiver"]])[0] != 0
+            or proof.command("tracker-owners", ["fuser", PORTS["receiver"]])[0] != 1
+        ):
             raise ValueError("Tracker port is missing or occupied")
-        return program_application(proof, "receiver", effective_config,
-                                   approved_sha=args.image_sha256,
-                                   approved_serial=args.target_serial, approved_pages=pages)
+        return program_application(
+            proof,
+            "receiver",
+            effective_config,
+            approved_sha=args.image_sha256,
+            approved_serial=args.target_serial,
+            approved_pages=pages,
+        )
     except (OSError, ValueError, KeyError, TypeError) as error:
         proof.note("tracker-upload.log", f"BLOCKED: {error}; no write performed.\n")
         return 2
@@ -1555,7 +1576,7 @@ def start_rf_monitor(proof: ProofRun, role: str, port: str, output_queue: queue.
     for stream_name in ("stdout", "stderr"):
         stream = getattr(process, stream_name)
 
-        def pump(name=stream_name, source=stream):
+        def pump(name=stream_name, source=stream) -> None:
             with (proof.run_dir / f"rf-monitor-{role}.{name}.log").open("wb") as log:
                 while True:
                     line = source.readline()
@@ -1758,7 +1779,7 @@ def radio_spi_smoke(proof: ProofRun, args: argparse.Namespace, effective_config:
     return 2
 
 
-def upload_evidence_matches(path, manifest):
+def upload_evidence_matches(path, manifest) -> bool | None:
     if path is None:
         return False
     try:
@@ -1786,7 +1807,7 @@ def upload_evidence_matches(path, manifest):
             ):
                 return False
         return True
-    except (OSError, ValueError, KeyError, TypeError):
+    except OSError, ValueError, KeyError, TypeError:
         return False
 
 
@@ -1834,9 +1855,15 @@ def validate_symmetric_exchange(logs, session, diagnostic_test):
             board, name, timestamp, sid, src, dst, type_, seq, rc, irq = match.groups()
             type_, irq = int(type_, 16), int(irq, 16)
             data = type_ == 8
-            if (board != role or int(sid, 16) != session or int(seq) != 1 or
-                    int(rc) != 0 or type_ not in (8, response_type) or
-                    (int(src), int(dst)) != ((source, destination) if data else (destination, source))):
+            if (
+                board != role
+                or int(sid, 16) != session
+                or int(seq) != 1
+                or int(rc) != 0
+                or type_ not in (8, response_type)
+                or (int(src), int(dst))
+                != ((source, destination) if data else (destination, source))
+            ):
                 issues.append(f"{role}: invalid transaction identity or result")
             if name.endswith("_TX_DONE") and not irq & 8:
                 issues.append(f"{role}: missing physical TxDone")
@@ -1845,11 +1872,16 @@ def validate_symmetric_exchange(logs, session, diagnostic_test):
                     issues.append(f"{role}: invalid RX IRQ/CRC")
             events[role].append((name, int(timestamp), type_))
     required = {
-        sender: [("DATA_TX_BEGIN", 8), ("DATA_TX_DONE", 8),
-                 (response + "_RX", response_type), (response + "_ACCEPTED", response_type),
-                 ("TRANSACTION_FAILED" if nack else "TRANSACTION_COMPLETE", response_type)],
-        receiver: [("DATA_RX", 8)] + ([] if nack else [("DATA_VALIDATED", 8)]) +
-                  [(response + "_TX_BEGIN", response_type), (response + "_TX_DONE", response_type)],
+        sender: [
+            ("DATA_TX_BEGIN", 8),
+            ("DATA_TX_DONE", 8),
+            (response + "_RX", response_type),
+            (response + "_ACCEPTED", response_type),
+            ("TRANSACTION_FAILED" if nack else "TRANSACTION_COMPLETE", response_type),
+        ],
+        receiver: [("DATA_RX", 8)]
+        + ([] if nack else [("DATA_VALIDATED", 8)])
+        + [(response + "_TX_BEGIN", response_type), (response + "_TX_DONE", response_type)],
     }
     for role, names in required.items():
         selected = [(name, type_) for name, _, type_ in events[role]]
@@ -1859,8 +1891,10 @@ def validate_symmetric_exchange(logs, session, diagnostic_test):
         if any((right - left) & 0xFFFFFFFF >= 0x80000000 for left, right in zip(times, times[1:])):
             issues.append(f"{role}: nonmonotonic device timestamps")
     for role, name in [(sender, "DATA_PAYLOAD")] + ([] if nack else [(receiver, "PAYLOAD_BYTES")]):
-        expected = (f"[{role}] {name} C={session:04X} S=01 LEN=11 "
-                    "HEX=68656C6C6F20776F726C64 ASCII=hello world")
+        expected = (
+            f"[{role}] {name} C={session:04X} S=01 LEN=11 "
+            "HEX=68656C6C6F20776F726C64 ASCII=hello world"
+        )
         if logs[role].splitlines().count(expected) != 1:
             issues.append(f"{role}: missing exact 11-byte payload evidence")
     return issues
@@ -1902,16 +1936,30 @@ def validate_live_proof(journal, manifest, images, run_id, session, diagnostic_t
         reverse = diagnostic_test in ("T03", "T04")
         nack = diagnostic_test in ("T02", "T04")
         receiving = "GATEWAY" if reverse else "RECEIVER"
-        commands = [item["line"] for item in journal if item["role"] == "HOST" and item["line"] != "P"]
+        commands = [
+            item["line"] for item in journal if item["role"] == "HOST" and item["line"] != "P"
+        ]
         if commands != [("N" if nack else "R") + f"{session:04X}", f"S{session:04X}"]:
             issues.append("incorrect or repeated symmetric control commands")
-        ready = [i for i, item in enumerate(journal)
-                 if item["role"] == receiving and item["line"] == f"[{receiving}] RX_READY"]
-        start = [i for i, item in enumerate(journal) if item["role"] == "HOST" and item["line"].startswith("S")]
+        ready = [
+            i
+            for i, item in enumerate(journal)
+            if item["role"] == receiving and item["line"] == f"[{receiving}] RX_READY"
+        ]
+        start = [
+            i
+            for i, item in enumerate(journal)
+            if item["role"] == "HOST" and item["line"].startswith("S")
+        ]
         if len(ready) != 1 or len(start) != 1 or ready[0] >= start[0]:
             issues.append("DATA requested before receiver ready")
-        return dict(valid=not issues, issues=sorted(set(issues)), session=session,
-                    origin="STRUCTURAL_LOG_VALIDATION", diagnostic_test=diagnostic_test)
+        return dict(
+            valid=not issues,
+            issues=sorted(set(issues)),
+            session=session,
+            origin="STRUCTURAL_LOG_VALIDATION",
+            diagnostic_test=diagnostic_test,
+        )
     commands = [(i, item["line"]) for i, item in enumerate(journal) if item["role"] == "HOST"]
     if [line for _, line in commands] != [f"R{session:04X}", f"S{session:04X}"]:
         issues.append("incorrect, repeated or continuation commands")
@@ -2103,13 +2151,13 @@ def verify_installed_images(proof, effective_config, manifest, run_id):
                 start=start,
                 end=end,
             )
-        except (OSError, ValueError, KeyError):
+        except OSError, ValueError, KeyError:
             return None
     proof.note("live-image-identities.json", json.dumps(images, indent=2) + "\n")
     return images
 
 
-def shared_identity_matches(logs, fingerprint, protocol_version):
+def shared_identity_matches(logs, fingerprint, protocol_version) -> bool:
     for role in ("GATEWAY", "RECEIVER"):
         lines = logs.get(role, "").splitlines()
         hashes = [line for line in lines if line.startswith(f"[{role}] CONFIG_FINGERPRINT=")]
@@ -2128,7 +2176,7 @@ def reserve_session(proof, run_id):
     for path in ARTIFACTS.glob("*/run-session.json"):
         try:
             used.add(json.loads(path.read_text())["session"])
-        except (OSError, ValueError, KeyError, TypeError):
+        except OSError, ValueError, KeyError, TypeError:
             raise ValueError(f"unreadable prior session reservation: {path}")
     initial = secrets.randbelow(65535)
     for offset in range(65535):
@@ -2215,7 +2263,7 @@ def rf_test(
     stop_reason = ""
     result = dict(valid=False, issues=["capture incomplete"], origin="UNPROVEN")
 
-    def record(role, line):
+    def record(role, line) -> None:
         journal.append(dict(role=role, line=line, observed_monotonic_ns=time.monotonic_ns()))
 
     def lines(role):
@@ -2226,8 +2274,10 @@ def rf_test(
         expected = manifest["environments"][environment]["build_id"]
         return (
             radio_startup_matches(captured, role, manifest["shared"]["radio"])
-            and (not getattr(args, "transport_test", None) or
-                 captured.count(f"[{role}] TRANSPORT=SSOT_SYMMETRIC_V1") == 1)
+            and (
+                not getattr(args, "transport_test", None)
+                or captured.count(f"[{role}] TRANSPORT=SSOT_SYMMETRIC_V1") == 1
+            )
             and captured.count(f"[{role}] BUILD_ID={expected}") == 1
             and captured.count(f"[{role}] CONFIG_FINGERPRINT={manifest['shared_fingerprint']}") == 1
             and captured.count(
@@ -2236,13 +2286,13 @@ def rf_test(
             == 1
         )
 
-    def command(role, prefix):
+    def command(role, prefix) -> None:
         text = "P" if prefix == "P" else f"{prefix}{session:04X}"
         process = monitors[role]["process"]
         if (
-            (prefix != "P" and any(monitor["process"].poll() is not None for monitor in monitors.values()))
-            or process.stdin is None
-        ):
+            prefix != "P"
+            and any(monitor["process"].poll() is not None for monitor in monitors.values())
+        ) or process.stdin is None:
             raise OSError("monitor disconnected before control command")
         written = process.stdin.write(text.encode("ascii"))
         if written != len(text):
@@ -2251,7 +2301,9 @@ def rf_test(
         record("HOST", text)
 
     try:
-        monitors[receiver_key] = start_rf_monitor(proof, receiver_key, PORTS[receiver_key], output_queue)
+        monitors[receiver_key] = start_rf_monitor(
+            proof, receiver_key, PORTS[receiver_key], output_queue
+        )
         while time.monotonic() < deadline:
             try:
                 role, stream, raw = output_queue.get(timeout=0.1)
@@ -2277,14 +2329,22 @@ def rf_test(
             symmetric = symmetric or "TRANSPORT=SSOT_SYMMETRIC_V1" in line
             if line.startswith("[GATEWAY] TEST_COMPLETED C=") and completion_seen_at is None:
                 completion_seen_at = time.monotonic()
-            if symmetric and any(name in line for name in ("TRANSACTION_COMPLETE ", "NACK_ACCEPTED ")):
+            if symmetric and any(
+                name in line for name in ("TRANSACTION_COMPLETE ", "NACK_ACCEPTED ")
+            ):
                 if completion_seen_at is None:
                     completion_seen_at = time.monotonic()
-            expected_rejection = nack and "TRANSACTION_FAILED " in line and "TYPE=09" in line and " E=0 " in line
-            if not expected_rejection and any(marker in line for marker in ("FAILED", "TEST_ALREADY_RUN", "TX_TIMEOUT")):
+            expected_rejection = (
+                nack and "TRANSACTION_FAILED " in line and "TYPE=09" in line and " E=0 " in line
+            )
+            if not expected_rejection and any(
+                marker in line for marker in ("FAILED", "TEST_ALREADY_RUN", "TX_TIMEOUT")
+            ):
                 stop_reason = line
                 break
-            waiting_line = "[GATEWAY] WAIT_START" if role == "gateway" else "[RECEIVER] WAIT_SESSION"
+            waiting_line = (
+                "[GATEWAY] WAIT_START" if role == "gateway" else "[RECEIVER] WAIT_SESSION"
+            )
             if role == receiver_key and line == waiting_line and not armed:
                 if not identity(receiver_role, environments[receiver_role]):
                     stop_reason = "Receiver identity mismatch before arming"
@@ -2307,7 +2367,9 @@ def rf_test(
                 command(sender_key, "S")
                 started = True
             if started:
-                result = validate_live_proof(journal, manifest, images, run_id, session, diagnostic_test)
+                result = validate_live_proof(
+                    journal, manifest, images, run_id, session, diagnostic_test
+                )
         else:
             stop_reason = "timed out waiting for single-packet proof"
     except (OSError, ValueError) as error:
@@ -2324,8 +2386,10 @@ def rf_test(
                     capture_error = True
             park_deadline = time.monotonic() + 5
             while time.monotonic() < park_deadline:
-                parked = [any(item["line"] == f"[{name}] PARKED E=0" for item in journal)
-                          for name in (receiver_role, sender_role)]
+                parked = [
+                    any(item["line"] == f"[{name}] PARKED E=0" for item in journal)
+                    for name in (receiver_role, sender_role)
+                ]
                 if all(parked):
                     break
                 try:
@@ -2333,8 +2397,10 @@ def rf_test(
                 except queue.Empty:
                     continue
                 if stream == "stdout" and raw:
-                    record("GATEWAY" if key == "gateway" else "RECEIVER",
-                           raw.decode("ascii", errors="replace").rstrip("\r\n"))
+                    record(
+                        "GATEWAY" if key == "gateway" else "RECEIVER",
+                        raw.decode("ascii", errors="replace").rstrip("\r\n"),
+                    )
             else:
                 capture_error = True
         codes = {role: stop_rf_monitor(monitor) for role, monitor in monitors.items()}
@@ -2417,8 +2483,11 @@ def main() -> int:
     parser.add_argument("--page-start", type=lambda value: int(value, 0))
     parser.add_argument("--page-end", type=lambda value: int(value, 0))
     parser.add_argument("--authorize-rf-test", action="store_true")
-    parser.add_argument("--transport-test", choices=("T01", "T02", "T03", "T04"),
-                        help="symmetric SSOT DATA/ACK or controlled NACK, forward/reverse")
+    parser.add_argument(
+        "--transport-test",
+        choices=("T01", "T02", "T03", "T04"),
+        help="symmetric SSOT DATA/ACK or controlled NACK, forward/reverse",
+    )
     parser.add_argument(
         "--single-packet",
         action="store_true",

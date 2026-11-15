@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from tools.arq_trial import parse_event, status_complete
+from typing import Never
 
 STATUS_STABILITY_TIMEOUT_S = 180  # 20 × the observed 7.6 s block latency, with margin.
 MAILBOX_PROBE_TIMEOUT_S = 10
@@ -86,7 +87,7 @@ def startup_profile(path):
 
 
 class Gate1Audit:
-    def __init__(self, directory):
+    def __init__(self, directory) -> None:
         self.directory = Path(directory)
         self.lock = threading.RLock()
         self.current_transaction = None
@@ -115,14 +116,14 @@ class Gate1Audit:
         self.first_failure = None
         self.stdout_stream = None
 
-    def _append(self, path, record, durable=False):
+    def _append(self, path, record, durable=False) -> None:
         with self.lock, path.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(record, sort_keys=True) + "\n")
             stream.flush()
             if durable:
                 os.fsync(stream.fileno())
 
-    def event(self, name, **values):
+    def event(self, name, **values) -> None:
         self._append(
             self.acquisition,
             {
@@ -135,7 +136,7 @@ class Gate1Audit:
             True,
         )
 
-    def transport(self, **record):
+    def transport(self, **record) -> None:
         self._append(
             self.trace,
             {
@@ -156,7 +157,7 @@ class Gate1Audit:
             },
         )
 
-    def fail(self, error, operation, failure_layer=None):
+    def fail(self, error, operation, failure_layer=None) -> None:
         if self.first_failure is not None:
             return
         if failure_layer == "STATUS_RESPONSE":
@@ -211,7 +212,7 @@ class Gate1Audit:
                     and item.get("transaction_index") == self.current_transaction
                 ):
                     return item.get("actual_rx_hex", "UNKNOWN")
-        except (OSError, json.JSONDecodeError):
+        except OSError, json.JSONDecodeError:
             pass
         return "UNKNOWN"
 
@@ -225,11 +226,11 @@ class Gate1Audit:
                     and item.get("transaction_index") == self.current_transaction
                 ):
                     return item.get("actual_rx_length", "UNKNOWN")
-        except (OSError, json.JSONDecodeError):
+        except OSError, json.JSONDecodeError:
             pass
         return "UNKNOWN"
 
-    def write_transaction(self, row):
+    def write_transaction(self, row) -> None:
         self.rows.append(row)
         self._append(self.transactions, row, True)
 
@@ -237,14 +238,14 @@ class Gate1Audit:
 class TracePort:
     """Transparent serial proxy: delegates unchanged and records returned bytes."""
 
-    def __init__(self, port, audit):
+    def __init__(self, port, audit) -> None:
         object.__setattr__(self, "_port", port)
         object.__setattr__(self, "_audit", audit)
 
     def __getattr__(self, name):
         return getattr(self._port, name)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name, value) -> None:
         setattr(self._port, name, value)
 
     def write(self, data):
@@ -318,17 +319,17 @@ class TracePort:
 
 
 class MonitorConsole:
-    def __init__(self):
+    def __init__(self) -> None:
         self.input = queue.Queue()
         self.output = queue.Queue()
 
     def get(self):
         return self.input.get()
 
-    def put(self, byte):
+    def put(self, byte) -> None:
         self.output.put((byte, time.monotonic_ns()))
 
-    def send(self, data):
+    def send(self, data) -> None:
         for byte in data:
             self.input.put(byte)
 
@@ -510,7 +511,7 @@ def firmware_identity_from_events(events):
     }
 
 
-def wait_for_reader_idle(reader_busy, timeout_s):
+def wait_for_reader_idle(reader_busy, timeout_s) -> bool:
     deadline = time.monotonic() + max(0, timeout_s)
     while reader_busy.locked() and time.monotonic() < deadline:
         time.sleep(0.005)
@@ -588,7 +589,7 @@ def read_data_space_byte(updi, address):
     return updi.recv(1)[0]
 
 
-def store_data_space_byte(updi, address, value):
+def store_data_space_byte(updi, address, value) -> None:
     if type(address) is not int or not 0 <= address <= 0xFFFF:
         raise ValueError("AVR128DA data-space address must fit in 16 bits")
     if type(value) is not int or not 0 <= value <= 0xFF:
@@ -752,7 +753,7 @@ def target_profile(target, hardware, verified, config_hash):
     }
 
 
-def controlled_cpu_reset(updi, ocd_key):
+def controlled_cpu_reset(updi, ocd_key) -> None:
     updi.reset()
     updi.key(ocd_key)
 
@@ -774,7 +775,7 @@ def resume_cpu_if_stopped(
         time.sleep(0.001)
 
 
-def part_from_signature(signature):
+def part_from_signature(signature) -> str | None:
     return "AVR128DA28" if signature == bytes.fromhex("1e970a") else None
 
 
@@ -1509,7 +1510,7 @@ def run_gate1(
     return verdict
 
 
-def main(argv=None):
+def main(argv=None) -> Never:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--execute-gate1",

@@ -45,7 +45,7 @@ def validate(config):
         retries=dict(max_retries=0),
     )
 
-    def shape(value, expected, path):
+    def shape(value, expected, path) -> None:
         if isinstance(expected, dict):
             if not isinstance(value, dict) or value.keys() != expected.keys():
                 raise ValueError(f"{path}: missing or unknown fields")
@@ -108,7 +108,7 @@ def load(path):
     return validate(json.loads(Path(path).read_text(), object_pairs_hook=unique_object))
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("path", nargs="?", type=Path, default=ROOT / "config/lora_system.json")
     args = parser.parse_args()

@@ -23,3 +23,4 @@ LICENSE
 *.json*
 artifacts
 **/rca/**
+*.md

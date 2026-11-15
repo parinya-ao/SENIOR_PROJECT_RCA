@@ -47,7 +47,7 @@ class RadioBringupTests(unittest.TestCase):
             ).hex(),
         )
 
-    def test_phy_validates_every_selected_field(self):
+    def test_phy_validates_every_selected_field(self) -> None:
         self.assertEqual(
             trial.audit_radio_configuration(self.snapshot(), rx=True)["frequency_hz"], 915000000
         )
@@ -65,7 +65,7 @@ class RadioBringupTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             trial.audit_radio_configuration(dict(bytes="85"), rx=True)
 
-    def test_deadline_checked_before_rf(self):
+    def test_deadline_checked_before_rf(self) -> None:
         from tools.config.arq_config import load_arq
 
         config = load_arq()
@@ -76,7 +76,7 @@ class RadioBringupTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             trial.hello_airtime_budget(config)
 
-    def test_bringup_cli_uses_only_programming_gate(self):
+    def test_bringup_cli_uses_only_programming_gate(self) -> None:
         with (
             patch(
                 "sys.argv",
@@ -92,25 +92,23 @@ class RadioBringupTests(unittest.TestCase):
             trial.main()
         run.assert_called_once()
 
-    def test_hello_cli_requires_rf_release_after_programming_readiness(self):
+    def test_hello_cli_requires_rf_release_after_programming_readiness(self) -> None:
         with (
             patch(
                 "sys.argv",
                 ["arq_trial", "--hello-lora", "--physical-mapping-verified", "--power-verified"],
             ),
-            patch.object(trial, "radio_only_bringup") as run,
+            patch.object(trial, "radio_only_bringup") as run,self.assertRaises(SystemExit)
         ):
-            with self.assertRaises(SystemExit):
-                trial.main()
+            trial.main()
         run.assert_not_called()
 
-    def test_bringup_cli_blocks_missing_power_before_hardware(self):
+    def test_bringup_cli_blocks_missing_power_before_hardware(self) -> None:
         with (
             patch("sys.argv", ["arq_trial", "--radio-only-bringup"]),
-            patch.object(trial, "radio_only_bringup") as run,
+            patch.object(trial, "radio_only_bringup") as run,self.assertRaises(SystemExit)
         ):
-            with self.assertRaises(SystemExit):
-                trial.main()
+            trial.main()
         run.assert_not_called()
 
     @staticmethod
@@ -133,7 +131,7 @@ class RadioBringupTests(unittest.TestCase):
         ]
         return events
 
-    def test_exchange_requires_matching_data_ack_and_done(self):
+    def test_exchange_requires_matching_data_ack_and_done(self) -> None:
         events = self.exchange_events()
         self.assertTrue(trial.validate_hello_exchange(events, 7)["complete"])
         for index, key in (
@@ -175,21 +173,21 @@ class RadioBringupTests(unittest.TestCase):
         ]
         self.assertTrue(trial.validate_hello_exchange(grouped, 7)["complete"])
 
-    def test_zero_transmit_bringup_programs_tracker_first_and_parks_without_reflash(self):
+    def test_zero_transmit_bringup_programs_tracker_first_and_parks_without_reflash(self) -> None:
         self.check_bringup_cleanup(fail_rx=False)
 
-    def test_partial_arm_failure_drains_stop_and_parks_each_actual_session(self):
+    def test_partial_arm_failure_drains_stop_and_parks_each_actual_session(self) -> None:
         self.check_bringup_cleanup(fail_rx=True)
 
-    def test_four_one_shots_select_images_rx_first_and_dispatch_one_exact_send(self):
+    def test_four_one_shots_select_images_rx_first_and_dispatch_one_exact_send(self) -> None:
         for test_id in ("T01", "T02", "T03", "T04"):
             with self.subTest(test_id=test_id):
                 self.check_bringup_cleanup(fail_rx=False, test_id=test_id)
 
-    def test_reverse_non_transmitting_bringup_has_no_send(self):
+    def test_reverse_non_transmitting_bringup_has_no_send(self) -> None:
         self.check_bringup_cleanup(fail_rx=False, reverse=True)
 
-    def check_bringup_cleanup(self, *, fail_rx, test_id=None, reverse=False):
+    def check_bringup_cleanup(self, *, fail_rx, test_id=None, reverse=False) -> None:
         reverse = reverse or test_id in ("T03", "T04")
         suffix = "_reverse" if reverse else ""
         with tempfile.TemporaryDirectory() as directory:
@@ -215,7 +213,7 @@ class RadioBringupTests(unittest.TestCase):
                 )
 
             class Capture:
-                def __init__(inner, proof):
+                def __init__(inner, proof) -> None:
                     inner.events = []
                     inner.commands = []
                     inner.errors = []
@@ -224,14 +222,14 @@ class RadioBringupTests(unittest.TestCase):
                     inner.session = {"receiver": 0, "sender": 0}
                     inner.pending_stop = False
 
-                def start(inner):
+                def start(inner) -> None:
                     inner.monitors = {"receiver": {}, "sender": {}}
 
-                def acquire(inner, *_):
+                def acquire(inner, *_) -> None:
                     for role in inner.monitors:
                         inner.events.append(dict(self.snapshot(0x81), role=role, s="0"))
 
-                def command(inner, role, text):
+                def command(inner, role, text) -> None:
                     inner.commands.append(dict(role=role, text=text))
                     if text.startswith("ARM "):
                         inner.mode[role] = 0x8D if fail_rx else 0x85
@@ -242,10 +240,14 @@ class RadioBringupTests(unittest.TestCase):
                     elif text == "X":
                         inner.mode[role] = 0x81
                         inner.pending_stop = True
-                        inner.events.append(dict(role=role, e="STOP", s=f"{inner.session[role]:X}", rc="0"))
+                        inner.events.append(
+                            dict(role=role, e="STOP", s=f"{inner.session[role]:X}", rc="0")
+                        )
                     elif text == "STATUS":
                         if inner.pending_stop:
-                            raise AssertionError("STATUS before STOP drained overflows the 16-slot logger")
+                            raise AssertionError(
+                                "STATUS before STOP drained overflows the 16-slot logger"
+                            )
                         inner.events.extend(
                             [
                                 dict(
@@ -255,15 +257,24 @@ class RadioBringupTests(unittest.TestCase):
                                     ready="1",
                                     overflow="0",
                                 ),
-                                dict(self.snapshot(inner.mode[role]), role=role, s=f"{inner.session[role]:X}"),
-                                dict(role=role, e="STATUS_END", s=f"{inner.session[role]:X}", v="0"),
+                                dict(
+                                    self.snapshot(inner.mode[role]),
+                                    role=role,
+                                    s=f"{inner.session[role]:X}",
+                                ),
+                                dict(
+                                    role=role, e="STATUS_END", s=f"{inner.session[role]:X}", v="0"
+                                ),
                             ]
                         )
                     elif text.startswith("SEND "):
                         from tests.test_arq_directional import DirectionalHostTests
-                        inner.events.extend(DirectionalHostTests.events(test_id, inner.session[role]))
 
-                def wait(inner, predicate, *_):
+                        inner.events.extend(
+                            DirectionalHostTests.events(test_id, inner.session[role])
+                        )
+
+                def wait(inner, predicate, *_) -> None:
                     if not predicate():
                         raise AssertionError("capture predicate not met")
                     inner.pending_stop = False
@@ -271,13 +282,18 @@ class RadioBringupTests(unittest.TestCase):
                 def seen(inner, role, name):
                     return [e for e in inner.events if e["role"] == role and e["e"] == name]
 
-                def close(inner):
+                def close(inner) -> None:
                     pass
 
-            args = SimpleNamespace(physical_mapping_verified=True, power_verified=True,
-                                   rf_path_confirmed=True, rf_hardware_verified=True,
-                                   authorize_rf_test=True, diagnostic_test=test_id,
-                                   reverse_direction=reverse and test_id is None)
+            args = SimpleNamespace(
+                physical_mapping_verified=True,
+                power_verified=True,
+                rf_path_confirmed=True,
+                rf_hardware_verified=True,
+                authorize_rf_test=True,
+                diagnostic_test=test_id,
+                reverse_direction=reverse and test_id is None,
+            )
             with (
                 patch.object(trial, "ROOT", root),
                 patch("generate_lora_config.generate"),
@@ -306,17 +322,29 @@ class RadioBringupTests(unittest.TestCase):
             self.assertEqual(report["cleanup"], dict(receiver="PARKED", sender="PARKED"))
             sends = [c for c in report["commands"] if c["text"].startswith("SEND")]
             if test_id:
-                payload = b"REJECT_LORA" if test_id in ("T02", "T04") else (
-                    b"HELLO_LORA_TR" if reverse else b"HELLO_LORA_GW")
-                self.assertEqual(sends, [dict(role="receiver" if reverse else "sender",
-                                             text="SEND " + payload.hex().upper())])
+                payload = (
+                    b"REJECT_LORA"
+                    if test_id in ("T02", "T04")
+                    else (b"HELLO_LORA_TR" if reverse else b"HELLO_LORA_GW")
+                )
+                self.assertEqual(
+                    sends,
+                    [
+                        dict(
+                            role="receiver" if reverse else "sender",
+                            text="SEND " + payload.hex().upper(),
+                        )
+                    ],
+                )
                 self.assertTrue(report["exchange"]["complete"])
                 arms = [c["role"] for c in report["commands"] if c["text"].startswith("ARM ")]
-                self.assertEqual(arms, ["sender", "receiver"] if reverse else ["receiver", "sender"])
+                self.assertEqual(
+                    arms, ["sender", "receiver"] if reverse else ["receiver", "sender"]
+                )
             else:
                 self.assertEqual(sends, [])
 
-    def test_stale_candidate_is_rejected_before_programming(self):
+    def test_stale_candidate_is_rejected_before_programming(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "generated").mkdir()
@@ -340,13 +368,12 @@ class RadioBringupTests(unittest.TestCase):
                 ),
                 patch.object(
                     trial.rf, "program_application", side_effect=ValueError("programming reached")
-                ) as program,
+                ) as program,self.assertRaisesRegex(ValueError, "stale candidate")
             ):
-                with self.assertRaisesRegex(ValueError, "stale candidate"):
-                    trial.radio_only_bringup(args)
+                trial.radio_only_bringup(args)
             program.assert_not_called()
 
-    def test_live_image_verifier_accepts_current_tracker_and_rejects_other_device(self):
+    def test_live_image_verifier_accepts_current_tracker_and_rejects_other_device(self) -> None:
         from tools.receiver_boot import ihex
 
         with tempfile.TemporaryDirectory() as directory:

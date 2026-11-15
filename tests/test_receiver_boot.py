@@ -1,5 +1,5 @@
-import json
 import hashlib
+import json
 import subprocess
 import sys
 import tempfile
@@ -13,11 +13,11 @@ import receiver_boot as boot
 
 
 class ReceiverBootTests(unittest.TestCase):
-    def test_snapshot_read_retries_at_lower_baud_after_link_failure(self):
+    def test_snapshot_read_retries_at_lower_baud_after_link_failure(self) -> None:
         class Proof:
-            run_dir = Path(".")
+            run_dir = Path()
 
-            def __init__(self):
+            def __init__(self) -> None:
                 self.calls = []
 
             def command(self, name, command, timeout):
@@ -25,10 +25,14 @@ class ReceiverBootTests(unittest.TestCase):
                 return (1 if len(self.calls) == 1 else 0), b"", b""
 
         proof = Proof()
-        self.assertEqual(boot.read_snapshot_command(proof, "snapshot", ["avrdude", "-b", "115200"]), 0)
-        self.assertEqual([call[1][call[1].index("-b") + 1] for call in proof.calls], ["115200", "57600"])
+        self.assertEqual(
+            boot.read_snapshot_command(proof, "snapshot", ["avrdude", "-b", "115200"]), 0
+        )
+        self.assertEqual(
+            [call[1][call[1].index("-b") + 1] for call in proof.calls], ["115200", "57600"]
+        )
 
-    def test_page0_overlay_preserves_every_other_byte(self):
+    def test_page0_overlay_preserves_every_other_byte(self) -> None:
         original = bytes(range(256)) * 512
         stub = b"\xf8\x94\x11\x24"
         patched, changes = boot.patch_page0(original, stub)
@@ -36,7 +40,7 @@ class ReceiverBootTests(unittest.TestCase):
         self.assertEqual(patched[len(stub) :], original[len(stub) : 512])
         self.assertEqual(changes, [[0, 4]])
 
-    def test_rejects_invalid_backup_and_out_of_page_stub(self):
+    def test_rejects_invalid_backup_and_out_of_page_stub(self) -> None:
         for original, stub in [
             (b"bad", b"ab"),
             (b"\xff" * 131072, b"x" * 513),
@@ -45,7 +49,7 @@ class ReceiverBootTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 boot.patch_page0(original, stub)
 
-    def test_write_command_is_exact_page_erase_not_chip_or_fuses(self):
+    def test_write_command_is_exact_page_erase_not_chip_or_fuses(self) -> None:
         command = boot.page_write_command("avrdude", "avrdude.conf", "receiver", "page.hex", 0, 512)
         self.assertNotIn("-e", command)
         self.assertNotIn("-V", command)
@@ -59,13 +63,13 @@ class ReceiverBootTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 boot.page_write_command("a", "c", "p", "f", start, size)
 
-    def test_address_units_use_byte_addresses(self):
+    def test_address_units_use_byte_addresses(self) -> None:
         self.assertEqual(boot.reset_target(bytes.fromhex("0c94002c"), 0), 0x5800)
         self.assertEqual(boot.reset_target(bytes.fromhex("52c00000"), 0x5800), 0x58A6)
         with self.assertRaises(ValueError):
             boot.reset_target(b"\xff" * 4, 0x5800)
 
-    def test_missing_or_wrong_specific_authorization_opens_no_port(self):
+    def test_missing_or_wrong_specific_authorization_opens_no_port(self) -> None:
         proof = SimpleNamespace(note=lambda *_: None)
         args = SimpleNamespace(
             authorize_receiver_boot_page0=None, receiver_boot_package=None, authorize_upload=True
@@ -86,7 +90,7 @@ class ReceiverBootTests(unittest.TestCase):
                     boot.install(proof, args)
                 snapshot.assert_not_called()
 
-    def test_unapproved_flash_fuse_or_eeprom_changes_fail_preservation(self):
+    def test_unapproved_flash_fuse_or_eeprom_changes_fail_preservation(self) -> None:
         before = dict.fromkeys(("signature", "sernum", "fuses", "eeprom", "lock"), b"abc")
         before["flash"] = b"\xff" * 131072
         after = dict(before)
@@ -98,7 +102,7 @@ class ReceiverBootTests(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 boot.require_preserved(before, changed, 0, 512)
 
-    def test_no_meter_still_blocks_write_without_wiring_observations(self):
+    def test_no_meter_still_blocks_write_without_wiring_observations(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             package = Path(directory) / "map.json"
             package.write_text("{}")
@@ -121,7 +125,7 @@ class ReceiverBootTests(unittest.TestCase):
 
 class CompiledHandoffTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         temporary = tempfile.TemporaryDirectory()
         cls.addClassCleanup(temporary.cleanup)
         directory = Path(temporary.name)
@@ -153,13 +157,13 @@ class CompiledHandoffTests(unittest.TestCase):
         )
         cls.code = binary.read_bytes()
 
-    def test_compiled_handoff_uses_correct_byte_target_and_interrupt_state(self):
+    def test_compiled_handoff_uses_correct_byte_target_and_interrupt_state(self) -> None:
         result = boot.trace_stub(self.code, bytes.fromhex("52c00000"))
         self.assertEqual(result, dict(application_entered=True, cpuint=0, interrupts=False))
         self.assertLess(len(self.code), 512)
         self.assertIn(bytes.fromhex("0c94002c"), self.code)
 
-    def test_blank_or_any_wrong_reset_byte_parks(self):
+    def test_blank_or_any_wrong_reset_byte_parks(self) -> None:
         cases = [b"\xff" * 4]
         for index in range(4):
             entry = bytearray.fromhex("52c00000")
@@ -175,7 +179,7 @@ class CompiledHandoffTests(unittest.TestCase):
 
 class BootPackageTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         if (
             json.loads((boot.ROOT / "config/lora_system.json").read_text())["receiver_board"][
                 "bootsize"
@@ -203,7 +207,7 @@ class BootPackageTests(unittest.TestCase):
         boot.prepare(proof)
         cls.package = cls.directory / "receiver-boot-overwrite-map.json"
 
-    def test_exact_installed_compiler_and_avrdude_simulation_package(self):
+    def test_exact_installed_compiler_and_avrdude_simulation_package(self) -> None:
         report = boot.load_package(self.package)
         self.assertEqual(report["boot_pages_written"], [0])
         self.assertEqual(report["stub_size"], 48)
@@ -211,7 +215,7 @@ class BootPackageTests(unittest.TestCase):
         self.assertEqual(report["physical_programming"], "NOT_RUN")
         self.assertTrue((self.directory / "receiver-handoff.map").is_file())
 
-    def test_modified_package_image_is_rejected(self):
+    def test_modified_package_image_is_rejected(self) -> None:
         image = self.directory / "receiver-boot-page0.hex"
         original = image.read_bytes()
         try:
@@ -249,7 +253,7 @@ class BootPackageTests(unittest.TestCase):
         patched = dict(app, flash=page + app["flash"][512:])
         return base, app, patched
 
-    def test_authorized_installer_programs_app_before_boot_with_preservation(self):
+    def test_authorized_installer_programs_app_before_boot_with_preservation(self) -> None:
         import rf_proof as rf
 
         snapshots = self.snapshots()
@@ -278,7 +282,7 @@ class BootPackageTests(unittest.TestCase):
         )
         self.assertTrue(all("-e" not in command for command in commands))
 
-    def test_restore_can_recover_partly_erased_page_without_rewriting_app(self):
+    def test_restore_can_recover_partly_erased_page_without_rewriting_app(self) -> None:
         import rf_proof as rf
 
         base, app, _ = self.snapshots()
@@ -306,7 +310,7 @@ class BootPackageTests(unittest.TestCase):
         self.assertEqual(len(commands), 1)
         self.assertEqual(commands[0][commands[0].index("-T") + 1], "erase flash 0x0 0x200")
 
-    def test_app_preservation_failure_prevents_boot_write(self):
+    def test_app_preservation_failure_prevents_boot_write(self) -> None:
         import rf_proof as rf
 
         base, app, _ = self.snapshots()
@@ -329,44 +333,68 @@ class BootPackageTests(unittest.TestCase):
         with (
             patch.object(boot, "read_snapshot", side_effect=[base, app]),
             patch.object(rf, "physical_readiness_errors", return_value=[]),
-            patch.object(rf, "check_port_owners", return_value=[]),
+            patch.object(rf, "check_port_owners", return_value=[]),self.assertRaises(ValueError)
         ):
-            with self.assertRaises(ValueError):
-                boot.install(proof, args)
+            boot.install(proof, args)
         self.assertEqual(len(commands), 1)
 
 
 class ApplicationPageWriteTests(unittest.TestCase):
-    def test_guarded_writer_rejects_live_serial_before_erase(self):
+    def test_guarded_writer_rejects_live_serial_before_erase(self) -> None:
         import rf_proof as rf
         from test_rf_proof import effective_platformio_config
+
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory); build=root / ".pio/build/receiver";build.mkdir(parents=True)
-            data=boot.ihex(b"abcd",boot.APP_START).encode();(build / "firmware.hex").write_bytes(data)
-            commands=[]
+            root = Path(directory)
+            build = root / ".pio/build/receiver"
+            build.mkdir(parents=True)
+            data = boot.ihex(b"abcd", boot.APP_START).encode()
+            (build / "firmware.hex").write_bytes(data)
+            commands = []
+
             def command(name, argv, *unused):
-                commands.append(argv);return 0,b"avrdude version 8.1",b""
-            proof=SimpleNamespace(run_dir=root,command=command,note=lambda *_: None)
-            with patch.object(rf,"ROOT",root), patch.object(boot,"read_snapshot",return_value={"sernum":b"wrong"}):
-                result=rf.program_application(proof,"receiver",effective_platformio_config(),
-                    approved_sha=hashlib.sha256(data).hexdigest(),approved_serial="00",
-                    approved_pages=(boot.APP_START,boot.APP_START+512))
-            self.assertEqual(result,1)
+                commands.append(argv)
+                return 0, b"avrdude version 8.1", b""
+
+            proof = SimpleNamespace(run_dir=root, command=command, note=lambda *_: None)
+            with (
+                patch.object(rf, "ROOT", root),
+                patch.object(boot, "read_snapshot", return_value={"sernum": b"wrong"}),
+            ):
+                result = rf.program_application(
+                    proof,
+                    "receiver",
+                    effective_platformio_config(),
+                    approved_sha=hashlib.sha256(data).hexdigest(),
+                    approved_serial="00",
+                    approved_pages=(boot.APP_START, boot.APP_START + 512),
+                )
+            self.assertEqual(result, 1)
             self.assertFalse(any("-T" in command for command in commands))
-    def test_tracker_selector_rejects_wrong_identity_or_hash_before_programming(self):
+
+    def test_tracker_selector_rejects_wrong_identity_or_hash_before_programming(self) -> None:
         import rf_proof as rf
-        args = SimpleNamespace(target_role="receiver", target_serial="bad", image_sha256="bad",
-                               page_start=0, page_end=0x9800, authorize_upload=True)
+
+        args = SimpleNamespace(
+            target_role="receiver",
+            target_serial="bad",
+            image_sha256="bad",
+            page_start=0,
+            page_end=0x9800,
+            authorize_upload=True,
+        )
         proof = SimpleNamespace(note=lambda *_: None)
         with patch.object(rf, "program_application") as writer:
             self.assertNotEqual(rf.tracker_app_upload(proof, args, ""), 0)
             writer.assert_not_called()
-    def test_userrow_changes_fail_preservation(self):
+
+    def test_userrow_changes_fail_preservation(self) -> None:
         before = dict.fromkeys(("signature", "sernum", "fuses", "eeprom", "lock", "usersig"), b"a")
         before["flash"] = bytes(1024)
         with self.assertRaisesRegex(ValueError, "usersig"):
             boot.require_preserved(before, dict(before, usersig=b"b"), 0, 512)
-    def test_guarded_app_writer_erases_only_its_page_with_installed_avrdude_dryrun(self):
+
+    def test_guarded_app_writer_erases_only_its_page_with_installed_avrdude_dryrun(self) -> None:
         import rf_proof as rf
         from test_rf_proof import effective_platformio_config
 

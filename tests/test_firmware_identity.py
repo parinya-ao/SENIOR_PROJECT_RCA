@@ -32,13 +32,13 @@ def ihex_record(address, record_type, data=b""):
 
 
 class FirmwareIdentityTests(unittest.TestCase):
-    def test_missing_marker_is_not_a_role(self):
+    def test_missing_marker_is_not_a_role(self) -> None:
         parse = require(self, "parse_identity_stream")
         if parse is None:
             return
         self.assertEqual(parse(b"ordinary debug text\r\n").status, "NONE")
 
-    def test_valid_sender_and_receiver_markers_verify_crc_and_role(self):
+    def test_valid_sender_and_receiver_markers_verify_crc_and_role(self) -> None:
         parse = require(self, "parse_identity_stream")
         if parse is None:
             return
@@ -48,7 +48,7 @@ class FirmwareIdentityTests(unittest.TestCase):
         self.assertEqual(sender.identity.role, "SENDER")
         self.assertEqual(receiver.identity.role, "RECEIVER")
 
-    def test_existing_updi_boot_markers_map_gateway_to_sender(self):
+    def test_existing_updi_boot_markers_map_gateway_to_sender(self) -> None:
         parse = require(self, "parse_identity_stream")
         if parse is None:
             return
@@ -60,7 +60,7 @@ class FirmwareIdentityTests(unittest.TestCase):
         self.assertEqual(result.status, "AMBIGUOUS")
         self.assertEqual({item.role for item in result.identities}, {"SENDER", "RECEIVER"})
 
-    def test_malformed_partial_and_bad_crc_markers_are_rejected(self):
+    def test_malformed_partial_and_bad_crc_markers_are_rejected(self) -> None:
         parse = require(self, "parse_identity_stream")
         if parse is None:
             return
@@ -70,7 +70,7 @@ class FirmwareIdentityTests(unittest.TestCase):
         self.assertEqual(parse(bad_crc).status, "MALFORMED")
         self.assertEqual(parse(good[:-2]).status, "MALFORMED")
 
-    def test_conflicting_markers_in_one_stream_are_ambiguous(self):
+    def test_conflicting_markers_in_one_stream_are_ambiguous(self) -> None:
         parse = require(self, "parse_identity_stream")
         if parse is None:
             return
@@ -78,14 +78,14 @@ class FirmwareIdentityTests(unittest.TestCase):
             parse(marker("SENDER", "sender") + marker("RECEIVER", "receiver")).status, "AMBIGUOUS"
         )
 
-    def test_flash_readback_unavailable_returns_unknown(self):
+    def test_flash_readback_unavailable_returns_unknown(self) -> None:
         match = require(self, "match_flash_fingerprint")
         if match is None:
             return
         result = match(None, [], flash_size=32, app_start=4, app_end=24)
         self.assertEqual(result.status, "UNAVAILABLE")
 
-    def test_sparse_hex_and_erased_tail_match_only_application_region(self):
+    def test_sparse_hex_and_erased_tail_match_only_application_region(self) -> None:
         match = require(self, "match_flash_fingerprint")
         reference_cls = require(self, "FirmwareReference")
         if match is None or reference_cls is None:
@@ -116,7 +116,7 @@ class FirmwareIdentityTests(unittest.TestCase):
         self.assertEqual(result.status, "MATCH")
         self.assertEqual(result.identity.role, "SENDER")
 
-    def test_identical_fingerprints_with_different_roles_are_ambiguous(self):
+    def test_identical_fingerprints_with_different_roles_are_ambiguous(self) -> None:
         match = require(self, "match_flash_fingerprint")
         reference_cls = require(self, "FirmwareReference")
         if match is None or reference_cls is None:
@@ -130,7 +130,7 @@ class FirmwareIdentityTests(unittest.TestCase):
         result = match(actual, refs, flash_size=16, app_start=4, app_end=12)
         self.assertEqual(result.status, "AMBIGUOUS")
 
-    def test_partial_readback_is_rejected(self):
+    def test_partial_readback_is_rejected(self) -> None:
         match = require(self, "match_flash_fingerprint")
         if match is None:
             return

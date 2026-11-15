@@ -337,7 +337,7 @@ def reader_free_h01_summary(events, reset_before=None, reset_after=None):
     """Summarize H01 boundaries without treating absent logs as failed events."""
     malformed_frames = []
 
-    def frame_seen(role, name, frame_type):
+    def frame_seen(role, name, frame_type) -> bool | None:
         for event in events:
             if event.get("role") != role or event.get("e") != name or "bytes" not in event:
                 continue
@@ -348,7 +348,7 @@ def reader_free_h01_summary(events, reset_before=None, reset_after=None):
                 malformed_frames.append(dict(role=role, event=name, error=str(error)))
         return None
 
-    def tx_done_seen(role):
+    def tx_done_seen(role) -> bool | None:
         rows = [
             event for event in events if event.get("role") == role and event.get("e") == "TX_DONE"
         ]
@@ -358,7 +358,7 @@ def reader_free_h01_summary(events, reset_before=None, reset_after=None):
             try:
                 if event.get("rc") == "0" and int(event["v"]) & 0x08:
                     return True
-            except (KeyError, TypeError, ValueError):
+            except KeyError, TypeError, ValueError:
                 continue
         return False
 
@@ -682,7 +682,7 @@ def validate_bundle(b, directory=None):
 
 
 class Capture:
-    def __init__(self, proof):
+    def __init__(self, proof) -> None:
         self.proof = proof
         self.monitors = {}
         self.queue = queue.Queue()
@@ -691,13 +691,13 @@ class Capture:
         self.errors = []
         self.monitor_exits = []
 
-    def start(self):
+    def start(self) -> None:
         for role, target in (("receiver", "receiver"), ("sender", "gateway")):
             self.monitors[role] = rf.start_rf_monitor(
                 self.proof, role, rf.PORTS[target], self.queue
             )
 
-    def command(self, role, text):
+    def command(self, role, text) -> None:
         process = self.monitors[role]["process"]
         if process.poll() is not None:
             raise ValueError("monitor disconnected")
@@ -707,7 +707,7 @@ class Capture:
         process.stdin.flush()
         self.commands.append(dict(role=role, text=text, host_ns=time.monotonic_ns()))
 
-    def wait(self, predicate, seconds=30, *, ignore_exited_roles=()):
+    def wait(self, predicate, seconds=30, *, ignore_exited_roles=()) -> None:
         deadline = time.monotonic() + seconds
         ignored = set(ignore_exited_roles)
         while time.monotonic() < deadline:
@@ -731,7 +731,7 @@ class Capture:
                     self.events.append(event)
         raise ValueError("incomplete evidence: capture deadline")
 
-    def acquire(self, programming, config_hash, seconds=45, expected_session=0):
+    def acquire(self, programming, config_hash, seconds=45, expected_session=0) -> None:
         """Drain startup, then recover each missing status once within one deadline."""
         deadline = time.monotonic() + seconds
 
@@ -771,7 +771,7 @@ class Capture:
     def seen(self, role, event):
         return [x for x in self.events if x["role"] == role and x["e"] == event]
 
-    def close(self):
+    def close(self) -> None:
         for m in self.monitors.values():
             try:
                 rf.stop_rf_monitor(m)
@@ -956,7 +956,7 @@ def campaign(gates=None, *, soak_plan=None, run_dir=None):
         )
         (parent / "soak-plan.json").write_text(json.dumps(soak_plan, indent=2) + "\n")
 
-        def progress(event, **details):
+        def progress(event, **details) -> None:
             row = dict(
                 event=event,
                 utc=datetime.now(UTC).isoformat(),
@@ -1167,12 +1167,18 @@ def diagnostic_case(test_id=None):
         raise ValueError("unknown diagnostic test")
     reverse = test_id in ("T03", "T04")
     nack = test_id in ("T02", "T04")
-    payload = HELLO_PAYLOAD if test_id is None else (
-        b"REJECT_LORA" if nack else (b"HELLO_LORA_TR" if reverse else b"HELLO_LORA_GW")
+    payload = (
+        HELLO_PAYLOAD
+        if test_id is None
+        else (b"REJECT_LORA" if nack else (b"HELLO_LORA_TR" if reverse else b"HELLO_LORA_GW"))
     )
-    return dict(reverse=reverse, nack=nack, payload=payload,
-                sender_role="receiver" if reverse else "sender",
-                receiver_role="sender" if reverse else "receiver")
+    return dict(
+        reverse=reverse,
+        nack=nack,
+        payload=payload,
+        sender_role="receiver" if reverse else "sender",
+        receiver_role="sender" if reverse else "receiver",
+    )
 
 
 def hello_airtime_budget(config, payload=HELLO_PAYLOAD):
@@ -1206,7 +1212,9 @@ def validate_hello_exchange(events, session, *, test_id=None):
             raise ValueError("HELLO_LORA stale session/sequence")
         data = frame["type"] == 1
         if (frame["src"], frame["dst"], frame["payload"], frame["type"], frame["reason"]) != (
-            (src, dst, case["payload"], 1, 0) if data else (dst, src, b"", control_type, control_reason)
+            (src, dst, case["payload"], 1, 0)
+            if data
+            else (dst, src, b"", control_type, control_reason)
         ):
             raise ValueError("HELLO_LORA DATA/ACK mismatch")
         frames.append((event, frame))
@@ -1235,18 +1243,41 @@ def validate_hello_exchange(events, session, *, test_id=None):
 
     decision = "DATA_REJECT" if case["nack"] else "ACCEPT"
     terminal = "REJECTED" if case["nack"] else "DELIVERED"
-    values = [True if data else None, checkpoint(tx, "TX_DONE", value="8"),
-              True if frame_rows(rx, "RX", 1) else None,
-              checkpoint(rx, decision, value="0" if case["nack"] else "1",
-                         rc="2" if case["nack"] else "0"),
-              True if frame_rows(rx, "TX", control_type) else None,
-              checkpoint(rx, "TX_DONE", value="8"),
-              True if frame_rows(tx, "RX", control_type) else None,
-              checkpoint(tx, terminal, value="1")]
-    keys = ("data_tx", "data_tx_done", "data_rx", "data_rejected" if case["nack"] else "data_accepted",
-            "response_tx", "response_tx_done", "response_rx", "response_accepted") if test_id else (
-        "gateway_data_tx", "gateway_data_tx_done", "tracker_data_rx", "tracker_data_accepted",
-        "tracker_ack_tx", "tracker_ack_tx_done", "gateway_ack_rx", "gateway_ack_accepted")
+    values = [
+        True if data else None,
+        checkpoint(tx, "TX_DONE", value="8"),
+        True if frame_rows(rx, "RX", 1) else None,
+        checkpoint(
+            rx, decision, value="0" if case["nack"] else "1", rc="2" if case["nack"] else "0"
+        ),
+        True if frame_rows(rx, "TX", control_type) else None,
+        checkpoint(rx, "TX_DONE", value="8"),
+        True if frame_rows(tx, "RX", control_type) else None,
+        checkpoint(tx, terminal, value="1"),
+    ]
+    keys = (
+        (
+            "data_tx",
+            "data_tx_done",
+            "data_rx",
+            "data_rejected" if case["nack"] else "data_accepted",
+            "response_tx",
+            "response_tx_done",
+            "response_rx",
+            "response_accepted",
+        )
+        if test_id
+        else (
+            "gateway_data_tx",
+            "gateway_data_tx_done",
+            "tracker_data_rx",
+            "tracker_data_accepted",
+            "tracker_ack_tx",
+            "tracker_ack_tx_done",
+            "gateway_ack_rx",
+            "gateway_ack_accepted",
+        )
+    )
     result = dict(zip(keys, values))
     # Serial streams may interleave; each board's own causal order must hold.
     chains = {
@@ -1322,7 +1353,11 @@ def radio_only_bringup(args, *, exchange=False):
         candidates = {}
         for role in ("receiver", "sender"):
             environment = role + "_arq_radio_only" + ("_reverse" if reverse else "")
-            metadata = reader_free_h01_firmware(ROOT, role, reverse=True) if reverse else reader_free_h01_firmware(ROOT, role)
+            metadata = (
+                reader_free_h01_firmware(ROOT, role, reverse=True)
+                if reverse
+                else reader_free_h01_firmware(ROOT, role)
+            )
             if metadata["build_id"] != digest(dict(environment=environment, arq=manifest)):
                 raise ValueError("stale candidate build identity: " + role)
             image = ROOT / ".pio/build" / environment / "firmware.hex"
@@ -1356,7 +1391,7 @@ def radio_only_bringup(args, *, exchange=False):
             )
         session = reserve_session(ROOT / "artifacts/arq")
         report["session"] = session
-        for role in (("sender", "receiver") if reverse else ("receiver", "sender")):
+        for role in ("sender", "receiver") if reverse else ("receiver", "sender"):
             capture.command(role, f"ARM {session:08X}")
             capture.wait(
                 lambda: bool(
@@ -1407,12 +1442,18 @@ def radio_only_bringup(args, *, exchange=False):
                 start = len(capture.events)
                 capture.command(role, "X")
                 # Drain STOP before the 14-line STATUS block to fit the 16-slot logger.
-                capture.wait(lambda: any(
-                    e.get("role") == role and e.get("e") == "STOP"
+                capture.wait(
+                    lambda: any(
+                        e.get("role") == role and e.get("e") == "STOP"
+                        for e in capture.events[start:]
+                    ),
+                    15,
+                )
+                stopped = next(
+                    e
                     for e in capture.events[start:]
-                ), 15)
-                stopped = next(e for e in capture.events[start:]
-                               if e.get("role") == role and e.get("e") == "STOP")
+                    if e.get("role") == role and e.get("e") == "STOP"
+                )
                 read_radio(role, False, int(stopped["s"], 16))
                 report["cleanup"][role] = "PARKED"
             except Exception as error:
@@ -1427,7 +1468,9 @@ def radio_only_bringup(args, *, exchange=False):
             )
         if exchange and "exchange" not in report:
             try:
-                report["exchange"] = validate_hello_exchange(capture.events, session, test_id=test_id)
+                report["exchange"] = validate_hello_exchange(
+                    capture.events, session, test_id=test_id
+                )
             except ValueError as error:
                 report["exchange"] = dict(complete=False, validation_error=str(error))
         report.update(
@@ -1558,7 +1601,7 @@ def validate_reverse(events):
     )
 
 
-def audit_raw_configuration(event):
+def audit_raw_configuration(event) -> None:
     values = bytes.fromhex(event["bytes"])
     # Address order matches reverse_raw configuration(); compare PHY, not mode/DIO state.
     expected = bytes.fromhex("E4C000F084727404000812271D")
@@ -1641,7 +1684,7 @@ def send_command_without_reader(proof, port, command, firmware):
     return session, upditerm, record
 
 
-def close_updi_without_recovery(session):
+def close_updi_without_recovery(session) -> None:
     if session:
         link = getattr(session, "updi", session)
         if not link or not link.ser:
@@ -1837,7 +1880,7 @@ def reverse_raw(*, tracker_reader=True):
                 proof, "sender", rf.PORTS["gateway"], c.queue
             )
 
-        def status(role):
+        def status(role) -> bool:
             ids = c.seen(role, "IDENTITY")
             rows = c.seen(role, "RAW_STATUS")
             configs = c.seen(role, "RAW_CONFIG")
@@ -2305,7 +2348,7 @@ def soak_campaign(stage, args):
     elif previous is not None:
         history.append(dict(status=previous, legacy_receipt=True))
 
-    def save_ledger():
+    def save_ledger() -> None:
         temporary = ledger_path.with_suffix(".json.tmp")
         temporary.write_text(json.dumps(ledger, indent=2, sort_keys=True) + "\n")
         os.replace(temporary, ledger_path)
@@ -2341,7 +2384,7 @@ def soak_campaign(stage, args):
         )
         return results, progress, starts, completes, span_s
 
-    def update_partial_record():
+    def update_partial_record() -> None:
         try:
             results, progress, starts, completes, span_s = read_run_evidence()
             record.update(
@@ -2408,7 +2451,7 @@ def hardware_gate_errors(args, require_rf):
     return errors
 
 
-def main():
+def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     mode = p.add_mutually_exclusive_group(required=True)
     mode.add_argument("--campaign", action="store_true")
@@ -2416,8 +2459,11 @@ def main():
     mode.add_argument("--radio-only-bringup", action="store_true")
     mode.add_argument("--hello-lora", action="store_true")
     mode.add_argument("--diagnostic-test", choices=("T01", "T02", "T03", "T04"))
-    p.add_argument("--reverse-direction", action="store_true",
-                   help="install and inspect reverse ARQ images; requires --radio-only-bringup")
+    p.add_argument(
+        "--reverse-direction",
+        action="store_true",
+        help="install and inspect reverse ARQ images; requires --radio-only-bringup",
+    )
     mode.add_argument("--prepare", action="store_true")
     mode.add_argument("--validate", type=Path)
     mode.add_argument("--reverse-raw", action="store_true")

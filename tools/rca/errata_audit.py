@@ -77,7 +77,7 @@ def link_budget(frequency_hz, distance_m, configured_tx_dbm, reported_rssi_dbm):
     )
 
 
-def main(argv=None):
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("evidence", type=Path)
     args = parser.parse_args(argv)

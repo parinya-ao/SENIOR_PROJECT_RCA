@@ -35,7 +35,7 @@ def make_probe(role):
 
 
 class DeviceReconnectTests(unittest.TestCase):
-    def test_sender_reconnects_with_new_tty_and_fresh_marker(self):
+    def test_sender_reconnects_with_new_tty_and_fresh_marker(self) -> None:
         classify = require(self, detector, "classify_devices")
         diff = require(self, detector, "diff_device_presence")
         if classify is None or diff is None or make_device("/dev/ttyUSB1", "usb-4") is None:
@@ -55,7 +55,7 @@ class DeviceReconnectTests(unittest.TestCase):
         self.assertEqual(reconnected.devices[0].identity_status, "VERIFIED_SENDER")
         self.assertEqual(reconnected.devices[0].port, "/dev/ttyUSB2")
 
-    def test_receiver_disconnect_and_all_devices_disconnect_are_missing(self):
+    def test_receiver_disconnect_and_all_devices_disconnect_are_missing(self) -> None:
         classify = require(self, detector, "classify_devices")
         if classify is None or make_device("/dev/ttyUSB0", "usb-1") is None:
             return
@@ -80,7 +80,7 @@ class DeviceReconnectTests(unittest.TestCase):
         self.assertEqual(none.status, "MISSING")
         self.assertEqual(none.devices, ())
 
-    def test_path_change_does_not_carry_cached_role_without_new_identity(self):
+    def test_path_change_does_not_carry_cached_role_without_new_identity(self) -> None:
         classify = require(self, detector, "classify_devices")
         if classify is None or make_device("/dev/ttyUSB2", "usb-new") is None:
             return
@@ -88,7 +88,7 @@ class DeviceReconnectTests(unittest.TestCase):
         self.assertEqual(result.devices[0].role, "UNKNOWN")
         self.assertEqual(result.devices[0].identity_status, "UNKNOWN")
 
-    def test_reenumerated_usb_instance_with_same_tty_gets_fresh_identity(self):
+    def test_reenumerated_usb_instance_with_same_tty_gets_fresh_identity(self) -> None:
         cli = importlib.import_module("tools.detect_devices")
         inventory_cls = require(
             self, importlib.import_module("tools.device_detection.usb_inventory"), "InventoryResult"

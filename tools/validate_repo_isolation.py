@@ -12,7 +12,7 @@ SOURCE_DIRS = ("src", "lib", "include", "generated", "config", "third_party", "t
 INCLUDE_FLAGS = ("-I", "-isystem", "-iquote")
 
 
-def _inside(root, path):
+def _inside(root, path) -> bool | None:
     try:
         path.relative_to(root)
         return True
@@ -72,17 +72,17 @@ def _source_symlinks(root):
             ]
 
 
-def _check_symlink(root, path, errors, label):
+def _check_symlink(root, path, errors, label) -> None:
     try:
         target = path.resolve(strict=True)
-    except (OSError, RuntimeError):
+    except OSError, RuntimeError:
         errors.append(f"{label} {_label(root, path)} is broken or cyclic")
         return
     if not _inside(root, target):
         errors.append(f"{label} {_label(root, path)} escapes the repository ({target})")
 
 
-def _tracked_symlinks(root, errors, physical):
+def _tracked_symlinks(root, errors, physical) -> None:
     result = subprocess.run(
         ["git", "ls-files", "-s", "-z"],
         cwd=root,
@@ -115,7 +115,7 @@ def _tracked_symlinks(root, errors, physical):
                 .stdout.decode("utf-8")
                 .strip()
             )
-        except (subprocess.CalledProcessError, UnicodeError):
+        except subprocess.CalledProcessError, UnicodeError:
             errors.append(f"tracked symlink {_label(root, path)} cannot be read from the index")
             continue
         target = Path(target_text)
@@ -123,7 +123,7 @@ def _tracked_symlinks(root, errors, physical):
             target = path.parent / target
         try:
             resolved = target.resolve(strict=False)
-        except (OSError, RuntimeError):
+        except OSError, RuntimeError:
             errors.append(f"tracked symlink {_label(root, path)} is broken or cyclic")
             continue
         if not _inside(root, resolved):
@@ -152,7 +152,7 @@ def _local_dependency(value):
     return None
 
 
-def _check_config(root, path, errors, visited):
+def _check_config(root, path, errors, visited) -> None:
     path = _resolved(root, path, str(path), "configuration", errors, must_exist=True)
     if path is None or path in visited:
         return
@@ -231,7 +231,7 @@ def validate_repo(project_root):
     return errors
 
 
-def main():
+def main() -> int:
     errors = validate_repo(Path(__file__).resolve().parents[1])
     if errors:
         print("\n".join(f"ERROR: {error}" for error in errors), file=sys.stderr)

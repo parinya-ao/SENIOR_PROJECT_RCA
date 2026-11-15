@@ -17,7 +17,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertTrue(callable(summarize), "reader-free H01 summary is missing")
         return summarize(events, before, after)
 
-    def test_valid_h01_events_confirm_data_ack_and_delivery(self):
+    def test_valid_h01_events_confirm_data_ack_and_delivery(self) -> None:
         data = "010101020700000000000B0048656C6C6F20576F726C64"
         ack = "010202010700000000000000"
         events = [
@@ -40,7 +40,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertTrue(result["gateway_ack_rx"])
         self.assertEqual(result["gateway_terminal"], "DELIVERED")
 
-    def test_absent_radio_events_remain_unknown(self):
+    def test_absent_radio_events_remain_unknown(self) -> None:
         result = self.summarize([{"role": "sender", "e": "TX_DONE", "rc": "0", "v": "8"}])
 
         self.assertTrue(result["gateway_data_tx_done"])
@@ -49,7 +49,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertIsNone(result["gateway_ack_rx"])
         self.assertIsNone(result["gateway_terminal"])
 
-    def test_por_transition_is_only_reported_from_before_and_after_reset_state(self):
+    def test_por_transition_is_only_reported_from_before_and_after_reset_state(self) -> None:
         result = self.summarize(
             [],
             {"gpior0": 0x20, "rstfr": 0, "uart_flags": 1},
@@ -60,14 +60,14 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertTrue(result["porf_after"])
         self.assertTrue(result["porf_transition_to_set"])
 
-    def test_missing_reset_state_does_not_become_a_clear_reset_result(self):
+    def test_missing_reset_state_does_not_become_a_clear_reset_result(self) -> None:
         result = self.summarize([], {"gpior0": 0x20, "rstfr": 0}, None)
 
         self.assertFalse(result["porf_before"])
         self.assertIsNone(result["porf_after"])
         self.assertIsNone(result["porf_transition_to_set"])
 
-    def test_reader_free_h01_requires_rf_path_confirmation_before_running(self):
+    def test_reader_free_h01_requires_rf_path_confirmation_before_running(self) -> None:
         run = patch.object(arq_trial, "reader_free_h01", create=True)
         with run as run_hardware, patch.object(sys, "argv", ["arq_trial.py", "--reader-free-h01"]):
             error = StringIO()
@@ -77,7 +77,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertIn("RF transmission requires --rf-path-confirmed", error.getvalue())
         run_hardware.assert_not_called()
 
-    def test_confirmed_reader_free_h01_mode_dispatches_exactly_once(self):
+    def test_confirmed_reader_free_h01_mode_dispatches_exactly_once(self) -> None:
         argv = [
             "arq_trial.py",
             "--reader-free-h01",
@@ -95,7 +95,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
 
         run.assert_called_once_with()
 
-    def test_soak_stage_fails_closed_without_power_and_rf_conditions(self):
+    def test_soak_stage_fails_closed_without_power_and_rf_conditions(self) -> None:
         argv = ["arq_trial.py", "--soak-stage", "10-sessions", "--rf-path-confirmed"]
         error = StringIO()
         with patch.object(arq_trial, "campaign") as campaign, patch.object(sys, "argv", argv):
@@ -105,7 +105,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertIn("safe power", error.getvalue())
         campaign.assert_not_called()
 
-    def test_soak_stage_dispatches_plan_only_after_all_hardware_gates(self):
+    def test_soak_stage_dispatches_plan_only_after_all_hardware_gates(self) -> None:
         argv = [
             "arq_trial.py",
             "--soak-stage",
@@ -125,7 +125,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertEqual(campaign.call_args.args[0], "10-sessions")
         self.assertTrue(campaign.call_args.args[1].power_verified)
 
-    def test_reader_free_h01_firmware_metadata_binds_identity_to_hex_hash(self):
+    def test_reader_free_h01_firmware_metadata_binds_identity_to_hex_hash(self) -> None:
         describe = getattr(arq_trial, "reader_free_h01_firmware", None)
         self.assertTrue(callable(describe), "reader-free H01 firmware metadata helper is missing")
         with tempfile.TemporaryDirectory() as directory:
@@ -143,7 +143,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertEqual(result["sha256"], hashlib.sha256(b":00000001FF\n").hexdigest())
         self.assertEqual(result["build_id"], "a" * 64)
 
-    def test_reader_free_session_initializes_updi_without_sending_an_application_command(self):
+    def test_reader_free_session_initializes_updi_without_sending_an_application_command(self) -> None:
         open_session = getattr(arq_trial, "open_reader_free_h01_session", None)
         self.assertTrue(callable(open_session), "reader-free UPDI session opener is missing")
         calls = []
@@ -158,7 +158,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertIs(actual_protocol, upditerm)
         self.assertEqual(calls, [("/dev/test-tracker", 38400)])
 
-    def test_rx_idle_summary_keeps_missing_after_state_unknown(self):
+    def test_rx_idle_summary_keeps_missing_after_state_unknown(self) -> None:
         summarize = getattr(arq_trial, "reader_free_rx_idle_summary", None)
         self.assertTrue(callable(summarize), "reader-free RX idle summary is missing")
 
@@ -167,7 +167,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertEqual(result["classification"], "UNKNOWN")
         self.assertIsNone(result["porf_after"])
 
-    def test_rx_idle_summary_recognizes_only_new_por_flag(self):
+    def test_rx_idle_summary_recognizes_only_new_por_flag(self) -> None:
         summarize = getattr(arq_trial, "reader_free_rx_idle_summary", None)
         self.assertTrue(callable(summarize), "reader-free RX idle summary is missing")
 
@@ -181,7 +181,7 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertEqual(result["classification"], "POR_OBSERVED")
         self.assertTrue(result["porf_transition_to_set"])
 
-    def test_tracker_rx_idle_mode_runs_without_rf_transmission_authorization(self):
+    def test_tracker_rx_idle_mode_runs_without_rf_transmission_authorization(self) -> None:
         with (
             patch.object(arq_trial, "reader_free_h01", return_value="run-dir") as run,
             patch.object(

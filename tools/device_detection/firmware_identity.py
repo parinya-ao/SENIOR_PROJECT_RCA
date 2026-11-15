@@ -64,7 +64,7 @@ def _valid_timestamp(date: bytes, time: bytes) -> bool:
         normalized_date = " ".join(date.decode("ascii").split())
         datetime.strptime(f"{normalized_date} {time.decode('ascii')}", "%b %d %Y %H:%M:%S")
         return True
-    except (UnicodeDecodeError, ValueError):
+    except UnicodeDecodeError, ValueError:
         return False
 
 

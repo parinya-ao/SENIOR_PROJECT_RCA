@@ -92,14 +92,14 @@ class Gate1Tests(unittest.TestCase):
         kwargs.setdefault("safe_path", True)
         return gate1.assess(rows, IDENTITY, **kwargs)
 
-    def test_T01_twenty_successes(self):
+    def test_T01_twenty_successes(self) -> None:
         self.assertTrue(callable(getattr(gate1, "assess", None)), "offline Gate 1 assessor missing")
         result = self.assess([transaction(i) for i in range(1, 21)])
         self.assertEqual(
             (result["verdict"], result["passed"], result["attempted"]), ("GATE1_PASS", 20, 20)
         )
 
-    def test_T02_first_failure_stops_consumption(self):
+    def test_T02_first_failure_stops_consumption(self) -> None:
         def rows():
             yield transaction(1)
             row = transaction(2)
@@ -113,12 +113,12 @@ class Gate1Tests(unittest.TestCase):
         )
         self.assertEqual(result["latency_ms"]["median"], 0.00005)
 
-    def test_T03_empty_bytes_are_zero_length(self):
+    def test_T03_empty_bytes_are_zero_length(self) -> None:
         result = gate1.response(1, None, b"")
         self.assertEqual((result["actual_response_hex"], result["actual_response_length"]), ("", 0))
         self.assertEqual(result["classification"], "UPDI_RESPONSE_LENGTH_MISMATCH")
 
-    def test_T04_original_exception_preserved(self):
+    def test_T04_original_exception_preserved(self) -> None:
         row = transaction(1)
         message = "UPDI response mismatch: expected None, received b''\n"
         row["transport_error"] = message
@@ -126,7 +126,7 @@ class Gate1Tests(unittest.TestCase):
         self.assertEqual(result["first_failure"]["transport_error"], message)
         self.assertEqual(result["first_failure"]["parsed_error"]["response_length"], 0)
 
-    def test_T05_incomplete_status_fails(self):
+    def test_T05_incomplete_status_fails(self) -> None:
         row = transaction(1)
         row["status_payload_raw"] = row["status_payload_raw"].replace("e=STATUS_END", "e=MISSING")
         self.assertEqual(self.assess([row])["classification"], "EVIDENCE_INCOMPLETE")
@@ -134,41 +134,41 @@ class Gate1Tests(unittest.TestCase):
             gate1.response(2, None, b"\x40")["classification"], "UPDI_RESPONSE_LENGTH_MISMATCH"
         )
 
-    def test_T06_response_value_mismatch(self):
+    def test_T06_response_value_mismatch(self) -> None:
         row = transaction(1)
         row["transport_exchanges"][0]["actual_hex"] = "62"
         self.assertEqual(self.assess([row])["classification"], "UPDI_RESPONSE_VALUE_MISMATCH")
 
-    def test_T07_timeout_is_failure(self):
+    def test_T07_timeout_is_failure(self) -> None:
         row = transaction(1)
         row["timeout_reason"] = "deadline"
         self.assertEqual(
             (self.assess([row])["verdict"], self.assess([row])["timed_out"]), ("GATE1_FAIL", 1)
         )
 
-    def test_T08_monitor_exit_is_not_usb_disconnect(self):
+    def test_T08_monitor_exit_is_not_usb_disconnect(self) -> None:
         row = transaction(1)
         row["monitor_exit_code"] = 1
         result = self.assess([row])
         self.assertEqual(result["classification"], "MONITOR_EXIT")
         self.assertEqual(result["usb_disconnected"], "UNKNOWN")
 
-    def test_T09_wrong_identity_rejected(self):
+    def test_T09_wrong_identity_rejected(self) -> None:
         row = transaction(1)
         row["identity"]["serial"] = "other"
         self.assertEqual(self.assess([row])["classification"], "IDENTITY_MISMATCH")
 
-    def test_T10_existing_owner_blocks_without_consuming(self):
+    def test_T10_existing_owner_blocks_without_consuming(self) -> None:
         self.assertEqual(
             self.assess(iter(()), owners=[123])["classification"], "PORT_OWNERSHIP_CONFLICT"
         )
 
-    def test_T11_non_status_and_rf_commands_rejected(self):
+    def test_T11_non_status_and_rf_commands_rejected(self) -> None:
         row = transaction(1)
         row["request_tx_hex"] = b"SEND 4869\n".hex()
         self.assertEqual(self.assess([row])["classification"], "UNSAFE_COMMAND_PATH")
 
-    def test_T12_offline_tool_has_no_hardware_or_process_api(self):
+    def test_T12_offline_tool_has_no_hardware_or_process_api(self) -> None:
         tree = ast.parse(inspect.getsource(gate1))
         imports = [n for n in ast.walk(tree) if isinstance(n, (ast.Import, ast.ImportFrom))]
         self.assertFalse(
@@ -188,14 +188,14 @@ class Gate1Tests(unittest.TestCase):
             )
         )
 
-    def test_T13_unsafe_initialization_blocks_without_read(self):
+    def test_T13_unsafe_initialization_blocks_without_read(self) -> None:
         def rows():
             self.fail("blocked path consumed a transaction")
             yield
 
         self.assertEqual(self.assess(rows(), safe_path=False)["verdict"], "GATE1_BLOCKED")
 
-    def test_T14_detects_hash_corruption(self):
+    def test_T14_detects_hash_corruption(self) -> None:
         with tempfile.TemporaryDirectory() as name:
             p = Path(name) / "raw"
             p.write_bytes(b"original")
@@ -203,7 +203,7 @@ class Gate1Tests(unittest.TestCase):
             p.write_bytes(b"changed")
             self.assertEqual(gate1.verify_hashes(Path(name), hashes), ["raw"])
 
-    def test_T15_verification_never_modifies_originals(self):
+    def test_T15_verification_never_modifies_originals(self) -> None:
         with tempfile.TemporaryDirectory() as name:
             p = Path(name) / "raw"
             p.write_bytes(b"original")
@@ -214,7 +214,7 @@ class Gate1Tests(unittest.TestCase):
                 gate1.verify_hashes(Path(name), {"missing": hashes["raw"]}), ["missing"]
             )
 
-    def test_T16_monotonic_order_and_duplicate_index(self):
+    def test_T16_monotonic_order_and_duplicate_index(self) -> None:
         for field, value in [("transaction_index", 1), ("monotonic_start_ns", 149)]:
             row = transaction(2)
             row[field] = value
@@ -222,13 +222,13 @@ class Gate1Tests(unittest.TestCase):
                 self.assess([transaction(1), row])["classification"], "EVIDENCE_INCOMPLETE"
             )
 
-    def test_T17_missing_response_is_unknown(self):
+    def test_T17_missing_response_is_unknown(self) -> None:
         result = gate1.response(1, None, None)
         self.assertEqual(result["actual_response_length"], "UNKNOWN")
         self.assertEqual(result["actual_response_hex"], "UNKNOWN")
         self.assertEqual(result["classification"], "EVIDENCE_INCOMPLETE")
 
-    def test_T18_deterministic_json_and_no_input_mutation(self):
+    def test_T18_deterministic_json_and_no_input_mutation(self) -> None:
         import json
 
         rows = [transaction(1)]
@@ -239,22 +239,22 @@ class Gate1Tests(unittest.TestCase):
         self.assertEqual(json.loads(json.dumps(first)), first)
         self.assertNotEqual(first["verdict"], "GATE1_PASS")
 
-    def test_T19_normal_two_break_startup_is_authorized(self):
+    def test_T19_normal_two_break_startup_is_authorized(self) -> None:
         profile = startup_profile(Path("third_party/upditerm/upditerm.py"))
         self.assertEqual(profile["break_calls"], 2)
         self.assertFalse(profile["startup_reset"])
         self.assertTrue(profile["normal_monitor_startup_authorized"])
 
-    def test_T20_trace_port_preserves_raw_empty_and_nonempty_reads(self):
+    def test_T20_trace_port_preserves_raw_empty_and_nonempty_reads(self) -> None:
         class Sink:
             current_transaction = 1
             expected_length = 1
             expected_value = b"@"
 
-            def __init__(self):
+            def __init__(self) -> None:
                 self.rows = []
 
-            def transport(self, **row):
+            def transport(self, **row) -> None:
                 self.rows.append(
                     {
                         "transaction_index": self.current_transaction,
@@ -270,7 +270,7 @@ class Gate1Tests(unittest.TestCase):
             timeout = 1
             write_timeout = None
 
-            def __init__(self):
+            def __init__(self) -> None:
                 self.reads = [b"", b"@"]
                 self.writes = []
 
@@ -292,16 +292,16 @@ class Gate1Tests(unittest.TestCase):
         )
         self.assertTrue(all(row["expected_response_length"] == 1 for row in sink.rows))
 
-    def test_T21_port_trace_records_exact_write_and_timestamps(self):
+    def test_T21_port_trace_records_exact_write_and_timestamps(self) -> None:
         class Sink:
             current_transaction = 7
             expected_length = None
             expected_value = None
 
-            def __init__(self):
+            def __init__(self) -> None:
                 self.rows = []
 
-            def transport(self, **row):
+            def transport(self, **row) -> None:
                 self.rows.append(
                     {
                         "transaction_index": self.current_transaction,
@@ -329,16 +329,16 @@ class Gate1Tests(unittest.TestCase):
         )
         self.assertLessEqual(row["serial_write_start_ns"], row["serial_write_end_ns"])
 
-    def test_T22_read_only_extended_LDS_uses_verified_sigrow_address(self):
+    def test_T22_read_only_extended_LDS_uses_verified_sigrow_address(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.frames = []
                 self.lengths = []
 
-            def instr(self, frame):
+            def instr(self, frame) -> None:
                 self.frames.append(frame)
 
-            def recv(self, length):
+            def recv(self, length) -> bytes:
                 self.lengths.append(length)
                 return b"\x1e"
 
@@ -347,7 +347,7 @@ class Gate1Tests(unittest.TestCase):
         self.assertEqual(link.frames, [[0x04, 0x10, 0x11]])
         self.assertEqual(link.lengths, [1])
 
-    def test_T23_live_cli_help_loads_without_opening_hardware(self):
+    def test_T23_live_cli_help_loads_without_opening_hardware(self) -> None:
         proc = subprocess.run(
             [sys.executable, "tools/rca/gate1_live.py", "--help"],
             capture_output=True,
@@ -361,12 +361,12 @@ class Gate1Tests(unittest.TestCase):
         self.assertIn("--wide-gpr-access", proc.stdout)
         self.assertIn("--controlled-cpu-reset", proc.stdout)
 
-    def test_T24_part_identity_comes_from_read_signature_not_SIB_label(self):
+    def test_T24_part_identity_comes_from_read_signature_not_SIB_label(self) -> None:
         self.assertEqual(part_from_signature(bytes.fromhex("1e970a")), "AVR128DA28")
         self.assertIsNone(part_from_signature(bytes.fromhex("1e9709")))
         self.assertIsNone(part_from_signature(None))
 
-    def test_T25_status_output_timeout_is_not_a_low_level_updi_response_error(self):
+    def test_T25_status_output_timeout_is_not_a_low_level_updi_response_error(self) -> None:
         with tempfile.TemporaryDirectory() as name:
             audit = Gate1Audit(Path(name))
             audit.current_transaction = 1
@@ -382,9 +382,9 @@ class Gate1Tests(unittest.TestCase):
             self.assertEqual(audit.first_failure["actual_monitor_stdout_length"], 0)
             self.assertIsNone(audit.first_failure["expected_response_length"])
 
-    def test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes(self):
+    def test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.addresses = []
                 self.cs = []
 
@@ -392,14 +392,14 @@ class Gate1Tests(unittest.TestCase):
                 self.addresses.append(address)
                 return {0x1E: 1, 0x1F: 0x0A, 0x1C: 4, 0x40: 2}[address]
 
-            def ldcs(self, address):
+            def ldcs(self, address) -> int:
                 self.cs.append(address)
                 return 0x10
 
-            def instr(self, frame):
+            def instr(self, frame) -> None:
                 self.addresses.append(tuple(frame))
 
-            def recv(self, n):
+            def recv(self, n) -> bytes:
                 return b"\x00"
 
         link = Link()
@@ -419,7 +419,7 @@ class Gate1Tests(unittest.TestCase):
         self.assertEqual(link.addresses[-1], (0x04, 0x19, 0x0F))
         self.assertEqual(link.cs, [0x05])
 
-    def test_T27_missing_status_identity_is_not_reported_as_runtime_firmware_identity(self):
+    def test_T27_missing_status_identity_is_not_reported_as_runtime_firmware_identity(self) -> None:
         self.assertIsNone(firmware_identity_from_events([]))
         self.assertEqual(
             firmware_identity_from_events(
@@ -435,9 +435,9 @@ class Gate1Tests(unittest.TestCase):
             {"build_id": "observed-build", "config_hash": "observed-config", "role": "receiver"},
         )
 
-    def test_T28_reenable_uart_preserves_pending_rx_flag_and_reads_back(self):
+    def test_T28_reenable_uart_preserves_pending_rx_flag_and_reads_back(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.flags = 2
                 self.writes = []
 
@@ -445,7 +445,7 @@ class Gate1Tests(unittest.TestCase):
                 self.assert_flags_address = address
                 return self.flags
 
-            def sts8(self, address, value):
+            def sts8(self, address, value) -> None:
                 self.writes.append((address, value))
                 self.flags = value
 
@@ -455,7 +455,7 @@ class Gate1Tests(unittest.TestCase):
         )
         self.assertEqual(link.writes, [(0x1E, 3)])
 
-    def test_T29_gateway_target_uses_gateway_identity_and_sender_application(self):
+    def test_T29_gateway_target_uses_gateway_identity_and_sender_application(self) -> None:
         hardware = {
             "receiver": {"port_path": "/dev/receiver", "device_serial_hex": "tracker-id"},
             "gateway": {"port_path": "/dev/gateway", "device_serial_hex": "gateway-id"},
@@ -473,9 +473,9 @@ class Gate1Tests(unittest.TestCase):
             {"build_id": "sender-build", "config_hash": "config-hash", "role": "sender"},
         )
 
-    def test_T30_gpr_roundtrip_restores_original_volatile_value(self):
+    def test_T30_gpr_roundtrip_restores_original_volatile_value(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.value = 0x12
                 self.writes = []
                 self.read_pending = False
@@ -484,11 +484,11 @@ class Gate1Tests(unittest.TestCase):
                 self.address = address
                 return self.value
 
-            def sts8(self, address, value):
+            def sts8(self, address, value) -> None:
                 self.writes.append((address, value))
                 self.value = value
 
-            def instr(self, frame):
+            def instr(self, frame) -> None:
                 self.read_pending = True
 
             def recv(self, n, expected=None):
@@ -497,7 +497,7 @@ class Gate1Tests(unittest.TestCase):
                 self.read_pending = False
                 return bytes([self.value])
 
-            def send(self, data):
+            def send(self, data) -> None:
                 self.value = data[0]
 
         link = Link()
@@ -515,12 +515,12 @@ class Gate1Tests(unittest.TestCase):
         )
         self.assertEqual(link.writes, [(0x1D, 0xED), (0x1D, 0x12)])
 
-    def test_T31_pesig_is_read_once_from_statusb(self):
+    def test_T31_pesig_is_read_once_from_statusb(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.addresses = []
 
-            def ldcs(self, address):
+            def ldcs(self, address) -> int:
                 self.addresses.append(address)
                 return 6
 
@@ -528,9 +528,9 @@ class Gate1Tests(unittest.TestCase):
         self.assertEqual(read_updi_pesig(link), 6)
         self.assertEqual(link.addresses, [0x01])
 
-    def test_T32_halted_gpr_probe_resumes_cpu_after_roundtrip(self):
+    def test_T32_halted_gpr_probe_resumes_cpu_after_roundtrip(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.status = 0
                 self.gpr = 0x12
                 self.controls = []
@@ -538,23 +538,23 @@ class Gate1Tests(unittest.TestCase):
             def ldcs(self, address):
                 return self.status
 
-            def stcs(self, address, value):
+            def stcs(self, address, value) -> None:
                 self.controls.append((address, value))
                 self.status = 1 if value == 1 else 0
 
             def lds8(self, address):
                 return self.gpr
 
-            def sts8(self, address, value):
+            def sts8(self, address, value) -> None:
                 self.gpr = value
 
-            def instr(self, frame):
+            def instr(self, frame) -> None:
                 pass
 
             def recv(self, n, expected=None):
                 return expected if expected is not None else bytes([self.gpr])
 
-            def send(self, data):
+            def send(self, data) -> None:
                 self.gpr = data[0]
 
         link = Link()
@@ -564,21 +564,21 @@ class Gate1Tests(unittest.TestCase):
         self.assertEqual(result["resumed_status"] & 0x01, 0)
         self.assertEqual(link.controls, [(0x04, 0x01), (0x04, 0x02)])
 
-    def test_T33_store_data_space_byte_uses_16_bit_address_and_strict_acks(self):
+    def test_T33_store_data_space_byte_uses_16_bit_address_and_strict_acks(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.frames = []
                 self.sent = []
                 self.expected = []
 
-            def instr(self, frame):
+            def instr(self, frame) -> None:
                 self.frames.append(frame)
 
             def recv(self, n, expected=None):
                 self.expected.append(expected)
                 return expected
 
-            def send(self, data):
+            def send(self, data) -> None:
                 self.sent.append(data)
 
         link = Link()
@@ -587,16 +587,16 @@ class Gate1Tests(unittest.TestCase):
         self.assertEqual(link.sent, [[0xA5]])
         self.assertEqual(link.expected, [b"\x40", b"\x40"])
 
-    def test_T34_roundtrip_gpr16_restores_the_original_value(self):
+    def test_T34_roundtrip_gpr16_restores_the_original_value(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.value = 0x12
                 self.read_data = False
 
             def lds8(self, address):
                 return self.value
 
-            def instr(self, frame):
+            def instr(self, frame) -> None:
                 if frame[0] == 0x04:
                     self.read_data = True
                 elif frame[0] == 0x44:
@@ -608,7 +608,7 @@ class Gate1Tests(unittest.TestCase):
                 self.read_data = False
                 return bytes([self.value])
 
-            def send(self, data):
+            def send(self, data) -> None:
                 self.value = data[0]
 
         result = roundtrip_gpr_16(Link(), 0x001D)
@@ -625,30 +625,30 @@ class Gate1Tests(unittest.TestCase):
             },
         )
 
-    def test_T35_address_mode_probe_accepts_cross_mode_readback_only_when_restored(self):
+    def test_T35_address_mode_probe_accepts_cross_mode_readback_only_when_restored(self) -> None:
         result = {"before": 0, "test_value": 0xFF, "readback": 0, "restored": 0}
         self.assertTrue(gpr_roundtrip_succeeded(result, 0xFF, 0))
         self.assertFalse(gpr_roundtrip_succeeded(result, 0xFF, 1))
 
-    def test_T36_wide_gpr_counterfactual_uses_16_bit_sts_only_for_gprs(self):
+    def test_T36_wide_gpr_counterfactual_uses_16_bit_sts_only_for_gprs(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.frames = []
                 self.sent = []
                 self.other_writes = []
 
-            def instr(self, frame):
+            def instr(self, frame) -> None:
                 self.frames.append(frame)
 
             def recv(self, n, expected=None):
                 return expected
 
-            def send(self, data):
+            def send(self, data) -> None:
                 self.sent.append(data)
 
         link = Link()
 
-        def base(updi, address, value):
+        def base(updi, address, value) -> None:
             updi.other_writes.append((address, value))
 
         sts8_with_wide_gpr_address(link, 0x1E, 1, base)
@@ -657,7 +657,7 @@ class Gate1Tests(unittest.TestCase):
         self.assertEqual(link.sent, [[1]])
         self.assertEqual(link.other_writes, [(0x40, 2)])
 
-    def test_T37_reader_idle_wait_is_bounded(self):
+    def test_T37_reader_idle_wait_is_bounded(self) -> None:
         lock = threading.Lock()
         self.assertTrue(wait_for_reader_idle(lock, 0))
         lock.acquire()
@@ -666,7 +666,7 @@ class Gate1Tests(unittest.TestCase):
         finally:
             lock.release()
 
-    def test_T38_preservation_report_separates_explicit_host_fix_from_other_changes(self):
+    def test_T38_preservation_report_separates_explicit_host_fix_from_other_changes(self) -> None:
         with tempfile.TemporaryDirectory() as name:
             root = Path(name)
             (root / "host.py").write_text("fixed")
@@ -679,7 +679,7 @@ class Gate1Tests(unittest.TestCase):
             self.assertEqual(report["unexpected"], ["other.txt"])
             self.assertEqual(list(report["authorized_changes"]), ["host.py"])
 
-    def test_T39_startup_block_discards_and_preserves_partial_prefix_before_boot(self):
+    def test_T39_startup_block_discards_and_preserves_partial_prefix_before_boot(self) -> None:
         with tempfile.TemporaryDirectory() as name:
             root = Path(name)
             audit = Gate1Audit(root)
@@ -708,31 +708,31 @@ class Gate1Tests(unittest.TestCase):
             self.assertIn(b"=stale-prefix\n", (root / "monitor.stdout.log").read_bytes())
             self.assertTrue(any(event["e"] == "STATUS_END" for event in events))
 
-    def test_T40_controlled_cpu_reset_is_one_reset_followed_by_ocd_rekey(self):
+    def test_T40_controlled_cpu_reset_is_one_reset_followed_by_ocd_rekey(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.actions = []
 
-            def reset(self):
+            def reset(self) -> None:
                 self.actions.append("reset")
 
-            def key(self, value):
+            def key(self, value) -> None:
                 self.actions.append(("key", value))
 
         link = Link()
         controlled_cpu_reset(link, "OCD")
         self.assertEqual(link.actions, ["reset", ("key", "OCD")])
 
-    def test_T41_resume_helper_only_runs_a_confirmed_stopped_cpu(self):
+    def test_T41_resume_helper_only_runs_a_confirmed_stopped_cpu(self) -> None:
         class Link:
-            def __init__(self, statuses):
+            def __init__(self, statuses) -> None:
                 self.statuses = list(statuses)
                 self.controls = []
 
             def ldcs(self, address):
                 return self.statuses.pop(0)
 
-            def stcs(self, address, value):
+            def stcs(self, address, value) -> None:
                 self.controls.append((address, value))
 
         stopped = Link([1, 0])
@@ -746,7 +746,7 @@ class Gate1Tests(unittest.TestCase):
         )
         self.assertEqual(running.controls, [])
 
-    def test_T42_deadline_covers_twenty_measured_status_blocks(self):
+    def test_T42_deadline_covers_twenty_measured_status_blocks(self) -> None:
         self.assertEqual(MAILBOX_PROBE_TIMEOUT_S, 10)
         self.assertEqual(STATUS_STABILITY_TIMEOUT_S, 180)
 

@@ -2,6 +2,7 @@ import importlib
 import json
 import unittest
 from unittest.mock import patch
+from typing import Never
 
 evidence = importlib.import_module("tools.device_detection.evidence")
 identity = importlib.import_module("tools.device_detection.firmware_identity")
@@ -17,7 +18,7 @@ def require(test, module, name):
 
 
 class DetectionIntegrationTests(unittest.TestCase):
-    def test_json_output_keeps_unknown_role_unknown_and_has_exit_two(self):
+    def test_json_output_keeps_unknown_role_unknown_and_has_exit_two(self) -> None:
         usb_cls = require(self, evidence, "USBDevice")
         classify = require(self, detector, "classify_devices")
         encode = require(self, output, "result_to_json")
@@ -43,7 +44,7 @@ class DetectionIntegrationTests(unittest.TestCase):
         self.assertEqual(payload["devices"][0]["identity_status"], "UNKNOWN")
         self.assertEqual(exit_code(result), 2)
 
-    def test_human_output_explains_mcu_identity_is_not_role(self):
+    def test_human_output_explains_mcu_identity_is_not_role(self) -> None:
         usb_cls = require(self, evidence, "USBDevice")
         probe_cls = require(self, evidence, "ProbeEvidence")
         classify = require(self, detector, "classify_devices")
@@ -61,7 +62,7 @@ class DetectionIntegrationTests(unittest.TestCase):
         self.assertIn("UNKNOWN", text)
         self.assertIn("MCU identity does not establish firmware role", text)
 
-    def test_passive_scan_does_not_open_a_serial_port(self):
+    def test_passive_scan_does_not_open_a_serial_port(self) -> None:
         cli = importlib.import_module("tools.detect_devices")
         inventory_cls = require(
             self, importlib.import_module("tools.device_detection.usb_inventory"), "InventoryResult"
@@ -88,7 +89,7 @@ class DetectionIntegrationTests(unittest.TestCase):
             result, _ = cli._scan(args, inventory_fn=lambda: inventory)
         self.assertEqual(result.devices[0].role, "UNKNOWN")
 
-    def test_exit_codes_separate_conflict_from_probe_error(self):
+    def test_exit_codes_separate_conflict_from_probe_error(self) -> None:
         scan = require(self, detector, "classify_devices")
         code = require(self, output, "exit_code_for")
         if scan is None or code is None:
@@ -121,7 +122,7 @@ class DetectionIntegrationTests(unittest.TestCase):
             4,
         )
 
-    def test_cli_refuses_target_probe_without_hardware_safety_assertion(self):
+    def test_cli_refuses_target_probe_without_hardware_safety_assertion(self) -> None:
         cli = importlib.import_module("tools.detect_devices")
         parse = require(self, cli, "build_parser")
         if parse is None:
@@ -129,14 +130,14 @@ class DetectionIntegrationTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             parse().parse_args(["--scan", "--probe-updi"])
 
-    def test_updi_probe_and_flash_read_are_blocked_without_explicit_safety(self):
+    def test_updi_probe_and_flash_read_are_blocked_without_explicit_safety(self) -> None:
         sib = require(self, updi_probe, "probe_target_sib")
         flash = require(self, updi_probe, "read_firmware_flash")
         if sib is None or flash is None:
             return
         calls = []
 
-        def runner(*args, **kwargs):
+        def runner(*args, **kwargs) -> Never:
             calls.append(args[0])
             raise AssertionError("blocked probe must not run a command")
 
@@ -146,7 +147,7 @@ class DetectionIntegrationTests(unittest.TestCase):
             flash("/dev/fake", hardware_safe=False, flash_size=1024, command_runner=runner)
         self.assertEqual(calls, [])
 
-    def test_occupied_port_is_not_opened_for_an_updi_probe(self):
+    def test_occupied_port_is_not_opened_for_an_updi_probe(self) -> None:
         probe = require(self, updi_probe, "probe_target_sib")
         if probe is None:
             return
@@ -155,7 +156,7 @@ class DetectionIntegrationTests(unittest.TestCase):
         def runner(argv, **kwargs):
             return type("Completed", (), {"returncode": 0, "stdout": "", "stderr": "python 42"})()
 
-        def pio(argv, **kwargs):
+        def pio(argv, **kwargs) -> Never:
             opened.append(argv)
             raise AssertionError("busy device must not be opened")
 
@@ -163,7 +164,7 @@ class DetectionIntegrationTests(unittest.TestCase):
         self.assertEqual(result.access_status, "INACCESSIBLE")
         self.assertEqual(opened, [])
 
-    def test_sib_uses_upditerm_without_reset_and_mcu_does_not_set_role(self):
+    def test_sib_uses_upditerm_without_reset_and_mcu_does_not_set_role(self) -> None:
         probe = require(self, updi_probe, "probe_target_sib")
         if probe is None:
             return
@@ -188,7 +189,7 @@ class DetectionIntegrationTests(unittest.TestCase):
         self.assertIn("-i", seen[0])
         self.assertNotIn("-r", seen[0])
 
-    def test_firmware_probe_uses_upditerm_log_without_reset(self):
+    def test_firmware_probe_uses_upditerm_log_without_reset(self) -> None:
         probe = require(self, updi_probe, "probe_firmware_identity")
         if probe is None:
             return

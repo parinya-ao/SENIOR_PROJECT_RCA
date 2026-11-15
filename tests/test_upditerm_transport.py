@@ -14,12 +14,16 @@ SPEC.loader.exec_module(upditerm)
 
 
 class ReceiveTests(unittest.TestCase):
-    def test_completed_log_line_survives_transport_failure_before_log_close(self):
+    def test_completed_log_line_survives_transport_failure_before_log_close(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "capture.log"
             serial = Mock()
-            serial.recv1.side_effect = [ord("O"), ord("K"), 10,
-                                       upditerm.TransportError("disconnected")]
+            serial.recv1.side_effect = [
+                ord("O"),
+                ord("K"),
+                10,
+                upditerm.TransportError("disconnected"),
+            ]
             # Exercise the production log-opening path without starting threads.
             with patch.object(threading.Thread, "start"):
                 terminal = upditerm.Terminal(Mock(), serial, logfile=path)
@@ -31,7 +35,7 @@ class ReceiveTests(unittest.TestCase):
             finally:
                 terminal.log.close()
 
-    def test_empty_read_reports_last_request_without_reusing_failed_connection(self):
+    def test_empty_read_reports_last_request_without_reusing_failed_connection(self) -> None:
         port = self.port(b"")
         port.halfduplex = False
         port.send(b"\x55\x85")
@@ -41,7 +45,7 @@ class ReceiveTests(unittest.TestCase):
             port.send(b"\x55\x85")
         self.assertEqual(port.dev.write.call_count, 1)
 
-    def test_empty_response_records_requested_length_and_read_timeout(self):
+    def test_empty_response_records_requested_length_and_read_timeout(self) -> None:
         port = self.port(b"")
         port.halfduplex = False
         port.dev.timeout = 0.25
@@ -65,7 +69,7 @@ class ReceiveTests(unittest.TestCase):
         port.dev.read.return_value = response
         return port
 
-    def test_ack_is_compared_and_failed_connection_is_not_reused(self):
+    def test_ack_is_compared_and_failed_connection_is_not_reused(self) -> None:
         for response in (b"\x00", b"\xff", b""):
             with self.subTest(response=response):
                 port = self.port(response)
@@ -75,11 +79,11 @@ class ReceiveTests(unittest.TestCase):
                     port.recv(1, b"\x40")
                 port.dev.read.assert_called_once_with(1)
 
-    def test_ack_and_unrestricted_payload_are_accepted(self):
+    def test_ack_and_unrestricted_payload_are_accepted(self) -> None:
         self.assertEqual(self.port(b"\x40").recv(1, b"\x40"), b"\x40")
         self.assertEqual(self.port(b"\x00").recv(1), b"\x00")
 
-    def test_halfduplex_echo_mismatch_preserves_request_and_actual_bytes(self):
+    def test_halfduplex_echo_mismatch_preserves_request_and_actual_bytes(self) -> None:
         port = self.port(b"\x00")
         port.halfduplex = True
         port.dev.timeout = 0.25
@@ -92,7 +96,7 @@ class ReceiveTests(unittest.TestCase):
         )
         self.assertTrue(port.failed)
 
-    def test_bad_store_ack_prevents_value_write_and_connection_reuse(self):
+    def test_bad_store_ack_prevents_value_write_and_connection_reuse(self) -> None:
         port = self.port(b"\x00")
         port.halfduplex = False
         connection = upditerm.UPDI.__new__(upditerm.UPDI)
@@ -104,14 +108,14 @@ class ReceiveTests(unittest.TestCase):
             port.send(b"\x01")
         self.assertEqual(port.dev.write.call_count, 1)
 
-    def test_sts8_uses_sixteen_bit_address_for_avr_da_data_space(self):
+    def test_sts8_uses_sixteen_bit_address_for_avr_da_data_space(self) -> None:
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.sent = []
                 self.responses = [b"\x40", b"\x40"]
                 self.expected = []
 
-            def send(self, data):
+            def send(self, data) -> None:
                 self.sent.append(bytes(data))
 
             def recv(self, length, expected=None):
@@ -128,7 +132,7 @@ class ReceiveTests(unittest.TestCase):
         self.assertEqual(link.sent, [b"\x55\x44\x1e\x00", b"\x01"])
         self.assertEqual(link.expected, [b"\x40", b"\x40"])
 
-    def test_reader_transport_failure_exits_while_console_input_is_blocked(self):
+    def test_reader_transport_failure_exits_while_console_input_is_blocked(self) -> None:
         release = threading.Event()
         done = threading.Event()
         errors = []
@@ -138,7 +142,7 @@ class ReceiveTests(unittest.TestCase):
         serial.recv1.side_effect = upditerm.TransportError("bad ACK")
         terminal = upditerm.Terminal(console, serial)
 
-        def wait():
+        def wait() -> None:
             try:
                 terminal.wait()
             except upditerm.TransportError as error:
@@ -155,15 +159,15 @@ class ReceiveTests(unittest.TestCase):
             release.set()
             thread.join(2)
 
-    def test_reader_unexpected_exception_releases_idle_lock_for_cleanup(self):
+    def test_reader_unexpected_exception_releases_idle_lock_for_cleanup(self) -> None:
         class Console:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.input = queue.Queue()
 
             def get(self):
                 return self.input.get()
 
-            def put(self, value):
+            def put(self, value) -> None:
                 self.input.put(value)
 
         console = Console()
@@ -173,7 +177,7 @@ class ReceiveTests(unittest.TestCase):
         errors = []
         done = threading.Event()
 
-        def wait():
+        def wait() -> None:
             try:
                 terminal.wait()
             except Exception as error:

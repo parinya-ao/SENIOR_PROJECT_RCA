@@ -38,7 +38,7 @@ def probe(role, build):
 
 
 class RoleDetectorTests(unittest.TestCase):
-    def test_sender_ttyusb0_receiver_ttyusb1_is_pass(self):
+    def test_sender_ttyusb0_receiver_ttyusb1_is_pass(self) -> None:
         classify = require(self, detector, "classify_devices")
         if classify is None or device("/dev/ttyUSB0", "usb-0:4:1.0") is None:
             return
@@ -52,7 +52,7 @@ class RoleDetectorTests(unittest.TestCase):
         self.assertEqual(result.status, "PASS")
         self.assertEqual({d.role for d in result.devices}, {"SENDER", "RECEIVER"})
 
-    def test_sender_ttyusb1_receiver_ttyusb0_is_pass(self):
+    def test_sender_ttyusb1_receiver_ttyusb0_is_pass(self) -> None:
         classify = require(self, detector, "classify_devices")
         if classify is None or device("/dev/ttyUSB0", "usb-0:4:1.0") is None:
             return
@@ -67,7 +67,7 @@ class RoleDetectorTests(unittest.TestCase):
         self.assertEqual(result.sender.port, "/dev/ttyUSB1")
         self.assertEqual(result.receiver.port, "/dev/ttyUSB0")
 
-    def test_one_unidentified_adapter_stays_unknown(self):
+    def test_one_unidentified_adapter_stays_unknown(self) -> None:
         classify = require(self, detector, "classify_devices")
         if classify is None or device("/dev/ttyUSB0", "usb-0:1:1.0") is None:
             return
@@ -75,7 +75,7 @@ class RoleDetectorTests(unittest.TestCase):
         self.assertEqual(result.status, "UNKNOWN")
         self.assertEqual(result.devices[0].identity_status, "UNKNOWN")
 
-    def test_identical_serial_numbers_do_not_merge_or_assign_roles(self):
+    def test_identical_serial_numbers_do_not_merge_or_assign_roles(self) -> None:
         classify = require(self, detector, "classify_devices")
         if classify is None or device("/dev/ttyUSB0", "usb-0:1:1.0") is None:
             return
@@ -85,7 +85,7 @@ class RoleDetectorTests(unittest.TestCase):
         self.assertEqual(len(result.devices), 2)
         self.assertTrue(all(d.identity_status == "UNKNOWN" for d in result.devices))
 
-    def test_two_sender_claims_are_conflict(self):
+    def test_two_sender_claims_are_conflict(self) -> None:
         classify = require(self, detector, "classify_devices")
         if classify is None or device("/dev/ttyUSB0", "usb-0:1:1.0") is None:
             return
@@ -95,7 +95,7 @@ class RoleDetectorTests(unittest.TestCase):
         )
         self.assertEqual(result.status, "CONFLICT")
 
-    def test_conflicting_independent_role_probes_are_ambiguous(self):
+    def test_conflicting_independent_role_probes_are_ambiguous(self) -> None:
         classify = require(self, detector, "classify_devices")
         probe_cls = require(self, evidence, "ProbeEvidence")
         identity_cls = require(self, identity, "FirmwareIdentity")
@@ -118,7 +118,7 @@ class RoleDetectorTests(unittest.TestCase):
         self.assertEqual(result.status, "AMBIGUOUS")
         self.assertEqual(result.devices[0].identity_status, "AMBIGUOUS")
 
-    def test_mcu_identity_does_not_determine_firmware_role(self):
+    def test_mcu_identity_does_not_determine_firmware_role(self) -> None:
         classify = require(self, detector, "classify_devices")
         probe_cls = require(self, evidence, "ProbeEvidence")
         if classify is None or probe_cls is None or device("/dev/ttyUSB0", "usb-0:1:1.0") is None:
@@ -130,7 +130,7 @@ class RoleDetectorTests(unittest.TestCase):
         self.assertEqual(result.status, "UNKNOWN")
         self.assertEqual(result.devices[0].mcu, "AVR128DA28")
 
-    def test_busy_port_is_inaccessible_and_updi_failure_is_not_receiver(self):
+    def test_busy_port_is_inaccessible_and_updi_failure_is_not_receiver(self) -> None:
         classify = require(self, detector, "classify_devices")
         probe_cls = require(self, evidence, "ProbeEvidence")
         if classify is None or probe_cls is None or device("/dev/ttyUSB0", "usb-0:1:1.0") is None:
@@ -147,7 +147,7 @@ class RoleDetectorTests(unittest.TestCase):
         self.assertEqual(failed.devices[0].identity_status, "PROBE_FAILED")
         self.assertNotEqual(failed.devices[0].role, "RECEIVER")
 
-    def test_live_firmware_role_overrides_stale_path_hint(self):
+    def test_live_firmware_role_overrides_stale_path_hint(self) -> None:
         classify = require(self, detector, "classify_devices")
         if classify is None or device("/dev/ttyUSB0", "usb-0:1:1.0") is None:
             return
@@ -160,7 +160,7 @@ class RoleDetectorTests(unittest.TestCase):
         self.assertEqual(result.devices[0].identity_status, "VERIFIED_RECEIVER")
         self.assertTrue(any("historical" in x.lower() for x in result.devices[0].warnings))
 
-    def test_enrollment_requires_matching_current_physical_identity(self):
+    def test_enrollment_requires_matching_current_physical_identity(self) -> None:
         classify = require(self, detector, "classify_devices")
         probe_cls = require(self, evidence, "ProbeEvidence")
         if classify is None or probe_cls is None or device("/dev/ttyUSB0", "usb-0:1:1.0") is None:
@@ -177,7 +177,7 @@ class RoleDetectorTests(unittest.TestCase):
         self.assertEqual(verified.devices[0].identity_status, "VERIFIED_SENDER")
         self.assertEqual(verified.devices[0].evidence_type, "verified_enrollment")
 
-    def test_absent_inventory_is_missing_not_a_sender_guess(self):
+    def test_absent_inventory_is_missing_not_a_sender_guess(self) -> None:
         classify = require(self, detector, "classify_devices")
         if classify is None:
             return

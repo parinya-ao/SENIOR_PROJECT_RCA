@@ -12,7 +12,7 @@ PROJECT_LIB = ROOT / "lib"
 
 
 class Board:
-    def __init__(self, binary):
+    def __init__(self, binary) -> None:
         self.process = subprocess.Popen(
             [str(binary)],
             stdin=subprocess.PIPE,
@@ -53,7 +53,7 @@ class Board:
             if line.startswith("HOST_STATUS ")
         )
 
-    def close(self):
+    def close(self) -> None:
         self.process.stdin.close()
         self.process.wait(timeout=5)
         self.timer.cancel()
@@ -71,7 +71,7 @@ def frames(lines):
 
 class MvpRoundtripTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.directory = tempfile.TemporaryDirectory(prefix="lora-mvp-host-")
         cls.binaries = {}
         for role in ("sender", "receiver"):
@@ -160,7 +160,7 @@ class MvpRoundtripTests(unittest.TestCase):
             cls.binaries[role] = binary
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.directory.cleanup()
 
     def board(self, role):
@@ -183,7 +183,7 @@ class MvpRoundtripTests(unittest.TestCase):
         self.assertEqual(result, [bytes.fromhex("01007CA1080168656C6C6F20776F726C64")])
         return result[0]
 
-    def test_real_roles_complete_one_host_data_ack_and_stop(self):
+    def test_real_roles_complete_one_host_data_ack_and_stop(self) -> None:
         receiver = self.board("receiver")
         sender = self.board("sender")
         self.assertIn("WAIT_SESSION", "\n".join(receiver.initial))
@@ -212,7 +212,7 @@ class MvpRoundtripTests(unittest.TestCase):
             "HOST_SIMULATION DATA_ACK=PASS DATA=1 PAYLOAD_MATCH=11/11 ACK=1 RETRIES=0 EEPROM_WRITES=0"
         )
 
-    def test_wrong_ack_fields_never_complete_or_retransmit(self):
+    def test_wrong_ack_fields_never_complete_or_retransmit(self) -> None:
         for index in range(6):
             with self.subTest(frame_byte=index):
                 sender = self.board("sender")
@@ -226,7 +226,7 @@ class MvpRoundtripTests(unittest.TestCase):
                 self.assertEqual(sender.status()["state"], "TEST_FAILED")
                 self.assertEqual(self.assert_no_eeprom(sender)["tx"], 1)
 
-    def test_invalid_start_and_duplicate_start_cannot_send_extra_data(self):
+    def test_invalid_start_and_duplicate_start_cannot_send_extra_data(self) -> None:
         sender = self.board("sender")
         for command in ("S0000", "SZZZZ", "Sa17c", "RA17C"):
             self.assertEqual(frames(sender.command(command)), [])
@@ -235,7 +235,7 @@ class MvpRoundtripTests(unittest.TestCase):
             self.assertEqual(frames(sender.command(command)), [])
         self.assertEqual(self.assert_no_eeprom(sender)["tx"], 1)
 
-    def test_fresh_boot_never_resumes_previous_session(self):
+    def test_fresh_boot_never_resumes_previous_session(self) -> None:
         sender = self.board("sender")
         self.start(sender)
         self.assertEqual(self.assert_no_eeprom(sender)["tx"], 1)
@@ -246,7 +246,7 @@ class MvpRoundtripTests(unittest.TestCase):
         self.assertEqual(state["state"], "TEST_IDLE")
         self.assertEqual(state["tx"], 0)
 
-    def test_receiver_rejects_wrong_payload_and_wrong_session(self):
+    def test_receiver_rejects_wrong_payload_and_wrong_session(self) -> None:
         receiver = self.board("receiver")
         receiver.command("RA17C")
         bad_payload = bytes.fromhex("01007CA1080168656C6C6F20776F726C65")

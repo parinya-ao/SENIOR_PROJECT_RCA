@@ -61,7 +61,7 @@ if env["PIOENV"] in power_candidates:
     shared = dict(manifest["shared"], radio=dict(manifest["shared"]["radio"], tx_power_dbm=5))
     fingerprint = digest(shared)
     build_id = digest(dict(base_build_id=build_id, shared_fingerprint=fingerprint))
-    env.Append(CPPDEFINES=[("LORA_TEST_CONFIG_FINGERPRINT", '\\\"' + fingerprint + '\\\"')])
+    env.Append(CPPDEFINES=[("LORA_TEST_CONFIG_FINGERPRINT", '\\"' + fingerprint + '\\"')])
 if build_id is None:
     from generate_lora_config import digest
 

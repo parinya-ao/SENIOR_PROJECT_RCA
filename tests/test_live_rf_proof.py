@@ -16,10 +16,10 @@ def fixture():
     journal = []
     images = {}
 
-    def add(role, text):
+    def add(role, text) -> None:
         journal.append(dict(role=role, line=text if role == "HOST" else f"[{role}] {text}"))
 
-    def boot(role, environment):
+    def boot(role, environment) -> None:
         add(role, f"BOOT {environment} fixture")
         add(role, "CONFIG_FINGERPRINT=" + manifest["shared_fingerprint"])
         add(role, "PROTOCOL_VERSION=" + str(manifest["shared"]["protocol"]["version"]))
@@ -70,7 +70,7 @@ def fixture():
 
 
 class LiveProofTests(unittest.TestCase):
-    def test_session_is_not_reused_after_interrupted_capture(self):
+    def test_session_is_not_reused_after_interrupted_capture(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             previous = root / "previous"
@@ -83,13 +83,13 @@ class LiveProofTests(unittest.TestCase):
             ):
                 self.assertEqual(rf.reserve_session(proof, "fresh"), 0x1235)
 
-    def test_complete_correlated_structure(self):
+    def test_complete_correlated_structure(self) -> None:
         manifest, journal, images = fixture()
         self.assertTrue(
             rf.validate_live_proof(journal, manifest, images, "unit-run", 0x1234)["valid"]
         )
 
-    def test_missing_duplicate_wrong_and_stale_evidence_never_passes(self):
+    def test_missing_duplicate_wrong_and_stale_evidence_never_passes(self) -> None:
         manifest, original, images = fixture()
         # Every required line is individually removed and duplicated.
         for index in range(len(original)):
@@ -142,14 +142,14 @@ class LiveProofTests(unittest.TestCase):
             rf.validate_live_proof(changed, manifest, images, "unit-run", 0x1234)["valid"]
         )
 
-    def test_upload_image_mismatch_rejected(self):
+    def test_upload_image_mismatch_rejected(self) -> None:
         manifest, _, images = fixture()
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "receipt.json"
             path.write_text(json.dumps(dict(origin="PHYSICAL_UPDI", images=images)))
             self.assertFalse(rf.upload_evidence_matches(path, manifest))
 
-    def test_fresh_readback_rejects_wrong_image_or_target_serial(self):
+    def test_fresh_readback_rejects_wrong_image_or_target_serial(self) -> None:
         from test_rf_proof import ihex_record
 
         manifest, _, _ = fixture()
@@ -213,7 +213,7 @@ class LiveProofTests(unittest.TestCase):
                 for corrupt in ("flash", "signature", "sernum"):
                     self.assertIsNone(rf.verify_installed_images(proof, "config", manifest, "run"))
 
-    def test_verification_flags_without_measurement_record_cannot_open_monitors(self):
+    def test_verification_flags_without_measurement_record_cannot_open_monitors(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             proof = SimpleNamespace(run_dir=Path(directory), note=lambda *_: None)
             args = SimpleNamespace(
@@ -233,27 +233,27 @@ class LiveProofTests(unittest.TestCase):
                 self.assertEqual(rf.rf_test(proof, args, True, "config"), 2)
                 monitor.assert_not_called()
 
-    def test_live_runner_routes_fresh_commands_and_stops_without_c(self):
+    def test_live_runner_routes_fresh_commands_and_stops_without_c(self) -> None:
         self._run_capture()
 
-    def test_short_control_write_never_starts_sender(self):
+    def test_short_control_write_never_starts_sender(self) -> None:
         self._run_capture(short_write=True)
 
-    def test_repeated_wait_start_never_reissues_sender_command(self):
+    def test_repeated_wait_start_never_reissues_sender_command(self) -> None:
         self._run_capture(repeat_wait_start=True)
 
-    def _run_capture(self, short_write=False, repeat_wait_start=False):
+    def _run_capture(self, short_write=False, repeat_wait_start=False) -> None:
         manifest, journal, images = fixture()
         writes = []
 
         class Process:
-            def __init__(self, role, output):
+            def __init__(self, role, output) -> None:
                 self.role, self.output, self.stdin = role, output, self
 
-            def poll(self):
+            def poll(self) -> None:
                 return None
 
-            def flush(self):
+            def flush(self) -> None:
                 pass
 
             def write(self, data):
@@ -269,7 +269,7 @@ class LiveProofTests(unittest.TestCase):
                             self.output.put((role, "stdout", (item["line"] + "\n").encode()))
                 return 1 if short_write else len(data)
 
-        def emit(role, values, output):
+        def emit(role, values, output) -> None:
             name = "GATEWAY" if role == "gateway" else "RECEIVER"
             for value in values:
                 output.put((role, "stdout", f"[{name}] {value}\n".encode()))

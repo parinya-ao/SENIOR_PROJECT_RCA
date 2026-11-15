@@ -63,7 +63,7 @@ def analyze(disassembly, application_start):
     )
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("backup", type=Path)
     parser.add_argument("--application-start", type=lambda text: int(text, 0), default=0x5800)

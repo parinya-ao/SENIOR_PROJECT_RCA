@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class BuildIdentityImagesTests(unittest.TestCase):
-    def test_all_investigation_images_embed_their_declared_identity(self):
+    def test_all_investigation_images_embed_their_declared_identity(self) -> None:
         for role in ("sender", "receiver"):
             for suffix in ("_arq", "_arq_test", "_reverse_raw"):
                 with self.subTest(environment=role + suffix):

@@ -19,7 +19,7 @@ TX = (
 
 
 class RawEvidenceTests(unittest.TestCase):
-    def test_raw_log_cli_does_not_require_a_hardware_stage(self):
+    def test_raw_log_cli_does_not_require_a_hardware_stage(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             sender, receiver = (Path(directory) / name for name in ("sender.log", "receiver.log"))
             sender.write_text(TX)
@@ -38,7 +38,7 @@ class RawEvidenceTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn('"passed": true', result.stdout)
 
-    def test_separate_raw_format_and_validated_fields(self):
+    def test_separate_raw_format_and_validated_fields(self) -> None:
         self.assertTrue(hasattr(rf_proof, "parse_raw_mvp_logs"), "raw evidence parser missing")
         result = rf_proof.parse_raw_mvp_logs(TX, RX)
         self.assertTrue(result["passed"])

@@ -351,7 +351,7 @@ def analyze(directory):
     return result
 
 
-def main(argv=None):
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("evidence", type=Path)
     args = parser.parse_args(argv)

@@ -54,7 +54,7 @@ ignore = [
 [tool.mypy]
 python_version = "3.14"
 files = ["src/lora", "tools", "tests"]
-exclude = ['^tools/config/lora_profile\.py$']
+exclude = ['^(\.pio|artifacts|docs/rca|generated|graphify-out|third_party)/', '^tools/config/lora_profile\.py$']
 explicit_package_bases = true
 mypy_path = ["$MYPY_CONFIG_FILE_DIR/src"]
 strict = true

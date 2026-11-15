@@ -15,7 +15,7 @@ def require(test, name):
 
 
 class Port:
-    def __init__(self, device, location):
+    def __init__(self, device, location) -> None:
         self.device = device
         self.vid = 0x10C4
         self.pid = 0xEA60
@@ -26,7 +26,7 @@ class Port:
 
 
 class USBInventoryTests(unittest.TestCase):
-    def test_udev_monitor_is_used_with_polling_fallback_when_unavailable(self):
+    def test_udev_monitor_is_used_with_polling_fallback_when_unavailable(self) -> None:
         start = require(self, "start_udev_monitor")
         if start is None:
             return
@@ -41,7 +41,7 @@ class USBInventoryTests(unittest.TestCase):
         self.assertEqual(calls[0][0][:3], ["udevadm", "monitor", "--udev"])
         self.assertIsNone(start(lambda *args, **kwargs: (_ for _ in ()).throw(FileNotFoundError())))
 
-    def test_duplicate_cp2102_serials_keep_distinct_usb_paths(self):
+    def test_duplicate_cp2102_serials_keep_distinct_usb_paths(self) -> None:
         discover = require(self, "discover_usb_devices")
         if discover is None:
             return
@@ -91,7 +91,7 @@ class USBInventoryTests(unittest.TestCase):
             {d.usb_path for d in result.devices}, {"pci-0000-usb-0:1:1.0", "pci-0000-usb-0:4:1.0"}
         )
 
-    def test_duplicate_symbolic_links_are_deduplicated(self):
+    def test_duplicate_symbolic_links_are_deduplicated(self) -> None:
         discover = require(self, "discover_usb_devices")
         if discover is None:
             return
@@ -121,7 +121,7 @@ class USBInventoryTests(unittest.TestCase):
         self.assertEqual(len(result.devices), 1)
         self.assertEqual(len(result.devices[0].usb_by_path), 2)
 
-    def test_current_device_metadata_includes_driver_and_real_node(self):
+    def test_current_device_metadata_includes_driver_and_real_node(self) -> None:
         discover = require(self, "discover_usb_devices")
         if discover is None:
             return
@@ -148,7 +148,7 @@ class USBInventoryTests(unittest.TestCase):
         self.assertEqual(result.devices[0].driver, "cp210x")
         self.assertTrue(result.devices[0].present)
 
-    def test_usb_instance_uses_live_sysfs_device_number(self):
+    def test_usb_instance_uses_live_sysfs_device_number(self) -> None:
         discover = require(self, "discover_usb_devices")
         if discover is None:
             return

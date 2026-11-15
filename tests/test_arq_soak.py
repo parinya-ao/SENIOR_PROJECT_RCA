@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from tools import arq_trial
 from tools.config.arq_config import load_arq
+from typing import Never
 
 
 def confirmed_rf_preflight():
@@ -22,7 +23,7 @@ def confirmed_rf_preflight():
     )
 
 
-def write_soak_progress(run_dir, plan, *, span_ns=1_000_000_000):
+def write_soak_progress(run_dir, plan, *, span_ns=1_000_000_000) -> None:
     progress = run_dir / "soak/soak-progress.jsonl"
     progress.parent.mkdir(parents=True)
     rows = []
@@ -39,14 +40,14 @@ def write_soak_progress(run_dir, plan, *, span_ns=1_000_000_000):
 
 
 class ArqSoakPlanTests(unittest.TestCase):
-    def test_sf7_airtime_uses_max_wire_frame_and_response_lengths(self):
+    def test_sf7_airtime_uses_max_wire_frame_and_response_lengths(self) -> None:
         estimate = getattr(arq_trial, "lora_time_on_air_us", None)
         self.assertTrue(callable(estimate), "Semtech airtime calculation is required")
         config = load_arq()
         self.assertEqual(estimate(44, config), 92416)
         self.assertEqual(estimate(12, config), 41216)
 
-    def test_stage_plan_is_paced_for_worst_case_retries(self):
+    def test_stage_plan_is_paced_for_worst_case_retries(self) -> None:
         build_plan = getattr(arq_trial, "build_soak_plan", None)
         self.assertTrue(callable(build_plan), "bounded soak plan is required")
         plan = build_plan("1-hour", load_arq())
@@ -58,13 +59,13 @@ class ArqSoakPlanTests(unittest.TestCase):
         self.assertLessEqual(plan["gateway_duty_percent_at_interval"], 1.0)
         self.assertLessEqual(plan["tracker_duty_percent_at_interval"], 1.0)
 
-    def test_soak_plan_rejects_unknown_stage(self):
+    def test_soak_plan_rejects_unknown_stage(self) -> None:
         build_plan = getattr(arq_trial, "build_soak_plan", None)
         self.assertTrue(callable(build_plan), "bounded soak plan is required")
         with self.assertRaises(ValueError):
             build_plan("unbounded", load_arq())
 
-    def test_soak_stages_cannot_skip_failed_or_unrun_predecessors(self):
+    def test_soak_stages_cannot_skip_failed_or_unrun_predecessors(self) -> None:
         prerequisites = getattr(arq_trial, "missing_soak_prerequisites", None)
         self.assertTrue(callable(prerequisites), "soak stage progression gate is required")
         completed = {"1-session": "PASS", "10-sessions": "PASS"}
@@ -75,7 +76,7 @@ class ArqSoakPlanTests(unittest.TestCase):
             ["1-session", "10-sessions", "100-sessions", "1000-sessions", "1-hour", "8-hours"],
         )
 
-    def test_soak_campaign_blocks_a_later_stage_without_prior_pass_receipts(self):
+    def test_soak_campaign_blocks_a_later_stage_without_prior_pass_receipts(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "artifacts/arq").mkdir(parents=True)
@@ -87,7 +88,7 @@ class ArqSoakPlanTests(unittest.TestCase):
                     arq_trial.soak_campaign("100-sessions", confirmed_rf_preflight())
             campaign.assert_not_called()
 
-    def test_soak_summary_reports_success_ci_retries_and_sample_limits(self):
+    def test_soak_summary_reports_success_ci_retries_and_sample_limits(self) -> None:
         summarize = getattr(arq_trial, "summarize_soak_results", None)
         self.assertTrue(callable(summarize), "soak reliability summary is required")
         rows = [
@@ -114,7 +115,7 @@ class ArqSoakPlanTests(unittest.TestCase):
         self.assertEqual(summary["ack_rtt_ms"]["mean"], 55)
         self.assertEqual(summary["ack_rtt_ms"]["p90"], None)
 
-    def test_soak_metrics_derive_attempts_and_timeouts_from_validated_events(self):
+    def test_soak_metrics_derive_attempts_and_timeouts_from_validated_events(self) -> None:
         derive = getattr(arq_trial, "soak_result_metrics", None)
         self.assertTrue(callable(derive), "soak metrics must be bound to the raw transaction")
         with tempfile.TemporaryDirectory() as directory:
@@ -138,7 +139,7 @@ class ArqSoakPlanTests(unittest.TestCase):
         self.assertEqual(result["unexpected_resets"], 0)
         self.assertEqual(result["session_duration_s"], 3.5)
 
-    def test_soak_campaign_persists_pass_receipt_for_next_stage(self):
+    def test_soak_campaign_persists_pass_receipt_for_next_stage(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             artifacts = root / "artifacts/arq"
@@ -181,7 +182,7 @@ class ArqSoakPlanTests(unittest.TestCase):
             self.assertEqual(record["summary"]["successes"], 10)
             self.assertEqual(record["run_directory"], str(run))
 
-    def test_soak_campaign_does_not_pass_when_any_session_fails(self):
+    def test_soak_campaign_does_not_pass_when_any_session_fails(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             artifacts = root / "artifacts/arq"
@@ -221,7 +222,7 @@ class ArqSoakPlanTests(unittest.TestCase):
             self.assertEqual(record["summary"]["failures"], 1)
             self.assertIn("acceptance criteria", record["failure"])
 
-    def test_duration_stage_requires_recorded_monotonic_span(self):
+    def test_duration_stage_requires_recorded_monotonic_span(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             artifacts = root / "artifacts/arq"
@@ -263,13 +264,13 @@ class ArqSoakPlanTests(unittest.TestCase):
             record = json.loads((artifacts / "soak-ledger.json").read_text())["stages"]["1-hour"]
             self.assertEqual(record["status"], "FAILED")
 
-    def test_interrupted_soak_keeps_partial_progress_receipt(self):
+    def test_interrupted_soak_keeps_partial_progress_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             artifacts = root / "artifacts/arq"
             artifacts.mkdir(parents=True)
 
-            def interrupted_campaign(*, soak_plan, run_dir):
+            def interrupted_campaign(*, soak_plan, run_dir) -> Never:
                 run_dir.mkdir(parents=True)
                 (run_dir / "campaign.json").write_text("[]\n")
                 progress = run_dir / "soak/soak-progress.jsonl"
@@ -290,7 +291,7 @@ class ArqSoakPlanTests(unittest.TestCase):
             self.assertEqual(record["completed_sessions"], 0)
             self.assertEqual(record["summary"]["sessions_attempted"], 0)
 
-    def test_rerun_keeps_the_previous_interrupted_stage_receipt(self):
+    def test_rerun_keeps_the_previous_interrupted_stage_receipt(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             artifacts = root / "artifacts/arq"
@@ -336,7 +337,7 @@ class ArqSoakPlanTests(unittest.TestCase):
             self.assertEqual(record["history"][0]["status"], "INTERRUPTED")
             self.assertEqual(record["history"][0]["run_directory"], "old-run")
 
-    def test_soak_rerun_refuses_to_replace_a_live_stage_process(self):
+    def test_soak_rerun_refuses_to_replace_a_live_stage_process(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             artifacts = root / "artifacts/arq"
@@ -365,7 +366,7 @@ class ArqSoakPlanTests(unittest.TestCase):
             process_alive.assert_called_once_with(12345, 0)
             campaign.assert_not_called()
 
-    def test_soak_rerun_marks_a_dead_stage_process_interrupted(self):
+    def test_soak_rerun_marks_a_dead_stage_process_interrupted(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             artifacts = root / "artifacts/arq"
@@ -412,12 +413,12 @@ class ArqSoakPlanTests(unittest.TestCase):
             self.assertEqual(record["history"][0]["status"], "INTERRUPTED")
             self.assertIn("termination reason unknown", record["history"][0]["failure"])
 
-    def test_soak_plan_reports_firmware_retry_spacing_duty(self):
+    def test_soak_plan_reports_firmware_retry_spacing_duty(self) -> None:
         plan = arq_trial.build_soak_plan("10-sessions", load_arq())
         self.assertEqual(plan.get("firmware_tx_spacing_ms"), 10000)
         self.assertAlmostEqual(plan.get("firmware_frame_duty_percent"), 0.92416, places=5)
 
-    def test_soak_cli_fails_closed_without_power_and_rf_readiness(self):
+    def test_soak_cli_fails_closed_without_power_and_rf_readiness(self) -> None:
         stderr = StringIO()
         argv = ["arq_trial.py", "--soak-stage", "10-sessions", "--rf-path-confirmed"]
         with patch.object(sys, "argv", argv), patch.object(arq_trial, "soak_campaign") as campaign:
@@ -427,7 +428,7 @@ class ArqSoakPlanTests(unittest.TestCase):
         self.assertIn("safe power", stderr.getvalue())
         campaign.assert_not_called()
 
-    def test_soak_cli_dispatches_the_verified_stage_plan(self):
+    def test_soak_cli_dispatches_the_verified_stage_plan(self) -> None:
         argv = [
             "arq_trial.py",
             "--soak-stage",
@@ -447,7 +448,7 @@ class ArqSoakPlanTests(unittest.TestCase):
         self.assertEqual(campaign.call_args.args[0], "10-sessions")
         self.assertTrue(campaign.call_args.args[1].power_verified)
 
-    def test_paced_sessions_enforce_start_spacing_and_stop_on_failure(self):
+    def test_paced_sessions_enforce_start_spacing_and_stop_on_failure(self) -> None:
         run_paced = getattr(arq_trial, "run_paced_sessions", None)
         self.assertTrue(callable(run_paced), "paced soak executor is required")
 
@@ -457,7 +458,7 @@ class ArqSoakPlanTests(unittest.TestCase):
             def monotonic(self):
                 return self.now
 
-            def sleep(self, seconds):
+            def sleep(self, seconds) -> None:
                 self.now += seconds
 
         clock = Clock()
@@ -475,7 +476,7 @@ class ArqSoakPlanTests(unittest.TestCase):
         clock.now = 0.0
         calls = []
 
-        def fail_on_second(index):
+        def fail_on_second(index) -> None:
             calls.append(index)
             if index == 1:
                 raise RuntimeError("session failed")

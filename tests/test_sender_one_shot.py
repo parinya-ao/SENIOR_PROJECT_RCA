@@ -12,7 +12,7 @@ from test_rf_proof import effective_platformio_config
 
 class SenderOneShotTests(unittest.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.directory = tempfile.TemporaryDirectory()
         directory = Path(cls.directory.name)
         source = (ROOT / "src/sender/lib/lora_rx.cpp").read_text()
@@ -81,38 +81,38 @@ class SenderOneShotTests(unittest.TestCase):
             cls.binaries[mode] = binary
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.directory.cleanup()
 
-    def check_case(self, name, mode=1):
+    def check_case(self, name, mode=1) -> None:
         result = subprocess.run([str(self.binaries[mode]), name], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_first_valid_session_is_accepted(self):
+    def test_first_valid_session_is_accepted(self) -> None:
         self.check_case("first")
 
-    def test_repeated_and_new_sessions_are_rejected_in_same_boot(self):
+    def test_repeated_and_new_sessions_are_rejected_in_same_boot(self) -> None:
         self.check_case("repeat")
 
-    def test_invalid_sessions_are_rejected(self):
+    def test_invalid_sessions_are_rejected(self) -> None:
         self.check_case("invalid")
 
-    def test_ram_test_allows_one_data_attempt_and_no_retry(self):
+    def test_ram_test_allows_one_data_attempt_and_no_retry(self) -> None:
         self.check_case("one_attempt")
 
-    def test_new_boot_waits_for_explicit_start(self):
+    def test_new_boot_waits_for_explicit_start(self) -> None:
         self.check_case("boot")
 
-    def test_ram_claim_never_reads_or_writes_eeprom(self):
+    def test_ram_claim_never_reads_or_writes_eeprom(self) -> None:
         self.check_case("no_eeprom")
 
-    def test_default_persistent_claim_still_consumes_four_byte_marker(self):
+    def test_default_persistent_claim_still_consumes_four_byte_marker(self) -> None:
         self.check_case("persistent", mode=0)
 
-    def test_ack_correlation_remains_strict(self):
+    def test_ack_correlation_remains_strict(self) -> None:
         self.check_case("ack")
 
-    def test_runner_rejects_missing_disabled_or_conflicting_ram_test_flag(self):
+    def test_runner_rejects_missing_disabled_or_conflicting_ram_test_flag(self) -> None:
         safe = effective_platformio_config()
         self.assertTrue(rf_proof.valid_rf_profile_config(safe))
         for flags in (

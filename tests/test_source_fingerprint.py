@@ -9,7 +9,7 @@ import generate_lora_config
 
 
 class SourceFingerprintTests(unittest.TestCase):
-    def test_fingerprint_tracks_local_library_sources_not_sibling_sources(self):
+    def test_fingerprint_tracks_local_library_sources_not_sibling_sources(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary) / "project"
             sibling = Path(temporary) / "iwing-tracker/device-lora_dev"

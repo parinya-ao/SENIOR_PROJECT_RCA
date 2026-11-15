@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SsotProtocolTests(unittest.TestCase):
-    def compile_and_run(self, flags=()):
+    def compile_and_run(self, flags=()) -> None:
         with tempfile.TemporaryDirectory(prefix="ssot-protocol-") as directory:
             binary = Path(directory) / "ssot_protocol_test"
             compile_result = subprocess.run(
@@ -41,10 +41,10 @@ class SsotProtocolTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn("PASS C protocol tests", result.stdout)
 
-    def test_protocol_vectors_and_state_machine(self):
+    def test_protocol_vectors_and_state_machine(self) -> None:
         self.compile_and_run()
 
-    def test_ram_only_campaign_stops_after_one_attempt(self):
+    def test_ram_only_campaign_stops_after_one_attempt(self) -> None:
         self.compile_and_run(("-DHELLO_TEST_MODE=1", "-DHELLO_RAM_ONLY_TEST=1"))
 
 

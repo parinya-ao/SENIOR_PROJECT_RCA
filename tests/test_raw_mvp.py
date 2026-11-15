@@ -14,14 +14,14 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 
 class RawMvpTests(unittest.TestCase):
-    def test_legacy_boot_repair_refuses_replacement_geometry(self):
+    def test_legacy_boot_repair_refuses_replacement_geometry(self) -> None:
         import receiver_boot as boot
 
         proof = SimpleNamespace(run_dir=ROOT)
         with self.assertRaisesRegex(ValueError, "fuse geometry"):
             boot.prepare(proof)
 
-    def test_current_target_snapshot_is_strict_about_serial_and_fuses(self):
+    def test_current_target_snapshot_is_strict_about_serial_and_fuses(self) -> None:
         import receiver_boot as boot
 
         inventory = json.loads((ROOT / "config/current_hardware.json").read_text())
@@ -60,20 +60,20 @@ class RawMvpTests(unittest.TestCase):
                         boot.read_snapshot(proof, "bad", role, current_target=True)
                     proof.command = original
 
-    def test_replacement_receiver_geometry(self):
+    def test_replacement_receiver_geometry(self) -> None:
         from validate_lora_ssot import load
 
         board = load(ROOT / "config/lora_system.json")["receiver_board"]
         self.assertEqual((board["bootsize"], board["bodcfg"], board["image_start"]), (0, 0, 0))
 
-    def test_mvp_roles_are_registered(self):
+    def test_mvp_roles_are_registered(self) -> None:
         from generate_lora_config import load_radio_profile
 
         profile = load_radio_profile()
         for role in ("sender", "receiver"):
             self.assertIn(role + "_mvp", profile["environments"][role])
 
-    def test_real_entrypoint(self):
+    def test_real_entrypoint(self) -> None:
         self.assertTrue((ROOT / "src/mvp/main.cpp").exists(), "raw MVP entrypoint missing")
         with tempfile.TemporaryDirectory() as directory:
             for role in ("SENDER", "RECEIVER"):

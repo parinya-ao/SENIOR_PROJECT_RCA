@@ -18,7 +18,7 @@ from tools.arq_trial import (
 
 
 class CaptureTests(unittest.TestCase):
-    def test_reverse_rx_rejects_lf_bank_before_send(self):
+    def test_reverse_rx_rejects_lf_bank_before_send(self) -> None:
         from tools import arq_trial
 
         c = Mock()
@@ -29,7 +29,7 @@ class CaptureTests(unittest.TestCase):
             arq_trial.reverse_exchange(c)
         self.assertEqual(c.command.call_args_list, [unittest.mock.call("sender", "RX")])
 
-    def test_campaign_rejects_evidence_directory_outside_artifact_root(self):
+    def test_campaign_rejects_evidence_directory_outside_artifact_root(self) -> None:
         from tools import arq_trial
 
         with tempfile.TemporaryDirectory() as directory:
@@ -47,9 +47,9 @@ class CaptureTests(unittest.TestCase):
                 else:
                     self.fail("campaign accepted an evidence path outside artifacts/arq")
 
-    def test_virtual_uart_writer_waits_for_mailbox_space_and_preserves_order(self):
+    def test_virtual_uart_writer_waits_for_mailbox_space_and_preserves_order(self) -> None:
         class Writer:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.responses = [False, True, True]
                 self.calls = []
 
@@ -68,9 +68,9 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(accepted, b"AB")
         self.assertEqual(writer.calls, [(ord("A"), False), (ord("A"), False), (ord("B"), False)])
 
-    def test_virtual_uart_writer_times_out_and_keeps_partial_evidence(self):
+    def test_virtual_uart_writer_times_out_and_keeps_partial_evidence(self) -> None:
         class Writer:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.responses = [True, False]
 
             def send1(self, byte, blocking):
@@ -85,14 +85,14 @@ class CaptureTests(unittest.TestCase):
                 write_virtual_uart(Writer(), b"AB", per_byte_timeout=1, accepted=accepted)
         self.assertEqual(accepted, b"A")
 
-    def test_updi_output_drain_reads_messages_without_cpu_control_writes(self):
+    def test_updi_output_drain_reads_messages_without_cpu_control_writes(self) -> None:
         class Protocol:
             ASI_OCD_STATUS = 5
             ASI_OCD_MESSAGE = 13
             OCDMV = 0x10
 
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.messages = [ord("A"), ord("B")]
                 self.calls = []
 
@@ -108,14 +108,14 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(statuses, [Protocol.OCDMV, Protocol.OCDMV])
         self.assertEqual(link.calls, [5, 13, 5, 13])
 
-    def test_updi_output_drain_waits_for_newline_after_a_quiet_gap(self):
+    def test_updi_output_drain_waits_for_newline_after_a_quiet_gap(self) -> None:
         class Clock:
             now = 0.0
 
             def monotonic(self):
                 return self.now
 
-            def sleep(self, seconds):
+            def sleep(self, seconds) -> None:
                 self.now += seconds
 
         clock = Clock()
@@ -128,7 +128,7 @@ class CaptureTests(unittest.TestCase):
         line = b"A t=1 e=STATUS s=1\n"
 
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.first = bytearray(line[:8])
                 self.rest = bytearray(line[8:])
 
@@ -146,7 +146,7 @@ class CaptureTests(unittest.TestCase):
             raw, _ = drain_updi_messages(Link(), Protocol, timeout=8.0, quiet_period=0.1)
         self.assertEqual(raw, line)
 
-    def test_tracker_diagnostics_read_mailbox_and_buffered_output_without_reset(self):
+    def test_tracker_diagnostics_read_mailbox_and_buffered_output_without_reset(self) -> None:
         class Protocol:
             UART_FLAGS = 0x1E
             FLAG_RX = 0x02
@@ -157,10 +157,10 @@ class CaptureTests(unittest.TestCase):
         message = b"A t=1 e=RAW_TX_DONE s=0 rc=0 flags=8\n"
 
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.output = bytearray(message)
 
-            def lds8(self, address):
+            def lds8(self, address) -> int:
                 if address != Protocol.UART_FLAGS:
                     raise AssertionError(address)
                 return 1
@@ -187,7 +187,7 @@ class CaptureTests(unittest.TestCase):
             ("receiver", "RAW_TX_DONE", True),
         )
 
-    def test_close_updi_without_recovery_closes_port_without_transport_write(self):
+    def test_close_updi_without_recovery_closes_port_without_transport_write(self) -> None:
         for wrapped in (False, True):
             with self.subTest(wrapped=wrapped):
                 device = Mock()
@@ -199,12 +199,12 @@ class CaptureTests(unittest.TestCase):
                 if wrapped:
                     self.assertIsNone(session.updi)
 
-    def test_reset_state_capture_reads_gprior0_rstfr_and_uart_flags_only(self):
+    def test_reset_state_capture_reads_gprior0_rstfr_and_uart_flags_only(self) -> None:
         class Protocol:
             UART_FLAGS = 0x1E
 
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.calls = []
 
             def lds8(self, address):
@@ -217,12 +217,12 @@ class CaptureTests(unittest.TestCase):
         )
         self.assertEqual(link.calls, [0x1C, 0x40, 0x1E])
 
-    def test_reset_state_resync_opens_one_ocd_session_without_reset(self):
+    def test_reset_state_resync_opens_one_ocd_session_without_reset(self) -> None:
         class Device:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.closed = False
 
-            def close(self):
+            def close(self) -> None:
                 self.closed = True
 
         device = Device()
@@ -235,11 +235,11 @@ class CaptureTests(unittest.TestCase):
             UART_FLAGS = 0x1E
 
             class UPDI:
-                def __init__(self, port, baud):
+                def __init__(self, port, baud) -> None:
                     calls.append(("open", port, baud))
                     self.reads = []
 
-                def key(self, value):
+                def key(self, value) -> None:
                     calls.append(("key", value))
 
                 def lds8(self, address):
@@ -268,12 +268,12 @@ class CaptureTests(unittest.TestCase):
             ],
         )
 
-    def test_updi_idle_control_takes_two_read_only_samples_with_bounded_wait(self):
+    def test_updi_idle_control_takes_two_read_only_samples_with_bounded_wait(self) -> None:
         class Protocol:
             UART_FLAGS = 0x1E
 
         class Link:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.values = iter([32, 0, 1, 32, 0, 1])
 
             def lds8(self, address):
@@ -289,7 +289,7 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(result["duration_ns"], 150)
         sleep.assert_called_once_with(15)
 
-    def test_programming_failure_still_attempts_verified_normal_restore(self):
+    def test_programming_failure_still_attempts_verified_normal_restore(self) -> None:
         from tools import arq_trial
 
         with tempfile.TemporaryDirectory() as d:
@@ -325,7 +325,7 @@ class CaptureTests(unittest.TestCase):
             self.clock += 0.25
             return self.clock
 
-        def command(role, text):
+        def command(role, text) -> None:
             c.commands.append(dict(role=role, text=text))
             if responses and text == "STATUS":
                 for event in self.status(role):
@@ -343,17 +343,17 @@ class CaptureTests(unittest.TestCase):
             f"A t=1 e=STATUS_END s=0 v={overflow}",
         ]
 
-    def acquire(self, c, clock):
+    def acquire(self, c, clock) -> None:
         with patch("tools.arq_trial.time.monotonic", clock):
             c.acquire({r: {"build_id": "build"} for r in c.monitors}, "config")
 
-    def test_missing_startup_recovers_once_and_drains_each_role(self):
+    def test_missing_startup_recovers_once_and_drains_each_role(self) -> None:
         c, clock = self.make_capture()
         self.acquire(c, clock)
         self.assertEqual(c.commands, [dict(role=r, text="STATUS") for r in ("sender", "receiver")])
         self.assertLess(self.clock, 45)
 
-    def test_absent_and_partial_responses_stop_without_arm(self):
+    def test_absent_and_partial_responses_stop_without_arm(self) -> None:
         for partial in (False, True):
             c, clock = self.make_capture(False)
             if partial:
@@ -363,7 +363,7 @@ class CaptureTests(unittest.TestCase):
             self.assertTrue(all(x["text"] == "STATUS" for x in c.commands))
             self.assertLessEqual(self.clock, 46)
 
-    def test_complete_startup_needs_no_recovery(self):
+    def test_complete_startup_needs_no_recovery(self) -> None:
         c, clock = self.make_capture()
         for role in c.monitors:
             for e in self.status(role):
@@ -371,7 +371,7 @@ class CaptureTests(unittest.TestCase):
         self.acquire(c, clock)
         self.assertEqual(c.commands, [])
 
-    def test_next_gate_requires_complete_status_from_previous_session(self):
+    def test_next_gate_requires_complete_status_from_previous_session(self) -> None:
         c, clock = self.make_capture()
         for role in c.monitors:
             for e in self.status(role):
@@ -380,7 +380,7 @@ class CaptureTests(unittest.TestCase):
             c.acquire({r: {"build_id": "build"} for r in c.monitors}, "config", expected_session=16)
         self.assertEqual(c.commands, [])
 
-    def test_overflow_identity_and_monitor_exit_fail_closed(self):
+    def test_overflow_identity_and_monitor_exit_fail_closed(self) -> None:
         for problem in ("overflow", "identity", "exit"):
             c, clock = self.make_capture()
             for role in c.monitors:
@@ -396,7 +396,7 @@ class CaptureTests(unittest.TestCase):
                 self.acquire(c, clock)
             self.assertEqual(c.commands, [])
 
-    def test_reverse_capture_can_keep_gateway_window_after_tracker_monitor_exit(self):
+    def test_reverse_capture_can_keep_gateway_window_after_tracker_monitor_exit(self) -> None:
         c, clock = self.make_capture()
         c.monitors["receiver"]["process"].poll = lambda: 1
         c.queue.put(("sender", "stdout", b"A t=2 e=RAW_RX_TIMEOUT s=0"))
@@ -408,7 +408,7 @@ class CaptureTests(unittest.TestCase):
             )
         self.assertEqual(c.monitor_exits, [dict(role="receiver", exit_code=1)])
 
-    def test_cleanup_stops_all_monitors_and_retains_partial_evidence(self):
+    def test_cleanup_stops_all_monitors_and_retains_partial_evidence(self) -> None:
         c, _ = self.make_capture()
         c.queue.put(("sender", "stdout", b"A t=1 e=STATUS s=0 ready=1 overflow=0"))
         with patch("tools.arq_trial.rf.stop_rf_monitor") as stop:
@@ -416,7 +416,7 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(stop.call_count, 2)
         self.assertEqual(c.events[0]["e"], "STATUS")
 
-    def test_cleanup_records_truncated_tail_without_masking_original_failure(self):
+    def test_cleanup_records_truncated_tail_without_masking_original_failure(self) -> None:
         c, _ = self.make_capture()
         c.queue.put(("sender", "stdout", b"A t=1 e=IDEN"))
         with patch("tools.arq_trial.rf.stop_rf_monitor"):

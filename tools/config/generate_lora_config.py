@@ -61,7 +61,7 @@ RADIO_PROFILE = {
 
 
 def validate_radio_profile(profile):
-    def check(value, expected, path):
+    def check(value, expected, path) -> None:
         if isinstance(expected, dict):
             if not isinstance(value, dict) or value.keys() != expected.keys():
                 raise ValueError(f"{path}: missing or unknown fields")
@@ -299,7 +299,7 @@ def artifacts(config, radio_profile=None):
     return outputs
 
 
-def _write_atomic(path, contents):
+def _write_atomic(path, contents) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.is_file() and path.read_text() == contents:
         return
@@ -320,7 +320,7 @@ def _write_atomic(path, contents):
         raise
 
 
-def generate(check=False):
+def generate(check=False) -> None:
     config = load(ROOT / "config/lora_system.json")
     radio_profile = load_radio_profile(ROOT / "config/radio_915.toml")
     outputs = artifacts(config, radio_profile)
@@ -333,7 +333,7 @@ def generate(check=False):
             _write_atomic(path, contents)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(

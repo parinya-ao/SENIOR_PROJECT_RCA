@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RadioOnlyTests(unittest.TestCase):
-    def test_radio_only_images_resolve_to_the_existing_role_application_ranges(self):
+    def test_radio_only_images_resolve_to_the_existing_role_application_ranges(self) -> None:
         from tools import rf_proof
 
         config = subprocess.check_output(
@@ -30,7 +30,7 @@ class RadioOnlyTests(unittest.TestCase):
             )
         )
 
-    def test_diagnostic_has_exact_payload_and_one_physical_attempt(self):
+    def test_diagnostic_has_exact_payload_and_one_physical_attempt(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "check.c"
             source.write_text(r"""#include "arq.h"
@@ -70,7 +70,7 @@ int main(void) {
             )
             subprocess.run([str(binary)], check=True)
 
-    def test_radio_only_setup_preserves_arq_and_refuses_unpowered_sd_bus_use(self):
+    def test_radio_only_setup_preserves_arq_and_refuses_unpowered_sd_bus_use(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             objects = []
             for source in ("codec", "sender", "receiver"):

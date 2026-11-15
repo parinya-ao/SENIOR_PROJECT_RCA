@@ -64,14 +64,14 @@ def valid_profile():
     }
 
 
-def write_toml(path, profile):
+def write_toml(path, profile) -> None:
     # These tests mutate parsed structures; use the project's canonical TOML
     # document for syntax tests and validate dictionaries for focused cases.
     path.write_text((ROOT / "config/radio_915.toml").read_text())
 
 
 class Radio915ValidationTests(unittest.TestCase):
-    def test_toml_loads_and_duplicate_or_malformed_syntax_is_rejected(self):
+    def test_toml_loads_and_duplicate_or_malformed_syntax_is_rejected(self) -> None:
         import generate_lora_config as generator
 
         with tempfile.TemporaryDirectory() as directory:
@@ -87,7 +87,7 @@ class Radio915ValidationTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 generator.load_radio_profile(path)
 
-    def test_strict_schema_frequency_and_rf_invariants(self):
+    def test_strict_schema_frequency_and_rf_invariants(self) -> None:
         from generate_lora_config import validate_radio_profile
 
         base = valid_profile()
@@ -141,7 +141,7 @@ class Radio915ValidationTests(unittest.TestCase):
             with self.subTest(profile=altered), self.assertRaises(ValueError):
                 validate_radio_profile(altered)
 
-    def test_role_pin_maps_collisions_and_environment_mapping_are_strict(self):
+    def test_role_pin_maps_collisions_and_environment_mapping_are_strict(self) -> None:
         from generate_lora_config import validate_radio_profile
 
         base = valid_profile()
@@ -173,7 +173,7 @@ class Radio915ValidationTests(unittest.TestCase):
             with self.subTest(environments=environments), self.assertRaises(ValueError):
                 validate_radio_profile(altered)
 
-    def test_generation_is_deterministic_check_detects_missing_stale_and_atomic_writes(self):
+    def test_generation_is_deterministic_check_detects_missing_stale_and_atomic_writes(self) -> None:
         import generate_lora_config as generator
         import validate_lora_ssot
 
@@ -219,7 +219,7 @@ class Radio915ValidationTests(unittest.TestCase):
                     generator.generate(check=True)
                 self.assertEqual(list(header.parent.glob("*.tmp")), [])
 
-    def test_generated_host_profile_matches_header_and_role_header_compiles(self):
+    def test_generated_host_profile_matches_header_and_role_header_compiles(self) -> None:
         import generate_lora_config as generator
 
         generator.generate(check=True)
@@ -277,7 +277,7 @@ class Radio915ValidationTests(unittest.TestCase):
             )
             self.assertNotEqual(result.returncode, 0)
 
-    def test_cli_validate_and_check_cover_the_radio_profile(self):
+    def test_cli_validate_and_check_cover_the_radio_profile(self) -> None:
         for option in ("--validate", "--check"):
             result = subprocess.run(
                 [sys.executable, str(ROOT / "tools/config/generate_lora_config.py"), option],
@@ -287,27 +287,42 @@ class Radio915ValidationTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_power_candidate_requires_five_dbm_and_its_own_config_identity(self):
+    def test_power_candidate_requires_five_dbm_and_its_own_config_identity(self) -> None:
         compiler = shutil.which("g++") or shutil.which("clang++") or shutil.which("clang")
         if compiler is None:
             self.skipTest("host C++ compiler unavailable")
-        for power, identity, valid in ((5, True, True), (5, False, False),
-                                       (2, True, False), (3, True, False),
-                                       (20, True, False)):
+        for power, identity, valid in (
+            (5, True, True),
+            (5, False, False),
+            (2, True, False),
+            (3, True, False),
+            (20, True, False),
+        ):
             with self.subTest(power=power, identity=identity):
                 flags = [f"-DLORA_TEST_TX_POWER_DBM={power}"]
                 if identity:
                     flags.append('-DLORA_TEST_CONFIG_FINGERPRINT="candidate"')
                 result = subprocess.run(
-                    [compiler, "-std=c++11", "-fsyntax-only", "-x", "c++",
-                     "-I", str(ROOT), "-DLORA_ROLE_SENDER=1", *flags, "-"],
+                    [
+                        compiler,
+                        "-std=c++11",
+                        "-fsyntax-only",
+                        "-x",
+                        "c++",
+                        "-I",
+                        str(ROOT),
+                        "-DLORA_ROLE_SENDER=1",
+                        *flags,
+                        "-",
+                    ],
                     input='#include "src/shared/hello_config.h"\n'
-                          'static_assert(HELLO_RF_TX_POWER_DBM == 5, "candidate power");\n',
-                    text=True, capture_output=True,
+                    'static_assert(HELLO_RF_TX_POWER_DBM == 5, "candidate power");\n',
+                    text=True,
+                    capture_output=True,
                 )
                 self.assertEqual(result.returncode == 0, valid, result.stderr)
 
-    def test_gateway_mainboards_send_profile_but_keep_address_and_eight_byte_wire_shape(self):
+    def test_gateway_mainboards_send_profile_but_keep_address_and_eight_byte_wire_shape(self) -> None:
         import generate_lora_config as generator
 
         generator.generate(check=True)
@@ -327,7 +342,7 @@ class Radio915ValidationTests(unittest.TestCase):
 
 
 class I2cRadioConfigTests(unittest.TestCase):
-    def test_only_exact_profile_command_initializes_and_address_is_preserved(self):
+    def test_only_exact_profile_command_initializes_and_address_is_preserved(self) -> None:
         compiler = shutil.which("g++") or shutil.which("clang++")
         if compiler is None:
             self.skipTest(
