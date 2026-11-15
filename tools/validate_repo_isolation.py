@@ -75,7 +75,7 @@ def _source_symlinks(root):
 def _check_symlink(root, path, errors, label):
     try:
         target = path.resolve(strict=True)
-    except OSError, RuntimeError:
+    except (OSError, RuntimeError):
         errors.append(f"{label} {_label(root, path)} is broken or cyclic")
         return
     if not _inside(root, target):
@@ -115,7 +115,7 @@ def _tracked_symlinks(root, errors, physical):
                 .stdout.decode("utf-8")
                 .strip()
             )
-        except subprocess.CalledProcessError, UnicodeError:
+        except (subprocess.CalledProcessError, UnicodeError):
             errors.append(f"tracked symlink {_label(root, path)} cannot be read from the index")
             continue
         target = Path(target_text)
@@ -123,7 +123,7 @@ def _tracked_symlinks(root, errors, physical):
             target = path.parent / target
         try:
             resolved = target.resolve(strict=False)
-        except OSError, RuntimeError:
+        except (OSError, RuntimeError):
             errors.append(f"tracked symlink {_label(root, path)} is broken or cyclic")
             continue
         if not _inside(root, resolved):

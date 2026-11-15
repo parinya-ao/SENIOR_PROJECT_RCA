@@ -5,9 +5,58 @@
 #include "updi_uart.h"
 
 #define UPDI_ROLE_LOG_IDENTITY_V1 1
+#ifndef LORA_DEBUG_OUTPUT
+#define LORA_DEBUG_OUTPUT 1
+#endif
+#if LORA_DEBUG_OUTPUT != 0 && LORA_DEBUG_OUTPUT != 1
+#error "LORA_DEBUG_OUTPUT must be 0 or 1"
+#endif
+#if defined(LORA_NONBLOCKING_LOG) && LORA_NONBLOCKING_LOG
+// Only the main loop produces and drains this queue; radio ISRs do not log.
+static uint8_t updi_log_queue[1024];
+static uint16_t updi_log_head, updi_log_count, updi_log_drops;
+inline uint16_t updi_role_log_dropped() { return updi_log_drops; }
+inline void updi_role_log_service() {
+    if (updi_log_count && updi_uart_try_tx(updi_log_queue[updi_log_head])) {
+        updi_log_head = (updi_log_head + 1U) % sizeof(updi_log_queue);
+        --updi_log_count;
+    }
+}
+inline void updi_role_log_byte(uint8_t byte) {
+    updi_log_queue[(updi_log_head + updi_log_count) % sizeof(updi_log_queue)] = byte;
+    ++updi_log_count;
+}
+#endif
+
+inline void updi_role_log_format_hex(char* output, uint32_t value,
+                                     uint8_t width) {
+    static constexpr char digits[] = "0123456789ABCDEF";
+    for (uint8_t i = 0; i < width; ++i) {
+        const uint8_t shift = static_cast<uint8_t>(4U * (width - i - 1U));
+        output[i] = digits[(value >> shift) & 0x0fU];
+    }
+    output[width] = '\0';
+}
 
 inline void updi_role_log(const char* role, const char* message) {
+#if !LORA_DEBUG_OUTPUT
+    (void)role;(void)message;return;
+#endif
     if (!updi_uart_enabled()) return;
+#if defined(LORA_NONBLOCKING_LOG) && LORA_NONBLOCKING_LOG
+    uint8_t role_len=0, message_len=0;
+    while (role && role_len<12 && role[role_len]) ++role_len;
+    while (message && message_len<120 && message[message_len]) ++message_len;
+    if (sizeof(updi_log_queue)-updi_log_count < 5U+role_len+message_len) {
+        if (updi_log_drops != UINT16_MAX) ++updi_log_drops;
+        return;
+    }
+    updi_role_log_byte('[');
+    for (uint8_t i=0;i<role_len;++i) updi_role_log_byte(role[i]);
+    updi_role_log_byte(']');updi_role_log_byte(' ');
+    for (uint8_t i=0;i<message_len;++i) updi_role_log_byte(message[i]);
+    updi_role_log_byte('\r');updi_role_log_byte('\n');
+#else
 
     updi_uart_tx('[');
     for (uint8_t i = 0; role != nullptr && role[i] != '\0' && i < 12; ++i) {
@@ -20,12 +69,14 @@ inline void updi_role_log(const char* role, const char* message) {
     }
     updi_uart_tx('\r');
     updi_uart_tx('\n');
+#endif
 }
 
 inline void updi_role_log_radio_version(const char* role, uint8_t version) {
     char message[32];
-    snprintf(message, sizeof(message), "RADIO_SPI_VERSION=0x%02X",
-             static_cast<unsigned>(version));
+    char hex[3];
+    updi_role_log_format_hex(hex, version, 2);
+    snprintf(message, sizeof(message), "RADIO_SPI_VERSION=0x%s", hex);
     updi_role_log(role, message);
 }
 
@@ -58,8 +109,10 @@ inline void updi_role_log_radio_profile(const char* role, float frequency_mhz,
              static_cast<unsigned>(bandwidth_khz),
              static_cast<unsigned>(coding_rate));
     updi_role_log(role, message);
-    snprintf(message, sizeof(message), "RADIO_FRAME SW=%02X PRE=%u CRC=%u HDR=E IQ=%u",
-             static_cast<unsigned>(sync_word),
+    char sync_hex[3];
+    updi_role_log_format_hex(sync_hex, sync_word, 2);
+    snprintf(message, sizeof(message), "RADIO_FRAME SW=%s PRE=%u CRC=%u HDR=E IQ=%u",
+             sync_hex,
              static_cast<unsigned>(preamble_symbols),
              static_cast<unsigned>(crc_enabled),
              static_cast<unsigned>(iq_inverted));
@@ -96,16 +149,19 @@ inline void updi_role_log_identity(const char* role, const char* build,
     if (role == nullptr || build == nullptr || date == nullptr || time == nullptr) return;
     char message[48];
     const uint8_t crc = updi_role_log_identity_crc8(role, build, date, time);
-    snprintf(message, sizeof(message), "ID V1 %s %s %s CRC=%02X",
-             build, date, time, static_cast<unsigned>(crc));
+    char crc_hex[3];
+    updi_role_log_format_hex(crc_hex, crc, 2);
+    snprintf(message, sizeof(message), "ID V1 %s %s %s CRC=%s",
+             build, date, time, crc_hex);
     updi_role_log(role, message);
 }
 
 inline void updi_role_log_campaign(const char* role, const char* event,
                                    uint16_t campaign_id) {
     char message[48];
-    snprintf(message, sizeof(message), "%s C=%04X", event,
-             static_cast<unsigned>(campaign_id));
+    char campaign_hex[5];
+    updi_role_log_format_hex(campaign_hex, campaign_id, 4);
+    snprintf(message, sizeof(message), "%s C=%s", event, campaign_hex);
     updi_role_log(role, message);
 }
 
@@ -113,8 +169,12 @@ inline void updi_role_log_packet(const char* role, const char* event,
                                  uint16_t campaign_id, uint8_t sequence,
                                  uint8_t attempt) {
     char message[48];
-    snprintf(message, sizeof(message), "%s C=%04X S=%02X A=%u", event,
-             static_cast<unsigned>(campaign_id), static_cast<unsigned>(sequence),
+    char campaign_hex[5];
+    char sequence_hex[3];
+    updi_role_log_format_hex(campaign_hex, campaign_id, 4);
+    updi_role_log_format_hex(sequence_hex, sequence, 2);
+    snprintf(message, sizeof(message), "%s C=%s S=%s A=%u", event,
+             campaign_hex, sequence_hex,
              static_cast<unsigned>(attempt));
     updi_role_log(role, message);
 }
@@ -125,9 +185,13 @@ inline void updi_role_log_payload(const char* role, const char* event,
     if (!updi_uart_enabled() || event == nullptr || payload == nullptr) return;
 
     char message[128];
+    char campaign_hex[5];
+    char sequence_hex[3];
+    updi_role_log_format_hex(campaign_hex, campaign_id, 4);
+    updi_role_log_format_hex(sequence_hex, sequence, 2);
     const int prefix_length = snprintf(
-        message, sizeof(message), "%s C=%04X S=%02X LEN=%u HEX=", event,
-        static_cast<unsigned>(campaign_id), static_cast<unsigned>(sequence),
+        message, sizeof(message), "%s C=%s S=%s LEN=%u HEX=", event,
+        campaign_hex, sequence_hex,
         static_cast<unsigned>(payload_size));
     if (prefix_length < 0 || static_cast<size_t>(prefix_length) >= sizeof(message)) {
         return;
@@ -161,9 +225,13 @@ inline void updi_role_log_airtime(const char* role, const char* event,
                                   uint16_t campaign_id, uint8_t sequence,
                                   uint8_t attempt, uint32_t airtime_us) {
     char message[48];
+    char campaign_hex[5];
+    char sequence_hex[3];
+    updi_role_log_format_hex(campaign_hex, campaign_id, 4);
+    updi_role_log_format_hex(sequence_hex, sequence, 2);
     snprintf(message, sizeof(message),
-             "%s C=%04X S=%02X A=%u TOA_US=%lu", event,
-             static_cast<unsigned>(campaign_id), static_cast<unsigned>(sequence),
+             "%s C=%s S=%s A=%u TOA_US=%lu", event,
+             campaign_hex, sequence_hex,
              static_cast<unsigned>(attempt), static_cast<unsigned long>(airtime_us));
     updi_role_log(role, message);
 }
@@ -172,8 +240,12 @@ inline void updi_role_log_rtt(const char* role, const char* event,
                               uint16_t campaign_id, uint8_t sequence,
                               uint32_t elapsed_ms) {
     char message[48];
-    snprintf(message, sizeof(message), "%s C=%04X S=%02X RTT=%lu", event,
-             static_cast<unsigned>(campaign_id), static_cast<unsigned>(sequence),
+    char campaign_hex[5];
+    char sequence_hex[3];
+    updi_role_log_format_hex(campaign_hex, campaign_id, 4);
+    updi_role_log_format_hex(sequence_hex, sequence, 2);
+    snprintf(message, sizeof(message), "%s C=%s S=%s RTT=%lu", event,
+             campaign_hex, sequence_hex,
              static_cast<unsigned long>(elapsed_ms));
     updi_role_log(role, message);
 }

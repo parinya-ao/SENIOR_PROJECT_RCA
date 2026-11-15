@@ -7,12 +7,13 @@
 LoRa* LoRa::_active_radio = nullptr;
 
 LoRa::LoRa()
-    : _module(new Module(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1)),
+    : _hal(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1),
+      _module(&_hal),
       _cs_pin(LORA_PIN_CS),
       _my_addr(0),
       _last_rssi(0), _last_error(RADIOLIB_ERR_NONE), _transmitting(false),
       _received(false), _initialized(false), _spi1_selected(false),
-      _tx_cleanup_pending(false), _tx_completion_ok(true),
+      _tx_cleanup_pending(false), _tx_completion_ok(true), _tx_started_at(0),
       _tx_buffer{}, _rx_buffer{} {
     _active_radio = this;
 }
@@ -66,6 +67,11 @@ bool LoRa::init(Address my_addr) {
                                 HELLO_RF_PREAMBLE_SYMBOLS,
                                 HELLO_RF_AUTOMATIC_GAIN);
     if (_last_error != RADIOLIB_ERR_NONE) return false;
+    // RadioLib 7.1.2 leaves LowFrequencyModeOn set at 915 MHz.
+    _last_error = _module.standby();
+    if (_last_error != RADIOLIB_ERR_NONE) return false;
+    _last_error = _hal.SPIsetRegValue(0x01, 0, 3, 3);
+    if (_last_error != RADIOLIB_ERR_NONE) return false;
     _last_error = _module.setCurrentLimit(HELLO_RF_CURRENT_LIMIT_MA);
     if (_last_error != RADIOLIB_ERR_NONE) return false;
     _last_error = _module.setCRC(HELLO_RF_CRC_ENABLED);
@@ -83,7 +89,8 @@ bool LoRa::init(Address my_addr) {
 }
 
 bool LoRa::available() {
-    return _received;
+    return _initialized && !_tx_cleanup_pending &&
+           (_received || (_module.getIrqFlags() & 0x40U));
 }
 
 int16_t LoRa::send(Address dst, const uint8_t* pkt, uint8_t len) {
@@ -115,11 +122,15 @@ int16_t LoRa::send(Address dst, uint8_t id, uint8_t flags,
 
     _module.setPacketSentAction(_sent_action);
     _received = false;
-    _transmitting = true;
-    _tx_cleanup_pending = true;
+    _transmitting = false;
     _tx_completion_ok = false;
     _last_error = _module.startTransmit(
         _tx_buffer, static_cast<uint8_t>(kRadioHeaderSize + len));
+    if (_last_error == RADIOLIB_ERR_NONE) {
+        _transmitting = true;
+        _tx_cleanup_pending = true;
+        _tx_started_at = millis();
+    }
     if (_last_error != RADIOLIB_ERR_NONE) {
         const int16_t transmit_error = _last_error;
         _transmitting = false;
@@ -138,7 +149,15 @@ int16_t LoRa::send(Address dst, uint8_t id, uint8_t flags,
 
 bool LoRa::send_done() {
     if (!_tx_cleanup_pending) return _tx_completion_ok;
-    if (_transmitting) return false;
+    // A DIO callback can be stale; only the current radio IRQ proves TxDone.
+    _last_irq = static_cast<uint8_t>(_module.getIrqFlags());
+    if (!(_last_irq & 0x08U)) {
+        if (millis() - _tx_started_at >= LORA_TX_TIMEOUT_MS) {
+            const int16_t recovery_error = recover();
+            _last_error = recovery_error ? recovery_error : kTxTimeout;
+        }
+        return false;
+    }
 
     const int16_t finish_error = _module.finishTransmit();
     _module.setPacketReceivedAction(_received_action);
@@ -167,7 +186,15 @@ int16_t LoRa::recv(Address* src, Address* dst, uint8_t* id, uint8_t* flags,
         return _last_error;
     }
     *len = 0;
-    if (!_received) return RADIOLIB_ERR_NONE;
+    if (!_initialized || _tx_cleanup_pending) {
+        _last_error = RADIOLIB_ERR_UNKNOWN;
+        return _last_error;
+    }
+    _last_irq = static_cast<uint8_t>(_module.getIrqFlags());
+    if (!(_last_irq & 0x40U)) {
+        _received = false;
+        return RADIOLIB_ERR_NONE;
+    }
     if (src == nullptr || dst == nullptr || id == nullptr || flags == nullptr ||
         (capacity != 0 && pkt == nullptr)) {
         _received = false;
@@ -177,7 +204,12 @@ int16_t LoRa::recv(Address* src, Address* dst, uint8_t* id, uint8_t* flags,
 
     _received = false;
     const size_t packet_size = _module.getPacketLength();
-    if (packet_size > sizeof(_rx_buffer)) {
+    if (_last_irq & 0x20U) {
+        _last_error = RADIOLIB_ERR_CRC_MISMATCH;
+    } else if (packet_size < kRadioHeaderSize) {
+        _last_error = RADIOLIB_ERR_UNKNOWN;
+    } else if (packet_size > sizeof(_rx_buffer) ||
+               packet_size - kRadioHeaderSize > capacity) {
         _last_error = RADIOLIB_ERR_PACKET_TOO_LONG;
     } else {
         _last_error = _module.readData(_rx_buffer,
@@ -212,6 +244,7 @@ int16_t LoRa::recv(Address* src, Address* dst, uint8_t* id, uint8_t* flags,
 }
 
 int16_t LoRa::sleep() {
+    if (_tx_cleanup_pending) return RADIOLIB_ERR_UNKNOWN;
     if (!_initialized) return RADIOLIB_ERR_NONE;
     _last_error = _module.sleep();
     return _last_error;
@@ -242,6 +275,38 @@ uint32_t LoRa::time_on_air_us(uint8_t payload_size) {
 
 int16_t LoRa::last_error() const {
     return _last_error;
+}
+
+int16_t LoRa::start_receive() {
+    if (!_initialized || _tx_cleanup_pending) {
+        _last_error = RADIOLIB_ERR_UNKNOWN;
+        return _last_error;
+    }
+    _received = false;
+    _module.setPacketReceivedAction(_received_action);
+    _last_error = _module.startReceive();
+    return _last_error;
+}
+
+int16_t LoRa::standby() {
+    _last_error = _module.standby();
+    _tx_cleanup_pending = false;
+    _transmitting = false;
+    _tx_completion_ok = false;
+    _received = false;
+    return _last_error;
+}
+
+int16_t LoRa::recover() {
+    int16_t error = standby();
+    if (!error) error = _module.clearIrqFlags(0xff);
+    if (!error) error = start_receive();
+    _last_error = error;
+    return error;
+}
+
+uint8_t LoRa::read_register(uint8_t address) {
+    return _hal.SPIgetRegValue(address);
 }
 
 void LoRa::_sent_action() {

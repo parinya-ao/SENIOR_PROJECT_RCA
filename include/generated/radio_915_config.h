@@ -1,7 +1,7 @@
 #pragma once
 // Generated from config/radio_915.toml.
 #define HELLO_RF_FREQUENCY_MHZ 915.0f
-#define HELLO_RF_TX_POWER_DBM 10
+#define HELLO_RF_TX_POWER_DBM 2
 #define HELLO_RF_LONG_RANGE 0
 #define HELLO_RF_SPREADING_FACTOR 7
 #define HELLO_RF_BANDWIDTH_KHZ 125

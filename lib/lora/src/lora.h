@@ -34,6 +34,12 @@ public:
     int16_t get_last_rssi();
     uint32_t time_on_air_us(uint8_t payload_size);
     int16_t last_error() const;
+    int16_t start_receive();
+    int16_t recover();
+    int16_t standby();
+    uint8_t read_register(uint8_t address);
+    uint8_t last_irq() const { return _last_irq; }
+    static constexpr int16_t kTxTimeout = -1001;
 
 private:
     static void _sent_action();
@@ -41,6 +47,7 @@ private:
     static LoRa* _active_radio;
     bool select_spi1();
 
+    Module _hal;
     SX1276 _module;
     uint32_t _cs_pin;
     Address _my_addr;
@@ -52,6 +59,8 @@ private:
     bool _spi1_selected;
     bool _tx_cleanup_pending;
     bool _tx_completion_ok;
+    uint32_t _tx_started_at;
+    uint8_t _last_irq = 0;
     uint8_t _tx_buffer[255];
     uint8_t _rx_buffer[255];
 };

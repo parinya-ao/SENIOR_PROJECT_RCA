@@ -26,7 +26,7 @@ def _port_busy(port: str, runner: Callable[..., Any]) -> bool:
         result = runner(
             ["fuser", "-v", port], capture_output=True, text=True, timeout=1.0, check=False
         )
-    except OSError, subprocess.SubprocessError, TypeError:
+    except (OSError, subprocess.SubprocessError, TypeError):
         return False
     return result.returncode == 0 and bool((result.stdout or "") + (result.stderr or ""))
 
@@ -63,7 +63,7 @@ def _run_bounded(
         try:
             process.send_signal(signal.SIGINT)
             stdout, stderr = process.communicate(timeout=1.0)
-        except OSError, subprocess.TimeoutExpired:
+        except (OSError, subprocess.TimeoutExpired):
             process.kill()
             stdout, stderr = process.communicate()
         return process.returncode, stdout or "", stderr or "", True
@@ -193,7 +193,7 @@ def read_firmware_flash(
             completed = command_runner(
                 argv, capture_output=True, text=True, timeout=timeout, check=False
             )
-        except OSError, subprocess.SubprocessError:
+        except (OSError, subprocess.SubprocessError):
             return None
         if completed.returncode != 0 or not raw_path.is_file():
             return None

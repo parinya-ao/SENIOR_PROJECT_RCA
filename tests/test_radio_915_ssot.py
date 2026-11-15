@@ -22,7 +22,7 @@ def valid_profile():
             "spreading_factor": 7,
             "coding_rate": 5,
             "sync_word": 0x12,
-            "tx_power_dbm": 10,
+            "tx_power_dbm": 2,
             "preamble_symbols": 8,
             "crc_enabled": True,
             "explicit_header": True,
@@ -224,6 +224,7 @@ class Radio915ValidationTests(unittest.TestCase):
 
         generator.generate(check=True)
         profile = json.loads((ROOT / "generated/lora_manifest.json").read_text())["shared"]["radio"]
+        self.assertEqual(profile["tx_power_dbm"], 2)
         namespace = {}
         exec((ROOT / "generated/radio_915_profile.py").read_text(), namespace)
         self.assertEqual(namespace["FREQUENCY_HZ"], 915_000_000)
@@ -285,6 +286,26 @@ class Radio915ValidationTests(unittest.TestCase):
                 text=True,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_power_candidate_requires_five_dbm_and_its_own_config_identity(self):
+        compiler = shutil.which("g++") or shutil.which("clang++") or shutil.which("clang")
+        if compiler is None:
+            self.skipTest("host C++ compiler unavailable")
+        for power, identity, valid in ((5, True, True), (5, False, False),
+                                       (2, True, False), (3, True, False),
+                                       (20, True, False)):
+            with self.subTest(power=power, identity=identity):
+                flags = [f"-DLORA_TEST_TX_POWER_DBM={power}"]
+                if identity:
+                    flags.append('-DLORA_TEST_CONFIG_FINGERPRINT="candidate"')
+                result = subprocess.run(
+                    [compiler, "-std=c++11", "-fsyntax-only", "-x", "c++",
+                     "-I", str(ROOT), "-DLORA_ROLE_SENDER=1", *flags, "-"],
+                    input='#include "src/shared/hello_config.h"\n'
+                          'static_assert(HELLO_RF_TX_POWER_DBM == 5, "candidate power");\n',
+                    text=True, capture_output=True,
+                )
+                self.assertEqual(result.returncode == 0, valid, result.stderr)
 
     def test_gateway_mainboards_send_profile_but_keep_address_and_eight_byte_wire_shape(self):
         import generate_lora_config as generator

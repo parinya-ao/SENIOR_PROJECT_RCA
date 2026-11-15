@@ -1,4 +1,7 @@
 #pragma once
+#include <stdint.h>
+extern uint32_t host_ms;
+inline uint32_t millis() { return host_ms; }
 
 #define PIN_PC0 10
 #define PIN_PC1 11

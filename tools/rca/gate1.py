@@ -164,7 +164,7 @@ def assess(records, identity, *, safe_path=False, owners=()):
                             break
                 if classification is None and not _status(row["status_payload_raw"], identity):
                     classification = "EVIDENCE_INCOMPLETE"
-        except KeyError, ValueError, TypeError, AttributeError:
+        except (KeyError, ValueError, TypeError, AttributeError):
             classification = "EVIDENCE_INCOMPLETE"
         if classification:
             failure = copy.deepcopy(row)

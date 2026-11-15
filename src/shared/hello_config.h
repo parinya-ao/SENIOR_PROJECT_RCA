@@ -2,6 +2,16 @@
 #include "../../include/generated/lora_shared_config.h"
 #include "../../include/generated/radio_915_config.h"
 
+#ifdef LORA_TEST_TX_POWER_DBM
+#if LORA_TEST_TX_POWER_DBM != 5 || !defined(LORA_TEST_CONFIG_FINGERPRINT)
+#error "The power comparison requires +5 dBm and its validated build identity."
+#endif
+#undef HELLO_RF_TX_POWER_DBM
+#define HELLO_RF_TX_POWER_DBM LORA_TEST_TX_POWER_DBM
+#undef LORA_CONFIG_FINGERPRINT
+#define LORA_CONFIG_FINGERPRINT LORA_TEST_CONFIG_FINGERPRINT
+#endif
+
 #ifndef HELLO_TEST_MODE
 #define HELLO_TEST_MODE 0
 #endif
@@ -19,7 +29,8 @@
 #endif
 
 static_assert(HELLO_RF_FREQUENCY_MHZ == 915.0f &&
-                  HELLO_RF_TX_POWER_DBM == 10 && HELLO_RF_LONG_RANGE == 0 &&
+                  (HELLO_RF_TX_POWER_DBM == 2 || HELLO_RF_TX_POWER_DBM == 5) &&
+                  HELLO_RF_LONG_RANGE == 0 &&
                   HELLO_RF_SPREADING_FACTOR == 7 && HELLO_RF_BANDWIDTH_KHZ == 125 &&
                   HELLO_RF_CODING_RATE == 5 && HELLO_RF_SYNC_WORD == 0x12 &&
                   HELLO_RF_PREAMBLE_SYMBOLS == 8 && HELLO_RF_CRC_ENABLED == 1 &&

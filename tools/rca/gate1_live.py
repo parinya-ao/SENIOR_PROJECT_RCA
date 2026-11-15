@@ -211,7 +211,7 @@ class Gate1Audit:
                     and item.get("transaction_index") == self.current_transaction
                 ):
                     return item.get("actual_rx_hex", "UNKNOWN")
-        except OSError, json.JSONDecodeError:
+        except (OSError, json.JSONDecodeError):
             pass
         return "UNKNOWN"
 
@@ -225,7 +225,7 @@ class Gate1Audit:
                     and item.get("transaction_index") == self.current_transaction
                 ):
                     return item.get("actual_rx_length", "UNKNOWN")
-        except OSError, json.JSONDecodeError:
+        except (OSError, json.JSONDecodeError):
             pass
         return "UNKNOWN"
 

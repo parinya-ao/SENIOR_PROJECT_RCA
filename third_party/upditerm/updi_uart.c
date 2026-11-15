@@ -30,6 +30,12 @@ extern	_Bool	updi_uart_enabled	( void )
 {
 	return (UART_FLAGS & FLAG_ENABLE);
 }
+extern _Bool updi_uart_try_tx( uint8_t byte )
+{
+    if (!(UART_FLAGS & FLAG_ENABLE) || SYSCFG_OCDMS) return 0;
+    SYSCFG_OCDM = byte;
+    return 1;
+}
 
 // ----------------------------------------------------------------------
 // Transmit a byte

@@ -1,7 +1,7 @@
 #include <stdint.h>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <Arduino.h>
 #include "lora.h"
@@ -16,29 +16,36 @@ State state;
 }
 
 SPIClass SPI;
+uint32_t host_ms;
 
 static unsigned checks;
+
+#ifndef EXPECTED_TX_POWER_DBM
+#define EXPECTED_TX_POWER_DBM 2
+#endif
 
 #define CHECK(condition) do { \
     ++checks; \
     if (!(condition)) { \
-        std::fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #condition); \
+        fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #condition); \
         return EXIT_FAILURE; \
     } \
 } while (0)
 
 static void reset_radio() {
-    std::memset(&fake_radio::state, 0, sizeof(fake_radio::state));
+    memset(&fake_radio::state, 0, sizeof(fake_radio::state));
     SPI.reset();
 }
 
 static void complete_tx() {
+    fake_radio::state.irq_flags = 8;
     if (fake_radio::state.sent_action != nullptr) {
         fake_radio::state.sent_action();
     }
 }
 
 static void deliver(const uint8_t* bytes, size_t length) {
+    fake_radio::state.irq_flags = 0x40;
     fake_radio::state.rx_size = length;
     for (size_t i = 0; i < length; ++i) fake_radio::state.rx_data[i] = bytes[i];
     if (fake_radio::state.received_action != nullptr) {
@@ -74,12 +81,12 @@ int main() {
     CHECK(fake_spi::state.transfer_count == 2);
     CHECK(fake_spi::state.transfer_bytes[0] == 0x42);
     CHECK(fake_spi::state.transfer_bytes[1] == 0x00);
-    CHECK(fake_spi::state.cs_pin == 13);
+    CHECK(fake_spi::state.cs_pin == PIN_PC3);
     CHECK(fake_spi::state.cs_low_seen && fake_spi::state.cs_high_seen);
     CHECK(smoke.init(0));
     CHECK(fake_radio::state.spi1_route_at_begin);
     CHECK(fake_radio::state.frequency_mhz == 915.0f);
-    CHECK(fake_radio::state.tx_power_dbm == 10);
+    CHECK(fake_radio::state.tx_power_dbm == EXPECTED_TX_POWER_DBM);
     CHECK(fake_radio::state.spreading_factor == 7);
     CHECK(fake_radio::state.bandwidth_khz == 125.0f);
     CHECK(fake_radio::state.coding_rate == 5);
@@ -116,7 +123,7 @@ int main() {
     payload[0] = 0xff;
     const uint8_t expected_tx[] = {1, 0, 0x34, 0x12, 0x08, 0x01, 'H', 'i'};
     CHECK(fake_radio::state.tx_size == sizeof(expected_tx));
-    CHECK(std::memcmp(fake_radio::state.tx_data, expected_tx, sizeof(expected_tx)) == 0);
+    CHECK(memcmp(fake_radio::state.tx_data, expected_tx, sizeof(expected_tx)) == 0);
     CHECK(!tx.send_done());
     complete_tx();
     CHECK(tx.send_done());
@@ -215,6 +222,6 @@ int main() {
     CHECK(length == sizeof(max_payload));
     CHECK(wide_payload[250] == static_cast<uint8_t>(254));
 
-    std::printf("PASS %u radio-wrapper checks\n", checks);
+    printf("PASS %u radio-wrapper checks\n", checks);
     return EXIT_SUCCESS;
 }

@@ -168,7 +168,7 @@ class MvpRoundtripTests(unittest.TestCase):
         self.addCleanup(board.close)
         self.assertIn("RADIO_INIT E=0", "\n".join(board.initial))
         self.assertIn("RADIO_MOD SF=7 BW=125 CR=5", "\n".join(board.initial))
-        self.assertIn("RADIO_PROFILE F100=91500 P=10", "\n".join(board.initial))
+        self.assertIn("RADIO_PROFILE F100=91500 P=2", "\n".join(board.initial))
         self.assertIn("RADIO_FRAME SW=12 PRE=8 CRC=1 HDR=E IQ=0", "\n".join(board.initial))
         return board
 

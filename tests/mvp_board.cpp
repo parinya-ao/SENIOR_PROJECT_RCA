@@ -32,7 +32,9 @@ extern "C" void updi_uart_tx(uint8_t byte) {
 void delay(unsigned ms) {
     host_ms += ms;
     // Simulate the external radio's TX-done interrupt, never protocol decisions.
-    if (fake_radio::state.tx_data && fake_radio::state.sent_action) {
+    if (fake_radio::state.tx_data && fake_radio::state.sent_action &&
+        fake_radio::state.transmit_starts > fake_radio::state.finish_transmits) {
+        fake_radio::state.irq_flags = 8;
         fake_radio::state.sent_action();
     }
 }
@@ -100,6 +102,7 @@ int main() {
                 fake_radio::state.rx_data[i] =
                     static_cast<uint8_t>(std::stoul(hex.substr(i * 2, 2), nullptr, 16));
             }
+            fake_radio::state.irq_flags = 0x40;
             if (fake_radio::state.received_action) fake_radio::state.received_action();
         } else if (command.compare(0, 5, "TICK ") == 0) {
             host_ms += std::stoul(command.substr(5));

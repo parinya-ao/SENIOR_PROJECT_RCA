@@ -7,6 +7,7 @@
 #define RADIOLIB_ERR_NONE 0
 #define RADIOLIB_ERR_UNKNOWN -1
 #define RADIOLIB_ERR_PACKET_TOO_LONG -2
+#define RADIOLIB_ERR_CRC_MISMATCH -7
 #define RADIOLIB_ERR_WRONG_MODEM -20
 
 namespace fake_radio {
@@ -17,6 +18,9 @@ struct State {
     int16_t start_transmit_status;
     int16_t finish_transmit_status;
     int16_t read_data_status;
+    uint32_t irq_flags;
+    uint8_t op_mode;
+    int16_t standby_status;
     size_t rx_size;
     uint32_t airtime_us;
     size_t airtime_length;
@@ -57,6 +61,11 @@ extern State state;
 
 class Module {
 public:
+    int16_t SPIsetRegValue(uint8_t, uint8_t value, uint8_t = 7, uint8_t = 0) {
+        fake_radio::state.op_mode = value;
+        return fake_radio::state.config_status;
+    }
+    uint8_t SPIgetRegValue(uint8_t) { return fake_radio::state.op_mode; }
     Module(uint32_t cs, uint32_t irq, uint32_t reset, uint32_t dio1) {
         fake_radio::state.module_cs_pin = cs;
         fake_radio::state.module_irq_pin = irq;
@@ -138,16 +147,21 @@ public:
     }
     int16_t startReceive() {
         ++fake_radio::state.receive_starts;
+        fake_radio::state.irq_flags = 0;
+        fake_radio::state.op_mode = 0x85;
         return fake_radio::state.start_receive_status;
     }
     int16_t startTransmit(uint8_t* data, uint8_t len) {
         ++fake_radio::state.transmit_starts;
+        fake_radio::state.irq_flags = 0;
+        fake_radio::state.op_mode = 0x83;
         fake_radio::state.tx_data = data;
         fake_radio::state.tx_size = len;
         return fake_radio::state.start_transmit_status;
     }
     int16_t finishTransmit() {
         ++fake_radio::state.finish_transmits;
+        fake_radio::state.irq_flags = 0;
         return fake_radio::state.finish_transmit_status;
     }
     size_t getPacketLength() { return fake_radio::state.rx_size; }
@@ -164,4 +178,10 @@ public:
         return fake_radio::state.airtime_us;
     }
     int16_t sleep() { return RADIOLIB_ERR_NONE; }
+    int16_t standby() { fake_radio::state.op_mode=0x81;return fake_radio::state.standby_status; }
+    uint32_t getIrqFlags() { return fake_radio::state.irq_flags; }
+    int16_t clearIrqFlags(uint32_t flags) {
+        fake_radio::state.irq_flags &= ~flags;
+        return 0;
+    }
 };

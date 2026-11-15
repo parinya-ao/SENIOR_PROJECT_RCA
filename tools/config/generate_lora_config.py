@@ -18,7 +18,7 @@ RADIO_PROFILE = {
         "spreading_factor": 7,
         "coding_rate": 5,
         "sync_word": 0x12,
-        "tx_power_dbm": 10,
+        "tx_power_dbm": 2,
         "preamble_symbols": 8,
         "crc_enabled": True,
         "explicit_header": True,

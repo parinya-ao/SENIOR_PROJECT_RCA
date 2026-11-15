@@ -193,6 +193,7 @@ void loop() {
                              frame.campaign_id, frame.sequence, 0);
         return;
     }
+    updi_role_log_packet("RECEIVER", "ACK_TX_BEGIN", session, 1, 0);
     if (lora.send(source, id, flags, ack_bytes, sizeof(ack_bytes)) !=
             RADIOLIB_ERR_NONE) {
         updi_role_log_packet("RECEIVER", "ACK_START_FAILED",

@@ -7,13 +7,18 @@ Import("env")
 sys.path.insert(0, str(Path(env["PROJECT_DIR"]) / "tools/config"))
 import json
 
-from generate_lora_config import _write_atomic, generate, load_radio_profile
+from generate_lora_config import _write_atomic, digest, generate, load_radio_profile
 from validate_lora_ssot import ROOT, load
 
 # Parsed INI values must match the source before compilation or linking.
 generate()
 config = load(ROOT / "config/lora_system.json")
 radio = load_radio_profile(ROOT / "config/radio_915.toml")
+power_candidates = {
+    "sender_hello_5dbm": "sender_hello",
+    "receiver_5dbm": "receiver",
+}
+base_environment = power_candidates.get(env["PIOENV"], env["PIOENV"])
 roles_by_environment = {
     environment: role
     for role, environments in radio["environments"].items()
@@ -28,13 +33,16 @@ roles_by_environment.update(
 )
 roles_by_environment.update({role + "_reverse_raw": role for role in ("sender", "receiver")})
 try:
-    role = roles_by_environment[env["PIOENV"]]
+    role = roles_by_environment[base_environment]
 except KeyError as error:
     raise ValueError(f"PlatformIO environment has no radio role: {env['PIOENV']}") from error
 board = config[f"{role}_board"]
 if int(env.GetProjectOption("board_build.text_section_start"), 0) != board["image_start"]:
     raise ValueError("PlatformIO parsed a stale image start; run generation and rebuild")
 flags = env.GetProjectOption("build_flags")
+power_flags = [flag for flag in flags if flag.startswith("-DLORA_TEST_TX_POWER_DBM")]
+if power_flags != (["-DLORA_TEST_TX_POWER_DBM=5"] if env["PIOENV"] in power_candidates else []):
+    raise ValueError("TX power override is restricted to the two +5 dBm comparison targets")
 for flag in flags:
     if "-DHELLO_RF_" in flag and not flag.startswith("-DHELLO_RF_DIAGNOSTIC_ONLY="):
         raise ValueError(f"Conflicting radio macro: {flag}; configure config/radio_915.toml")
@@ -48,7 +56,12 @@ if env.GetProjectOption("build_type") == "release":
     env.Append(LINKFLAGS=["-Wl,--strip-debug"])
 manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
 identity = Path(env.subst("$BUILD_DIR")) / "lora_build_identity.h"
-build_id = manifest["environments"].get(env["PIOENV"], {}).get("build_id")
+build_id = manifest["environments"].get(base_environment, {}).get("build_id")
+if env["PIOENV"] in power_candidates:
+    shared = dict(manifest["shared"], radio=dict(manifest["shared"]["radio"], tx_power_dbm=5))
+    fingerprint = digest(shared)
+    build_id = digest(dict(base_build_id=build_id, shared_fingerprint=fingerprint))
+    env.Append(CPPDEFINES=[("LORA_TEST_CONFIG_FINGERPRINT", '\\\"' + fingerprint + '\\\"')])
 if build_id is None:
     from generate_lora_config import digest
 

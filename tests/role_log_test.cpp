@@ -35,6 +35,9 @@ extern "C" uint8_t updi_uart_rx(void) { return 0; }
 } while (0)
 
 int main() {
+    char fixed_width[5];
+    updi_role_log_format_hex(fixed_width, 0x0393, 4);
+    CHECK(std::strcmp(fixed_width, "0393") == 0);
 #ifndef UPDI_ROLE_LOG_IDENTITY_V1
     CHECK(false && "versioned role identity marker is not implemented");
 #else
@@ -63,6 +66,14 @@ int main() {
     updi_role_log_campaign("GATEWAY", "TEST_COMPLETED", 0x1234);
     CHECK(std::strcmp(captured,
           "[GATEWAY] TEST_COMPLETED C=1234\r\n") == 0);
+    clear_capture();
+    updi_role_log_campaign("RECEIVER", "SESSION_READY", 0x0393);
+    CHECK(std::strcmp(captured,
+          "[RECEIVER] SESSION_READY C=0393\r\n") == 0);
+    clear_capture();
+    updi_role_log_packet("RECEIVER", "PAYLOAD_MATCH", 0x0393, 1, 0);
+    CHECK(std::strcmp(captured,
+          "[RECEIVER] PAYLOAD_MATCH C=0393 S=01 A=0\r\n") == 0);
     clear_capture();
     updi_role_log_rtt("GATEWAY", "ACK_RX", 0x1234, 1, 42);
     CHECK(std::strcmp(captured,

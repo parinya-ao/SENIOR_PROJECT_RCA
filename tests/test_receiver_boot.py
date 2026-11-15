@@ -1,4 +1,5 @@
 import json
+import hashlib
 import subprocess
 import sys
 import tempfile
@@ -12,6 +13,21 @@ import receiver_boot as boot
 
 
 class ReceiverBootTests(unittest.TestCase):
+    def test_snapshot_read_retries_at_lower_baud_after_link_failure(self):
+        class Proof:
+            run_dir = Path(".")
+
+            def __init__(self):
+                self.calls = []
+
+            def command(self, name, command, timeout):
+                self.calls.append((name, command, timeout))
+                return (1 if len(self.calls) == 1 else 0), b"", b""
+
+        proof = Proof()
+        self.assertEqual(boot.read_snapshot_command(proof, "snapshot", ["avrdude", "-b", "115200"]), 0)
+        self.assertEqual([call[1][call[1].index("-b") + 1] for call in proof.calls], ["115200", "57600"])
+
     def test_page0_overlay_preserves_every_other_byte(self):
         original = bytes(range(256)) * 512
         stub = b"\xf8\x94\x11\x24"
@@ -321,6 +337,35 @@ class BootPackageTests(unittest.TestCase):
 
 
 class ApplicationPageWriteTests(unittest.TestCase):
+    def test_guarded_writer_rejects_live_serial_before_erase(self):
+        import rf_proof as rf
+        from test_rf_proof import effective_platformio_config
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); build=root / ".pio/build/receiver";build.mkdir(parents=True)
+            data=boot.ihex(b"abcd",boot.APP_START).encode();(build / "firmware.hex").write_bytes(data)
+            commands=[]
+            def command(name, argv, *unused):
+                commands.append(argv);return 0,b"avrdude version 8.1",b""
+            proof=SimpleNamespace(run_dir=root,command=command,note=lambda *_: None)
+            with patch.object(rf,"ROOT",root), patch.object(boot,"read_snapshot",return_value={"sernum":b"wrong"}):
+                result=rf.program_application(proof,"receiver",effective_platformio_config(),
+                    approved_sha=hashlib.sha256(data).hexdigest(),approved_serial="00",
+                    approved_pages=(boot.APP_START,boot.APP_START+512))
+            self.assertEqual(result,1)
+            self.assertFalse(any("-T" in command for command in commands))
+    def test_tracker_selector_rejects_wrong_identity_or_hash_before_programming(self):
+        import rf_proof as rf
+        args = SimpleNamespace(target_role="receiver", target_serial="bad", image_sha256="bad",
+                               page_start=0, page_end=0x9800, authorize_upload=True)
+        proof = SimpleNamespace(note=lambda *_: None)
+        with patch.object(rf, "program_application") as writer:
+            self.assertNotEqual(rf.tracker_app_upload(proof, args, ""), 0)
+            writer.assert_not_called()
+    def test_userrow_changes_fail_preservation(self):
+        before = dict.fromkeys(("signature", "sernum", "fuses", "eeprom", "lock", "usersig"), b"a")
+        before["flash"] = bytes(1024)
+        with self.assertRaisesRegex(ValueError, "usersig"):
+            boot.require_preserved(before, dict(before, usersig=b"b"), 0, 512)
     def test_guarded_app_writer_erases_only_its_page_with_installed_avrdude_dryrun(self):
         import rf_proof as rf
         from test_rf_proof import effective_platformio_config

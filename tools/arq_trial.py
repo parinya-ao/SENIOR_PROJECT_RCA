@@ -358,7 +358,7 @@ def reader_free_h01_summary(events, reset_before=None, reset_after=None):
             try:
                 if event.get("rc") == "0" and int(event["v"]) & 0x08:
                     return True
-            except KeyError, TypeError, ValueError:
+            except (KeyError, TypeError, ValueError):
                 continue
         return False
 

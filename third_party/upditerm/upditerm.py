@@ -327,7 +327,7 @@ class Terminal:
         self.serport = serport
         self.escape = escape
         try:
-            self.log = logfile and open(logfile, 'a', encoding='ascii')
+            self.log = logfile and open(logfile, 'a', encoding='ascii', buffering=1)
         except OSError as cause:
             error(f'Cannot open log file: {cause}')
         self.serport_lock = threading.Lock()

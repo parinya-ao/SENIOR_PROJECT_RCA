@@ -1,9 +1,10 @@
 import importlib.util
 import queue
+import tempfile
 import threading
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 SPEC = importlib.util.spec_from_file_location(
     "upditerm_transport", Path(__file__).resolve().parents[1] / "third_party/upditerm/upditerm.py"
@@ -13,6 +14,23 @@ SPEC.loader.exec_module(upditerm)
 
 
 class ReceiveTests(unittest.TestCase):
+    def test_completed_log_line_survives_transport_failure_before_log_close(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "capture.log"
+            serial = Mock()
+            serial.recv1.side_effect = [ord("O"), ord("K"), 10,
+                                       upditerm.TransportError("disconnected")]
+            # Exercise the production log-opening path without starting threads.
+            with patch.object(threading.Thread, "start"):
+                terminal = upditerm.Terminal(Mock(), serial, logfile=path)
+            terminal.writer_thread = Mock()
+            try:
+                terminal.reader()
+                self.assertIsInstance(terminal.failure, upditerm.TransportError)
+                self.assertEqual(path.read_text(), "OK\n")
+            finally:
+                terminal.log.close()
+
     def test_empty_read_reports_last_request_without_reusing_failed_connection(self):
         port = self.port(b"")
         port.halfduplex = False

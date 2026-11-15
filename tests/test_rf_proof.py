@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -236,6 +237,34 @@ class HardwareGateTests(unittest.TestCase):
         readiness.start()
         self.addCleanup(readiness.stop)
 
+    def test_hello_radio_images_keep_sx127x_hf_errata_enabled(self):
+        config = subprocess.check_output(
+            ["pio", "project", "config", "--json-output"], cwd=rf_proof.ROOT, text=True
+        )
+        sections = rf_proof.effective_project_sections(config)
+        for environment in ("env:sender_hello", "env:receiver"):
+            with self.subTest(environment=environment):
+                self.assertIn(
+                    "-DRADIOLIB_FIX_ERRATA_SX127X=1",
+                    sections[environment]["build_flags"],
+                )
+
+    def test_full_application_receiver_does_not_need_boot_handoff(self):
+        proof = SimpleNamespace(note=lambda *_: None)
+        args = SimpleNamespace(boot_layout_verified=True, receiver_boot_evidence=None)
+        with (
+            patch.object(rf_proof, "application_bounds_for_environment", return_value=(0, 0x1FC00)),
+            patch.object(
+                rf_proof,
+                "target_fuses",
+                return_value={"bootsize": 0, "codesize": 0, "bodcfg": 0},
+            ),
+            patch.object(rf_proof.subprocess, "check_output", return_value=""),
+        ):
+            self.assertTrue(
+                rf_proof.receiver_boot_handoff_supported(proof, args, "active config")
+            )
+
     def test_campaign_build_skip_keeps_ready_gateway_on_normal_rx_path(self):
         source = (Path(__file__).resolve().parents[1] / "src/sender/lib/lora_rx.cpp").read_text()
         boot_gate = source.index("if (test_campaign.state == SSOT_TEST_IDLE)")
@@ -314,7 +343,7 @@ class HardwareGateTests(unittest.TestCase):
             {
                 "frequency_hz": 915_000_000,
                 "frequency_mhz": 915.0,
-                "tx_power_dbm": 10,
+                "tx_power_dbm": 2,
                 "long_range": 0,
                 "spreading_factor": 7,
                 "bandwidth_khz": 125,

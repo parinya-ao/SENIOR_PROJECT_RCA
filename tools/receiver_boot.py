@@ -158,6 +158,18 @@ def page_write_command(executable, configuration, port, image, start=0, size=PAG
     ]
 
 
+def read_snapshot_command(proof, name, command, timeout=60):
+    code, _, _ = proof.command(name, command, timeout)
+    if code == 0:
+        return 0
+    retry = command.copy()
+    baud_index = retry.index("-b") + 1
+    if int(retry[baud_index]) <= 57600:
+        return code
+    retry[baud_index] = "57600"
+    return proof.command(f"{name}-baud57600", retry, timeout)[0]
+
+
 def load_package(path, check_apps=True):
     path = Path(path)
     report = json.loads(path.read_text())
@@ -226,7 +238,7 @@ def load_package(path, check_apps=True):
     return report
 
 
-def read_snapshot(proof, name, role="receiver", *, current_target=False):
+def read_snapshot(proof, name, role="receiver", *, current_target=False, include_usersig=False):
     import rf_proof
 
     if role not in rf_proof.PORTS:
@@ -241,6 +253,8 @@ def read_snapshot(proof, name, role="receiver", *, current_target=False):
             backup_name + "-candidate"
         ]
     memories = ("signature", "sernum", "flash", "eeprom", "fuses", "lock")
+    if include_usersig:
+        memories += ("usersig",)
     command = [
         str(AVRDUDE),
         "-N",
@@ -258,7 +272,7 @@ def read_snapshot(proof, name, role="receiver", *, current_target=False):
     ]
     for memory in memories:
         command += ["-U", f"{memory}:r:{proof.run_dir / (name + '-' + memory + '.bin')}:r"]
-    code, _, _ = proof.command(name, command, 60)
+    code = read_snapshot_command(proof, name, command, 60)
     if code:
         raise ValueError("Receiver snapshot failed; no further write permitted")
     result = {
@@ -271,6 +285,7 @@ def read_snapshot(proof, name, role="receiver", *, current_target=False):
         or len(result["fuses"]) != 16
         or len(result["eeprom"]) != 512
         or result["lock"] != bytes.fromhex("5cc5c55c")
+        or (include_usersig and len(result["usersig"]) != 32)
     ):
         raise ValueError("Receiver identity/length/unlocked-state mismatch")
     expected_fuses = (
@@ -284,7 +299,10 @@ def read_snapshot(proof, name, role="receiver", *, current_target=False):
 
 
 def require_preserved(before, after, first, end):
-    for name in ("signature", "sernum", "fuses", "eeprom", "lock"):
+    names = ("signature", "sernum", "fuses", "eeprom", "lock")
+    if "usersig" in before or "usersig" in after:
+        names += ("usersig",)
+    for name in names:
         if before[name] != after[name]:
             raise ValueError(f"unapproved {name} change; stop for recovery inspection")
     if (
