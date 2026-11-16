@@ -104,8 +104,8 @@ class MvpRoundtripTests(unittest.TestCase):
             )
             c_result = subprocess.run(
                 [
-                    "gcc",
-                    "-std=c11",
+                    "g++",
+                    "-std=c++17",
                     "-Wall",
                     "-Wextra",
                     "-Wshadow",
@@ -117,7 +117,7 @@ class MvpRoundtripTests(unittest.TestCase):
                     "-I" + str(ROOT / "src"),
                     "-I" + str(ROOT / "include"),
                     "-c",
-                    str(ROOT / "src/ssot.c"),
+                    str(ROOT / "src/ssot.cpp"),
                     "-o",
                     str(ssot_object),
                 ],
@@ -152,6 +152,8 @@ class MvpRoundtripTests(unittest.TestCase):
                 str(ROOT / "tests/mvp_board.cpp"),
                 str(ROOT / "stable_lib/lora/lora.cpp"),
                 str(ssot_object),
+                str(ROOT / "src/ssot/session.cpp"),
+                str(ROOT / "src/ssot/control_input.cpp"),
                 str(Path(cls.directory.name) / "task.o"),
                 str(PROJECT_LIB / "iw_tracker_radio_protocol/src/codec.cpp"),
                 str(PROJECT_LIB / "iw_core/src/byte_codec.cpp"),

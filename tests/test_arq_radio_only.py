@@ -32,36 +32,37 @@ class RadioOnlyTests(unittest.TestCase):
 
     def test_diagnostic_has_exact_payload_and_one_physical_attempt(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            source = Path(directory) / "check.c"
+            source = Path(directory) / "check.cpp"
             source.write_text(r"""#include "arq.h"
 #include <assert.h>
 #include <string.h>
 int main(void) {
-    assert(ARQ_MAX_RETRIES==0);
-    assert(!strcmp(ARQ_PAYLOAD,"HELLO_LORA"));
-    arq_sender s; arq_sender_init(&s); assert(arq_sender_arm(&s,7));
-    assert(arq_sender_request(&s,(const uint8_t*)ARQ_PAYLOAD,10,0,ARQ_ACK_MIN_MS));
+    assert(arq::config::kMaxRetries==0);
+    assert(!strcmp(arq::config::kPayload,"HELLO_LORA"));
+    arq::Sender s; arq::InitSender(&s); assert(arq::ArmSender(&s,7));
+    assert(arq::RequestTransmission(&s,(const uint8_t*)arq::config::kPayload,10,0,ARQ_ACK_MIN_MS));
     assert(s.attempts==1 && s.frame.sequence==0);
-    arq_receiver r; arq_receiver_init(&r); assert(arq_receiver_arm(&r,7));
-    arq_frame ack; assert(arq_receiver_data(&r,&s.frame,&ack,false));
-    assert(ack.type==ARQ_ACK && r.deliveries==1);
-    arq_sender_tx_done(&s,50,true);
-    arq_sender_poll(&s,50+ARQ_ACK_MIN_MS);
-    assert(s.attempts==1 && s.result==ARQ_TIMEOUT_EXHAUSTED);
+    arq::Receiver r; arq::InitReceiver(&r); assert(arq::ArmReceiver(&r,7));
+    arq::Frame ack; assert(arq::HandleDataFrame(&r,&s.frame,&ack,false));
+    assert(ack.type==arq::kAck && r.deliveries==1);
+    arq::HandleTxCompletion(&s,50,true);
+    arq::PollSender(&s,50+ARQ_ACK_MIN_MS);
+    assert(s.attempts==1 && s.result==arq::Result::kTimeoutExhausted);
 }
 """)
             binary = Path(directory) / "check"
             subprocess.run(
                 [
                     "clang",
-                    "-std=c11",
+                    "--driver-mode=g++",
+                    "-std=c++17",
                     "-DARQ_RADIO_ONLY_DIAGNOSTIC=1",
                     "-Iinclude",
                     "-Isrc/arq",
                     str(source),
-                    "src/arq/codec.c",
-                    "src/arq/sender.c",
-                    "src/arq/receiver.c",
+                    "src/arq/codec.cpp",
+                    "src/arq/sender.cpp",
+                    "src/arq/receiver.cpp",
                     "-o",
                     str(binary),
                 ],
@@ -79,12 +80,13 @@ int main(void) {
                 subprocess.run(
                     [
                         "clang",
-                        "-std=c11",
+                        "--driver-mode=g++",
+                    "-std=c++17",
                         "-DARQ_RADIO_ONLY_DIAGNOSTIC=1",
                         "-Isrc/arq",
                         "-Iinclude",
                         "-c",
-                        f"src/arq/{source}.c",
+                        f"src/arq/{source}.cpp",
                         "-o",
                         obj,
                     ],
@@ -97,7 +99,7 @@ int main(void) {
                     [
                         "clang",
                         "--driver-mode=g++",
-                        "-std=c++11",
+                        "-std=c++17",
                         "-Wall",
                         "-Wextra",
                         "-Werror",

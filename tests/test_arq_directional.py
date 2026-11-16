@@ -25,12 +25,13 @@ class DirectionalTests(unittest.TestCase):
                     subprocess.run(
                         [
                             "clang",
-                            "-std=c11",
+                            "--driver-mode=g++",
+                            "-std=c++17",
                             *flags,
                             "-Iinclude",
                             "-Isrc/arq",
                             "-c",
-                            f"src/arq/{source}.c",
+                            f"src/arq/{source}.cpp",
                             "-o",
                             obj,
                         ],
@@ -43,7 +44,7 @@ class DirectionalTests(unittest.TestCase):
                     subprocess.run(
                         [
                             "g++",
-                            "-std=c++11",
+                            "-std=c++17",
                             "-Wall",
                             "-Wextra",
                             "-Werror",

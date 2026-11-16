@@ -1,0 +1,9 @@
+# Keep native enum layout and the existing positional APIs during migration.
+# Matching terminal-state assignments intentionally remain in separate branches.
+# Generated/framework headers use supported pragma-once; their style is not ours.
+Checks: >-
+  -*,bugprone-*,clang-analyzer-*,performance-*,portability-*,
+  -performance-enum-size,-bugprone-easily-swappable-parameters,
+  -bugprone-branch-clone,-portability-avoid-pragma-once
+WarningsAsErrors: '*'
+HeaderFilterRegex: 'src/(ssot(/.*)?\.h|arq/.*\.h|shared/reliable_transport\.h)$'

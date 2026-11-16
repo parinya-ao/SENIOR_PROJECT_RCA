@@ -25,11 +25,12 @@ class ArqTests(unittest.TestCase):
                 subprocess.run(
                     [
                         "clang",
-                        "-std=c11",
+                        "--driver-mode=g++",
+                    "-std=c++17",
                         "-Isrc/arq",
                         "-Iinclude",
                         "-c",
-                        f"src/arq/{source}.c",
+                        f"src/arq/{source}.cpp",
                         "-o",
                         obj,
                     ],
@@ -45,7 +46,7 @@ class ArqTests(unittest.TestCase):
                     [
                         "clang",
                         "--driver-mode=g++",
-                        "-std=c++11",
+                        "-std=c++17",
                         "-Wall",
                         "-Wextra",
                         "-Werror",
@@ -80,7 +81,8 @@ class ArqTests(unittest.TestCase):
             subprocess.run(
                 [
                     "clang",
-                    "-std=c11",
+                    "--driver-mode=g++",
+                    "-std=c++17",
                     "-Wall",
                     "-Wextra",
                     "-Werror",
@@ -90,10 +92,10 @@ class ArqTests(unittest.TestCase):
                     "-fno-omit-frame-pointer",
                     "-Isrc/arq",
                     "-Iinclude",
-                    "tests/arq/core_test.c",
-                    "src/arq/codec.c",
-                    "src/arq/sender.c",
-                    "src/arq/receiver.c",
+                    "tests/arq/core_test.cpp",
+                    "src/arq/codec.cpp",
+                    "src/arq/sender.cpp",
+                    "src/arq/receiver.cpp",
                     "-o",
                     str(binary),
                 ],

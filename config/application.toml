@@ -1,0 +1,38 @@
+# Application policy only. Pins, PHY and wire formats stay in the existing SSOT.
+schema_version = 1
+
+[diagnostics]
+max_retries = 0 # Radio-only diagnostics always make one physical attempt.
+payload = "HELLO_LORA"
+gateway_payload = "HELLO_LORA_GW"
+tracker_payload = "HELLO_LORA_TR"
+negative_payload = "REJECT_LORA"
+
+[logging]
+slot_count = 16
+slot_bytes = 192
+
+[commands]
+capacity = 80 # Includes the terminating NUL; accommodates a full SEND command.
+inter_byte_timeout_ms = 1000 # Legacy four-hex-digit SSOT command input.
+fault_limit = 100
+
+[ssot]
+campaign_messages = 20
+
+[startup]
+radio_settle_ms = 10
+version_probe_attempts = 3
+
+[raw]
+payload = "Hello World"
+transmit_interval_ms = 3000
+receive_timeout_ms = 15000
+log_byte_timeout_ms = 100
+log_batch_timeout_ms = 3000
+packet_event_limit = 2
+
+[gateway]
+result_buffer_bytes = 4096
+uart_baud = 115200
+i2c_reset_interval_ms = 60000

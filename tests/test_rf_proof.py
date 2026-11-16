@@ -267,7 +267,7 @@ class HardwareGateTests(unittest.TestCase):
         )
         sections = rf_proof.effective_project_sections(config)
         if sections is None:
-            self.fail("effective PlatformIO configuration did not parse")
+            self.Fail("effective PlatformIO configuration did not parse")
         for environment in ("env:sender_hello", "env:receiver"):
             with self.subTest(environment=environment):
                 self.assertIn(
@@ -292,8 +292,8 @@ class HardwareGateTests(unittest.TestCase):
     def test_sender_uses_only_supported_stable_lora_calls(self) -> None:
         source = (Path(__file__).resolve().parents[1] / "src/sender/lib/lora_rx.cpp").read_text()
         self.assertIn("../../../stable_lib/lora/lora.h", source)
-        self.assertIn("ReliableTransport<LoRa>", source)
-        self.assertIn("transport.send_reliable_data", source)
+        self.assertIn("reliable::Transport<LoRa>", source)
+        self.assertIn("transport.SendReliableData", source)
         for legacy in ("read_chip_version", "last_error", "time_on_air_us",
                        "start_receive", "recover", "EEPROM"):
             with self.subTest(legacy=legacy):
@@ -317,7 +317,7 @@ class HardwareGateTests(unittest.TestCase):
             {"mosi":"PC0","miso":"PC1","sck":"PC2","cs":"PD0",
              "rst":"PD1","irq":"PD3","dio1":"PD2","enable":"PA7"},
         )
-        constructor = "LoRa lora(LORA_PIN_CS,LORA_PIN_IRQ,LORA_PIN_RST,LORA_PIN_DIO1)"
+        constructor = "LoRa lora(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1)"
         self.assertIn(constructor,(root/"src/sender/lib/lora_rx.cpp").read_text())
         self.assertIn(constructor,(root/"src/reliable/main.cpp").read_text())
         self.assertIn(constructor,(root/"src/receiver/main.cpp").read_text())
@@ -328,8 +328,8 @@ class HardwareGateTests(unittest.TestCase):
         self.assertIn("pinModeFast(PIN_LORA_DIO1, INPUT);", sender)
         self.assertIn("digitalWriteFast(PIN_LORA_RST, HIGH);", sender)
         receiver = (root / "src/receiver/main.cpp").read_text()
-        self.assertIn("pinModeFast(LORA_PIN_RST,INPUT);", receiver)
-        self.assertIn("pinModeFast(LORA_PIN_DIO1,INPUT);", receiver)
+        self.assertIn("pinModeFast(LORA_PIN_RST, INPUT);", receiver)
+        self.assertIn("pinModeFast(LORA_PIN_DIO1, INPUT);", receiver)
 
     def test_led_and_debug_uart_macros_follow_schematic_and_dxcore_directions(self) -> None:
         root = Path(__file__).resolve().parents[1]
@@ -344,8 +344,8 @@ class HardwareGateTests(unittest.TestCase):
             self.assertEqual(bindings, expected_leds, relative)
 
         sender_io = (root / "src/sender/lib/io.h").read_text()
-        self.assertIn("#define PIN_DEBUG_TX  PIN_PA0", sender_io)
-        self.assertIn("#define PIN_DEBUG_RX  PIN_PA1", sender_io)
+        self.assertIn("#define PIN_DEBUG_TX PIN_PA0", sender_io)
+        self.assertIn("#define PIN_DEBUG_RX PIN_PA1", sender_io)
 
     def test_shared_rf_profile_only_accepts_the_generated_915_mhz_profile(self) -> None:
         validator = dynamic_attr("valid_rf_profile_config")
@@ -400,7 +400,7 @@ class HardwareGateTests(unittest.TestCase):
         profile = effective_platformio_config()
         shared_profile = rf_proof.shared_rf_profile(profile)
         if shared_profile is None:
-            self.fail("shared RF profile did not parse")
+            self.Fail("shared RF profile did not parse")
         self.assertEqual(shared_profile["frequency_mhz"], 915.0)
         changed_receiver = effective_platformio_config(
             receiver_flags=[
@@ -994,7 +994,7 @@ class RfEvidenceTests(unittest.TestCase):
         source = (Path(__file__).resolve().parents[1] / "src/sender/lib/lora_rx.cpp").read_text()
         self.assertNotIn("EEPROM", source)
         self.assertNotIn("CampaignBuildGateResult", source)
-        self.assertIn("lora_rx_start_lora", source)
+        self.assertIn("StartRadioTransaction", source)
 
 
 class RfTestContinuationTests(unittest.TestCase):
@@ -1112,7 +1112,7 @@ class FlashSafetyTests(unittest.TestCase):
                 setattr(args, key, False)
                 proof: Any = SimpleNamespace(
                     note=lambda *_: None,
-                    command=lambda *_: self.fail("unsafe target must not be accessed"),
+                    command=lambda *_: self.Fail("unsafe target must not be accessed"),
                 )
                 self.assertTrue(rf_proof.physical_readiness_errors(args))
                 self.assertEqual(rf_proof.identify_targets(proof, args), 2)

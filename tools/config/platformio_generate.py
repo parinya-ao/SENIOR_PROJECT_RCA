@@ -7,13 +7,26 @@ Import("env")
 sys.path.insert(0, str(Path(env["PROJECT_DIR"]) / "tools/config"))
 import json
 
-from generate_lora_config import _write_atomic, digest, generate, load_radio_profile
+from application_config import load as load_application, render as render_application
+from generate_lora_config import _write_atomic, artifacts, digest, load_radio_profile
 from validate_lora_ssot import ROOT, load
 
-# Parsed INI values must match the source before compilation or linking.
-generate()
 config = load(ROOT / "config/lora_system.json")
+if (ROOT / "include/application_config.h").read_text() != render_application(load_application()):
+    raise ValueError("stale application policy; run tools/config/application_config.py")
 radio = load_radio_profile(ROOT / "config/radio_915.toml")
+# Builds verify hardware configuration without rewriting protected SSOT outputs.
+# Only source provenance changes during an application migration.
+outputs = artifacts(config, radio)
+manifest_names = {"generated/lora_manifest.json", "generated/arq_manifest.json"}
+for name, contents in outputs.items():
+    if name in manifest_names or name.startswith("../"):
+        continue
+    path = ROOT / name
+    if not path.is_file() or path.read_text() != contents:
+        raise ValueError(f"stale or missing generated configuration: {name}")
+for name in sorted(manifest_names):
+    _write_atomic(ROOT / name, outputs[name])
 power_candidates = {
     "sender_hello_5dbm": "sender_hello",
     "receiver_5dbm": "receiver",
@@ -76,3 +89,16 @@ contents = '#pragma once\n#define LORA_BUILD_ID "' + build_id + '"\n'
 _write_atomic(identity, contents)
 # The identity must affect SCons' compile signature, including incremental builds.
 env.Append(CPPDEFINES=[("LORA_BUILD_ID", '\\"' + build_id + '\\"')])
+
+
+def checked_cpp(build_env, node):
+    """Enable strict diagnostics on migrated modules without changing vendor flags."""
+    checked = build_env.Clone()
+    checked.ProcessUnFlags("-w -fpermissive -Wno-error=narrowing")
+    checked.Append(CCFLAGS=["-Wall", "-Wextra", "-Wshadow", "-Wconversion", "-Wsign-conversion"])
+    return checked.Object(node)
+
+
+for source in ("src/ssot.cpp", "src/arq/codec.cpp", "src/arq/sender.cpp", "src/arq/receiver.cpp", "src/ssot/session.cpp", "src/ssot/control_input.cpp",
+               "src/arq/commands.cpp", "src/arq/diagnostics.cpp"):
+    env.AddBuildMiddleware(checked_cpp, "*" + source)

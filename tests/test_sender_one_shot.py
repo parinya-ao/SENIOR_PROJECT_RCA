@@ -15,15 +15,15 @@ class SenderStableTransportTests(unittest.TestCase):
 
     def test_sender_constructs_stable_radio_from_role_pins(self) -> None:
         self.assertIn("../../../stable_lib/lora/lora.h", self.source)
-        self.assertIn("LoRa lora(LORA_PIN_CS,LORA_PIN_IRQ,LORA_PIN_RST,LORA_PIN_DIO1)",
+        self.assertIn("LoRa lora(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1)",
                       self.source)
         self.assertIn("HELLO_RF_FREQUENCY_MHZ", self.source)
 
     def test_sender_uses_bounded_shared_ack_nack_transport(self) -> None:
-        self.assertIn("transport.send_reliable_data", self.source)
-        self.assertIn("SSOT_MAX_ATTEMPTS", self.transport)
+        self.assertIn("transport.SendReliableData", self.source)
+        self.assertIn("ssot::kMaxAttempts", self.transport)
         self.assertIn("LORA_ACK_TIMEOUT_MS", self.transport)
-        self.assertIn("SSOT_NACK_TYPE", self.transport)
+        self.assertIn("ssot::kNackType", self.transport)
 
     def test_legacy_radio_and_eeprom_gate_calls_are_gone(self) -> None:
         for name in (

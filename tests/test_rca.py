@@ -32,7 +32,7 @@ class RCATests(unittest.TestCase):
                 subprocess.run(
                     [
                         "g++",
-                        "-std=c++11",
+                        "-std=c++17",
                         "-ffunction-sections",
                         "-fdata-sections",
                         "-Wl,--gc-sections",
@@ -56,7 +56,7 @@ class RCATests(unittest.TestCase):
                 [
                     "clang",
                     "--driver-mode=g++",
-                    "-std=c++11",
+                    "-std=c++17",
                     "-Wall",
                     "-Wextra",
                     "-Werror",

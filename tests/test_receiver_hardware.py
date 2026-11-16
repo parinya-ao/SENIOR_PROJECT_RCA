@@ -76,7 +76,7 @@ class ReceiverHardwareTests(unittest.TestCase):
     def test_gpio_powers_radio_before_spi_without_touching_sd_or_reset(self) -> None:
         # Compile the actual static GPIO function, replacing only Arduino I/O.
         source = (ROOT / "src/receiver/main.cpp").read_text()
-        first = source.index("static void init_receiver_gpio()")
+        first = source.index("static void InitializeReceiverGpio()")
         last = source.index("\nvoid setup()", first)
         aliases = "\n".join(
             line
@@ -84,6 +84,7 @@ class ReceiverHardwareTests(unittest.TestCase):
             if line.startswith(("#define PIN_", "#define LED"))
         )
         fixture = (
+            '#include "include/application_config.h"\n'
             '#include "include/generated/lora_receiver_board.h"\n'
             '#include "include/generated/radio_915_config.h"\n'
             + aliases
@@ -98,7 +99,7 @@ class ReceiverHardwareTests(unittest.TestCase):
                 [
                     "clang",
                     "--driver-mode=g++",
-                    "-std=c++11",
+                    "-std=c++17",
                     "-Wall",
                     "-Wextra",
                     "-Werror",

@@ -33,6 +33,9 @@ AVR_DA_GPIOR0 = 0x1C
 AVR_DA_RSTCTRL_RSTFR = 0x40
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "tools/config"))
+sys.path.insert(0, str(ROOT))
+from tools.config.arq_config import load_arq
+from tools.config.application_config import load as load_application, raw_payload, raw_send_command
 import receiver_boot as boot  # type: ignore[import-not-found]
 import rf_proof as rf  # type: ignore[import-not-found]
 
@@ -1245,7 +1248,6 @@ ARQ_REGISTER_ADDRESSES = (
     0x21,
     0x41,
 )
-HELLO_PAYLOAD = b"HELLO_LORA"
 
 
 def audit_radio_configuration(event: Json, *, rx: Json) -> Json:
@@ -1298,11 +1300,12 @@ def diagnostic_case(test_id: str | None = None) -> Json:
         raise ValueError(msg)
     reverse = test_id in ("T03", "T04")
     nack = test_id in ("T02", "T04")
-    payload = (
-        HELLO_PAYLOAD
-        if test_id is None
-        else (b"REJECT_LORA" if nack else (b"HELLO_LORA_TR" if reverse else b"HELLO_LORA_GW"))
-    )
+    policy = load_application()["diagnostics"]
+    payload = policy[
+        "negative_payload" if nack else
+        ("payload" if test_id is None else
+         ("tracker_payload" if reverse else "gateway_payload"))
+    ].encode("ascii")
     return {
         "reverse": reverse,
         "nack": nack,
@@ -1312,7 +1315,9 @@ def diagnostic_case(test_id: str | None = None) -> Json:
     }
 
 
-def hello_airtime_budget(config: Json, payload: bytes = HELLO_PAYLOAD) -> Json:
+def hello_airtime_budget(config: Json, payload: bytes | None = None) -> Json:
+    if payload is None:
+        payload = diagnostic_case()["payload"]
     data = lora_time_on_air_us(12 + len(payload), config)
     ack = lora_time_on_air_us(12, config)
     turnaround = config["response_guard_ms"] * 1000
@@ -1334,7 +1339,8 @@ def validate_hello_exchange(
 ) -> Json:
     case = diagnostic_case(test_id)
     tx, rx = case["sender_role"], case["receiver_role"]
-    src, dst = (2, 1) if case["reverse"] else (1, 2)
+    config = load_arq()
+    src, dst = (config["receiver_id"], config["sender_id"]) if case["reverse"] else (config["sender_id"], config["receiver_id"])
     control_type, control_reason = (3, 2) if case["nack"] else (2, 0)
     rows = [e for e in events if int(e.get("s", "0"), 16) == session]
     frames = []
@@ -1342,7 +1348,7 @@ def validate_hello_exchange(
         if event.get("e") not in ("TX", "RX"):
             continue
         frame = wire_frame(event["bytes"])
-        if frame["session"] != session or frame["sequence"] != 0:
+        if frame["session"] != session or frame["sequence"] != config["initial_sequence"]:
             msg = "HELLO_LORA stale session/sequence"
             raise ValueError(msg)
         data = frame["type"] == 1
@@ -1368,7 +1374,7 @@ def validate_hello_exchange(
         raise ValueError(msg)
 
     def checkpoint(
-        role: str, name: str, *, value: Json = None, sequence: int = 0, rc: str = "0"
+        role: str, name: str, *, value: Json = None, sequence: int = config["initial_sequence"], rc: str = "0"
     ) -> Json:
         matches = [e for e in rows if e.get("role") == role and e.get("e") == name]
         if not matches:
@@ -1730,7 +1736,7 @@ def validate_reverse(events: Json) -> Json:
     if (
         len(starts) != 1
         or starts[0].get("rc") != "0"
-        or starts[0].get("flags") != "11"
+        or starts[0].get("flags") != str(len(raw_payload()))
         or len(done) != 1
     ):
         msg = "missing single successful raw transmission"
@@ -1743,9 +1749,9 @@ def validate_reverse(events: Json) -> Json:
     if (
         packet.get("rc") != "0"
         or flags & 0x60 != 0x40
-        or packet.get("len") != "11"
+        or packet.get("len") != str(len(raw_payload()))
         or packet.get("match") != "1"
-        or packet.get("bytes") != "48656C6C6F20576F726C64"
+        or packet.get("bytes") != raw_payload().hex().upper()
     ):
         msg = "raw RxDone/CRC/payload mismatch"
         raise ValueError(msg)
@@ -1776,7 +1782,7 @@ def reverse_exchange(c: Json) -> Json:
     if ready.get("rc") != "0" or int(ready.get("mode", "0")) & 0xCF != 0x85:
         msg = "reverse RX continuous not verified"
         raise ValueError(msg)
-    if time.monotonic() - armed >= 10 or c.seen("sender", "RAW_RX_TIMEOUT"):
+    if time.monotonic() - armed >= load_application()["raw"]["receive_timeout_ms"] / 1000 - 5 or c.seen("sender", "RAW_RX_TIMEOUT"):
         msg = "reverse receive window expired before SEND"
         raise ValueError(msg)
     configs = c.seen("sender", "RAW_RX_ACTIVE")
@@ -1784,7 +1790,7 @@ def reverse_exchange(c: Json) -> Json:
         msg = "missing active RX configuration"
         raise ValueError(msg)
     audit_raw_configuration(configs[-1])
-    c.command("receiver", "SEND 48656C6C6F20576F726C64")
+    c.command("receiver", raw_send_command())
     # Allow the bounded device timeout plus mailbox drain; preserve its actual event.
     c.wait(
         lambda: bool(
@@ -1792,7 +1798,7 @@ def reverse_exchange(c: Json) -> Json:
             or c.seen("sender", "RAW_RX_TIMEOUT")
             or c.seen("receiver", "RAW_TX_TIMEOUT")
         ),
-        20,
+        load_application()["raw"]["receive_timeout_ms"] / 1000 + 5,
         ignore_exited_roles=("receiver",),
     )
     c.wait(
@@ -1933,14 +1939,14 @@ def reverse_exchange_without_tracker_reader(c: Json, proof: Json, tracker_firmwa
         msg = "missing active RX configuration"
         raise ValueError(msg)
     audit_raw_configuration(configs[-1])
-    if time.monotonic() - armed >= 10 or c.seen("sender", "RAW_RX_TIMEOUT"):
+    if time.monotonic() - armed >= load_application()["raw"]["receive_timeout_ms"] / 1000 - 5 or c.seen("sender", "RAW_RX_TIMEOUT"):
         msg = "reverse receive window expired before SEND"
         raise ValueError(msg)
     session, protocol, command = send_command_without_reader(
-        proof, rf.PORTS["receiver"], "SEND 48656C6C6F20576F726C64", tracker_firmware
+        proof, rf.PORTS["receiver"], raw_send_command(), tracker_firmware
     )
     try:
-        c.wait(lambda: bool(c.seen("sender", "RAW_RX") or c.seen("sender", "RAW_RX_TIMEOUT")), 20)
+        c.wait(lambda: bool(c.seen("sender", "RAW_RX") or c.seen("sender", "RAW_RX_TIMEOUT")), load_application()["raw"]["receive_timeout_ms"] / 1000 + 5)
         capture_tracker_diagnostics(c, proof, session, protocol, command, "post_window")
     except Exception as first_error:
         command["post_window_error"] = f"{type(first_error).__name__}: {first_error}"
@@ -1970,9 +1976,9 @@ def reverse_exchange_without_tracker_reader(c: Json, proof: Json, tracker_firmwa
         valid = (
             packet.get("rc") == "0"
             and int(packet.get("flags", "0")) & 0x60 == 0x40
-            and packet.get("len") == "11"
+            and packet.get("len") == str(len(raw_payload()))
             and packet.get("match") == "1"
-            and packet.get("bytes") == "48656C6C6F20576F726C64"
+            and packet.get("bytes") == raw_payload().hex().upper()
         )
         return {
             "complete": valid,
@@ -2406,7 +2412,7 @@ def reader_free_h01(*, rx_idle_seconds: float | None = None) -> Json:
                 msg = "Gateway radio not verified in RX Continuous"
                 raise ValueError(msg)
 
-            payload = HELLO_PAYLOAD.hex()
+            payload = diagnostic_case()["payload"].hex()
             command = "SEND " + payload
             c.command("sender", command)
             bundle["send_command"] = {

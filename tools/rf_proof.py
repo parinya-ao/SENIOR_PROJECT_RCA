@@ -28,6 +28,8 @@ if TYPE_CHECKING:
 Json = Any
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from tools.config.application_config import raw_payload
 ARTIFACTS = ROOT / "artifacts" / "rf-proof"
 ENVIRONMENTS = ("sender", "sender_hello", "receiver", "sender_hello_spi", "receiver_spi")
 # Covers bounded SF7 airtime pacing across all four attempts per sequence.
@@ -68,10 +70,11 @@ def hardware_blockers(
 
 def parse_raw_mvp_logs(sender_text: str, receiver_text: str) -> dict[str, object]:
     """Validate raw MVP observations only; capture provenance remains separate."""
+    payload = raw_payload()
     starts = {
         int(m[1])
         for m in re.finditer(
-            r"^\[MVP SENDER\] TX_START attempt=(\d+) len=11 rc=0 cleanup=0$",
+            rf"^\[MVP SENDER\] TX_START attempt=(\d+) len={len(payload)} rc=0 cleanup=0$",
             sender_text,
             re.MULTILINE,
         )
@@ -91,13 +94,13 @@ def parse_raw_mvp_logs(sender_text: str, receiver_text: str) -> dict[str, object
         fields = dict(re.findall(r"(\w+)=([^ ]+)", line))
         try:
             if (
-                int(fields["len"]) == 11
+                int(fields["len"]) == len(payload)
                 and int(fields["rc"]) == 0
                 and int(fields["restart"]) == 0
                 and int(fields["irq"]) & 0x40
                 and not int(fields["irq"]) & 0x20
                 and " PASS bytes=" in line
-                and bytes.fromhex(fields["bytes"]) == b"Hello World"
+                and bytes.fromhex(fields["bytes"]) == payload
             ):
                 packets.append({"rssi": float(fields["rssi"]), "snr": float(fields["snr"])})
         except (ValueError, KeyError):

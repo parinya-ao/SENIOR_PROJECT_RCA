@@ -151,7 +151,7 @@ class ReverseRawTests(unittest.TestCase):
                     [
                         "clang",
                         "--driver-mode=g++",
-                        "-std=c++11",
+                        "-std=c++17",
                         "-Wall",
                         "-Wextra",
                         "-Werror",

@@ -90,7 +90,7 @@ class RawMvpTests(unittest.TestCase):
                 subprocess.run(
                     [
                         "g++",
-                        "-std=c++11",
+                        "-std=c++17",
                         "-Wall",
                         "-Wextra",
                         "-Werror",

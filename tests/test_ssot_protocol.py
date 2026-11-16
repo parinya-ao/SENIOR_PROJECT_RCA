@@ -13,21 +13,21 @@ class SsotProtocolTests(unittest.TestCase):
             binary = Path(directory) / "ssot_protocol_test"
             compile_result = subprocess.run(
                 [
-                    "gcc",
-                    "-std=c11",
+                    "g++",
+                    "-std=c++17",
                     "-O2",
                     "-Wall",
                     "-Wextra",
                     "-Wshadow",
                     "-Wconversion",
-                    "-Wstrict-prototypes",
-                    "-Wmissing-prototypes",
                     "-Werror",
                     *flags,
                     "-I" + str(ROOT / "src"),
                     "-I" + str(ROOT / "include"),
-                    str(ROOT / "tests/ssot_protocol_test.c"),
-                    str(ROOT / "src/ssot.c"),
+                    str(ROOT / "tests/ssot_protocol_test.cpp"),
+                    str(ROOT / "src/ssot.cpp"),
+                    str(ROOT / "src/ssot/session.cpp"),
+                    str(ROOT / "src/ssot/control_input.cpp"),
                     "-o",
                     str(binary),
                 ],
@@ -43,7 +43,7 @@ class SsotProtocolTests(unittest.TestCase):
                 [str(binary)], capture_output=True, text=True, timeout=10, check=False
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertIn("PASS C protocol tests", result.stdout)
+            self.assertIn("PASS C++ protocol tests", result.stdout)
 
     def test_protocol_vectors_and_state_machine(self) -> None:
         self.compile_and_run()

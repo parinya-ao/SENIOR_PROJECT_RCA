@@ -15,7 +15,7 @@ class ReliableTransportTests(unittest.TestCase):
             binary = Path(directory) / "test"
             ssot = Path(directory) / "ssot.o"
             subprocess.run(
-                ["clang", "-std=c11", "-Isrc", "-Iinclude", "-c", "src/ssot.c", "-o", str(ssot)],
+                ["clang", "--driver-mode=g++", "-std=c++17", "-Isrc", "-Iinclude", "-c", "src/ssot.cpp", "-o", str(ssot)],
                 cwd=ROOT,
                 check=True,
             )
@@ -44,6 +44,8 @@ class ReliableTransportTests(unittest.TestCase):
                 source,
                 *extra,
                 str(ssot),
+                "src/ssot/session.cpp",
+                "src/ssot/control_input.cpp",
                 "-o",
                 str(binary),
             ]

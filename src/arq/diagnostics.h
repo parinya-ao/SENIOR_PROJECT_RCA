@@ -1,24 +1,48 @@
-#pragma once
-#include <Arduino.h>
-#include <updi_uart.h>
-#include <stdio.h>
-#include <string.h>
+// No repository-wide license is declared; existing rights are unchanged.
 
-struct LogSlot { char text[192]; };
-static LogSlot log_slots[16];
-static uint8_t log_head,log_tail,log_count,log_offset;
-static uint32_t log_overflow;
-static char* log_slot() {
-    if(log_count==16){++log_overflow;return NULL;}
-    char* out=log_slots[log_tail].text;
-    log_tail=(log_tail+1)%16;++log_count;return out;
-}
-static void log_flush() {
-    // The UPDI ready byte is a mailbox; never wait for a disconnected reader.
-    if(!log_count || !updi_uart_enabled() || _SFR_MEM8(0x0f19))return;
-    const char c=log_slots[log_head].text[log_offset++];
-    _SFR_MEM8(0x0f18)=c;
-    if(!log_slots[log_head].text[log_offset]){
-        log_offset=0;log_head=(log_head+1)%16;--log_count;
-    }
-}
+// Provides the foreground ARQ application's bounded diagnostic queue.
+
+#ifndef SENIOR_PROJECT_RCA_SRC_ARQ_DIAGNOSTICS_H_
+#define SENIOR_PROJECT_RCA_SRC_ARQ_DIAGNOSTICS_H_
+#include <stddef.h>
+#include <stdint.h>
+
+#include "application_config.h"
+#include "frame.h"
+namespace arq {
+namespace diagnostics {
+// Borrows live transaction fields; referenced state must outlive each logging
+// call. Keeping references avoids copying an AVR aggregate at every event call
+// site.
+struct EventContext {
+  const uint32_t& session;
+  const uint16_t& sequence;
+  const uint8_t& attempts;
+};
+// Queues one scalar observation. Names must remain valid until this call
+// returns.
+void RecordEvent(const EventContext& context, const char* name, int16_t error,
+                 uint32_t value);
+// Queues exact bytes with observed radio metrics; retains no pointers.
+void RecordFrame(const EventContext& context, const char* name,
+                 const uint8_t* bytes, size_t length, int16_t rssi,
+                 int16_t snr);
+// Queues rejected decoded fields without changing protocol state.
+void RecordDiscard(const EventContext& context, const char* name,
+                   const arq::Frame* frame, uint8_t reason);
+
+inline constexpr size_t kLineCapacity = application_config::logging::kSlotBytes;
+// Reserves a line or returns nullptr and counts a dropped event if full.
+// Immediately write a nonempty NUL-terminated line within kLineCapacity bytes.
+// The pointer expires when flushed. Foreground-only; never call from an ISR.
+char* AcquireLine();
+// Writes at most one byte when UPDI is connected and its mailbox is free.
+// A missing reader or full mailbox leaves all pending data untouched.
+void FlushByte();
+// Returns queued line count, including a partially flushed line.
+uint8_t PendingLineCount();
+// Returns the cumulative number of events dropped by a full queue.
+uint32_t OverflowCount();
+}  // namespace diagnostics
+}  // namespace arq
+#endif  // SENIOR_PROJECT_RCA_SRC_ARQ_DIAGNOSTICS_H_
