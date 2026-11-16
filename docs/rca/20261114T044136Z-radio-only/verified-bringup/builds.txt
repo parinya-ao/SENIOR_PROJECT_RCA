@@ -1,0 +1,38 @@
+/home/parinya/.platformio/packages/framework-arduino-megaavr-dxcore/cores/dxcore/main.cpp:78:89: note: #pragma message: Notice: PROGMEM_MAPPED not available as flash mapping is not locked.
+   #pragma message("Notice: PROGMEM_MAPPED not available as flash mapping is not locked.")
+                                                                                         ^
+/home/parinya/.platformio/packages/framework-arduino-megaavr-dxcore/cores/dxcore/main.cpp:78:89: note: #pragma message: Notice: PROGMEM_MAPPED not available as flash mapping is not locked.
+   #pragma message("Notice: PROGMEM_MAPPED not available as flash mapping is not locked.")
+                                                                                         ^
+Processing sender_arq_radio_only (platform: atmelmegaavr; board: AVR128DA28; framework: arduino)
+--------------------------------------------------------------------------------
+PLATFORM: Atmel megaAVR (1.10.0) > AVR128DA28
+HARDWARE: AVR128DA28 24MHz, 16KB RAM, 128KB Flash
+PACKAGES: 
+ - framework-arduino-megaavr-dxcore @ 1.6.2 
+ - tool-avrdude @ 1.80100.0 (8.1.0) 
+ - toolchain-atmelavr @ 3.70300.220127 (7.3.0)
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 31 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- RadioLib @ 7.1.2
+|-- Time @ 1.6.1
+|-- SPI @ 1.1.2
+|-- updi_uart
+Archiving .pio/build/sender_arq_radio_only/lib3eb/libSPI.a
+Indexing .pio/build/sender_arq_radio_only/lib3eb/libSPI.a
+Archiving .pio/build/sender_arq_radio_only/lib18a/libupdi_uart.a
+Indexing .pio/build/sender_arq_radio_only/lib18a/libupdi_uart.a
+Archiving .pio/build/sender_arq_radio_only/lib486/libTime.a
+Indexing .pio/build/sender_arq_radio_only/lib486/libTime.a
+Archiving .pio/build/sender_arq_radio_only/lib024/libRadioLib.a
+Indexing .pio/build/sender_arq_radio_only/lib024/libRadioLib.a
+Archiving .pio/build/sender_arq_radio_only/libFrameworkArduino.a
+Indexing .pio/build/sender_arq_radio_only/libFrameworkArduino.a
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [===       ]  32.0% (used 5237 bytes from 16384 bytes)
+Flash: [===       ]  28.1% (used 36850 bytes from 131072 bytes)
+========================= [SUCCESS] Took 7.34 seconds =========================
+... (35 lines truncated)
+[+35 hidden: rtk recall fde40728d8cf453e]

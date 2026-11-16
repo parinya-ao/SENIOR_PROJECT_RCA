@@ -1,0 +1,121 @@
+                       1                                             2                                             3                                              4                                         5
+
+
+
+                        3V3                                        3V3                                                                 3V3
+                                                                                                                                                                                      3V3-GPS                                              3V3-GPS
+                                                                                                                                                                                                                        U1
+                                                                                                                                             MBR120VLSFT1G                                                              SAM-M10Q
+                                                                                                                                             D1                                                          1                          20
+                                                U6                                                                                                                                                         GND                  GND
+                                                                                                                                                                                                         2                          19
+A
+                                                AVR128DA28                                                                                                                                                 V_IO              EXTINT                                 A
+                                                                                                                                                                                                         3                          18
+                               1                              28                                                                                                        VBACKUP                            V_BCKP           RESET_N
+        EN-LORA                  PA7                      PA6                  LED1            R3    R2                                                                                                  4                          17
+                               2                              27                                                                                                                              C2           GND                  VCC
+            MOSI                 PC0                      PA5                  LED2            4k7   4k7                                   R12                                                           5                          16
+                               3                              26                                                                                                                              100nF        GND                  GND
+            MISO                 PC1                      PA4                  SD_DETECT                                                   3k3                                                           6                          15
+                               4                              25                                                                                                                                           GND                  GND
+            SCLK                 PC2                      PA3                                                     SCL                                                                                    7                          14
+                               5                              24                                                  SDA                                VBACKUP              GPS_PPS                          TIMEPULSE            RXD               GPS_RX
+           SD_SS                 PC3                      PA2                                                                                                                                            8                          13
+                               6                              23                                                                       1                                                                   SAFEBOOT_N           TXD               GPS_TX
+           RF_SS                 PD0                      PA1                  UART_TX                                                                                                                   9                          12
+                               7                              22                                                                                                                                           SDA                  SCL
+          RF_RST                 PD1              PA0(EXTCLK)                  UART_RX                                         C5            U5                                                         10                          11
+                               8                              21                                                                                                                                           GND                  GND
+         RF_DIO1                 PD2                     GND                                                                   100nF         MS412FE-FL26E
+                               9                              20                                                                       2
+          RF_IRQ                 PD3                     VDD
+                              10                              19
+         GPS_PPS                 PD4                     UPDI                  UPDI         C1
+                              11                              18
+          EN-GPS                 PD5              PF6(RESET#)                  IMU_INT      100nF
+                              12                              17                                                                       GND                                                        GND                                      GND
+           EN-SD                 PD6            PF1(XTAL32K2)                  GPS_TX
+                              13                              16
+     BATT_PROBE                  PD7            PF0(XTAL32K1)                  GPS_RX
+                              14                              15                                                                                                        3V3
+                                 AVDD                    GND
+                                                                                                                                                                                                                                            3V3
+                                                                                                                                                    R6                                                                                               H1
+                                                                GND                                                                                 1k
+                                                                                                                                                                                                                                                     1
+                                                                                                                                       LED1                                                                                                          2
+B                                                                                                                                                                                                                                                                   B
+                                                                                                                                                               LED1                                                        UART_TX                   3
+                                                                                                                                                                                                                           UART_RX                   4
+                                                                                                                                                    R16
+                                                                                                                                                                                                                              UPDI                   5
+                                      VBAT                           3V3                                                                            1k
+                                                                                                                                       LED2
+                                                                                                                                                               LED2
+              JP1                                                                                                                                                                                                                          GND
+                                                          U7
+            Battery            R14                   TPS7A0233DBV
+                  1            100k                  1
+                1                       C12            IN       5
+                  2                                  2     OUT                                       3V3                 3V3-LORA                        3V3               3V3-GPS                    3V3           3V3-SD
+                2                                      GND      4
+                                                     3       NC          C13                                     Q1                                                Q2                                           Q3
+                                        1uF            EN
+                               R15                                                                           RQ5C060BCTCL                                      RQ5C060BCTCL                                 RQ5C060BCTCL
+                               10k                                       1uF
+
+
+                                                                                                           R7                                              R8                                            R10
+                                      GND                            GND                                   100k                                            100k                                          100k
+    BATT_PROBE                                                                       EN-LORA                                           EN-GPS                                         EN-SD
+C                                                                                                            R1                                                R9                                           R11
+                                                                                                                                                                                                                                            3V3-LORA                C
+                                                                                                             200                                               200                                          200
+                                  3V3-SD
+                                                                                                                                                                                                                            C11    100uF
+
+                                              C6                                                                                                                          3V3
+                                              10uF                                                                                                                                                                          C8     100nF
+
+      R5     R4                                                                                                                                                                                                           U4   RFM95W
+
+                                                      11 11
+      10K    10K                                                                                                                                  C3
+                                                                                                                                                               U3                                                       1             16
+                                                              GND                                                                                 100nF                                                                   GND    DIO2
+                                            1    DAT2                                                                                                          24C512                                                   2             15
+                                                                               3V3                                      3V3                                                                             MISO              MISO   DIO1                     RF_DIO1
+                                            2    CD/DAT3                                                                                                                                                                3             14
+                      SD_SS                                                                                                                          1                8                                 MOSI              MOSI   DIO0                     RF_IRQ
+                                            3    CMD                                                                                                   A0         VCC                                                   4             13
+                       MOSI                                                                                                                          2                7                                 SCLK              SCK    3.3V
+                                            4    VDD                                                                                                   A1          WP                                                   5             12
+                                                                                                   U2                                                3                6                                RF_SS              NSS    DIO4
+                                            5    CLK                                                                                                   A2         SCL               SCL                                 6             11
+                      SCLK                                                                         LSM6DSOXTR                                        4                5                               RF_RST              RESET DIO3
+                                            6    VSS                                                                                                   GND        SDA               SDA                                 7             10
+                                                         CARD1                         1                     14               SDA                                                                                         DIO5   GND                 J1
+                                            7    DAT0                                    SDO/SA0         SDA                                                                                                            8             9               1
+                      MISO                               SD-01A                        2                     13                                                                                                           GND     ANT
+                                            8    DAT1                                    SDX             SCL                  SCL
+                                                                                       3                     12                                                                                                                                      ANT
+                                                                                         SCX              CS
+                                                                                       4                     11
+D                                       SW1 SW1                IMU_INT                   INT1        SDO_AUX                                                                                                                                                        D
+               SD_DETECT                                                               5                     10                                                                                                   GND                         GND
+                                        SW2 SW2                                          VDDIO       OSC_AUX
+                                                                                       6                     9
+                                                      12 12
+                                                                                         GND            INT2
+                                                                                       7                     8
+                                                                                         GND             VDD                                  GND                 TITLE:
+                                                                                                                                                                                LoRa Tracker RFM                                                  REV: 1.0
+
+                                                                                                 C4
+                                                                                                100nF
+                                                                                                                                                                                          Company: IWING                                          Sheet: 1/1
+                                                      GND                        GND
+                                                                                                                                                                                          Date:   2025-02-16            Drawn By: Chaiporn JAIKAEO
+                       1                                             2                                             3                                              4                                         5
+

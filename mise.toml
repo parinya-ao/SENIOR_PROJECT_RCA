@@ -1,13 +1,30 @@
 [tools]
 clang = "latest"
 d2 = "latest"
-python = "latest"
+python = "3.12"
+uv = "latest"
 
 [tasks.hello]
 run = "echo hello"
+[tasks.debug_protocol_ACK_NACK]
+description = "Interactive real LoRa DATA/ACK/NACK debugger (no firmware upload)"
+run = "uv run --no-sync python -m tools.debug_protocol_ack_nack"
 
-[tasks."monitor0"]
+[tasks."monitor_reciver"]
 run = "uv run third_party/upditerm/upditerm.py /dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0 38400"
 
-[tasks."monitor1"]
+[tasks."monitor_sender"]
 run = "uv run third_party/upditerm/upditerm.py /dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0 38400"
+
+[tasks."lint:python"]
+description = "Strict Python lint, formatting, and type checks (read-only)"
+depends = ["lint:python:ruff", "lint:python:format", "lint:python:types"]
+
+[tasks."lint:python:ruff"]
+run = "uv run --locked ruff check src/lora tools tests"
+
+[tasks."lint:python:format"]
+run = "uv run --locked ruff format --check src/lora tools tests"
+
+[tasks."lint:python:types"]
+run = "uv run --locked mypy"

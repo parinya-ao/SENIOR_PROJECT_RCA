@@ -1,9 +1,0 @@
-label=stable_link_target
-argv_shell_escaped=readlink -e /dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0
-start_utc=2026-10-27T03:32:31.436468057Z
-end_utc=2026-10-27T03:32:31.440077032Z
-start_proc_uptime_s=62336.64
-end_proc_uptime_s=62336.65
-exit_code=0
-stdout_sha256=a3d3d224a8fff4dbe4d932a40b7a5ed07eb88b4e2f5198519c12e84733bfbe05
-stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

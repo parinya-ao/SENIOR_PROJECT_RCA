@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import replace
 import json
-from pathlib import Path
 import select
 import subprocess
 import sys
 import time
+from collections.abc import Iterable
+from dataclasses import replace
+from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,9 +35,15 @@ from tools.device_detection.usb_inventory import (
 
 
 class SafetyArgumentParser(argparse.ArgumentParser):
-    def parse_args(self, args=None, namespace=None):
+    def parse_args(
+        self,
+        args: Iterable[str] | None = None,
+        namespace: Any = None,
+    ) -> Any:
         parsed = super().parse_args(args, namespace)
-        if (parsed.probe_updi or parsed.probe_firmware or parsed.probe_flash) and not parsed.hardware_safe:
+        if (
+            parsed.probe_updi or parsed.probe_firmware or parsed.probe_flash
+        ) and not parsed.hardware_safe:
             self.error("UPDI probes require --hardware-safe after physical wiring checks")
         if parsed.probe_flash and not parsed.authorize_flash_read:
             self.error("--probe-flash also requires --authorize-flash-read")
@@ -52,27 +59,48 @@ class SafetyArgumentParser(argparse.ArgumentParser):
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = SafetyArgumentParser(description="Discover USB/UPDI devices and verify Sender/Receiver roles.")
+    parser = SafetyArgumentParser(
+        description="Discover USB/UPDI devices and verify Sender/Receiver roles."
+    )
     commands = parser.add_mutually_exclusive_group()
     commands.add_argument("--scan", action="store_true", help="scan connected USB serial adapters")
     commands.add_argument("--watch", action="store_true", help="watch USB hotplug and rescan")
-    commands.add_argument("--self-test", action="store_true", help="run the local detector test suite")
+    commands.add_argument(
+        "--self-test", action="store_true", help="run the local detector test suite"
+    )
     parser.add_argument("--json", action="store_true", help="write JSON to stdout")
     parser.add_argument("--explain", action="store_true", help="include classification reasons")
     parser.add_argument("--registry", type=Path, help="optional local history/reference JSON file")
     parser.add_argument("--probe-updi", action="store_true", help="read the AVR SIB via upditerm")
-    parser.add_argument("--probe-firmware", action="store_true", help="read current UPDI virtual-UART identity")
-    parser.add_argument("--probe-flash", action="store_true", help="read-only flash fingerprint comparison")
-    parser.add_argument("--hardware-safe", action="store_true",
-                        help="assert board power, ground, and UPDI wiring were physically checked")
-    parser.add_argument("--authorize-flash-read", action="store_true",
-                        help="explicitly allow intrusive read-only full-flash inspection")
-    parser.add_argument("--boot-layout-verified", action="store_true",
-                        help="assert BOOT/application geometry is verified for the target")
+    parser.add_argument(
+        "--probe-firmware", action="store_true", help="read current UPDI virtual-UART identity"
+    )
+    parser.add_argument(
+        "--probe-flash", action="store_true", help="read-only flash fingerprint comparison"
+    )
+    parser.add_argument(
+        "--hardware-safe",
+        action="store_true",
+        help="assert board power, ground, and UPDI wiring were physically checked",
+    )
+    parser.add_argument(
+        "--authorize-flash-read",
+        action="store_true",
+        help="explicitly allow intrusive read-only full-flash inspection",
+    )
+    parser.add_argument(
+        "--boot-layout-verified",
+        action="store_true",
+        help="assert BOOT/application geometry is verified for the target",
+    )
     parser.add_argument("--baudrate", type=int, default=38400)
     parser.add_argument("--probe-timeout", type=float, default=2.0)
-    parser.add_argument("--poll-interval", type=float, default=1.0,
-                        help="bounded watch fallback interval in seconds")
+    parser.add_argument(
+        "--poll-interval",
+        type=float,
+        default=1.0,
+        help="bounded watch fallback interval in seconds",
+    )
     return parser
 
 
@@ -117,68 +145,89 @@ def _load_registry(path: Path | None) -> tuple[dict[str, Any], list[FirmwareRefe
             image_path = Path(entry["ihex_path"])
             if not image_path.is_absolute():
                 image_path = path.parent / image_path
-            references.append(FirmwareReference(
-                role=entry["role"],
-                build_id=entry["build_id"],
-                ihex=image_path.read_text(encoding="ascii"),
-                flash_size=int(entry["flash_size"]),
-                app_start=int(entry["app_start"]),
-                app_end=int(entry["app_end"]),
-            ))
+            references.append(
+                FirmwareReference(
+                    role=entry["role"],
+                    build_id=entry["build_id"],
+                    ihex=image_path.read_text(encoding="ascii"),
+                    flash_size=int(entry["flash_size"]),
+                    app_start=int(entry["app_start"]),
+                    app_end=int(entry["app_end"]),
+                )
+            )
         except (KeyError, OSError, ValueError, TypeError) as exc:
             issues.append(f"ignored invalid firmware reference: {exc}")
     return registry, references, issues
 
 
 def _probe_device(
-    device,
+    device: Any,
     args: argparse.Namespace,
     references: list[FirmwareReference],
     *,
-    command_runner=subprocess.run,
+    command_runner: Any = subprocess.run,
 ) -> ProbeEvidence:
     port = device.usb_by_path[0] if device.usb_by_path else device.device_node
     base = ProbeEvidence()
     if args.probe_firmware:
         base = probe_firmware_identity(
-            port, hardware_safe=args.hardware_safe, baudrate=args.baudrate,
-            timeout=args.probe_timeout, command_runner=command_runner,
+            port,
+            hardware_safe=args.hardware_safe,
+            baudrate=args.baudrate,
+            timeout=args.probe_timeout,
+            command_runner=command_runner,
         )
     if args.probe_updi or args.probe_flash:
         sib = probe_target_sib(
-            port, hardware_safe=args.hardware_safe, baudrate=args.baudrate,
-            timeout=args.probe_timeout, command_runner=command_runner,
+            port,
+            hardware_safe=args.hardware_safe,
+            baudrate=args.baudrate,
+            timeout=args.probe_timeout,
+            command_runner=command_runner,
         )
-        base = replace(base, mcu_identity=sib.mcu_identity, mcu_status=sib.mcu_status,
-                       sib=sib.sib, access_status=sib.access_status,
-                       error=base.error or sib.error)
+        base = replace(
+            base,
+            mcu_identity=sib.mcu_identity,
+            mcu_status=sib.mcu_status,
+            sib=sib.sib,
+            access_status=sib.access_status,
+            error=base.error or sib.error,
+        )
     if args.probe_flash and base.access_status == "READY" and base.mcu_identity == "AVR128DA28":
         geometries = {(r.flash_size, r.app_start, r.app_end) for r in references}
         if len(geometries) != 1:
-            return replace(base, fingerprint_status="NOT_ATTEMPTED",
-                           error="flash fingerprint needs references with one verified layout")
+            return replace(
+                base,
+                fingerprint_status="NOT_ATTEMPTED",
+                error="flash fingerprint needs references with one verified layout",
+            )
         flash_size, app_start, app_end = next(iter(geometries))
         dump = read_firmware_flash(
-            port, hardware_safe=args.hardware_safe,
+            port,
+            hardware_safe=args.hardware_safe,
             authorize_flash_read=args.authorize_flash_read,
             boot_layout_verified=args.boot_layout_verified,
-            mcu_identity=base.mcu_identity, flash_size=flash_size,
+            mcu_identity=base.mcu_identity,
+            flash_size=flash_size,
             command_runner=command_runner,
         )
         fingerprint = firmware_fingerprint_evidence(
             dump, references, flash_size=flash_size, app_start=app_start, app_end=app_end
         )
-        base = replace(base, fingerprint_identity=fingerprint.fingerprint_identity,
-                       fingerprint_status=fingerprint.fingerprint_status,
-                       parse_status=fingerprint.parse_status,
-                       error=base.error or fingerprint.error)
+        base = replace(
+            base,
+            fingerprint_identity=fingerprint.fingerprint_identity,
+            fingerprint_status=fingerprint.fingerprint_status,
+            parse_status=fingerprint.parse_status,
+            error=base.error or fingerprint.error,
+        )
     return base
 
 
 def _scan(
     args: argparse.Namespace,
     *,
-    inventory_fn=discover_usb_devices,
+    inventory_fn: Any = discover_usb_devices,
     registry: dict[str, Any] | None = None,
     references: list[FirmwareReference] | None = None,
     probe_cache: dict[str, tuple[str, str | None, ProbeEvidence]] | None = None,
@@ -204,21 +253,31 @@ def _scan(
     return result, inventory
 
 
-def _print_result(result: ScanResult, inventory: InventoryResult, as_json: bool,
-                  explain: bool = False) -> None:
+def _print_result(
+    result: ScanResult, inventory: InventoryResult, as_json: bool, explain: bool = False
+) -> None:
     if as_json:
         print(result_to_json(result, inventory.to_dict()))
     else:
         print(format_text(result, explain=explain))
 
 
-def _watch(args, registry, references) -> int:
+def _watch(
+    args: argparse.Namespace,
+    registry: dict[str, Any] | None,
+    references: list[FirmwareReference],
+) -> int:
     monitor = start_udev_monitor()
     cache: dict[str, tuple[str, str | None, ProbeEvidence]] = {}
-    previous_result, inventory = _scan(args, registry=registry, references=references,
-                                       probe_cache=cache)
+    previous_result, inventory = _scan(
+        args, registry=registry, references=references, probe_cache=cache
+    )
     if args.json:
-        print(json.dumps({"event": "snapshot", "result": previous_result.to_dict(inventory.to_dict())}))
+        print(
+            json.dumps(
+                {"event": "snapshot", "result": previous_result.to_dict(inventory.to_dict())}
+            )
+        )
     else:
         print(format_text(previous_result, explain=args.explain))
     sys.stdout.flush()
@@ -231,7 +290,7 @@ def _watch(args, registry, references) -> int:
                 ready, _, _ = select.select([monitor.stdout], [], [], args.poll_interval)
                 if ready:
                     line = monitor.stdout.readline()
-                    triggered = line.startswith("UDEV ") or line.startswith("ACTION=")
+                    triggered = line.startswith(("UDEV ", "ACTION="))
                 if time.monotonic() >= next_fallback:
                     triggered = True
                     next_fallback = time.monotonic() + max(args.poll_interval, 1.0)
@@ -252,9 +311,11 @@ def _watch(args, registry, references) -> int:
                 if args.json:
                     print(json.dumps({"event": event_type, **event}, sort_keys=True))
                 else:
-                    print(f"USB {event_type.upper()}: {event.get('port') or 'unknown'} "
-                          f"role={event.get('role', 'UNKNOWN')} "
-                          f"status={event.get('identity_status', 'UNKNOWN')}")
+                    print(
+                        f"USB {event_type.upper()}: {event.get('port') or 'unknown'} "
+                        f"role={event.get('role', 'UNKNOWN')} "
+                        f"status={event.get('identity_status', 'UNKNOWN')}"
+                    )
             previous_result = current_result
             sys.stdout.flush()
     except KeyboardInterrupt:
@@ -273,6 +334,7 @@ def _run_self_test() -> int:
     completed = subprocess.run(
         [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"],
         cwd=ROOT,
+    check=False,
     )
     return completed.returncode
 

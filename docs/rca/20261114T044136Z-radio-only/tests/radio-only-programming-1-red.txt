@@ -1,0 +1,12 @@
+ERROR: test_reader_free_h01_firmware_metadata_binds_identity_to_hex_hash (test_arq_reader_free.ReaderFreeH01SummaryTests.test_reader_free_h01_firmware_metadata_binds_identity_to_hex_hash)
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_reader_free.py", line 98, in test_reader_free_h01_firmware_metadata_binds_identity_to_hex_hash
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tools/arq_trial.py", line 153, in reader_free_h01_firmware
+File "/usr/lib64/python3.14/pathlib/__init__.py", line 787, in read_text
+File "/usr/lib64/python3.14/pathlib/__init__.py", line 771, in open
+~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/tmpwo7p0ipi/.pio/build/receiver_arq_test/lora_build_identity.h'
+
+FAILED (errors=1)
+[full output: rtk recall 6802520246c702c4]

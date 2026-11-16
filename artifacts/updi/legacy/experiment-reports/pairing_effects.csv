@@ -1,3 +1,0 @@
-epoch_id,condition,observed_original_cells,observed_crossed_cells,adapter_success_delta,target_success_delta,interaction_difference_of_differences,status,notes
-"RCA_PHY_01","SIB","2","0","UNKNOWN","UNKNOWN","UNKNOWN","BLOCKED_INCOMPLETE_MATRIX","No missing-cell imputation; only P+X and Q+Y source observations exist."
-"RCA_PHY_01","CONTROL","2","0","UNKNOWN","UNKNOWN","UNKNOWN","BLOCKED_INCOMPLETE_MATRIX","No missing-cell imputation; only P+X and Q+Y source observations exist."

@@ -1,0 +1,1 @@
+uv run --locked python /home/parinya/university/SENIOR_PROJECT_RCA/docs/rca/20261114T044136Z-radio-only/verified-bringup/20261114T135627Z-read-only-recovery/acquire_identity.py receiver /home/parinya/university/SENIOR_PROJECT_RCA/docs/rca/20261114T044136Z-radio-only/verified-bringup/20261114T135627Z-read-only-recovery

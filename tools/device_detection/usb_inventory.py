@@ -1,38 +1,49 @@
 """Enumerate USB serial adapters without attaching roles to USB topology."""
 
-from dataclasses import dataclass
+from __future__ import annotations
+
 import os
-from pathlib import Path
 import re
 import subprocess
-from typing import Any, Callable, Iterable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, SupportsInt, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
 
 from .evidence import USBDevice
 
 
 @dataclass(frozen=True)
 class InventoryResult:
+    """USB devices, discovery errors, and diagnostic tool results."""
+
     devices: tuple[USBDevice, ...]
     errors: tuple[str, ...]
     tools: dict[str, dict[str, Any]]
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the inventory and diagnostic tool statuses."""
         return {
             "devices": [device.to_dict() for device in self.devices],
             "errors": list(self.errors),
             "tools": {
-                name: {"returncode": result.get("returncode"),
-                       "available": result.get("returncode") is not None}
+                name: {
+                    "returncode": result.get("returncode"),
+                    "available": result.get("returncode") is not None,
+                }
                 for name, result in self.tools.items()
             },
         }
 
 
 def parse_udev_properties(text: str) -> dict[str, str]:
+    """Parse newline-delimited udev `KEY=VALUE` properties."""
     return dict(line.split("=", 1) for line in text.splitlines() if "=" in line)
 
 
-def _normalize_hex(value: Any) -> str | None:
+def _normalize_hex(value: str | SupportsInt | None) -> str | None:
     if value is None or value == "":
         return None
     try:
@@ -55,33 +66,48 @@ def _run_command(
         return {"returncode": None, "stdout": "", "stderr": f"{type(exc).__name__}: {exc}"}
 
 
-def start_udev_monitor(popen: Callable[..., Any] = subprocess.Popen):
+@overload
+def start_udev_monitor() -> subprocess.Popen[str] | None: ...
+
+
+@overload
+def start_udev_monitor[Monitor](popen: Callable[..., Monitor]) -> Monitor | None: ...
+
+
+def start_udev_monitor[Monitor](
+    popen: Callable[..., Monitor] | None = None,
+) -> Monitor | subprocess.Popen[str] | None:
     """Start a tty udev event stream, or return None for polling fallback."""
     try:
-        return popen(
+        factory = subprocess.Popen if popen is None else popen
+        return factory(
             ["udevadm", "monitor", "--udev", "--subsystem-match=tty", "--property"],
-            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL, text=True, bufsize=1,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            bufsize=1,
         )
     except OSError:
         return None
 
 
-def _usb_instance(properties: dict[str, str], sysfs_usb_dir: Path,
-                  device_node: str) -> str | None:
+def _usb_instance(properties: dict[str, str], sysfs_usb_dir: Path, device_node: str) -> str | None:
     devpath = properties.get("DEVPATH", "")
-    usb_name = next((part for part in devpath.split("/")
-                     if re.fullmatch(r"\d+-\d+(?:\.\d+)*", part)), None)
+    usb_name = next(
+        (part for part in devpath.split("/") if re.fullmatch(r"\d+-\d+(?:\.\d+)*", part)), None
+    )
     if not usb_name:
         return None
     try:
         parent = sysfs_usb_dir / usb_name
         bus = (parent / "busnum").read_text().strip()
         dev = (parent / "devnum").read_text().strip()
-        stat = os.stat(device_node)
-        return f"{bus}:{dev}:{stat.st_ino}:{stat.st_ctime_ns}"
+        stat = Path(device_node).stat()
     except OSError:
         return None
+    else:
+        return f"{bus}:{dev}:{stat.st_ino}:{stat.st_ctime_ns}"
 
 
 def discover_usb_devices(
@@ -108,21 +134,22 @@ def discover_usb_devices(
     except OSError as exc:
         errors.append(f"cannot read by-path directory {directory}: {exc}")
 
-    tools["by_path_listing"] = _run_command(
-        command_runner, ["ls", "-l", str(directory)]
-    )
-    tools["platformio"] = _run_command(
-        command_runner, ["pio", "device", "list", "--json-output"]
-    )
+    tools["by_path_listing"] = _run_command(command_runner, ["ls", "-l", str(directory)])
+    tools["platformio"] = _run_command(command_runner, ["pio", "device", "list", "--json-output"])
     tools["usb_tree"] = _run_command(command_runner, ["lsusb", "-t"])
 
     if list_ports_fn is None:
         try:
             from serial.tools import list_ports
+
             list_ports_fn = list_ports.comports
         except ImportError as exc:
             errors.append(f"PySerial port enumeration unavailable: {exc}")
-            list_ports_fn = lambda **_kwargs: ()
+
+            def no_ports(**_kwargs: object) -> tuple[()]:
+                return ()
+
+            list_ports_fn = no_ports
     try:
         try:
             port_infos = list(list_ports_fn(include_links=True))
@@ -163,24 +190,26 @@ def discover_usb_devices(
             continue
 
         node = real_path if real_path.startswith("/dev/") else query_path
-        devices.append(USBDevice(
-            device_node=node,
-            real_device_path=real_path,
-            usb_path=udev_path,
-            usb_by_path=usb_by_path,
-            vid=vid,
-            pid=pid,
-            serial_number=(properties.get("ID_SERIAL_SHORT") or
-                           getattr(port, "serial_number", None)),
-            manufacturer=(properties.get("ID_VENDOR") or
-                          getattr(port, "manufacturer", None)),
-            product=(properties.get("ID_MODEL") or getattr(port, "product", None)),
-            usb_location=(udev_path or getattr(port, "location", None)),
-            driver=properties.get("ID_USB_DRIVER"),
-            usb_instance=_usb_instance(properties, Path(sysfs_usb_dir), real_path),
-            present=os.path.exists(real_path),
-            metadata_errors=tuple(metadata_errors),
-        ))
+        devices.append(
+            USBDevice(
+                device_node=node,
+                real_device_path=real_path,
+                usb_path=udev_path,
+                usb_by_path=usb_by_path,
+                vid=vid,
+                pid=pid,
+                serial_number=(
+                    properties.get("ID_SERIAL_SHORT") or getattr(port, "serial_number", None)
+                ),
+                manufacturer=(properties.get("ID_VENDOR") or getattr(port, "manufacturer", None)),
+                product=(properties.get("ID_MODEL") or getattr(port, "product", None)),
+                usb_location=(udev_path or getattr(port, "location", None)),
+                driver=properties.get("ID_USB_DRIVER"),
+                usb_instance=_usb_instance(properties, Path(sysfs_usb_dir), real_path),
+                present=Path(real_path).exists(),
+                metadata_errors=tuple(metadata_errors),
+            )
+        )
 
     devices.sort(key=lambda device: (device.usb_path or "", device.device_node))
     return InventoryResult(tuple(devices), tuple(errors), tools)

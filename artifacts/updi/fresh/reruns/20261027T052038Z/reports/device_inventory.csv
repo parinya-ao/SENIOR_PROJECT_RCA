@@ -1,3 +1,0 @@
-epoch_id,lane,id_path,current_tty,by_path,vid,pid,adapter_serial,adapter_unit_id,target_id,power_board,power_board_branch_report,power_board_physical_id,supply
-RCA_FRESH_01,P,pci-0000:00:14.0-usb-0:1:1.0,/dev/ttyUSB1,pci-0000:00:14.0-usb-0:1:1.0-port0,10c4,ea60,0001,UNRESOLVED,UNKNOWN,PowerBoard P,user-reported separate power board on current ttyUSB1 branch,UNKNOWN,UNKNOWN
-RCA_FRESH_01,Q,pci-0000:00:14.0-usb-0:4:1.0,/dev/ttyUSB0,pci-0000:00:14.0-usb-0:4:1.0-port0,10c4,ea60,0001,UNRESOLVED,UNKNOWN,PowerBoard Q,user-reported separate power board on current ttyUSB0 branch,UNKNOWN,UNKNOWN

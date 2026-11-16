@@ -1,0 +1,18 @@
+/home/parinya/university/SENIOR_PROJECT_RCA/.pio/build/receiver_reverse_raw/firmware.elf  :
+section                      size      addr
+.data                         834   8404992
+.text                       29904         0
+.bss                         3651   8405826
+.comment                       17         0
+.note.gnu.avr.deviceinfo       64         0
+.debug_aranges                432         0
+.debug_info                 76012         0
+.debug_abbrev               11628         0
+.debug_line                 16275         0
+.debug_frame                 6800         0
+.debug_str                  12388         0
+.debug_loc                  50998         0
+.debug_ranges                2200         0
+Total                      211203
+
+

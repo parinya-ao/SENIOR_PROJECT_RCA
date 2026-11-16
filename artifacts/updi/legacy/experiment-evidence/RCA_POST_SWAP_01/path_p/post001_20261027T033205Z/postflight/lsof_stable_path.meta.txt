@@ -1,8 +1,0 @@
-command=lsof -nP /dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0
-start_utc=2026-10-27T03:35:19.599682919Z
-end_utc=2026-10-27T03:35:19.698350794Z
-start_proc_uptime_s=62504.81
-end_proc_uptime_s=62504.91
-exit_code=1
-stdout_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-stderr_sha256=8af4e76db2287cf30b6f671e3fa91796b9c5d96bbc637debcd3acf5af093c3e5

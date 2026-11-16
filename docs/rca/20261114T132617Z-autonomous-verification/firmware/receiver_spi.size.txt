@@ -1,0 +1,18 @@
+/home/parinya/university/SENIOR_PROJECT_RCA/.pio/build/receiver_spi/firmware.elf  :
+section                      size      addr
+.data                         818   8404992
+.text                       29338         0
+.bss                         1018   8405810
+.comment                       17         0
+.note.gnu.avr.deviceinfo       64         0
+.debug_aranges                432         0
+.debug_info                 77505         0
+.debug_abbrev               11529         0
+.debug_line                 16199         0
+.debug_frame                 6548         0
+.debug_str                  13486         0
+.debug_loc                  51509         0
+.debug_ranges                2384         0
+Total                      210847
+
+

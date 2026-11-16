@@ -1,0 +1,58 @@
+Processing sender_hello (platform: atmelmegaavr; board: AVR128DA28; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/atmelmegaavr/AVR128DA28.html
+PLATFORM: Atmel megaAVR (1.10.0) > AVR128DA28
+HARDWARE: AVR128DA28 24MHz, 16KB RAM, 128KB Flash
+PACKAGES: 
+ - framework-arduino-megaavr-dxcore @ 1.6.2 
+ - tool-avrdude @ 1.80100.0 (8.1.0) 
+ - toolchain-atmelavr @ 3.70300.220127 (7.3.0)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 31 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- RadioLib @ 7.1.2
+|-- Time @ 1.6.1
+|-- debug
+|-- iw_core
+|-- iw_tracker_radio_protocol
+|-- Wire @ 2.0.13
+|-- iw_avr128da28
+|-- lora
+|-- updi_uart
+|-- task
+... (275 lines omitted)
+Compiling .pio/build/receiver/FrameworkArduino/main.cpp.o
+Compiling .pio/build/receiver/FrameworkArduino/new.cpp.o
+Compiling .pio/build/receiver/FrameworkArduino/pinswap.c.o
+Compiling .pio/build/receiver/FrameworkArduino/wiring.c.o
+Compiling .pio/build/receiver/FrameworkArduino/wiring_analog.c.o
+Compiling .pio/build/receiver/FrameworkArduino/wiring_digital.c.o
+Compiling .pio/build/receiver/FrameworkArduino/wiring_extra.cpp.o
+Compiling .pio/build/receiver/FrameworkArduino/wiring_pulse.S.o
+Compiling .pio/build/receiver/FrameworkArduino/wiring_pulse.c.o
+Compiling .pio/build/receiver/FrameworkArduino/wiring_shift.c.o
+Archiving .pio/build/receiver/libFrameworkArduino.a
+Indexing .pio/build/receiver/libFrameworkArduino.a
+Linking .pio/build/receiver/firmware.elf
+Checking size .pio/build/receiver/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [=         ]  13.8% (used 2258 bytes from 16384 bytes)
+Flash: [===       ]  25.3% (used 33152 bytes from 131072 bytes)
+Building .pio/build/receiver/firmware.hex
+========================= [SUCCESS] Took 2.45 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+sender_hello   SUCCESS   00:00:02.897
+receiver       SUCCESS   00:00:02.446
+========================= 2 succeeded in 00:00:05.343 =========================
+[+300 hidden: rtk recall 1c632c8bcd196fad]
+/home/parinya/.platformio/packages/framework-arduino-megaavr-dxcore/cores/dxcore/main.cpp:78:89: note: #pragma message: Notice: PROGMEM_MAPPED not available as flash mapping is not locked.
+   #pragma message("Notice: PROGMEM_MAPPED not available as flash mapping is not locked.")
+                                                                                         ^
+/home/parinya/.platformio/packages/framework-arduino-megaavr-dxcore/cores/dxcore/main.cpp:78:89: note: #pragma message: Notice: PROGMEM_MAPPED not available as flash mapping is not locked.
+   #pragma message("Notice: PROGMEM_MAPPED not available as flash mapping is not locked.")
+                                                                                         ^

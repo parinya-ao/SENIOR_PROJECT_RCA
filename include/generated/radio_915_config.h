@@ -1,0 +1,39 @@
+#pragma once
+// Generated from config/radio_915.toml.
+#define HELLO_RF_FREQUENCY_MHZ 915.0f
+#define HELLO_RF_TX_POWER_DBM 2
+#define HELLO_RF_LONG_RANGE 0
+#define HELLO_RF_SPREADING_FACTOR 7
+#define HELLO_RF_BANDWIDTH_KHZ 125
+#define HELLO_RF_CODING_RATE 5
+#define HELLO_RF_SYNC_WORD 0x12
+#define HELLO_RF_PREAMBLE_SYMBOLS 8
+#define HELLO_RF_CRC_ENABLED 1
+#define HELLO_RF_EXPLICIT_HEADER 1
+#define HELLO_RF_IQ_INVERTED 0
+#define HELLO_RF_CURRENT_LIMIT_MA 200
+#define HELLO_RF_AUTOMATIC_GAIN 0
+#if (defined(LORA_ROLE_SENDER) + defined(LORA_ROLE_RECEIVER)) != 1
+#error "Define exactly one radio role through the PlatformIO profile mapping."
+#endif
+#if defined(LORA_ROLE_SENDER)
+#define LORA_SPI_ROUTE SPI1_SWAP_DEFAULT
+#define LORA_PIN_MOSI PIN_PC0
+#define LORA_PIN_MISO PIN_PC1
+#define LORA_PIN_SCK PIN_PC2
+#define LORA_PIN_CS PIN_PC3
+#define LORA_PIN_RST PIN_PD0
+#define LORA_PIN_IRQ PIN_PD2
+#define LORA_PIN_DIO1 PIN_PD3
+#elif defined(LORA_ROLE_RECEIVER)
+#define LORA_SPI_ROUTE SPI1_SWAP_DEFAULT
+#define LORA_PIN_MOSI PIN_PC0
+#define LORA_PIN_MISO PIN_PC1
+#define LORA_PIN_SCK PIN_PC2
+#define LORA_PIN_CS PIN_PD0
+#define LORA_PIN_RST PIN_PD1
+#define LORA_PIN_IRQ PIN_PD3
+#define LORA_PIN_DIO1 PIN_PD2
+#define LORA_PIN_ENABLE PIN_PA7
+#define LORA_POWER_ACTIVE_LEVEL 0
+#endif

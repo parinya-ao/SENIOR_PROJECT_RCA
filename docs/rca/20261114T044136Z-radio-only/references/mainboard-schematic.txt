@@ -1,0 +1,120 @@
+      1                                2                               3                                          4                                                5
+
+
+                                                                                  VCC
+    3V3-LORA           U5                     R3                                                                                                                                                   VBAT
+               LoRa_Board_Rudolph_gw          200                                                     U11                                                                              Q3
+                                                                                              Lilygo_ESP32_wrover_E                                                                 SI2393DS
+                 VCC        A0                                                                                                             R2      R1
+                 GND        A1                                                                1    3V3      TX    32                       10k     10k                    PWR
+A                                                                                             2                   31                                                                                                A
+                 TX        INT         INT0                                                        GND      RX                                                                              R14
+       RX0       RX        SCL         SCL    R4                      SW1                     3    32     3V3     30                                                                        100K
+      UPDI0      UPDI     SDA          SDA    200                    LED1                     4    33     GND     29
+                          DIO1                                                                5    34       22    28
+                                                                                              6                   27
+                                                                                                                                                         SCL
+                          DIO2                                                                     35       21                                           SDA
+                          DIO3                                                                7    25       23    26                                                                               GND
+                                                                                              8                   25
+                                                                                                                                                         INT2
+                          DIO4                                                                     26       19                                           INT3
+                          DIO5                                                                9    27       18    24                                     EN-OLED            VCC
+                                                                                             10                   23
+                                                                           VBAT              11
+                                                                                                   04       05
+                                                                                                                  22
+                                                                                                                                                                                       LED1
+                                                     GND                                           02       39                                           INT0                     TZ-5050S2RGB-5V-I4-H1
+                                                                                             12    15       36    21
+                                                                                             13                   20
+                                                                                                                                                         INT1                      1
+                                                                                                                                                                                      VDD DIN
+                                                                                                                                                                                              4         LED1
+                                                                                                   14        0                                                                     2          3
+                                                                                             14                   19                        CN5                                       DOUGND
+    3V3-LORA                                    3V3-LORA                                     15
+                                                                                                   13     RST
+                                                                                                                  18                      ESP32 monitor probe
+                                                                                                   12     GND
+                       U6                     R5                                             16    VBAT    VIN    17
+                                              200                                                                                         1
+               LoRa_Board_Rudolph_gw                                                                                                        1                                                     GND
+                                                                                                                                          2
+                                                                                                                                            2
+                 VCC        A0                                                                                                            3
+                                                                                                                                            3
+                 GND        A1
+                 TX        INT         INT1
+B                                                                                                                           GND                                                                                     B
+       RX1       RX        SCL         SCL    R6
+      UPDI1      UPDI     SDA          SDA    200                             SW1                                                                                 VBAT                         3V3-LORA
+                          DIO1                                              MK-12C02-G025          BAT                                                                          U10
+                          DIO2                                                   5                                                                                              AP2112K-3.3TRG1
+                          DIO3                                       Power SW    4                                                                                         1                5
+                          DIO4                                                                                                                                               VIN      VOUT
+                                                                                 3                            1         1            1         1                           2
+                          DIO5                                                                                                                                               GND
+                                                                                                                                                                           3                4
+                                                                            B                                     U1           U2         U3        U4       C4              EN          NC
+                                                                                  2
+                                                                                             PWR                                                             1u
+                                                     GND                    A
+                                                                                                              2         2            2         2
+                                                                                  1                                                                                                                    C5
+                                                                                  6
+                                                                                             BAT                                                                                                       1u
+    3V3-LORA                                        3V3-LORA                      7
+                       U7                     R7
+               LoRa_Board_Rudolph_gw          200                                                                                                                                  GND
+                                                                                                                                               GND
+                 VCC        A0                                                     P2
+                 GND        A1                                              SW connector
+                 TX        INT
+                                                                                                                      VCC                3V3-OLED                        3V3-OLED    U9
+                                       INT2                          SW1              1                                      Q1
+       RX2       RX        SCL         SCL    R8                                                                         RQ5C060BCTCL                                               OLED Connector
+                                                                                      2
+C     UPDI2      UPDI     SDA          SDA    200                                                                                                                                                                   C
+                                                                                                                                                                                      1
+                          DIO1
+                                                                                                                                                                                      2
+                          DIO2
+                          DIO3                                                                                          R12                                       SCL                 3
+                                                                            GND                                                                                   SDA                 4
+                          DIO4                                                                                          100k
+                          DIO5
+                                                                                      U12           EN-OLED
+                                                                             Battery probe                                  R11
+                                                     GND                                                                    200                                            GND
+                                                                      BAT           1
+                                                                                      1
+                                                                                    2
+    3V3-LORA                                    3V3-LORA                              2
+                                                                                                                              CN0                      CN1                  CN2                  CN3
+                       U8                     R9
+                                              200                                                           RX0             1          RX1           1        RX2         1        RX3         1
+               LoRa_Board_Rudolph_gw                                                                                          1                        1                    1                    1
+                                                                            GND                            UPDI0            2         UPDI1          2       UPDI2        2       UPDI3        2
+                                                                                                                              2                        2                    2                    2
+                 VCC        A0                                                                                              3                        3                    3                    3
+                                                                                                                              3                        3                    3                    3
+                 GND        A1
+                                                                                   P1
+                 TX        INT         INT3
+       RX3       RX        SCL         SCL    R10                      Power SW connector
+      UPDI3      UPDI     SDA          SDA    200
+                                                                      PWR             1                                                          LoRaBoard probe
+                          DIO1                                                                            GND
+D                                                                     BAT             2                                                                                                                             D
+                          DIO2
+                          DIO3
+                                                M1    M2   M3   M4
+                          DIO4
+                          DIO5                                                                                    TITLE:
+                                                                                                                                    Main Board                                                         REV:   1.0
+      GND
+                                                                                                                                               Company:      IWING                                     Sheet: 1/1
+                                                                                                                                               Date:     2026-02-21         Drawn By: benyapa.ju
+      1                                2                               3                                          4                                                5
+

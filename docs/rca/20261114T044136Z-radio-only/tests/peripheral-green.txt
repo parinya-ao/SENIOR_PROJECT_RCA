@@ -1,0 +1,17 @@
+..........ARQ core: PASS
+.usage: arq_trial [-h] (--campaign | --mvp | --prepare | --validate VALIDATE |
+                 --reverse-raw | --reverse-raw-no-tracker-reader |
+                 --reader-free-h01 | --tracker-rx-idle-control)
+                 [--rf-path-confirmed]
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+usage: arq_trial [-h] (--campaign | --mvp | --prepare | --validate VALIDATE |
+                 --reverse-raw | --reverse-raw-no-tracker-reader |
+                 --reader-free-h01 | --tracker-rx-idle-control)
+                 [--rf-path-confirmed]
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+.
+----------------------------------------------------------------------
+Ran 12 tests in 2.035s
+
+OK
+<MagicMock name='campaign()' id='139787100709488'>

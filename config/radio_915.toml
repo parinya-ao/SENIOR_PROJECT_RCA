@@ -1,0 +1,46 @@
+schema_version = 1
+
+[radio]
+frequency_hz = 915000000
+bandwidth_khz = 125
+spreading_factor = 7
+coding_rate = 5
+sync_word = 18
+tx_power_dbm = 2
+preamble_symbols = 8
+crc_enabled = true
+explicit_header = true
+iq_inverted = false
+current_limit_ma = 200
+automatic_gain = 0
+long_range = 0
+
+[sender]
+spi_route = "SPI1_SWAP_DEFAULT"
+
+[sender.pins]
+mosi = "PC0"
+miso = "PC1"
+sck = "PC2"
+cs = "PC3"
+rst = "PD0"
+irq = "PD2"
+dio1 = "PD3"
+
+[receiver]
+spi_route = "SPI1_SWAP_DEFAULT"
+radio_power_active_level = 0
+
+[receiver.pins]
+mosi = "PC0"
+miso = "PC1"
+sck = "PC2"
+cs = "PD0"
+rst = "PD1"
+irq = "PD3"
+dio1 = "PD2"
+enable = "PA7"
+
+[environments]
+sender = ["sender", "sender_hello", "sender_hello_spi", "sender_mvp"]
+receiver = ["receiver", "receiver_spi", "receiver_mvp"]

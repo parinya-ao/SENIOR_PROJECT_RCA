@@ -1,0 +1,29 @@
+test_duration_stage_requires_recorded_monotonic_span (test_arq_soak.ArqSoakPlanTests.test_duration_stage_requires_recorded_monotonic_span) ... ok
+test_interrupted_soak_keeps_partial_progress_receipt (test_arq_soak.ArqSoakPlanTests.test_interrupted_soak_keeps_partial_progress_receipt) ... ERROR
+test_paced_sessions_enforce_start_spacing_and_stop_on_failure (test_arq_soak.ArqSoakPlanTests.test_paced_sessions_enforce_start_spacing_and_stop_on_failure) ... ok
+test_sf7_airtime_uses_max_wire_frame_and_response_lengths (test_arq_soak.ArqSoakPlanTests.test_sf7_airtime_uses_max_wire_frame_and_response_lengths) ... ok
+test_soak_campaign_blocks_a_later_stage_without_prior_pass_receipts (test_arq_soak.ArqSoakPlanTests.test_soak_campaign_blocks_a_later_stage_without_prior_pass_receipts) ... ok
+test_soak_campaign_does_not_pass_when_any_session_fails (test_arq_soak.ArqSoakPlanTests.test_soak_campaign_does_not_pass_when_any_session_fails) ... ok
+test_soak_campaign_persists_pass_receipt_for_next_stage (test_arq_soak.ArqSoakPlanTests.test_soak_campaign_persists_pass_receipt_for_next_stage) ... ok
+test_soak_cli_dispatches_the_verified_stage_plan (test_arq_soak.ArqSoakPlanTests.test_soak_cli_dispatches_the_verified_stage_plan) ... ok
+test_soak_cli_fails_closed_without_power_and_rf_readiness (test_arq_soak.ArqSoakPlanTests.test_soak_cli_fails_closed_without_power_and_rf_readiness) ... ok
+test_soak_metrics_derive_attempts_and_timeouts_from_validated_events (test_arq_soak.ArqSoakPlanTests.test_soak_metrics_derive_attempts_and_timeouts_from_validated_events) ... ok
+test_soak_plan_rejects_unknown_stage (test_arq_soak.ArqSoakPlanTests.test_soak_plan_rejects_unknown_stage) ... ok
+test_soak_plan_reports_firmware_retry_spacing_duty (test_arq_soak.ArqSoakPlanTests.test_soak_plan_reports_firmware_retry_spacing_duty) ... ok
+test_soak_stages_cannot_skip_failed_or_unrun_predecessors (test_arq_soak.ArqSoakPlanTests.test_soak_stages_cannot_skip_failed_or_unrun_predecessors) ... ok
+test_soak_summary_reports_success_ci_retries_and_sample_limits (test_arq_soak.ArqSoakPlanTests.test_soak_summary_reports_success_ci_retries_and_sample_limits) ... ok
+test_stage_plan_is_paced_for_worst_case_retries (test_arq_soak.ArqSoakPlanTests.test_stage_plan_is_paced_for_worst_case_retries) ... ok
+
+======================================================================
+ERROR: test_interrupted_soak_keeps_partial_progress_receipt (test_arq_soak.ArqSoakPlanTests.test_interrupted_soak_keeps_partial_progress_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 191, in test_interrupted_soak_keeps_partial_progress_receipt
+    self.assertEqual(record["completed_sessions"],0)
+                     ~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'completed_sessions'
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.032s
+
+FAILED (errors=1)

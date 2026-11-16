@@ -4,6 +4,7 @@
 #include "debug.h"
 #include "iw/core/byte_codec.h"
 #include "iw/tracker/radio/packets.h"
+#include "lora_config.h"
 
 using namespace iw::tracker::radio;
 
@@ -17,24 +18,6 @@ using namespace iw::tracker::radio;
 #define BASE_ADDRESS 0x20
 
 #define I2C_RESET_INTERVAL 60000
-
-struct LoraConfig {
-    uint8_t addr;
-    float   freq;
-    int8_t  tx_power;
-    uint8_t long_range;
-} __attribute__((packed));
-
-// I2C callbacks expose volatile buffers. Decode the application-local schema
-// explicitly while keeping little-endian conversion in iw_core.
-static void DecodeLoraConfig(const volatile uint8_t* input, LoraConfig* config) {
-    config->addr = input[0];
-    uint8_t frequency_bytes[4] = {input[1], input[2], input[3], input[4]};
-    uint32_t frequency_bits = iw::core::LoadLittleEndian32(frequency_bytes);
-    memcpy(&config->freq, &frequency_bits, sizeof(config->freq));
-    config->tx_power = static_cast<int8_t>(input[5]);
-    config->long_range = input[6];
-}
 
 static void StoreI2c16(volatile uint8_t* destination, uint16_t value) {
     uint8_t bytes[2];
@@ -55,11 +38,18 @@ extern int16_t current_temperature;
 
 // read data from master
 void onReceive(int byteCount) {
-    rx_len = byteCount;
+    if (byteCount <= 0) {
+        rx_len = 0;
+        return;
+    }
+    rx_len = byteCount > sizeof(rx_buf)
+                 ? static_cast<uint8_t>(sizeof(rx_buf) + 1)
+                 : static_cast<uint8_t>(byteCount);
+    for (int i = 0; i < byteCount; ++i) {
+        const uint8_t value = static_cast<uint8_t>(Wire.read());
+        if (i < sizeof(rx_buf)) rx_buf[i] = value;
+    }
     if (rx_len) {
-        for (uint8_t i = 0; i<rx_len; i++) {
-            rx_buf[i] = Wire.read();
-        }
         last_cmd = rx_buf[0];
         if ( (last_cmd != I2C_CMD_IS_READY) &&
              (last_cmd != I2C_CMD_READ_RESULT)) {
@@ -146,20 +136,13 @@ public:
                 }
             }
             else if (_cmd == I2C_CMD_CONFIG_LORA) {
-                DecodeLoraConfig(rx_buf + 1, &config);
-                DEBUG_TS(
-                    "%s Config LoRa: "
-                    "addr=%" PRIu8 ","
-                    "freq=%" PRIu16 ".%02" PRIu16 ","
-                    "tx_power=%" PRId8 ","
-                    "long_range=%" PRIu8 "\r\n",
-                    GetName(),
-                    config.addr,
-                    (uint16_t)config.freq,
-                    (uint16_t)(((uint32_t)(config.freq*100)) % 100),
-                    config.tx_power,
-                    config.long_range);
-                lora_rx_init_lora(config.addr, config.freq, config.tx_power, config.long_range);
+                if (DecodeLoraConfig(rx_buf, rx_len, &config)) {
+                    DEBUG_TS("%s Config LoRa address=%" PRIu8 "\r\n",
+                             GetName(), config.addr);
+                    lora_rx_init_lora(config.addr);
+                } else {
+                    lora_rx_reject_config();
+                }
             }
             else if (_cmd == I2C_CMD_START_LORA) {
                 DEBUG_TS("%s LoRa started\r\n", GetName());

@@ -1,0 +1,395 @@
+diff --git a/platformio.ini b/platformio.ini
+index d873d21..13ce7e1 100644
+--- a/platformio.ini
++++ b/platformio.ini
+@@ -129,6 +129,18 @@ build_flags =
+     ${env:receiver_arq.build_flags}
+     -DARQ_TEST_MODE=1
+ 
++[env:sender_arq_radio_only]
++extends = env:sender_arq_test
++build_flags =
++    ${env:sender_arq_test.build_flags}
++    -DARQ_RADIO_ONLY_DIAGNOSTIC=1
++
++[env:receiver_arq_radio_only]
++extends = env:receiver_arq_test
++build_flags =
++    ${env:receiver_arq_test.build_flags}
++    -DARQ_RADIO_ONLY_DIAGNOSTIC=1
++
+ [env:sender_reverse_raw]
+ extends = env:sender_arq
+ build_src_filter =
+diff --git a/src/arq/board_ssot.c b/src/arq/board_ssot.c
+index b8b994c..7dba861 100644
+--- a/src/arq/board_ssot.c
++++ b/src/arq/board_ssot.c
+@@ -19,7 +19,11 @@ void board_ssot_init(void) {
+  pinMode(PIN_PD6, OUTPUT);
+  digitalWrite(PIN_PC3, HIGH);
+  pinMode(PIN_PC3, OUTPUT);
++#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC)
++ pinMode(PIN_PA4, INPUT_PULLUP);
++#else
+  pinMode(PIN_PA4, INPUT);
++#endif
+  digitalWrite(PIN_PA7, HIGH);
+  pinMode(PIN_PA7, OUTPUT);
+  digitalWrite(PIN_PA7, 0);
+diff --git a/src/arq/main.cpp b/src/arq/main.cpp
+index 92d29dd..44baa9e 100644
+--- a/src/arq/main.cpp
++++ b/src/arq/main.cpp
+@@ -5,6 +5,7 @@
+ #include "arq.h"
+ #include "generated/board_ssot.h"
+ #include "diagnostics.h"
++#include "radio_only.h"
+ 
+ static Module module(board_ssot.cs,board_ssot.irq,board_ssot.rst,board_ssot.dio1,
+     SPI,SPISettings(ARQ_SPI_HZ,MSBFIRST,SPI_MODE0));
+@@ -78,6 +79,9 @@ static void discard(const char* name,const arq_frame* f,uint8_t reason) {
+ }
+ static void status() {
+     event("BOOT",startup_status,reset_flags);
++#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC)
++    event("RADIO_ONLY",startup_status,1);
++#endif
+     char* identity=log_slot();if(identity)snprintf(identity,192,"A t=%lu e=IDENTITY s=%08lX build=%s config=%s\n",
+         (unsigned long)millis(),(unsigned long)session(),LORA_BUILD_ID,ARQ_CONFIG_HASH);
+     char* out=log_slot();if(out)snprintf(out,192,
+@@ -184,6 +188,12 @@ static void command_byte(char c) {
+ void onPreMain(){_PROTECTED_WRITE(CPUINT.CTRLA,0);}
+ void setup() {
+     arq_sender_init(&sender);arq_receiver_init(&receiver);reset_flags=GPR_GPR0;
++#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC) && defined(LORA_ROLE_RECEIVER)
++    if(!radio_only_prepare_tracker()){
++        startup_status=-1;event("SD_PRESENT_BLOCKED",startup_status,0);return;
++    }
++#endif
++    // Tracker board init keeps EN-LORA low through DATA/ACK; omit the diagnostic flag to restore normal setup.
+     board_ssot_init();delay(10);
+     if(!SPI.swap(ARQ_SPI_ROUTE)){startup_status=-1;return;}SPI.begin();radio.reset();
+     bool supported=false;
+@@ -198,6 +208,8 @@ void setup() {
+     int16_t rc=supported?0:RADIOLIB_ERR_CHIP_NOT_FOUND;
+     if(!rc)rc=radio.begin(ARQ_FREQUENCY_HZ/1000000.0f,ARQ_BANDWIDTH_KHZ,
+         ARQ_SPREADING_FACTOR,ARQ_CODING_RATE,ARQ_SYNC_WORD,ARQ_TX_POWER_DBM,ARQ_PREAMBLE_SYMBOLS,0);
++    // RadioLib 7.1.2 preserves reset-default LF selection. At 915 MHz clear only bit 3, preserving mode bits.
++    if(!rc)rc=module.SPIsetRegValue(RADIOLIB_SX127X_REG_OP_MODE,0,3,3);
+     if(!rc)rc=radio.setOutputPower(ARQ_TX_POWER_DBM,false);
+     if(!rc)rc=radio.explicitHeader();if(!rc)rc=radio.setCRC(ARQ_CRC_ENABLED);
+     if(!rc)rc=radio.invertIQ(ARQ_IQ_INVERTED);
+diff --git a/tests/arq/adapter_test.cpp b/tests/arq/adapter_test.cpp
+index 0d257a7..04fb652 100644
+--- a/tests/arq/adapter_test.cpp
++++ b/tests/arq/adapter_test.cpp
+@@ -1,9 +1,21 @@
+ #include "../../src/arq/main.cpp"
+ #include <assert.h>
+-const arq_board board_ssot={3,4,5,6};
+-void board_ssot_init(void) {}
++#include "../../src/arq/board_ssot.c"
+ static void send_command(const char* s){for(;*s;s++) command_byte(*s);command_byte('\n');}
+ int main(int argc,char** argv) {
++#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC) && defined(LORA_ROLE_RECEIVER)
++    USART2.CTRLA=USART2.CTRLB=0xff;
++    gpio_mode[PIN_PF0]=gpio_mode[PIN_PF1]=OUTPUT;
++    gpio_value[PIN_PF0]=gpio_value[PIN_PF1]=HIGH;
++    if(argc>1 && !strcmp(argv[1],"card")){
++        sd_inserted=true;setup();
++        assert(!ready && !begun && !tx_starts);
++        assert(gpio_value[PIN_PA7]==HIGH);
++        assert(gpio_mode[PIN_PC3]==INPUT && gpio_value[PIN_PC3]==LOW);
++        assert(gpio_value[PIN_PD6]==HIGH && gpio_mode[PIN_PD6]==OUTPUT);
++        assert(reset_flags==GPR_GPR0);return 0;
++    }
++#endif
+     if(argc>1){
+         if(!strcmp(argv[1],"begin"))init_status=-1;
+         if(!strcmp(argv[1],"power"))power_status=-1;
+@@ -16,6 +28,18 @@ int main(int argc,char** argv) {
+         assert(!ready);return 0;
+     }
+     setup();assert(ready && !sender.armed && !receiver.armed);
++    assert(raw_regs[1]==0x81); // Standby keeps the mode bits while clearing only the HF/LF selector.
++#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC) && defined(LORA_ROLE_RECEIVER)
++    assert(!USART2.CTRLA && !USART2.CTRLB);
++    assert(gpio_mode[PIN_PF0]==INPUT && gpio_mode[PIN_PF1]==INPUT);
++    assert(!gpio_value[PIN_PF0] && !gpio_value[PIN_PF1]);
++    assert(gpio_value[PIN_PD5]==HIGH && gpio_mode[PIN_PD5]==OUTPUT);
++    assert(gpio_value[PIN_PD6]==HIGH && gpio_mode[PIN_PD6]==OUTPUT);
++    assert(gpio_mode[PIN_PA4]==INPUT_PULLUP);
++    assert(gpio_value[PIN_PA7]==LOW && gpio_mode[PIN_PA7]==OUTPUT);
++    assert(gpio_value[PIN_PC3]==HIGH && gpio_mode[PIN_PC3]==OUTPUT);
++    assert(reset_flags==GPR_GPR0);
++#endif
+     assert(parked && rx_starts==0);
+     status();
+     bool registers_seen=false;
+@@ -32,12 +56,15 @@ int main(int argc,char** argv) {
+     send_command("SEND 48656C6C6F20576F726C64");assert(!tx_starts);
+     send_command("ARM 12345678");assert(sender.armed || receiver.armed);
+     assert(!parked && rx_starts==1);
++    assert(raw_regs[1] == 0x85); // LoRa RX continuous, HF band, no LF register bank.
+     send_command("ARM 12345678garbage");
+ #if defined(LORA_ROLE_SENDER)
+     send_command("SEND 48656C6C6F20576F726C64");loop();
+     assert(tx_starts==1 && sent_length==23);
++    assert(raw_regs[1]==0x83);
+     send_command("ARM 00000001");assert(sender.session==0x12345678);
+     irq_flags=8;loop();assert(sender.state==ARQ_WAITING_ACK);
++    assert(raw_regs[1]==0x85);
+     arq_frame ack={ARQ_ACK,2,1,0x12345678,0,0,0,{0}};
+     for(int bad=0;bad<5;bad++){
+         arq_frame rejected=ack;
+@@ -78,6 +105,8 @@ int main(int argc,char** argv) {
+     assert(strstr(log_slots[(log_tail+15)%16].text,"e=ARM "));
+     clock_ms+=ARQ_RESPONSE_GUARD_MS;loop();
+     assert(tx_starts==1 && sent_length==12);
++    assert(raw_regs[1]==0x83);
++    assert(gpio_value[PIN_PA7]==LOW);
+     cleanup_status=-1;irq_flags=8;loop();assert(receiver.deliveries==1 && !ready);
+     cleanup_status=0;ready=true;
+     send_command("ARM 12345679");
+diff --git a/tests/arq/stub/Arduino.h b/tests/arq/stub/Arduino.h
+index 6b2d69d..ffce486 100644
+--- a/tests/arq/stub/Arduino.h
++++ b/tests/arq/stub/Arduino.h
+@@ -7,17 +7,38 @@
+ #define LOW 0
+ #define INPUT 0
+ #define OUTPUT 1
++#define INPUT_PULLUP 2
++#define PIN_PD4 24
++#define PIN_PD5 25
++#define PIN_PD6 26
++#define PIN_PA4 34
++#define PIN_PA5 35
++#define PIN_PA6 36
++#define PIN_PF0 40
++#define PIN_PF1 41
+ #define _PROTECTED_WRITE(reg,value) ((reg)=(value))
+ static struct { uint8_t CTRLA; } CPUINT;
+ static uint8_t GPR_GPR0=4,registers[2];
+ #define _SFR_MEM8(addr) registers[(addr)-0x0f18]
+ static uint32_t clock_ms;
+ static bool monitor,input_pending;
++static struct { uint8_t CTRLA, CTRLB; } USART2;
++static int gpio_mode[64],gpio_value[64];
++static bool sd_inserted;
+ static uint8_t input;
+ inline uint32_t millis(){return clock_ms++;}
+ inline uint32_t micros(){return clock_ms*1000;}
+ inline void delay(uint32_t ms){clock_ms+=ms;}
+-inline void pinMode(int,int){}
+-inline void digitalWrite(int,int){}
++inline void pinMode(int pin,int mode){gpio_mode[pin]=mode;}
++inline void digitalWrite(int pin,int value){
++#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC) && defined(LORA_ROLE_RECEIVER)
++    if(pin==PIN_PD5 && value==HIGH){
++        if(USART2.CTRLA || USART2.CTRLB || gpio_mode[PIN_PF0]!=INPUT ||
++           gpio_mode[PIN_PF1]!=INPUT || gpio_value[PIN_PF0] || gpio_value[PIN_PF1]) __builtin_trap();
++    }
++#endif
++    gpio_value[pin]=value;
++}
++inline int digitalRead(int pin){return pin==PIN_PA4 && sd_inserted?LOW:HIGH;}
+ inline void randomSeed(uint32_t){}
+ inline long random(long limit){return limit/2;}
+diff --git a/tests/arq/stub/RadioLib.h b/tests/arq/stub/RadioLib.h
+index 5c89011..bf5a107 100644
+--- a/tests/arq/stub/RadioLib.h
++++ b/tests/arq/stub/RadioLib.h
+@@ -11,6 +11,7 @@
+ #define RADIOLIB_SX127X_CLEAR_IRQ_FLAG_RX_DONE 0x40
+ #define RADIOLIB_SX127X_CLEAR_IRQ_FLAG_TX_DONE 0x08
+ #define RADIOLIB_SX127X_CLEAR_IRQ_FLAG_PAYLOAD_CRC_ERROR 0x20
++#define RADIOLIB_SX127X_REG_OP_MODE 0x01
+ static uint16_t irq_flags;
+ static int power_status,header_status,crc_status,iq_status,standby_status;
+ static int rx_starts, tx_starts, cleanups, init_status, data_status, cleanup_status, rx_status,tx_status;
+@@ -21,21 +22,28 @@ static uint8_t raw_regs[128];
+ struct Module {
+     Module(int, int, int, int, SPIClass&, SPISettings) {}
+     uint8_t SPIreadRegister(uint8_t address) { return address==0x12?irq_flags:raw_regs[address]; }
++    int SPIsetRegValue(uint32_t address, uint8_t value, uint8_t msb=7, uint8_t lsb=0,
++                       uint8_t=2, uint8_t=0xff, bool=false) {
++        uint8_t mask=static_cast<uint8_t>(((1u << (msb-lsb+1))-1u) << lsb);
++        raw_regs[address]=static_cast<uint8_t>((raw_regs[address]&~mask) | ((value<<lsb)&mask));
++        return 0;
++    }
+ };
+ struct SX1276 {
+     explicit SX1276(Module*) {}
+-    void reset() {}
++    void reset() { raw_regs[1]=0x01; }
+     int begin(float f, float bw, int sf, int cr, int sync, int p, int pre, int gain) {
+         assert(f == 915 && bw == 125 && sf == 7 && cr == 5 && sync == 0x12 && p == 2 && pre == 8 && gain == 0);
++        raw_regs[1]=0x89; // RadioLib enters LoRa standby but preserves reset-default LF bit.
+         return init_status;
+     }
+     int setOutputPower(int p, bool rfo) { assert(p == 2 && !rfo); return power_status; }
+     int explicitHeader() { return header_status; }
+     int setCRC(bool crc) { assert(crc); return crc_status; }
+     int invertIQ(bool invert) { assert(!invert); return iq_status; }
+-    int startReceive() { ++rx_starts; irq_flags = 0;raw_regs[1]=0x8d; return rx_status; }
++    int startReceive() { ++rx_starts; irq_flags = 0;raw_regs[1]=(raw_regs[1]&0xf8)|0x05; return rx_status; }
+     uint16_t getIRQFlags() { return irq_flags; }
+-    int standby() { raw_regs[1]=0x89;return standby_status; }
++    int standby() { raw_regs[1]=(raw_regs[1]&0xf8)|0x01;return standby_status; }
+     size_t getPacketLength() { return packet_length; }
+     int readData(uint8_t* bytes, size_t capacity) {
+         assert(capacity > 0 && capacity <= 44);
+@@ -46,6 +54,7 @@ struct SX1276 {
+     float getRSSI() { return -83.5f; }
+     float getSNR() { return -1.25f; }
+     int startTransmit(const uint8_t* bytes, size_t length) {
++        raw_regs[1]=(raw_regs[1]&0xf8)|0x03;
+         ++tx_starts; sent_length = length; memcpy(sent, bytes, length); return tx_status;
+     }
+     int finishTransmit() { ++cleanups; irq_flags = 0; return cleanup_status; }
+diff --git a/tests/radiolib_hal_test.cpp b/tests/radiolib_hal_test.cpp
+index b0b72f5..5a55da8 100644
+--- a/tests/radiolib_hal_test.cpp
++++ b/tests/radiolib_hal_test.cpp
+@@ -64,6 +64,22 @@ int main(){
+         assert(radio.readData(result,3)==0 && !memcmp(result,payload,3) && bus.regs[0x12]==0);
+         bus.regs[0x12]=0x60;
+         assert(radio.readData(result,3)==RADIOLIB_ERR_CRC_MISMATCH && bus.regs[0x12]==0);
++        // Candidate 915 MHz HF selection: exercise the installed driver through retry/reinitialization.
++        for(int initialization=0;initialization<2;initialization++){
++            assert(radio.begin(915,125,7,5,0x12,2,8,0)==0);
++            uint8_t before=bus.regs[1];
++            assert(module.SPIsetRegValue(RADIOLIB_SX127X_REG_OP_MODE,0,3,3)==0);
++            assert(bus.regs[1]==(before&0xf7) && bus.regs[1]==0x81);
++            assert(bus.regs[6]==0xe4 && bus.regs[7]==0xc0 && bus.regs[8]==0);
++            for(int attempt=0;attempt<3;attempt++){
++                assert(radio.startReceive()==0 && bus.regs[1]==0x85);
++                assert(radio.standby()==0 && bus.regs[1]==0x81);
++                assert(radio.startTransmit(payload,3)==0 && bus.regs[1]==0x83);
++                bus.regs[0x12]=8;
++                assert(radio.finishTransmit()==0 && bus.regs[1]==0x81);
++                assert(radio.startReceive()==0 && bus.regs[1]==0x85);
++            }
++        }
+         puts("begin -> carrier E4C000 -> IRQ read/W1C -> TX/FIFO -> finish 833us/standby -> RX -> FIFO/CRC/clear: PASS");
+     }
+ }
+diff --git a/tools/config/arq_config.py b/tools/config/arq_config.py
+index fd72a5e..e7bdc0c 100644
+--- a/tools/config/arq_config.py
++++ b/tools/config/arq_config.py
+@@ -68,7 +68,9 @@ def arq_artifacts(c, radio, system, source):
+             extras=system['receiver_board']['pins']
+             for k in ('gps_enable','sd_enable','sd_cs'):
+                 board_c += [f' digitalWrite(PIN_{extras[k]}, HIGH);',f' pinMode(PIN_{extras[k]}, OUTPUT);']
+-            board_c += [f' pinMode(PIN_{extras["sd_detect"]}, INPUT);',
++            board_c += ['#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC)',
++                f' pinMode(PIN_{extras["sd_detect"]}, INPUT_PULLUP);', '#else',
++                f' pinMode(PIN_{extras["sd_detect"]}, INPUT);', '#endif',
+                 f' digitalWrite(PIN_{pins["enable"]}, HIGH);',f' pinMode(PIN_{pins["enable"]}, OUTPUT);',
+                 f' digitalWrite(PIN_{pins["enable"]}, {radio[role]["radio_power_active_level"]});']
+         board_c += [' digitalWrite(board_ssot.cs, HIGH);', ' pinMode(board_ssot.cs, OUTPUT);',
+diff --git a/tools/config/platformio_generate.py b/tools/config/platformio_generate.py
+index 0f6fec9..d96a1f7 100644
+--- a/tools/config/platformio_generate.py
++++ b/tools/config/platformio_generate.py
+@@ -18,7 +18,7 @@ roles_by_environment = {
+     for environment in environments
+ }
+ roles_by_environment.update({f'{role}_arq{suffix}':role
+-    for role in ('sender','receiver') for suffix in ('','_test')})
++    for role in ('sender','receiver') for suffix in ('','_test','_radio_only')})
+ roles_by_environment.update({role+'_reverse_raw':role for role in ('sender','receiver')})
+ try:
+     role = roles_by_environment[env['PIOENV']]
+diff --git a/tools/rf_proof.py b/tools/rf_proof.py
+index a6a8ddc..d0413ee 100644
+--- a/tools/rf_proof.py
++++ b/tools/rf_proof.py
+@@ -733,6 +733,8 @@ def application_bounds_for_environment(
+         "receiver_arq": "receiver",
+         "sender_arq_test": "gateway",
+         "receiver_arq_test": "receiver",
++        "sender_arq_radio_only": "gateway",
++        "receiver_arq_radio_only": "receiver",
+         "sender_reverse_raw": "gateway",
+         "receiver_reverse_raw": "receiver",
+     }.get(environment)
+--- /dev/null
++++ b/src/arq/radio_only.h
+@@ -0,0 +1,23 @@
++#pragma once
++
++#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC) && defined(LORA_ROLE_RECEIVER)
++static bool radio_only_prepare_tracker() {
++    // Startup only: ARQ has no GPS/SD/sensor tasks to stop. Never call this between DATA and ACK.
++    // SAM-M10Q main power is active-low PD5; release USART2/PF0-PF1 before removing it.
++    USART2.CTRLA=0;
++    USART2.CTRLB=0;
++    pinMode(PIN_PF0,INPUT);digitalWrite(PIN_PF0,LOW);
++    pinMode(PIN_PF1,INPUT);digitalWrite(PIN_PF1,LOW);
++    pinMode(PIN_PD4,INPUT);digitalWrite(PIN_PD4,LOW); // GPS TIMEPULSE: no pull-up into unpowered IO.
++    digitalWrite(PIN_PD5,HIGH);pinMode(PIN_PD5,OUTPUT);
++    // GNSS V_BCKP stays connected. IMU/EEPROM remain on main 3V3, with no application traffic.
++    pinMode(PIN_PA5,INPUT);digitalWrite(PIN_PA5,LOW);
++    pinMode(PIN_PA6,INPUT);digitalWrite(PIN_PA6,LOW); // Do not use LED_BUILTIN: it aliases EN-LORA/PA7.
++    // SD shares LoRa SPI without isolation. With power off, a fitted card forbids any SPI drive.
++    pinMode(PIN_PC3,INPUT);digitalWrite(PIN_PC3,LOW);
++    digitalWrite(PIN_PD6,HIGH);pinMode(PIN_PD6,OUTPUT);
++    pinMode(PIN_PA4,INPUT_PULLUP); // CARD1 detect switch closes to ground when a card is fitted.
++    digitalWrite(PIN_PA7,HIGH);pinMode(PIN_PA7,OUTPUT);
++    return digitalRead(PIN_PA4)==HIGH;
++}
++#endif
+--- /dev/null
++++ b/tests/test_arq_radio_only.py
+@@ -0,0 +1,46 @@
++"""Simulation at firmware setup/loop boundaries; does not establish electrical isolation."""
++from pathlib import Path
++import subprocess
++import tempfile
++import unittest
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++class RadioOnlyTests(unittest.TestCase):
++    def test_radio_only_images_resolve_to_the_existing_role_application_ranges(self):
++        from tools import rf_proof
++
++        config = subprocess.check_output(
++            ['pio', 'project', 'config', '--json-output'], cwd=ROOT, text=True)
++
++        self.assertEqual(rf_proof.application_bounds_for_environment(
++            config, 'sender_arq_radio_only'), (0, 130048))
++        self.assertEqual(rf_proof.application_bounds_for_environment(
++            config, 'receiver_arq_radio_only'), (0, 130048))
++        self.assertTrue(rf_proof.application_layout_verified(
++            ('sender_arq_radio_only', 'receiver_arq_radio_only'), config))
++
++    def test_radio_only_setup_preserves_arq_and_refuses_unpowered_sd_bus_use(self):
++        with tempfile.TemporaryDirectory() as directory:
++            objects = []
++            for source in ('codec', 'sender', 'receiver'):
++                obj = str(Path(directory) / (source + '.o'))
++                objects.append(obj)
++                subprocess.run(['clang', '-std=c11', '-Isrc/arq', '-Iinclude', '-c',
++                                f'src/arq/{source}.c', '-o', obj], cwd=ROOT, check=True)
++            for role in ('SENDER', 'RECEIVER'):
++                binary = str(Path(directory) / role)
++                subprocess.run(['clang', '--driver-mode=g++', '-std=c++11', '-Wall',
++                    '-Wextra', '-Werror', '-Wno-unused-variable', '-Wno-unused-function',
++                    '-Itests/arq/stub', '-Itests/raw_mvp_stub', '-Iinclude', '-Isrc/arq',
++                    '-DLORA_ROLE_' + role, '-DARQ_TEST_MODE', '-DARQ_RADIO_ONLY_DIAGNOSTIC=1',
++                    '-DLORA_BUILD_ID="host-radio-only"', 'tests/arq/adapter_test.cpp',
++                    *objects, '-o', binary], cwd=ROOT, check=True)
++                subprocess.run([binary], check=True)
++                if role == 'RECEIVER':
++                    subprocess.run([binary, 'card'], check=True)
++
++
++if __name__ == '__main__':
++    unittest.main()

@@ -1,0 +1,165 @@
+Processing sender_arq (platform: atmelmegaavr; board: AVR128DA28; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/atmelmegaavr/AVR128DA28.html
+PLATFORM: Atmel megaAVR (1.10.0) > AVR128DA28
+HARDWARE: AVR128DA28 24MHz, 16KB RAM, 128KB Flash
+PACKAGES: 
+ - framework-arduino-megaavr-dxcore @ 1.6.2 
+ - tool-avrdude @ 1.80100.0 (8.1.0) 
+ - toolchain-atmelavr @ 3.70300.220127 (7.3.0)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 31 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- RadioLib @ 7.1.2
+|-- Time @ 1.6.1
+|-- SPI @ 1.1.2
+|-- updi_uart
+Building in debug mode
+Checking size .pio/build/sender_arq/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [===       ]  31.9% (used 5221 bytes from 16384 bytes)
+Flash: [===       ]  28.1% (used 36878 bytes from 131072 bytes)
+========================= [SUCCESS] Took 1.18 seconds =========================
+
+Processing receiver_arq (platform: atmelmegaavr; board: AVR128DA28; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/atmelmegaavr/AVR128DA28.html
+PLATFORM: Atmel megaAVR (1.10.0) > AVR128DA28
+HARDWARE: AVR128DA28 24MHz, 16KB RAM, 128KB Flash
+PACKAGES: 
+ - framework-arduino-megaavr-dxcore @ 1.6.2 
+ - tool-avrdude @ 1.80100.0 (8.1.0) 
+ - toolchain-atmelavr @ 3.70300.220127 (7.3.0)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 31 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- RadioLib @ 7.1.2
+|-- Time @ 1.6.1
+|-- SPI @ 1.1.2
+|-- updi_uart
+Building in debug mode
+Checking size .pio/build/receiver_arq/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [===       ]  31.8% (used 5217 bytes from 16384 bytes)
+Flash: [===       ]  27.5% (used 36086 bytes from 131072 bytes)
+========================= [SUCCESS] Took 1.18 seconds =========================
+
+Processing sender_arq_test (platform: atmelmegaavr; board: AVR128DA28; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/atmelmegaavr/AVR128DA28.html
+PLATFORM: Atmel megaAVR (1.10.0) > AVR128DA28
+HARDWARE: AVR128DA28 24MHz, 16KB RAM, 128KB Flash
+PACKAGES: 
+ - framework-arduino-megaavr-dxcore @ 1.6.2 
+ - tool-avrdude @ 1.80100.0 (8.1.0) 
+ - toolchain-atmelavr @ 3.70300.220127 (7.3.0)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 31 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- RadioLib @ 7.1.2
+|-- Time @ 1.6.1
+|-- SPI @ 1.1.2
+|-- updi_uart
+Building in debug mode
+Checking size .pio/build/sender_arq_test/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [===       ]  31.9% (used 5221 bytes from 16384 bytes)
+Flash: [===       ]  28.1% (used 36878 bytes from 131072 bytes)
+========================= [SUCCESS] Took 1.17 seconds =========================
+
+Processing receiver_arq_test (platform: atmelmegaavr; board: AVR128DA28; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/atmelmegaavr/AVR128DA28.html
+PLATFORM: Atmel megaAVR (1.10.0) > AVR128DA28
+HARDWARE: AVR128DA28 24MHz, 16KB RAM, 128KB Flash
+PACKAGES: 
+ - framework-arduino-megaavr-dxcore @ 1.6.2 
+ - tool-avrdude @ 1.80100.0 (8.1.0) 
+ - toolchain-atmelavr @ 3.70300.220127 (7.3.0)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 31 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- RadioLib @ 7.1.2
+|-- Time @ 1.6.1
+|-- SPI @ 1.1.2
+|-- updi_uart
+Building in debug mode
+Checking size .pio/build/receiver_arq_test/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [===       ]  32.0% (used 5251 bytes from 16384 bytes)
+Flash: [===       ]  29.0% (used 38066 bytes from 131072 bytes)
+========================= [SUCCESS] Took 1.23 seconds =========================
+
+Processing sender_reverse_raw (platform: atmelmegaavr; board: AVR128DA28; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/atmelmegaavr/AVR128DA28.html
+PLATFORM: Atmel megaAVR (1.10.0) > AVR128DA28
+HARDWARE: AVR128DA28 24MHz, 16KB RAM, 128KB Flash
+PACKAGES: 
+ - framework-arduino-megaavr-dxcore @ 1.6.2 
+ - tool-avrdude @ 1.80100.0 (8.1.0) 
+ - toolchain-atmelavr @ 3.70300.220127 (7.3.0)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 31 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- RadioLib @ 7.1.2
+|-- Time @ 1.6.1
+|-- SPI @ 1.1.2
+|-- updi_uart
+Building in debug mode
+Checking size .pio/build/sender_reverse_raw/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [===       ]  28.5% (used 4666 bytes from 16384 bytes)
+Flash: [==        ]  24.3% (used 31838 bytes from 131072 bytes)
+========================= [SUCCESS] Took 1.17 seconds =========================
+
+Processing receiver_reverse_raw (platform: atmelmegaavr; board: AVR128DA28; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/atmelmegaavr/AVR128DA28.html
+PLATFORM: Atmel megaAVR (1.10.0) > AVR128DA28
+HARDWARE: AVR128DA28 24MHz, 16KB RAM, 128KB Flash
+PACKAGES: 
+ - framework-arduino-megaavr-dxcore @ 1.6.2 
+ - tool-avrdude @ 1.80100.0 (8.1.0) 
+ - toolchain-atmelavr @ 3.70300.220127 (7.3.0)
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 31 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- RadioLib @ 7.1.2
+|-- Time @ 1.6.1
+|-- SPI @ 1.1.2
+|-- updi_uart
+Building in debug mode
+Checking size .pio/build/receiver_reverse_raw/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [===       ]  27.4% (used 4485 bytes from 16384 bytes)
+Flash: [==        ]  23.4% (used 30710 bytes from 131072 bytes)
+========================= [SUCCESS] Took 1.17 seconds =========================
+
+Environment           Status    Duration
+--------------------  --------  ------------
+sender_arq            SUCCESS   00:00:01.181
+receiver_arq          SUCCESS   00:00:01.180
+sender_arq_test       SUCCESS   00:00:01.173
+receiver_arq_test     SUCCESS   00:00:01.228
+sender_reverse_raw    SUCCESS   00:00:01.174
+receiver_reverse_raw  SUCCESS   00:00:01.167
+========================= 6 succeeded in 00:00:07.104 =========================

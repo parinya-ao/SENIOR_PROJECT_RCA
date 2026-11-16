@@ -1,11 +1,10 @@
 """Strict firmware identity framing and readback fingerprint comparison."""
 
+import re
 from dataclasses import dataclass
 from datetime import datetime
-import re
 
-from .evidence import FirmwareIdentity, ROLES
-
+from .evidence import ROLES, FirmwareIdentity
 
 _V1_MARKER = re.compile(
     rb"^\[(SENDER|RECEIVER)\] ID V1 (sender|sender_hello|receiver) "
@@ -17,10 +16,19 @@ _LEGACY_MARKER = re.compile(
     rb"([A-Z][a-z]{2} {1,2}\d{1,2} \d{4}) "
     rb"(\d{2}:\d{2}:\d{2})\r\n$"
 )
+_RECORD_DATA = 0
+_RECORD_EOF = 1
+_RECORD_SEGMENT_ADDRESS = 2
+_RECORD_LINEAR_ADDRESS = 4
+_RECORD_START_ADDRESS_TYPES = (3, 5)
+_MIN_RECORD_LENGTH = 5
+_ADDRESS_RECORD_LENGTH = 2
 
 
 @dataclass(frozen=True)
 class IdentityParseResult:
+    """Status and decoded identities from one firmware log stream."""
+
     status: str
     identity: FirmwareIdentity | None = None
     identities: tuple[FirmwareIdentity, ...] = ()
@@ -29,6 +37,8 @@ class IdentityParseResult:
 
 @dataclass(frozen=True)
 class FirmwareReference:
+    """Reference image metadata for an application-region comparison."""
+
     role: str
     build_id: str
     ihex: str
@@ -39,6 +49,8 @@ class FirmwareReference:
 
 @dataclass(frozen=True)
 class FingerprintResult:
+    """Outcome and matching identities from flash fingerprint comparison."""
+
     status: str
     identity: FirmwareIdentity | None = None
     matches: tuple[FirmwareIdentity, ...] = ()
@@ -46,6 +58,7 @@ class FingerprintResult:
 
 
 def crc8(data: bytes) -> int:
+    """Return the CRC-8 checksum used by the V1 identity frame."""
     value = 0
     for byte in data:
         value ^= byte
@@ -63,13 +76,18 @@ def _valid_build(role: str, build: str) -> bool:
 def _valid_timestamp(date: bytes, time: bytes) -> bool:
     try:
         normalized_date = " ".join(date.decode("ascii").split())
-        datetime.strptime(f"{normalized_date} {time.decode('ascii')}", "%b %d %Y %H:%M:%S")
-        return True
+        datetime.strptime(
+            f"{normalized_date} {time.decode('ascii')}", "%b %d %Y %H:%M:%S"
+        )
     except (UnicodeDecodeError, ValueError):
         return False
+    else:
+        return True
 
 
-def parse_identity_stream(data: bytes | str) -> IdentityParseResult:
+def parse_identity_stream(
+    data: bytes | str,
+) -> IdentityParseResult:
     """Parse complete CRLF records; an invalid candidate invalidates the stream."""
     if isinstance(data, str):
         try:
@@ -102,9 +120,9 @@ def parse_identity_stream(data: bytes | str) -> IdentityParseResult:
                 malformed.append("V1 identity checksum mismatch")
                 continue
             date_text = " ".join(date.decode().split())
-            found.append(FirmwareIdentity(
-                role, f"{build}@{date_text}T{time.decode()}", 1, expected, "crc8"
-            ))
+            found.append(
+                FirmwareIdentity(role, f"{build}@{date_text}T{time.decode()}", 1, expected, "crc8")
+            )
         else:
             match = _LEGACY_MARKER.fullmatch(line)
             if match is None:
@@ -117,9 +135,11 @@ def parse_identity_stream(data: bytes | str) -> IdentityParseResult:
                 malformed.append("legacy role/build/timestamp mismatch")
                 continue
             date_text = " ".join(date.decode().split())
-            found.append(FirmwareIdentity(
-                role, f"{build}@{date_text}T{time.decode()}", 0, None, "line-framed"
-            ))
+            found.append(
+                FirmwareIdentity(
+                    role, f"{build}@{date_text}T{time.decode()}", 0, None, "line-framed"
+                )
+            )
 
     if malformed:
         return IdentityParseResult("MALFORMED", details=tuple(malformed))
@@ -133,8 +153,9 @@ def parse_identity_stream(data: bytes | str) -> IdentityParseResult:
     if not identities:
         return IdentityParseResult("NONE")
     if len(identities) != 1:
-        return IdentityParseResult("AMBIGUOUS", identities=identities,
-                                   details=("conflicting firmware identities",))
+        return IdentityParseResult(
+            "AMBIGUOUS", identities=identities, details=("conflicting firmware identities",)
+        )
     return IdentityParseResult("VALID", identity=identities[0], identities=identities)
 
 
@@ -146,46 +167,61 @@ def _parse_ihex(text: str) -> dict[int, int]:
         if not line:
             continue
         if eof or not line.startswith(":"):
-            raise ValueError(f"invalid Intel HEX record at line {line_number}")
+            msg = f"invalid Intel HEX record at line {line_number}"
+            raise ValueError(msg)
         try:
             record = bytes.fromhex(line[1:])
         except ValueError as exc:
-            raise ValueError(f"invalid Intel HEX bytes at line {line_number}") from exc
-        if len(record) < 5 or record[0] != len(record) - 5 or sum(record) & 0xFF:
-            raise ValueError(f"invalid Intel HEX length/checksum at line {line_number}")
+            msg = f"invalid Intel HEX bytes at line {line_number}"
+            raise ValueError(msg) from exc
+        if (
+            len(record) < _MIN_RECORD_LENGTH
+            or record[0] != len(record) - _MIN_RECORD_LENGTH
+            or sum(record) & 0xFF
+        ):
+            msg = f"invalid Intel HEX length/checksum at line {line_number}"
+            raise ValueError(msg)
         length, offset, record_type = record[0], int.from_bytes(record[1:3], "big"), record[3]
-        data = record[4:4 + length]
-        if record_type == 0:
+        data = record[4 : 4 + length]
+        if record_type == _RECORD_DATA:
             start = upper + offset
             for index, byte in enumerate(data):
                 address = start + index
                 if address in memory and memory[address] != byte:
-                    raise ValueError(f"conflicting Intel HEX data at address 0x{address:X}")
+                    msg = f"conflicting Intel HEX data at address 0x{address:X}"
+                    raise ValueError(msg)
                 memory[address] = byte
-        elif record_type == 1:
+        elif record_type == _RECORD_EOF:
             if length != 0 or offset != 0:
-                raise ValueError(f"invalid Intel HEX EOF at line {line_number}")
+                msg = f"invalid Intel HEX EOF at line {line_number}"
+                raise ValueError(msg)
             eof = True
-        elif record_type == 2:
-            if length != 2:
-                raise ValueError(f"invalid Intel HEX segment address at line {line_number}")
+        elif record_type == _RECORD_SEGMENT_ADDRESS:
+            if length != _ADDRESS_RECORD_LENGTH:
+                msg = f"invalid Intel HEX segment address at line {line_number}"
+                raise ValueError(msg)
             upper = int.from_bytes(data, "big") << 4
-        elif record_type == 4:
-            if length != 2:
-                raise ValueError(f"invalid Intel HEX linear address at line {line_number}")
+        elif record_type == _RECORD_LINEAR_ADDRESS:
+            if length != _ADDRESS_RECORD_LENGTH:
+                msg = f"invalid Intel HEX linear address at line {line_number}"
+                raise ValueError(msg)
             upper = int.from_bytes(data, "big") << 16
-        elif record_type not in (3, 5):
-            raise ValueError(f"unsupported Intel HEX record type {record_type}")
+        elif record_type not in _RECORD_START_ADDRESS_TYPES:
+            msg = f"unsupported Intel HEX record type {record_type}"
+            raise ValueError(msg)
     if not eof:
-        raise ValueError("Intel HEX EOF record is missing")
+        msg = "Intel HEX EOF record is missing"
+        raise ValueError(msg)
     return memory
 
 
 def normalize_ihex_region(text: str, app_start: int, app_end: int) -> bytes:
+    """Expand sparse Intel HEX data over the requested erased-byte-filled region."""
     if app_start < 0 or app_end <= app_start:
-        raise ValueError("invalid application flash region")
+        msg = "invalid application flash region"
+        raise ValueError(msg)
     memory = _parse_ihex(text)
-    normalized = bytearray(b"\xFF" * (app_end - app_start))
+    normalized = bytearray(b"\xff" * (app_end - app_start))
     for address, byte in memory.items():
         if app_start <= address < app_end:
             normalized[address - app_start] = byte
@@ -214,7 +250,9 @@ def match_flash_fingerprint(
     matches: list[FirmwareIdentity] = []
     for reference in references:
         if (reference.flash_size, reference.app_start, reference.app_end) != (
-            flash_size, app_start, app_end
+            flash_size,
+            app_start,
+            app_end,
         ):
             continue
         try:
@@ -222,14 +260,16 @@ def match_flash_fingerprint(
         except ValueError:
             continue
         if actual == expected and reference.role in ROLES:
-            matches.append(FirmwareIdentity(reference.role, reference.build_id,
-                                            0, None, "flash-fingerprint"))
+            matches.append(
+                FirmwareIdentity(reference.role, reference.build_id, 0, None, "flash-fingerprint")
+            )
     if not matches:
         return FingerprintResult("NO_MATCH", details=("no exact application image match",))
     unique = {(identity.role, identity.build_id): identity for identity in matches}
     if len(unique) != 1:
         identities = tuple(unique.values())
-        return FingerprintResult("AMBIGUOUS", matches=identities,
-                                 details=("multiple references match the same image",))
+        return FingerprintResult(
+            "AMBIGUOUS", matches=identities, details=("multiple references match the same image",)
+        )
     identity = next(iter(unique.values()))
     return FingerprintResult("MATCH", identity=identity, matches=(identity,))

@@ -1,9 +1,0 @@
-epoch_id,domain,cause,score,status
-RCA_FRESH_01,D1,Host/software/USB,0,UNRESOLVED
-RCA_FRESH_01,D2,Adapter unit,0,UNRESOLVED
-RCA_FRESH_01,D3,External UPDI harness/resistor,0,UNRESOLVED
-RCA_FRESH_01,D4,Separate power board/supply,0,UNRESOLVED
-RCA_FRESH_01,D5,Target power/GND,0,UNRESOLVED
-RCA_FRESH_01,D6,Target UPDI assembly,0,UNRESOLVED
-RCA_FRESH_01,D7,AVR silicon/reset/config,0,UNRESOLVED
-RCA_FRESH_01,D8,Firmware/runtime/ACC,0,UNRESOLVED

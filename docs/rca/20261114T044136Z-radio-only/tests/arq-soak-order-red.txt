@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 39, in test_soak_stages_cannot_skip_failed_or_unrun_predecessors
+~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : soak stage progression gate is required
+
+FAILED (failures=1)
+[full output: rtk recall 89e4164bf5942138]

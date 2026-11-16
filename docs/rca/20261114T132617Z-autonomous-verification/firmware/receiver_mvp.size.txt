@@ -1,0 +1,18 @@
+/home/parinya/university/SENIOR_PROJECT_RCA/.pio/build/receiver_mvp/firmware.elf  :
+section                      size      addr
+.data                         838   8404992
+.text                       30640         0
+.bss                          552   8405830
+.comment                       17         0
+.note.gnu.avr.deviceinfo       64         0
+.debug_aranges                432         0
+.debug_info                 77145         0
+.debug_abbrev               11427         0
+.debug_line                 16683         0
+.debug_frame                 6748         0
+.debug_str                  12392         0
+.debug_loc                  51354         0
+.debug_ranges                2400         0
+Total                      210692
+
+

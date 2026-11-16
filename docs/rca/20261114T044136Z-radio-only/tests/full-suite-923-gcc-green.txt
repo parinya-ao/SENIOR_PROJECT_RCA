@@ -1,0 +1,52 @@
+.........ARQ core: PASS
+.usage: arq_trial [-h] (--campaign | --mvp | --prepare | --validate VALIDATE |
+                 --reverse-raw | --reverse-raw-no-tracker-reader |
+                 --reader-free-h01 | --tracker-rx-idle-control)
+                 [--rf-path-confirmed]
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+usage: arq_trial [-h] (--campaign | --mvp | --prepare | --validate VALIDATE |
+                 --reverse-raw | --reverse-raw-no-tracker-reader |
+                 --reader-free-h01 | --tracker-rx-idle-control)
+                 [--rf-path-confirmed]
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+....................................usage: python -m unittest [-h] [--scan | --watch | --self-test] [--json]
+                          [--explain] [--registry REGISTRY] [--probe-updi]
+                          [--probe-firmware] [--probe-flash] [--hardware-safe]
+                          [--authorize-flash-read] [--boot-layout-verified]
+                          [--baudrate BAUDRATE]
+                          [--probe-timeout PROBE_TIMEOUT]
+                          [--poll-interval POLL_INTERVAL]
+python -m unittest: error: UPDI probes require --hardware-safe after physical wiring checks
+..........................................................................................begin -> carrier E4C000 -> IRQ read/W1C -> TX/FIFO -> finish 833us/standby -> RX -> FIFO/CRC/clear: PASS
+begin -> carrier E4C000 -> IRQ read/W1C -> TX/FIFO -> finish 833us/standby -> RX -> FIFO/CRC/clear: PASS
+.........In file included from tests/rca_errata_test.cpp:3:
+tests/radiolib_hal_test.cpp: In function ‘int characterized_driver_main()’:
+tests/radiolib_hal_test.cpp:85:1: warning: control reaches end of non-void function [-Wreturn-type]
+   85 | }
+      | ^
+real driver errata option: modeled RX registers verified; no RF inference
+In file included from tests/rca_errata_test.cpp:3:
+tests/radiolib_hal_test.cpp: In function ‘int characterized_driver_main()’:
+tests/radiolib_hal_test.cpp:85:1: warning: control reaches end of non-void function [-Wreturn-type]
+   85 | }
+      | ^
+real driver errata option: modeled RX registers verified; no RF inference
+.............................usage: python -m unittest [-h] evidence
+python -m unittest: error: the following arguments are required: evidence
+.............s...........................usage: arq_trial [-h] (--campaign | --mvp | --prepare | --validate VALIDATE |
+                 --reverse-raw | --reverse-raw-no-tracker-reader |
+                 --reader-free-h01 | --tracker-rx-idle-control)
+                 [--rf-path-confirmed]
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+.....................<MagicMock name='campaign()' id='139966522129584'>
+{"standby_evidence": "/tmp/tmpwltqwm4h/standby"}
+run-dir
+run-dir
+HOST_SIMULATION DATA_ACK=PASS DATA=1 PAYLOAD_MATCH=11/11 ACK=1 RETRIES=0 EEPROM_WRITES=0
+[gateway] [GATEWAY] RADIO_SPI_VERSION=0x12
+[gateway] [GATEWAY] RF_TX_DISABLED_DIAGNOSTIC
+..................................................................
+----------------------------------------------------------------------
+Ran 301 tests in 12.427s
+
+OK (skipped=1)

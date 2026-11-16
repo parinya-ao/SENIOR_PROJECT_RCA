@@ -1,5 +1,0 @@
-run_dir=artifacts/rf-proof/20261106T104722Z-target-backup
-operation=read-only target backup; no writes requested
-tool=/home/parinya/.platformio/packages/tool-avrdude/avrdude
-config=/home/parinya/.platformio/packages/tool-avrdude/avrdude.conf
-baud=115200

@@ -1,0 +1,62 @@
+test_duration_stage_requires_recorded_monotonic_span (test_arq_soak.ArqSoakPlanTests.test_duration_stage_requires_recorded_monotonic_span) ... ERROR
+test_paced_sessions_enforce_start_spacing_and_stop_on_failure (test_arq_soak.ArqSoakPlanTests.test_paced_sessions_enforce_start_spacing_and_stop_on_failure) ... ok
+test_sf7_airtime_uses_max_wire_frame_and_response_lengths (test_arq_soak.ArqSoakPlanTests.test_sf7_airtime_uses_max_wire_frame_and_response_lengths) ... ok
+test_soak_campaign_blocks_a_later_stage_without_prior_pass_receipts (test_arq_soak.ArqSoakPlanTests.test_soak_campaign_blocks_a_later_stage_without_prior_pass_receipts) ... ERROR
+test_soak_campaign_does_not_pass_when_any_session_fails (test_arq_soak.ArqSoakPlanTests.test_soak_campaign_does_not_pass_when_any_session_fails) ... ERROR
+test_soak_campaign_persists_pass_receipt_for_next_stage (test_arq_soak.ArqSoakPlanTests.test_soak_campaign_persists_pass_receipt_for_next_stage) ... ERROR
+test_soak_cli_dispatches_the_verified_stage_plan (test_arq_soak.ArqSoakPlanTests.test_soak_cli_dispatches_the_verified_stage_plan) ... ERROR
+test_soak_cli_fails_closed_without_power_and_rf_readiness (test_arq_soak.ArqSoakPlanTests.test_soak_cli_fails_closed_without_power_and_rf_readiness) ... ok
+test_soak_plan_rejects_unknown_stage (test_arq_soak.ArqSoakPlanTests.test_soak_plan_rejects_unknown_stage) ... ok
+test_soak_plan_reports_firmware_retry_spacing_duty (test_arq_soak.ArqSoakPlanTests.test_soak_plan_reports_firmware_retry_spacing_duty) ... ok
+test_soak_stages_cannot_skip_failed_or_unrun_predecessors (test_arq_soak.ArqSoakPlanTests.test_soak_stages_cannot_skip_failed_or_unrun_predecessors) ... ok
+test_soak_summary_reports_success_ci_retries_and_sample_limits (test_arq_soak.ArqSoakPlanTests.test_soak_summary_reports_success_ci_retries_and_sample_limits) ... ok
+test_stage_plan_is_paced_for_worst_case_retries (test_arq_soak.ArqSoakPlanTests.test_stage_plan_is_paced_for_worst_case_retries) ... ok
+
+======================================================================
+ERROR: test_duration_stage_requires_recorded_monotonic_span (test_arq_soak.ArqSoakPlanTests.test_duration_stage_requires_recorded_monotonic_span)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 141, in test_duration_stage_requires_recorded_monotonic_span
+    arq_trial.soak_campaign("1-hour",confirmed_rf_preflight())
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: soak_campaign() takes 1 positional argument but 2 were given
+
+======================================================================
+ERROR: test_soak_campaign_blocks_a_later_stage_without_prior_pass_receipts (test_arq_soak.ArqSoakPlanTests.test_soak_campaign_blocks_a_later_stage_without_prior_pass_receipts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 60, in test_soak_campaign_blocks_a_later_stage_without_prior_pass_receipts
+    arq_trial.soak_campaign("100-sessions",confirmed_rf_preflight())
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: soak_campaign() takes 1 positional argument but 2 were given
+
+======================================================================
+ERROR: test_soak_campaign_does_not_pass_when_any_session_fails (test_arq_soak.ArqSoakPlanTests.test_soak_campaign_does_not_pass_when_any_session_fails)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 115, in test_soak_campaign_does_not_pass_when_any_session_fails
+    arq_trial.soak_campaign("10-sessions",confirmed_rf_preflight())
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: soak_campaign() takes 1 positional argument but 2 were given
+
+======================================================================
+ERROR: test_soak_campaign_persists_pass_receipt_for_next_stage (test_arq_soak.ArqSoakPlanTests.test_soak_campaign_persists_pass_receipt_for_next_stage)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 94, in test_soak_campaign_persists_pass_receipt_for_next_stage
+    run=arq_trial.soak_campaign("10-sessions",confirmed_rf_preflight())
+TypeError: soak_campaign() takes 1 positional argument but 2 were given
+
+======================================================================
+ERROR: test_soak_cli_dispatches_the_verified_stage_plan (test_arq_soak.ArqSoakPlanTests.test_soak_cli_dispatches_the_verified_stage_plan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 171, in test_soak_cli_dispatches_the_verified_stage_plan
+    self.assertTrue(campaign.call_args.args[1].power_verified)
+                    ~~~~~~~~~~~~~~~~~~~~~~~^^^
+IndexError: tuple index out of range
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.011s
+
+FAILED (errors=5)

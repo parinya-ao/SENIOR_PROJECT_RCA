@@ -140,6 +140,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!/lib/
+!/lib/**
 !src/lib/
 src/lib/*/
 !src/lib/lora/
@@ -431,3 +433,13 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/linux,windows,macos,vim,python,java,c++,nesc,pythonvanilla,ruby
 
+*.bin
+*.json
+*.jsonl
+*.hex
+artifacts/
+*.elf
+.agents/
+.automation/
+.claude/
+.continue/

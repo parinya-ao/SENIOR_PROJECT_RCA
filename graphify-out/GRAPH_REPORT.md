@@ -1,677 +1,685 @@
-# Graph Report - lora  (2026-11-06)
+# Graph Report - SENIOR_PROJECT_RCA  (2026-11-16)
 
 ## Corpus Check
-- 3394 files · ~2,896,845 words
+- 360 files · ~267,502 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 752 file(s) not represented in the graph (top: .sha256 309, .stderr 136, .stdout 136)
+- Unclassified: 24 file(s) not represented in the graph (top: (none) 7, .diff 5, .toml 3)
 
 ## Summary
-- 4358 nodes · 6924 edges · 331 communities (261 shown, 70 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 456 edges (avg confidence: 0.89)
+- 4958 nodes · 8555 edges · 424 communities (281 shown, 143 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 585 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `af6b7c6a`
+- Built from commit: `0bf0c3e4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- Communities (299 total, 62 thin omitted)
-- PymcuprogSerialUpdiNvmTimeout
-- Communities (179 total, 52 thin omitted)
-- Backend
-- classify_crossover
-- HardwareGateTests
-- UpdiPhysical
-- cp210x.c
-- hello_protocol.cpp
-- pymcuprog_errors.py
-- NvmUpdiP0
-- finalize.py
-- SEO optimization
-- UPDI
-- Python Testing Patterns — Advanced Reference
-- UPDI
-- UPDI
-- UPDI
-- test_fresh.py
-- Changelog
-- LoRa
-- D2 — Modern Diagram Generation
-- AvrDebugger
-- Per-attempt evidence and timing
-- UpdiDatalink
-- re
-- json
-- Optional arguments and switches
-- pymcuprog - Python MCU programmer
-- TinyXAvrTarget
-- .claude/skills/d2/render.py
-- probes.py
-- PROMPT.md
-- Python Code Executor
-- lora_rx.cpp
-- AvrDevice
-- TaskLoraRx
-- Fundamental Patterns
-- DetectionIntegrationTests
-- classify.py
-- identity.py
-- NvmUpdiP5
-- NvmAccessProviderCmsisDapUpdi
-- pymcuprog_main.py
-- demo.c
-- AVR128DA28 UPDI root-cause report
-- cp210x.c
-- NvmAccessProviderCmsisDapSpi
-- D2 — Modern Diagram Generation
-- Lane A
+- Task
+- Debug.h
 - .TASK
-- Optional arguments and switches
-- effective_project_sections
-- os
-- snapshot_pairing
-- PtyTests
-- Avr32Device
-- State
-- SamTarget
-- UpdiPhysical
-- test_board_swap.py
-- device
-- pathlib
-- Fresh UPDI RCA — RCA_FRESH_01
-- 14. Phase-by-phase investigation
-- NvmAccessProvider
-- test_probes.py
-- TransportTests
-- test_physical.py
-- pymcuprog.py
-- Q host inventory — RCA_POST_SWAP_01 / CROSSED_UNTOUCHED
-- AVR128DA28 BREAK / LOCAL_ECHO focused RCA
-- AVR128DA28 board-swap RCA — PRE NO-GO checkpoint
-- FirmwareIdentityTests
-- test_classifier.py
-- Accessibility (a11y)
-- Syntax cheat-sheet (most-used)
-- _ReadOnlyLink
-- test_post_swap.py
-- Console
-- SX1276
-- test_identity.py
-- test_rf_proof.py
-- WCAG 2.2 Quick Reference
-- graphify/manifest.json
-- Usage
-- NvmUpdiP3
-- AVR128DA28 Dual-Board UPDI Root-Cause Analysis
-- AVR128DA28 UPDI RCA — Continuation `RCA_CROSSOVER_01`
-- 17. Hypothesis inventory and evidence model
-- PymcuprogError
-- Official-source review: AVR128DA target and power path
-- Board-swap physical freeze
-- Tasks
-- Board Swap RCA State
 - Port
-- .test_rf_test_sends_one_c_to_gateway_after_correlated_seq1_ack
-- NvmUpdiP4
+- RepositoryIsolationTests
+- FakeRadio
+- config
+- require
+- generate_lora_config.py
+- ring_buffer.h
+- Task
+- SEO optimization
+- AGENTS.md — AVR128DA28 / LoRa Embedded Engineering
+- Python Testing Patterns — Advanced Reference
+- DeviceLayout
+- PlatformResult
+- UPDI
+- Config
+- config
+- codec.cpp
+- Hardware
+- ReverseRawTests
+- config
+- src/mvp/main.cpp
+- device.h
+- RCATests
+- Task
+- detect_devices.py
+- EventId
+- ProvisioningResult
+- Python Code Executor
+- UPDI-only Hello World MVP — STAR report
+- MvpRoundtripTests
+- config
+- Fundamental Patterns
+- config
+- Forensic RCA — reverse raw LoRa, 2026-11-13
+- GNSS
+- source/src/ssot.c
+- time
+- rf_proof.py
+- pathlib
+- role_detector.py
+- Pin Mapping Audit — AVR128DA28 / RFM95W
+- config
+- Json
+- RadioBringupTests
+- symmetric_fixture
+- config
+- ErrataDiagnosticsTests
+- ._run_capture
+- DebugConsoleTests
+- usb_inventory.py
+- require
+- Gateway-to-Receiver SF7 Hello World
+- ReceiveTests
+- TaskScheduler
+- Autonomous engineering verification — 2026-11-14
+- Accessibility (a11y)
+- radio
+- config
+- 20261113T142138Z/manifest.json
+- SX1276
+- radio
+- State
+- WCAG 2.2 Quick Reference
+- Gate 1 source and safety audit
+- pins
+- pins
+- Gate1Tests
+- rca-20261113/README.md
+- firmware_identity.py
+- config
+- provenance/manifest.json
+- 20261113T074154Z/manifest.json
+- config
+- config
+- radio
+- radio
 - Accessibility Code Patterns
 - Operable
-- 20261027T052038Z/STAR_RCA.md
-- RCA_FRESH_01 — rerun 20261027T052038Z
+- radio
+- progress.md
 - State
-- Connect to a virtual UART on an AVR via UPDI
-- Design principles — what makes the output "professional"
-- UpdiApplication
-- AVR128DA28 UPDI console engineering report
-- rca/updi/README.md
-- RCA_PHY_01 — External Path Investigator
-- Pin Mapping Audit — AVR128DA28 / RFM95W
-- test_continuation.py
-- ScratchTests
-- XmegaAvrTarget
-- Hardware Preflight Report
+- Gate 1 source audit
+- PROTOCOL.md
+- STANDARDS.md
+- TEST_PLAN.md
+- pins
+- radio
+- radio
+- radio
+- radio
+- radio
+- pins
 - Connect to a virtual UART on an AVR via UPDI
 - Common ARIA patterns
 - Understandable
-- D2-Diagram-Skill
-- Frame
-- role_log.h
-- Q crossed-untouched SIB-only batch — POST-00130
-- D2-Diagram-Skill
-- Syntax cheat-sheet (most-used)
-- role_log_test.cpp
-- STAR
-- How to run an RCA: the actual process
-- Continuation State
-- Evidence log
-- Lane B
-- RCA_POST_SWAP_01 — Lane P inventory
+- pins
+- complete_campaign_logs
+- pins
+- pins
+- 20261113T074705Z/H01/provenance/manifest.json
+- 20261113T074705Z/manifest.json
+- 20261113T075357Z/H01/provenance/manifest.json
+- 20261113T075357Z/manifest.json
+- Gate 1 source audit
+- pins
+- pins
+- src/sleep.cpp
+- 20261113T153146Z/manifest.json
 - Frontend Design
-- Investigation decisions
-- DuplicateTracker
-- AVR128DA28 untouched crossed-state RCA
-- 19. Evidence standards for root-cause claims
-- Frequently asked questions
-- fresh/memory/HANDOFF.md
-- Handoff — `RCA_CROSSOVER_01`
-- Target Electrical Investigator — RCA_PHY_01
-- observe
-- Design principles — what makes the output "professional"
-- 11. TDD requirements for host automation
-- Common mistakes that make RCA useless
-- The five RCA methods, explained with worked examples
-- Focused physical-layer RCA plan
-- Investigation Handoff
-- Post-swap physical freeze
-- RCA_BOARD_SWAP_01 execution plan
-- MegaAvrJtagTarget
-- Console
-- Specialized diagram syntax (quick reference)
-- library.json
-- pymcuprog/nvm.py
-- Bash Defensive Patterns
-- .automation/research/pymcuprog/pymcuprog/avr32target.py
-- .automation/research/pymcuprog/pymcuprog/avr8target.py
-- .automation/research/pymcuprog/pymcuprog/avrdebugger.py
-- .automation/research/pymcuprog/pymcuprog/backend.py
-- .automation/research/pymcuprog/pymcuprog/hexfileutils.py
-- .automation/research/pymcuprog/pymcuprog/__init__.py
-- .automation/research/pymcuprog/pymcuprog/nvm.py
-- .automation/research/pymcuprog/pymcuprog/nvmavr32.py
-- .automation/research/pymcuprog/pymcuprog/nvmdebugwire.py
-- .automation/research/pymcuprog/pymcuprog/nvmmegaavrjtag.py
-- .automation/research/pymcuprog/pymcuprog/nvmmzeroplus.py
-- .automation/research/pymcuprog/pymcuprog/nvmpic.py
-- .automation/research/pymcuprog/pymcuprog/nvmserialupdi.py
-- .automation/research/pymcuprog/pymcuprog/nvmspi.py
-- .automation/research/pymcuprog/pymcuprog/nvmtpi.py
-- .automation/research/pymcuprog/pymcuprog/nvmxmega.py
-- .automation/research/pymcuprog/pymcuprog/pymcuprog_errors.py
-- .automation/research/pymcuprog/pymcuprog/pymcuprog_main.py
-- .automation/research/pymcuprog/pymcuprog/pymcuprog.py
-- .automation/research/pymcuprog/pymcuprog/samtarget.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/application.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/constants.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/__init__.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/link.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/nvm.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/nvmp0.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/nvmp2.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/nvmp3.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/nvmp4.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/nvmp5.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/physical.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/readwrite.py
-- .automation/research/pymcuprog/pymcuprog/serialupdi/timeout.py
-- .automation/research/pymcuprog/pymcuprog/toolconnection.py
-- .automation/research/pymcuprog/pymcuprog/utils.py
-- .automation/updi-baseline/src/receiver/main.cpp
-- docs/updi-console-report.md
-- docs/updi-progress.md
-- evidence/updi/baseline-default-trace.json
-- evidence/updi/baseline-programming-baud-trace.json
-- evidence/updi/baseline-reset-trace.json
-- evidence/updi/baseline-terminal.json
-- evidence/updi/baseline-trace.json
-- evidence/updi/deep-debug/01-snapshot.json
-- evidence/updi/deep-debug/02-control.json
-- evidence/updi/deep-debug/03-oracle-snapshot.json
-- evidence/updi/deep-debug/04-startup.json
-- evidence/updi/deep-debug/05-revid.json
-- evidence/updi/deep-debug/06-read-0x1c.json
-- evidence/updi/deep-debug/06-read-0x1d.json
-- evidence/updi/deep-debug/06-read-0x1e.json
-- evidence/updi/deep-debug/06-read-0x1f.json
-- evidence/updi/deep-debug/06-read-0x40.json
-- evidence/updi/deep-debug/06-read-0x63.json
-- evidence/updi/deep-debug/07-startup.json
-- evidence/updi/deep-debug/08-sib.json
-- evidence/updi/deep-debug/09-official-control.json
-- evidence/updi/deep-debug/10-key-snapshot.json
-- evidence/updi/deep-debug/11-bor-clear.json
-- evidence/updi/deep-debug/12-bod-intctrl.json
-- evidence/updi/deep-debug/13-scratch.json
-- evidence/updi/deep-debug/14-startup.json
-- evidence/updi/deep-debug/15-bod-0x80.json
-- evidence/updi/deep-debug/15-bod-0x81.json
-- evidence/updi/deep-debug/15-bod-0x88.json
-- evidence/updi/deep-debug/15-bod-0x89.json
-- evidence/updi/deep-debug/15-bod-0x8a.json
-- evidence/updi/deep-debug/15-bod-0x8b.json
-- evidence/updi/deep-debug/16-official-break-revid.json
-- evidence/updi/deep-debug/17-progmode.json
-- evidence/updi/deep-debug/18-after-prog-exit.json
-- evidence/updi/deep-debug/19-post-exit.json
-- evidence/updi/deep-debug/20-key-after-prog.json
-- evidence/updi/deep-debug/21-bor-marker.json
-- evidence/updi/deep-debug/22-diagnostic-reset.json
-- evidence/updi/deep-debug/23-extra-0x100.json
-- evidence/updi/final-failure-trace.json
-- evidence/updi/final-terminal-gate.json
-- evidence/updi/patched-default-trace.json
-- evidence/updi/patched-first-failure.json
-- evidence/updi/status-snapshot.txt
-- external/upditerm/demo.c
-- external/upditerm/README.md
-- external/upditerm/updi_stdio.c
-- external/upditerm/updi_stdio.h
-- external/upditerm/updi_uart.c
-- external/upditerm/updi_uart.h
-- external/upditerm/upditerm.py
-- get-platformio.py
-- patches/upditerm/README.md
-- pyproject.toml
-- README.md
-- src/lora/__init__.py
-- src/receiver/main.cpp
-- src/sender/main.cpp
-- test/test_upditerm.py
-- tools/updi-session.py
-- tools/updi-sib.sh
-- role_detector.py
-- 5. Two-subagent architecture: exactly two workers
-- When RCA is worth running
-- Path Q lane — RCA_BOARD_SWAP_01
-- Post-swap handoff
-- Board Swap Evidence Log
-- Specialized diagram syntax (quick reference)
-- sys
-- Common issues by impact
-- Fresh Q ownership check — read only
-- Q PRE host-tool failures
-- Theme (color palette) — ask the user first
-- 4. Hard safety and scope constraints
-- 8. Persistent memory policy
-- Path Q — RCA_POST_SWAP_01 crossed-untouched
-- Untouched crossed-state implementation plan
-- Theme (color palette) — ask the user first
+- config
+- guard-100/manifest.json
+- guard-50/H01/provenance/manifest.json
+- guard-50/manifest.json
+- Gate 1 source audit
+- tools/arq_trial.py
+- 20261113T211753Z/README.md
+- config
+- Gate 1 source audit
+- Bus
+- arduino
+- install
+- source/src/mvp/main.cpp
+- TracePort
+- src/arq/main.cpp
+- Gate 1 live UPDI report — 20261113T153146Z
 - updi_probe.py
-- TinyAvrTarget
-- detect_devices.py
-- Testing checklist
-- Lane B pre-crossover execution record
-- capture_inventory.sh
-- preflight.sh
-- USB topology and sysfs snapshot
-- enum
-- Focused Decisions
-- Post-swap RCA state
-- Investigation Sources
-- Board Swap Decisions
-- 20261027T052038Z/PLAN.md
-- terminal-observation-20261026.md
-- artifacts/updi/README.md
-- progress.md
-- FOCUSED_CURRENT_STATE.md
-- POST_SWAP_DECISIONS.md
-- POST_SWAP_EVIDENCE_LOG.md
-- POST_SWAP_SOURCES.md
-- patches/upditerm/README.md
-- updi-sib.sh
+- Gateway Hardware SSOT — Rudolph Gateway
+- CaptureTests
+- radio
+- radio
+- STAR — Tracker→Rudolph receiver errata and transport follow-up
+- Bash Defensive Patterns
+- Storage
+- pins
+- pins
+- Final RCA — Tracker to Gateway LoRa ARQ V1
+- 20261113T084503Z/H01/provenance/manifest.json
+- 20261113T084503Z/manifest.json
+- radio
+- mcurses.c
+- Logger
+- Gate 1 source audit
+- Raw LoRa ARQ V1 — STAR report
+- Evidence index
+- RADIOLIB.md
+- RADIO_ONLY_FINAL_REPORT.md
+- platformio_generate.py
+- runtime-versions.json
+- Console
+- Tracker Hardware SSOT — LoRa Tracker RFM
+- stdio
+- soak_campaign
+- 20261114T094223Z-soak-validation/FINAL_RCA.md
+- ReliableTransport
+- Gate 1 source audit
+- Gate 1 source audit
+- Gate 1 source audit
+- ERRATA_FOLLOWUP_STAR.md
+- RingBuffer
+- 915 MHz deployment and bidirectional diagnostic verification
+- SSOT review — Tracker, Gateway and reverse-raw role mapping
 - ScanResult
-- time
-- firmware_identity.py
-- Graph Report - lora  (2026-10-27)
+- Gate 1 source audit
+- Gate 1 source audit
+- Proposed discriminating experiments — NOT executed or authorized here
+- main
+- Gate 1 source audit
+- Gate 1 live UPDI report — 20261113T153146Z
+- Gate 1 source audit
+- Gate 1 source audit
+- Gate 1 source audit
+- Gate 1 source audit
+- Gate 1 source audit
+- Gate 1 source audit
+- Gate 1 source audit
+- ReaderFreeH01SummaryTests
+- Gate 1 source audit
+- Execution journal
+- .test_runner_uses_receiver_ready_then_one_gateway_start
+- ReceiveTests
+- Execution Summary
+- UPDI
+- LoRa
+- prebuild-20261113T192904Z/manifest.json
+- Gate 1 source audit
+- pins
+- Gate 1 source audit
+- os
+- BASELINE.md
+- FIXES.md
+- GATE1_ROOT_CAUSE.md
+- HARDWARE_MEASUREMENTS.md
+- LIVE_TOPOLOGY.md
+- Scope and baseline
+- REGRESSION.md
+- REVERSE_RF_ROOT_CAUSE.md
+- pins
+- 20261113T195218Z/H01/provenance/manifest.json
+- Gate 1 source audit
+- Baseline and scope
+- 20261113T195218Z/manifest.json
+- Source and transport audit
+- LoRa-only ARQ recovery — RCA continuation
+- Power and reset evidence
+- HardwareGateTests
+- assert
+- UPDI first-failure boundary
+- Program source finding — SX127x high-band mode
+- Final RCA — AVR128DA28 Tracker / RFM95W ARQ V1
+- files
+- Gate 1 source and safety audit
+- Power and Interface Topology
+- source/src/arq/main.cpp
+- PROGRAMMER_VERIFICATION.md
+- Gate 1 source audit
+- role_log_test.cpp
+- lora.cpp
+- SerialPort
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq/firmware.hex
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq/lora_build_identity.h
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq_test/firmware.elf
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq_test/firmware.hex
+- mvp_board.cpp
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq_test/lora_build_identity.h
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_reverse_raw/firmware.elf
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_reverse_raw/firmware.hex
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_reverse_raw/lora_build_identity.h
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq/firmware.elf
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq/firmware.hex
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq/lora_build_identity.h
+- Common issues by impact
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq_test/firmware.elf
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq_test/firmware.hex
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq_test/lora_build_identity.h
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_reverse_raw/firmware.elf
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_reverse_raw/firmware.hex
+- docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_reverse_raw/lora_build_identity.h
+- RawStorage
+- Reliability Results
+- Execution Journal
+- RecordedEvent
+- Testing checklist
+- External code and primary-source review
+- Long-Duration Hardware Soak Readiness — Final RCA Continuation
+- Matched Tracker RX-idle control
+- Hardware topology
+- Regression results
+- load_arq
+- 20261114T023251Z/FINAL_RCA.md
+- H01 reader-free hardware result
+- src/reverse_raw/main.cpp
+- arq.h
+- Experiment plan and next decision
+- ARQ and packet path
+- Root-cause analysis
+- Corrective actions
+- Source log
+- Terminal
+- Radio and protocol boundaries
+- lora/__init__.py
+- sleep/sleep.cpp
+- 04_hypothesis_register.md
 - lora
-- updi-rca
-- Graph Report - lora  (2026-10-27)
-- usb_inventory.py
-- pytest
-- classify_pairing_matrix
-- hello_protocol.h
-- updi-baseline/src/receiver/main.cpp
-- effective_platformio_config
-- test_device_reconnect.py
-- 9. CSV report schemas
-- TaskHeartbeat
-- Dut
+- Next discriminating experiment
+- firmware/README.md
+- instruments/README.md
+- plots/README.md
+- radio/README.md
+- raw/README.md
+- serial/README.md
+- updi/README.md
+- 06_HYPOTHESES.md
 - rf_proof.py
-- SamD2xTarget
+- PacketBoot
+- Implementation summary
+- Final RCA — LoRa ARQ Hardware Recovery
+- SenderStableTransportTests
+- Execution journal
+- EvidenceResult
+- Test-first and physical validation results
+- parse_raw_mvp_logs
+- RF Configuration and Toolchain Follow-up
+- compare_snapshots
+- Regression Results — Current Continuation
+- SX127x HF-mode verification
+- stdint
+- gate1_live.py
+- .test_runner_uses_receiver_ready_then_one_gateway_start
+- sd-utils.cpp
+- .test_reader_unexpected_exception_releases_idle_lock_for_cleanup
+- printf/printf.cpp
+- run_stable_ack_rf_test
+- .connect
+- Strict Python static analysis
+- LoRa-only diagnostic implementation
+- src/task.h
+- Level
+- PacketAdvertise
+- adc.cpp
+- SPIClass
+- Component
+- reliable_transport_test.cpp
+- Pair
+- PacketReportWithAck
+- stub/Arduino.h
+- Exact RadioLib and register audit
+- EventStats
+- StableLoraSafetyTests
+- Result
+- State
+- TaskI2CReset
+- parse_updi
+- verify_hashes
+- ReliableTransportTests
+- .emit
+- lora_rx.cpp
+- error
+- LossMetrics
+- radio_stub/RadioLib.h
+- stub/SPI.h
+- mvp_stub/Arduino.h
+- raw_mvp_stub/SPI.h
+- reader_free_h01_summary
+- PacketAck
+- application_bounds_for_environment
+- memory_layout.h
+- PacketMaintenance
+- PacketMaintenanceAck
+- start_udev_monitor
+- PacketReport
+- hashlib
+- assess_exhaustion
+- Revision
+- main
+- load
+- main
 
 ## God Nodes (most connected - your core abstractions)
-1. `Communities (299 total, 62 thin omitted)` - 238 edges
-2. `Communities (179 total, 52 thin omitted)` - 128 edges
-3. `Backend` - 52 edges
-4. `PymcuprogError` - 50 edges
-5. `AvrDebugger` - 42 edges
-6. `PymcuprogSerialUpdiNvmTimeout` - 40 edges
-7. `LoRa` - 40 edges
-8. `UpdiApplication` - 36 edges
-9. `PymcuprogNotSupportedError` - 33 edges
-10. `Per-attempt evidence and timing` - 32 edges
+1. `ReliableTransport` - 48 edges
+2. `Gate1Tests` - 46 edges
+3. `State` - 44 edges
+4. `Hardware` - 36 edges
+5. `analyze()` - 35 edges
+6. `RCATests` - 33 edges
+7. `HardwareGateTests` - 32 edges
+8. `error()` - 32 edges
+9. `run_gate1()` - 30 edges
+10. `DebugConsoleTests` - 28 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Tool versions and source hashes` --references--> `source_hashes()`  [INFERRED]
-  experiments/updi_rca/memory/PATH_P_POST_SWAP.md → artifacts/updi/legacy/experiment-evidence/RCA_BOARD_SWAP_01/path_p/run_pre_campaign.py
-- `Surprising Connections (you probably didn't know these)` --references--> `confidence_label()`  [INFERRED]
-  artifacts/codegraph/legacy/graphify/GRAPH_REPORT.md → experiments/updi_rca/src/updi_rca/classify.py
-- ``hypothesis_status.csv`` --references--> `confidence_label()`  [INFERRED]
-  docs/development/PROMPT.md → experiments/updi_rca/src/updi_rca/classify.py
-- `Surprising Connections (you probably didn't know these)` --references--> `confidence_label()`  [INFERRED]
-  artifacts/codegraph/graphify/GRAPH_REPORT.md → experiments/updi_rca/src/updi_rca/classify.py
-- `Per-attempt evidence and timing` --references--> `utc()`  [INFERRED]
-  artifacts/updi/legacy/experiment-evidence/RCA_POST_SWAP_01/path_q/POST-00130/manifest.md → experiments/updi_rca/src/updi_rca/fresh.py
+- `Live non-RF experiment E01` --references--> `Gate1Audit`  [INFERRED]
+  docs/rca/20261114T044136Z-radio-only/RADIO_ONLY_TEST_RESULTS.md → tools/rca/gate1_live.py
+- `A — Action` --references--> `campaign()`  [INFERRED]
+  docs/rca/20261114T094223Z-soak-validation/FINAL_RCA.md → tools/arq_trial.py
+- `923 MHz continuation` --references--> `load_arq()`  [INFERRED]
+  docs/rca/20261114T044136Z-radio-only/RADIO_ONLY_TEST_RESULTS.md → tools/config/arq_config.py
+- `Preservation` --references--> `reader_free_h01()`  [INFERRED]
+  docs/rca/20261114T023251Z/08_REGRESSION_RESULTS.md → tools/arq_trial.py
+- `Test-harness dispatch mistake` --references--> `reader_free_h01()`  [INFERRED]
+  docs/rca/20261114T023251Z/TDD_RESULTS.md → tools/arq_trial.py
 
 ## Import Cycles
-- 1-file cycle: `experiments/updi_rca/vendor/pymcuprog/pymcuprog/pymcuprog.py -> experiments/updi_rca/vendor/pymcuprog/pymcuprog/pymcuprog.py`
+- None detected.
 
-## Communities (331 total, 70 thin omitted)
+## Communities (424 total, 143 thin omitted)
 
-### Community 0 - "Communities (299 total, 62 thin omitted)"
-Cohesion: 0.01
-Nodes (238): Communities (299 total, 62 thin omitted), Community 0 - "Communities (284 total, 54 thin omitted)", Community 100 - "Design principles — what makes the output "professional"", Community 101 - "AVR128DA28 UPDI console engineering report", Community 102 - "rca/updi/README.md", Community 103 - "RCA_PHY_01 — External Path Investigator", Community 104 - "updi_rca/physical.py", Community 105 - "classify_pairing_matrix" (+230 more)
+### Community 0 - "Task"
+Cohesion: 0.11
+Nodes (26): ReportEntry, day, hour, latitude, longitude, minute, month, quality (+18 more)
 
-### Community 1 - "PymcuprogSerialUpdiNvmTimeout"
-Cohesion: 0.05
-Nodes (5): PymcuprogSerialUpdiNvmError, PymcuprogSerialUpdiNvmTimeout, NvmUpdi, NvmUpdiP2, Timeout
+### Community 1 - "Debug.h"
+Cohesion: 0.15
+Nodes (11): FaultEvent(), Result, kAssertionFailed, kIntegrityFailure, kIoFailure, kOk, kRejected, Role (+3 more)
 
-### Community 2 - "Communities (179 total, 52 thin omitted)"
-Cohesion: 0.02
-Nodes (128): Communities (179 total, 52 thin omitted), Community 0 - "Q host inventory — RCA_POST_SWAP_01 / CROSSED_UNTOUCHED", Community 100 - "Syntax cheat-sheet (most-used)", Community 101 - "Lane A", Community 103 - "WCAG 2.2 Quick Reference", Community 104 - "Target Electrical Investigator — RCA_PHY_01", Community 105 - "Focused physical-layer RCA plan", Community 106 - "17. Hypothesis inventory and evidence model" (+120 more)
+### Community 2 - ".TASK"
+Cohesion: 0.12
+Nodes (31): loop(), UpdiWrite(), updi_role_log(), updi_role_log_airtime(), updi_role_log_boot(), updi_role_log_byte(), updi_role_log_campaign(), updi_role_log_format_hex() (+23 more)
 
-### Community 3 - "Backend"
-Cohesion: 0.03
-Nodes (3): Backend, Programmer, PymcuprogEraseError
+### Community 3 - "Port"
+Cohesion: 0.21
+Nodes (4): Port, require(), USBInventoryTests, run()
 
-### Community 4 - "classify_crossover"
+### Community 4 - "RepositoryIsolationTests"
+Cohesion: 0.07
+Nodes (13): RepositoryIsolationTests, validate_repo(), _check_config(), _check_symlink(), _inside(), _items(), _label(), _local_dependency() (+5 more)
+
+### Community 5 - "FakeRadio"
 Cohesion: 0.10
-Nodes (18): post_swap_assessment(), restoration_assessment(), classify_crossover(), assess_causal_movement(), test_both_fail_after_swap_is_not_called_two_bad_boards(), test_both_pass_after_reseat_is_intervention_sensitive(), test_failure_following_external_path_is_classified_external_path(), test_failure_following_target_is_classified_target_local() (+10 more)
+Nodes (15): FakeRadio, bytes, completion_error, destination, done, incoming, init_ok, inits (+7 more)
 
-### Community 5 - "HardwareGateTests"
-Cohesion: 0.09
-Nodes (3): HardwareGateTests, hardware_blockers(), unavailable_ports()
+### Community 7 - "config"
+Cohesion: 0.07
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
-### Community 7 - "cp210x.c"
-Cohesion: 0.06
-Nodes (46): cp2102_determine_quirks(), cp2102n_gpioconf_init(), cp2104_gpioconf_init(), cp2105_gpioconf_init(), cp2108_gpio_init(), cp210x_attach(), cp210x_break_ctl(), cp210x_change_speed() (+38 more)
-
-### Community 8 - "hello_protocol.cpp"
-Cohesion: 0.16
-Nodes (11): Campaign, campaign_build_id(), destination_, source_, encode_ack_frame(), encode_ack_payload(), encode_data_frame(), encode_data_payload() (+3 more)
-
-### Community 9 - "pymcuprog_errors.py"
-Cohesion: 0.06
-Nodes (10): PymcuprogSessionConfigError, PymcuprogSessionError, pad_to_size(), pagealign(), read_supply_voltage_setpoint(), read_target_voltage(), read_tool_info(), read_usb_voltage() (+2 more)
-
-### Community 11 - "finalize.py"
+### Community 8 - "require"
 Cohesion: 0.14
-Nodes (30): _all_run_rows(), canonical_attempt_paths(), classify_raw_event(), _data_path(), _event_rows(), _failure_stage(), finalize(), _hash_summary() (+22 more)
+Nodes (4): DetectionIntegrationTests, pio(), runner(), require()
+
+### Community 9 - "generate_lora_config.py"
+Cohesion: 0.07
+Nodes (15): Radio915ValidationTests, valid_profile(), write_toml(), SourceFingerprintTests, artifacts(), canonical(), digest(), generate() (+7 more)
+
+### Community 10 - "ring_buffer.h"
+Cohesion: 0.09
+Nodes (11): RingBuffer, buffer_, RingBuffer<Capacity>::Read(), RingBuffer<Capacity>::ReadByte(), RingBuffer<Capacity>::Write(), RingBuffer<Capacity>::WriteByte(), RingBuffer<Capacity>::WriteFrame(), first_free_ (+3 more)
+
+### Community 11 - "Task"
+Cohesion: 0.12
+Nodes (12): Task::get_wakeup_time(), Task::_init(), Task::pause(), Task::reset_wakeup_time(), Task::restart(), Task::resume(), Task::Task(), TaskScheduler::get_task_list() (+4 more)
 
 ### Community 12 - "SEO optimization"
 Cohesion: 0.05
 Nodes (38): Article, Breadcrumbs, FAQ, Organization, Product, Structured data reference, Validation, Agentic browsing and AI discoverability (+30 more)
 
-### Community 13 - "UPDI"
-Cohesion: 0.07
-Nodes (8): Console, error(), main(), parse_arguments(), SerialPort, SerialUPDI, Terminal, UPDI
+### Community 13 - "AGENTS.md — AVR128DA28 / LoRa Embedded Engineering"
+Cohesion: 0.10
+Nodes (20): 10. Logging, measurement, and evidence, 11. Decision and intervention policy, 12. Response contract, 13. Technical references (read when relevant; do not substitute for active SSOT), 1. Mission and current MVP, 2. Operating philosophy, 3. Project truth and protected files, 4. Target architecture (+12 more)
 
 ### Community 14 - "Python Testing Patterns — Advanced Reference"
 Cohesion: 0.05
 Nodes (35): CI/CD Integration, Configuration Files, Pattern 10: Property-Based Testing, Pattern 6: Testing Async Code, Pattern 7: Monkeypatch for Testing, Pattern 8: Temporary Files and Directories, Pattern 9: Custom Fixtures and Conftest, Python Testing Patterns — Advanced Reference (+27 more)
 
-### Community 15 - "UPDI"
-Cohesion: 0.07
-Nodes (6): Console, main(), SerialPort, SerialUPDI, Terminal, UPDI
+### Community 15 - "DeviceLayout"
+Cohesion: 0.11
+Nodes (19): IsAppCodeRange(), DeviceLayout, kAppDataStart, kApplicationEnd, kApplicationImageEnd, kApplicationStart, kBootEnd, kBootSizePages (+11 more)
 
-### Community 16 - "UPDI"
-Cohesion: 0.07
-Nodes (6): error(), SerialPort, SerialUPDI, Terminal, TransportError, UPDI
+### Community 16 - "PlatformResult"
+Cohesion: 0.15
+Nodes (13): PlatformResult, kBusy, kForbidden, kHardwareError, kInvalidArgument, kOk, kOutOfRange, kTimeout (+5 more)
 
 ### Community 17 - "UPDI"
-Cohesion: 0.07
-Nodes (6): error(), SerialPort, SerialUPDI, Terminal, TransportError, UPDI
+Cohesion: 0.23
+Nodes (3): Host UPDI / STATUS path, SerialUPDI, UPDI
 
-### Community 18 - "test_fresh.py"
-Cohesion: 0.15
-Nodes (30): adapters(), exchange(), fresh(), install_attempt(), discover(), execute(), mapping(), raw() (+22 more)
-
-### Community 19 - "Changelog"
-Cohesion: 0.06
-Nodes (33): [], [3.10] - October 2021, [3.13] - May 2022, [3.14] - October 2022, [3.16] - November 2023, [3.17] - March 2024, [3.19] - June 2025, [3.1.3] - June 2020 (+25 more)
-
-### Community 20 - "LoRa"
-Cohesion: 0.08
-Nodes (22): LoRa, _active_radio, _cs_pin, _initialized, kMaxPayloadSize, kRadioHeaderSize, kSx127xVersionAlternate, kSx127xVersionOfficial (+14 more)
-
-### Community 21 - "D2 — Modern Diagram Generation"
-Cohesion: 0.14
-Nodes (13): Common pitfalls (read these once), Core workflow, D2 — Modern Diagram Generation, Diagram families → templates, Direct d2 CLI (when you need full control), Multi-board composition (when one board isn't enough), Output format → renderer, Professional defaults — always apply these (+5 more)
-
-### Community 22 - "AvrDebugger"
-Cohesion: 0.03
-Nodes (4): God Nodes (most connected - your core abstractions), God Nodes (most connected - your core abstractions), AvrDebugger, PymcuprogNotSupportedError
-
-### Community 23 - "Per-attempt evidence and timing"
-Cohesion: 0.06
-Nodes (31): Attempt 001, Attempt 002, Attempt 003, Attempt 004, Attempt 005, Attempt 006, Attempt 007, Attempt 008 (+23 more)
-
-### Community 24 - "UpdiDatalink"
-Cohesion: 0.04
-Nodes (4): PymcuprogSerialUpdiProtocolError, UpdiDatalink, UpdiDatalink16bit, UpdiDatalink24bit
-
-### Community 25 - "re"
-Cohesion: 0.14
-Nodes (5): parse_radio_spi_log(), parse_role_log_count(), parse_test_counts(), parse_wrapper_check_count(), upload_config_preserves_flash()
-
-### Community 26 - "json"
+### Community 18 - "Config"
 Cohesion: 0.11
-Nodes (27): Fresh RCA handoff — RCA_FRESH_01, read_csv(), verify(), sib_outcome(), control_allowed(), domain_scores(), failure_stage(), freeze_mapping() (+19 more)
+Nodes (18): Config, ack_timeout, collect_interval_day, collect_interval_night, day_end_hour, day_start_hour, gps_max_wait_for_fix, long_range (+10 more)
 
-### Community 27 - "Optional arguments and switches"
+### Community 19 - "config"
 Cohesion: 0.07
-Nodes (27): Actions (commands), Administrative arguments, Examples, General arguments, Memory access actions, Memory access arguments, Memory types, Optional arguments and switches (+19 more)
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
-### Community 28 - "pymcuprog - Python MCU programmer"
+### Community 21 - "codec.cpp"
+Cohesion: 0.22
+Nodes (17): DecodeConfig(), DecodePacketBoot(), DecodePacketReport(), DecodePacketReportWithAck(), DecodeReportEntry(), EncodeConfig(), EncodePacketBoot(), EncodePacketReport() (+9 more)
+
+### Community 23 - "ReverseRawTests"
+Cohesion: 0.10
+Nodes (7): ReverseRawTests, ReverseRawTests, audit_raw_configuration(), park_reverse(), reverse_exchange(), status(), validate_reverse()
+
+### Community 24 - "config"
 Cohesion: 0.07
-Nodes (27): Action: erase, Action: getsupplyvoltage, Action: getusbvoltage, Action: getvoltage, Action: makeuf2, Action: ping, Action: read, Action: reboot-debugger (+19 more)
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
-### Community 30 - ".claude/skills/d2/render.py"
-Cohesion: 0.24
-Nodes (4): build_d2_command(), main(), parse_d2_config(), render_one()
+### Community 25 - "src/mvp/main.cpp"
+Cohesion: 0.17
+Nodes (14): debug_init(), debug_write(), debug_write_float(), debug_write_hex(), debug_write_int(), field(), line(), loop() (+6 more)
 
-### Community 31 - "probes.py"
-Cohesion: 0.13
-Nodes (20): Approved PRE SIB batch, main(), _parser(), BoardIdentity, resolve_connection(), collect_ocd_messages(), _event_bytes(), _live_adapter() (+12 more)
+### Community 26 - "device.h"
+Cohesion: 0.17
+Nodes (11): PORT_struct, PORT_t, SPI_struct, SPI_t, TWI_struct, TWI_t, TwiHold, k300Ns (+3 more)
 
-### Community 32 - "PROMPT.md"
-Cohesion: 0.07
-Nodes (27): 0. Activate the investigation as an evidence-based Goal, 10. Failure-stage taxonomy, 12. Root-cause scoring rules, 13. Statistical test policy, 15. Python API expectations, 16. C target implementation expectations, 18. Tests that specifically attack methodology errors 161–168, 1. Required Superpowers workflow (+19 more)
+### Community 29 - "Task"
+Cohesion: 0.11
+Nodes (24): Initialize(), SleepFor(), PowerSavingTaskScheduler, PowerSavingTaskScheduler::Loop(), Task, Task::GetWakeupTime(), Task::Initialize(), is_paused_ (+16 more)
+
+### Community 30 - "detect_devices.py"
+Cohesion: 0.16
+Nodes (11): build_parser(), _load_registry(), main(), _print_result(), _run_self_test(), SafetyArgumentParser, _scan(), _watch() (+3 more)
+
+### Community 31 - "EventId"
+Cohesion: 0.12
+Nodes (16): EventId, kAuthenticationStarted, kF6Admission, kF6AfterProgram, kF6BeforeProgram, kF6Confirmation, kF6FinalVerify, kF6Handoff (+8 more)
+
+### Community 32 - "ProvisioningResult"
+Cohesion: 0.25
+Nodes (9): ProvisioningResult, kInvalidArgument, kOk, kUnprovisioned, kUnsupported, IsHmacKeyProvisioned(), ReadDeviceUid(), ReadHmacKey() (+1 more)
 
 ### Community 33 - "Python Code Executor"
 Cohesion: 0.08
 Nodes (24): 3D Model Processing, 3D Processing, API Calls, App Details, Data Analysis with Visualization, Data Processing, Documentation, Documents & Graphics (+16 more)
 
-### Community 34 - "lora_rx.cpp"
-Cohesion: 0.08
-Nodes (16): init_receiver_gpio(), setup(), espcomm_setup(), init_gpio(), CampaignBuildGateResult, AlreadyRun, ReadbackFailed, Ready (+8 more)
+### Community 34 - "UPDI-only Hello World MVP — STAR report"
+Cohesion: 0.25
+Nodes (7): Action, Evidence, Result, Situation, Task, UPDI-only Hello World MVP — STAR report, Verification and limits
 
-### Community 36 - "TaskLoraRx"
-Cohesion: 0.10
-Nodes (16): TaskLoraRx, _ack, _ack_bytes, _campaign_id, _dst, _flags, _id, _len (+8 more)
+### Community 35 - "MvpRoundtripTests"
+Cohesion: 0.21
+Nodes (3): Board, frames(), MvpRoundtripTests
+
+### Community 36 - "config"
+Cohesion: 0.07
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
 ### Community 37 - "Fundamental Patterns"
 Cohesion: 0.09
 Nodes (21): 1. Strict Mode, 2. Error Trapping and Cleanup, 3. Variable Safety, 4. Array Handling, 5. Conditional Safety, Advanced Defensive Techniques, bash-defensive-patterns — detailed patterns and worked examples, Core Defensive Principles (+13 more)
 
-### Community 38 - "DetectionIntegrationTests"
-Cohesion: 0.16
-Nodes (4): DetectionIntegrationTests, pio(), runner(), require()
+### Community 38 - "config"
+Cohesion: 0.07
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
-### Community 39 - "classify.py"
-Cohesion: 0.14
-Nodes (15): _bytes(), classify_event(), is_fresh_reset(), score_evidence(), _success_rate(), parse_upditerm_log(), events(), test_borf_alone_does_not_count_as_a_new_reset() (+7 more)
-
-### Community 40 - "identity.py"
-Cohesion: 0.18
-Nodes (9): adapter_from_properties(), AdapterIdentity, discover_serial_ports(), _links_for(), parse_udev_properties(), _usb_numbers(), test_baseline_cli_runs_sib_and_control_on_selected_id_path(), test_inventory_cli_reports_stable_identity_and_marks_target_unknown() (+1 more)
-
-### Community 43 - "pymcuprog_main.py"
-Cohesion: 0.05
-Nodes (35): SessionConfig, _add_data_to_hex(), read_memories_from_hex(), remove_phantom_bytes(), _write_hex_to_file(), write_memories_to_hex(), write_memory_to_hex(), PymcuprogToolConnectionError (+27 more)
-
-### Community 44 - "demo.c"
-Cohesion: 0.15
-Nodes (10): dump(), main(), pwm_init(), pwm_set(), updi_getchar(), updi_putchar(), updi_stdio_init(), updi_uart_rx() (+2 more)
-
-### Community 45 - "AVR128DA28 UPDI root-cause report"
-Cohesion: 0.10
-Nodes (19): 10. Supported mechanism, 11. Fix, 12. File changes, 13. Verification numbers, 14. Risks, 15. Software limitations and physical discriminators, 16. Source table, 17. Reproduction commands (+11 more)
-
-### Community 46 - "cp210x.c"
-Cohesion: 0.11
-Nodes (18): cp2102.pdf, error, url, cp210x.c, bytes, sha256, url, utc (+10 more)
-
-### Community 48 - "D2 — Modern Diagram Generation"
-Cohesion: 0.14
-Nodes (13): Common pitfalls (read these once), Core workflow, D2 — Modern Diagram Generation, Diagram families → templates, Direct d2 CLI (when you need full control), Multi-board composition (when one board isn't enough), Output format → renderer, Professional defaults — always apply these (+5 more)
-
-### Community 49 - "Lane A"
-Cohesion: 0.10
-Nodes (19): Adapter mapping (read-only; target port not opened), Authorized identity-only probes, Authorized identity probe attempt, Control-space condition, Control-space snapshot — pass, Coordinator's one-shot OCD message snapshot, Evidence and hashes, Final A in non-destructive SIB A/B/A discriminator (+11 more)
-
-### Community 50 - ".TASK"
+### Community 39 - "Forensic RCA — reverse raw LoRa, 2026-11-13"
 Cohesion: 0.12
-Nodes (13): DecodeLoraConfig(), LoraConfig, addr, freq, long_range, tx_power, StoreI2c16(), TaskI2CManager (+5 more)
+Nodes (16): 10. Unresolved questions, 11. Root cause verdict, 12. Recommended corrective action, 13. Verification plan, 14. Risks and limitations, 15. STAR summary, 1. Executive summary, 2. Scope (+8 more)
 
-### Community 51 - "Optional arguments and switches"
-Cohesion: 0.11
-Nodes (17): Actions (commands), Administrative arguments, Examples, General arguments, Memory access actions, Memory access arguments, Memory types, Optional arguments and switches (+9 more)
+### Community 40 - "GNSS"
+Cohesion: 0.09
+Nodes (20): calculate_checksum(), extract_field(), GNSS, day, fixquality, _gga_received, GNSS::GNSS(), hour (+12 more)
 
-### Community 52 - "effective_project_sections"
-Cohesion: 0.26
-Nodes (10): application_bounds_for_environment(), build_flag_defines(), _config_int(), effective_project_sections(), _parse_rf_profile(), radio_profile_compile_flags(), rf_spi_diagnostic_config(), shared_rf_profile() (+2 more)
+### Community 41 - "source/src/ssot.c"
+Cohesion: 0.07
+Nodes (61): decode_payload(), duplicate_tracker_reset_session(), encode_ack_or_nack_payload(), encode_header(), ssot_ack_matches(), ssot_campaign_acknowledge(), ssot_campaign_arm(), ssot_campaign_fail() (+53 more)
 
-### Community 53 - "os"
-Cohesion: 0.24
-Nodes (5): run(), utc_now(), bootstrap(), create_temp_dir(), main()
+### Community 42 - "time"
+Cohesion: 0.07
+Nodes (10): Console, main(), parse_arguments(), run(), pump(), start(), BootAnalysisTests, parse_arguments() (+2 more)
 
-### Community 54 - "snapshot_pairing"
-Cohesion: 0.24
-Nodes (10): ConnectionIdentity, PairingSnapshot, snapshot_pairing(), connection(), test_adapter_identity_follows_id_path_not_tty_number(), test_pairing_history_preserves_before_and_after_states(), test_target_label_survives_adapter_crossover(), test_tty_alias_never_defines_adapter_identity() (+2 more)
+### Community 43 - "rf_proof.py"
+Cohesion: 0.18
+Nodes (29): RfTestContinuationTests, application_layout_verified(), capture_usb_topology(), check_port_owners(), clean_builds(), firmware_measurement(), identify_targets(), image_fits_application() (+21 more)
 
-### Community 57 - "State"
+### Community 44 - "pathlib"
+Cohesion: 0.07
+Nodes (5): run(), TaskRestartTests, I2cRadioConfigTests, RadioLibHalTests, ihex_record()
+
+### Community 45 - "role_detector.py"
 Cohesion: 0.17
-Nodes (12): State, begin_count, cs_high_seen, cs_low_seen, cs_pin, initialized, route, swap_count (+4 more)
+Nodes (7): USBDevice, classify_devices(), diff_device_presence(), _identity_role(), _probe_for(), _registry_hint(), _registry_record()
 
-### Community 60 - "test_board_swap.py"
-Cohesion: 0.28
-Nodes (10): frame(), pairing(), swap(), test_break1_failure_and_break2_failure_are_distinct(), test_id_path_survives_tty_renumber(), test_local_echo_failure_does_not_become_acc_failure(), test_restore_phase_is_required_before_proven_status(), test_sib_outcome_keeps_command_echo_and_target_response_separate() (+2 more)
+### Community 46 - "Pin Mapping Audit — AVR128DA28 / RFM95W"
+Cohesion: 0.29
+Nodes (6): Evidence basis, H1 connector, H2 connector and board signals, Pin Mapping Audit — AVR128DA28 / RFM95W, RF connector path, Verification
 
-### Community 61 - "device"
-Cohesion: 0.33
-Nodes (4): device(), probe(), require(), RoleDetectorTests
+### Community 47 - "config"
+Cohesion: 0.07
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
-### Community 62 - "pathlib"
-Cohesion: 0.11
-Nodes (3): main(), capture(), WindowsInputTests
+### Community 48 - "Json"
+Cohesion: 0.07
+Nodes (43): error(), audit_raw_configuration(), campaign(), Capture, complete(), checked_events(), main(), park_reverse() (+35 more)
 
-### Community 63 - "Fresh UPDI RCA — RCA_FRESH_01"
-Cohesion: 0.17
-Nodes (12): Action, Decisions and stopping rules, Execution and batch results, Executive result, Fresh UPDI RCA — RCA_FRESH_01, Implementation and evidence controls, Result and causal level, Selected causal experiment: BREAK-triggered simultaneous electrical capture (+4 more)
+### Community 49 - "RadioBringupTests"
+Cohesion: 0.10
+Nodes (4): DirectionalHostTests, RadioBringupTests, acquire(), command()
 
-### Community 64 - "14. Phase-by-phase investigation"
+### Community 50 - "symmetric_fixture"
+Cohesion: 0.21
+Nodes (4): symmetric_fixture(), add(), event(), SymmetricProofTests
+
+### Community 51 - "config"
+Cohesion: 0.07
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
+
+### Community 52 - "ErrataDiagnosticsTests"
+Cohesion: 0.15
+Nodes (4): ErrataDiagnosticsTests, decode_snapshot(), interpret_rx(), link_budget()
+
+### Community 54 - "._run_capture"
 Cohesion: 0.13
-Nodes (15): 14. Phase-by-phase investigation, Mode HEARTBEAT, Mode SILENT, Optional LOAD phase, Phase 0 — Freeze and inventory, Phase 10 — Cross-over experiment if still ambiguous, Phase 1 — Baseline dual-board matrix at 38400, Phase 2 — Control vs data-space boundary (+7 more)
+Nodes (7): fixture(), add(), LiveProofTests, emit(), start(), write(), upload_evidence_matches()
 
-### Community 66 - "test_probes.py"
-Cohesion: 0.31
-Nodes (9): connection(), FakeSerial, install_serial(), test_control_probe_uses_only_ldcs_reads(), test_data_probe_uses_stable_by_path_and_keeps_target_failure_stage(), test_echo_failure_and_missing_target_response_are_separate(), test_probe_raw_evidence_survives_missing_response(), test_probe_refuses_to_open_when_stable_by_path_is_missing() (+1 more)
+### Community 57 - "usb_inventory.py"
+Cohesion: 0.18
+Nodes (5): discover_usb_devices(), _normalize_hex(), parse_udev_properties(), _run_command(), _usb_instance()
 
-### Community 68 - "test_physical.py"
-Cohesion: 0.30
-Nodes (11): exchange(), physical(), test_echo_byte_forensics_preserves_missing_bytes(), test_exact_sync_and_response_require_both_breaks_and_command_echo(), test_first_break_failure_differs_from_second_break_failure(), test_interaction_effects_use_all_four_cells_without_forcing_locality(), test_local_echo_failure_stops_higher_layer_classification(), test_no_capture_is_not_fabricated_as_empty_echo() (+3 more)
+### Community 61 - "require"
+Cohesion: 0.09
+Nodes (15): DeviceReconnectTests, make_device(), make_probe(), require(), crc8(), FirmwareIdentityTests, ihex_record(), marker() (+7 more)
 
-### Community 69 - "pymcuprog.py"
-Cohesion: 0.19
-Nodes (3): _parse_literal(), main(), setup_logging()
+### Community 68 - "Gateway-to-Receiver SF7 Hello World"
+Cohesion: 0.25
+Nodes (7): Current result — Receiver installed, normal startup unresolved, Gateway-to-Receiver SF7 Hello World, No-meter read-only hardware verified; Receiver write wiring unconfirmed, Receiver boot incompatibility, Remaining physical prerequisites, Single-packet behavior and identities, Verified software result
 
-### Community 70 - "Q host inventory — RCA_POST_SWAP_01 / CROSSED_UNTOUCHED"
-Cohesion: 0.15
-Nodes (13): Current by-path links, dmesg, Existing software identifiers (read-only), fuser, journalctl, Kernel log availability, lsof, Port ownership (+5 more)
+### Community 73 - "TaskScheduler"
+Cohesion: 0.18
+Nodes (7): TaskScheduler::get_task_count(), TaskScheduler::loop(), get_task_list, PowerSavingTaskScheduler, TaskScheduler, _task_count, _tasks
 
-### Community 71 - "AVR128DA28 BREAK / LOCAL_ECHO focused RCA"
-Cohesion: 0.15
-Nodes (12): Action, Artifacts and verification, AVR128DA28 BREAK / LOCAL_ECHO focused RCA, Causal decision record, Controls and source review, Narrowest defensible conclusion, Observed stage and byte distribution, Physical gate and experiment decision (+4 more)
-
-### Community 72 - "AVR128DA28 board-swap RCA — PRE NO-GO checkpoint"
-Cohesion: 0.15
-Nodes (12): Action, Artifacts and safety, AVR128DA28 board-swap RCA — PRE NO-GO checkpoint, Checkpoint verification, Current matrix, Identity and physical freeze, PRE experiment and decision, Required answers (+4 more)
-
-### Community 73 - "FirmwareIdentityTests"
-Cohesion: 0.28
-Nodes (5): crc8(), FirmwareIdentityTests, ihex_record(), marker(), require()
-
-### Community 74 - "test_classifier.py"
-Cohesion: 0.26
-Nodes (11): confidence_label(), _classify(), test_both_crossed_pairings_fail_without_claiming_both_targets_failed(), test_both_pass_after_reconnection_is_intervention_sensitive(), test_component_claim_needs_direct_measurement_or_remains_blocked(), test_contradicted_predictions_are_falsified_and_weak_fit_is_disfavored(), test_failure_following_adapter_classifies_adapter_path(), test_failure_following_target_classifies_target_local() (+3 more)
+### Community 74 - "Autonomous engineering verification — 2026-11-14"
+Cohesion: 0.14
+Nodes (12): A. Executive Verdict, Autonomous engineering verification — 2026-11-14, B. Changes Implemented, C. Actual Test Results, D. Build Verification, E. ACK Validation, F. Physical Verification, G. RF Verification (+4 more)
 
 ### Community 75 - "Accessibility (a11y)"
 Cohesion: 0.17
 Nodes (12): Accessibility (a11y), ARIA usage (4.1.2), Color contrast (1.4.3, 1.4.6), Conformance levels, Evidence-led audit workflow, Live regions (4.1.3), Media alternatives (1.2), Perceivable (+4 more)
 
-### Community 76 - "Syntax cheat-sheet (most-used)"
+### Community 77 - "radio"
 Cohesion: 0.17
-Nodes (10): Connections, Containers, Icons, Local icon library — check first, Markdown labels (C4-style hierarchy), Shapes, Style (use sparingly — prefer classes), Syntax cheat-sheet (most-used) (+2 more)
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
 
-### Community 78 - "test_post_swap.py"
-Cohesion: 0.29
-Nodes (9): assess(), test_both_fail_does_not_claim_two_failed_boards(), test_both_pass_classifies_intervention_sensitive(), test_failure_movement_to_target_classifies_target_following(), test_failure_staying_on_path_classifies_path_following(), test_post_swap_phase_preserves_original_history(), test_power_cycle_is_recorded_as_confound(), test_raw_log_hashes_are_preserved() (+1 more)
+### Community 78 - "config"
+Cohesion: 0.07
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
-### Community 81 - "test_identity.py"
-Cohesion: 0.29
-Nodes (12): resolve_connections(), adapter(), board(), test_adapter_metadata_requires_usb_path_and_keeps_duplicate_serial(), test_discovery_uses_sysfs_id_path_and_by_path_link(), test_duplicate_adapter_serials_keep_distinct_target_identities(), test_duplicate_id_path_is_rejected_as_ambiguous(), test_pairing_history_preserves_previous_unknown_state() (+4 more)
+### Community 79 - "20261113T142138Z/manifest.json"
+Cohesion: 0.06
+Nodes (31): classification, created_utc, current_target_identity, diagnostic_code, exclusion_reason, experiment_id, experiment_type, extended_original_preservation_files (+23 more)
 
-### Community 82 - "test_rf_proof.py"
-Cohesion: 0.25
-Nodes (6): complete_campaign_logs(), packet_event(), payload_event(), RfEvidenceTests, RfTestContinuationTests, parse_rf_campaign()
+### Community 81 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
+
+### Community 82 - "State"
+Cohesion: 0.17
+Nodes (12): State, begin_count, cs_high_seen, cs_low_seen, cs_pin, initialized, route, swap_count (+4 more)
 
 ### Community 83 - "WCAG 2.2 Quick Reference"
 Cohesion: 0.18
 Nodes (8): Level A (minimum), Level AA (standard), Level AAA (enhanced), Sources, Success criteria by level, Testing tools, WCAG 2.2 Quick Reference, What changed from 2.1 to 2.2
 
-### Community 84 - "graphify/manifest.json"
+### Community 84 - "Gate 1 source and safety audit"
+Cohesion: 0.22
+Nodes (8): External source claim record, Gate 1 source and safety audit, Historical separation and preservation, Monitor initialization, No reset, programming or RF actions, Repository selection, STATUS behavior and side effects, Why identity uses raw UPDI reads
+
+### Community 85 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
+
+### Community 86 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
+
+### Community 87 - "Gate1Tests"
+Cohesion: 0.10
+Nodes (4): Gate1Tests, rows(), transaction(), response()
+
+### Community 88 - "rca-20261113/README.md"
+Cohesion: 0.29
+Nodes (4): Confirmed and derived findings only, Firmware SEND audit, Hypothesis matrix, Offline RCA — Tracker to Rudolph
+
+### Community 89 - "firmware_identity.py"
 Cohesion: 0.18
-Nodes (10): .automation/research/pymcuprog/pymcuprog/nvmupdi.py, ast_hash, mtime, seen, semantic_hash, .automation/research/pymcuprog/pymcuprog/programmer.py, ast_hash, mtime (+2 more)
+Nodes (8): FirmwareIdentity, crc8(), FingerprintResult, IdentityParseResult, match_flash_fingerprint(), parse_identity_stream(), _valid_build(), _valid_timestamp()
 
-### Community 85 - "Usage"
-Cohesion: 0.18
-Nodes (10): CLI examples, CLI help, Debuggers / Tools, Devices, Library usage example, Notes for Linux® systems, pymcuprog - Python MCU programmer, Serial port UPDI (pyupdi) (+2 more)
-
-### Community 87 - "AVR128DA28 Dual-Board UPDI Root-Cause Analysis"
-Cohesion: 0.12
-Nodes (15): Action, AVR128DA28 Dual-Board UPDI Root-Cause Analysis, Evidence files, FLAG_RX read-only follow-up, Fresh read-only baseline (100 attempts per lane and condition), Narrowest defensible conclusion, OCD text and reset interpretation, Result (+7 more)
-
-### Community 88 - "AVR128DA28 UPDI RCA — Continuation `RCA_CROSSOVER_01`"
-Cohesion: 0.18
-Nodes (10): Action, AVR128DA28 UPDI RCA — Continuation `RCA_CROSSOVER_01`, Continuation artifacts, Narrowest defensible conclusion, Required decision tree, Result, Situation, Smallest next action (+2 more)
-
-### Community 89 - "17. Hypothesis inventory and evidence model"
-Cohesion: 0.18
-Nodes (11): 17. Hypothesis inventory and evidence model, A. Power / GND ฝั่ง board, B. UPDI path บน board, C. Reset / Watchdog / Reset cause, D. ตัว AVR chip, E. Fuse / Config ที่อาจต่างกัน, F. Firmware / Runtime behavior, G. Adapter / Host / Software (+3 more)
-
-### Community 90 - "PymcuprogError"
+### Community 90 - "config"
 Cohesion: 0.07
-Nodes (5): Suggested Questions, PymcuprogError, PymcuprogTargetVoltageError, PymcuprogToolConfigurationError, SamM4Target
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
-### Community 91 - "Official-source review: AVR128DA target and power path"
-Cohesion: 0.20
-Nodes (9): Device-specific electrical and layout guidance, Errata relevance and interpretation limit, Local board artifact audit, Official-source review: AVR128DA target and power path, Primary sources and revisions, Raw-source hashes, RESET and UPDI physical connection, Supply decoupling and placement (+1 more)
+### Community 91 - "provenance/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
 
-### Community 92 - "Board-swap physical freeze"
-Cohesion: 0.20
-Nodes (8): Evidence integrity, Mapping and inventory, RCA_BOARD_SWAP_01 — Lane P state, Board-swap physical freeze, External Path P, External Path Q, Frozen ledger boundary, Targets and shared controls
+### Community 93 - "20261113T074154Z/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
 
-### Community 93 - "Tasks"
-Cohesion: 0.20
-Nodes (9): 1. Freeze, inspect, and plan, 2. Observe both lanes, 3. TDD host tooling, 4. Select discriminating experiments, 5. Evidence, reports, diagram, verification, AVR128DA28 Dual-Board UPDI Root-Cause Investigation Plan, Global constraints, Review focus (+1 more)
+### Community 94 - "config"
+Cohesion: 0.07
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
-### Community 94 - "Board Swap RCA State"
-Cohesion: 0.20
-Nodes (9): Board Swap RCA State, Causal classification, Current phase, Current result, Hard metrics, Last experiment, Next smallest discriminator, Physical mapping (+1 more)
+### Community 95 - "config"
+Cohesion: 0.07
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
-### Community 95 - "Port"
-Cohesion: 0.15
-Nodes (5): WorkerTests, Port, require(), USBInventoryTests, run()
+### Community 96 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
+
+### Community 97 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
 
 ### Community 98 - "Accessibility Code Patterns"
 Cohesion: 0.22
@@ -681,53 +689,45 @@ Nodes (9): Accessibility Code Patterns, ARIA tabs, Dragging movements, Error han
 Cohesion: 0.22
 Nodes (9): Dragging movements (2.5.7) — new in 2.2, Focus not obscured (2.4.11) — new in 2.2, Focus visible (2.4.7), Keyboard accessible (2.1), Motion (2.3), Operable, Skip links (2.4.1), Target size (2.5.8) — new in 2.2 (+1 more)
 
-### Community 100 - "20261027T052038Z/STAR_RCA.md"
-Cohesion: 0.22
-Nodes (4): Rerun handoff — RCA_FRESH_01 /20261027T052038Z, RCA_FRESH_01 rerun memory — 20261027T052038Z, RCA_FRESH_01 rerun — 20261027T052038Z, Current rerun topology — RCA_FRESH_01 / 20261027T052038Z
-
-### Community 101 - "RCA_FRESH_01 — rerun 20261027T052038Z"
-Cohesion: 0.22
-Nodes (9): Action, Gates and causal interpretation, Per-batch measurements, RCA_FRESH_01 — rerun 20261027T052038Z, Response anomaly and acceptance limit, Result, Selected next experiment and stopping rule, Situation and task (+1 more)
+### Community 100 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
 
 ### Community 102 - "State"
-Cohesion: 0.07
-Nodes (28): State, airtime_length, airtime_us, bandwidth_khz, begin_calls, begin_status, coding_rate, config_status (+20 more)
+Cohesion: 0.05
+Nodes (44): State, airtime_length, airtime_us, bandwidth_khz, begin_calls, begin_status, coding_rate, config_status (+36 more)
 
-### Community 103 - "Connect to a virtual UART on an AVR via UPDI"
-Cohesion: 0.22
-Nodes (8): Connect to a virtual UART on an AVR via UPDI, Demo program, License, Prerequisites, UPDI interface, Upditerm, Usage, Virtual UART
+### Community 103 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
 
-### Community 104 - "Design principles — what makes the output "professional""
-Cohesion: 0.22
-Nodes (9): Animation — only on actual data flow, Color discipline, Connections, Design principles — what makes the output "professional", Direction, Hierarchy & scope, Labels, Shape vocabulary — match the shape to the concept (+1 more)
+### Community 107 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
 
-### Community 105 - "UpdiApplication"
-Cohesion: 0.04
-Nodes (8): run(), scratch(), NvmAccessProviderSerial, PymcuprogSerialUpdiError, PymcuprogSerialUpdiLockedError, decode_sib(), UpdiApplication, UpdiReadWrite
+### Community 108 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
 
-### Community 106 - "AVR128DA28 UPDI console engineering report"
-Cohesion: 0.22
-Nodes (8): 1. Outcome, 2. Proven findings and remaining cause, 3. Hardware and baud, 4. Implementation and compatibility, 5. Verification and acceptance, 6. Commands and reproducible diffs, 7. Delivery limits and next required evidence, AVR128DA28 UPDI console engineering report
+### Community 109 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
 
-### Community 107 - "rca/updi/README.md"
-Cohesion: 0.22
-Nodes (8): Current AVR128DA28 investigation — RCA_FRESH_01, Final thoughts, How to choose the right RCA method, How to write an RCA report, Introduction, Root cause vs. contributing factor vs. symptom, What is root cause analysis?, What weak vs. strong corrective actions look like
+### Community 110 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
 
-### Community 108 - "RCA_PHY_01 — External Path Investigator"
-Cohesion: 0.22
-Nodes (8): Candidate checks and falsifiers, Classic CP2102/9 limits and identity uncertainty, Evidence/source hashes, Finding, Host and Linux evidence boundaries, Local implementation and wiring limits, Physical gate and exact next action, RCA_PHY_01 — External Path Investigator
+### Community 111 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
 
-### Community 109 - "Pin Mapping Audit — AVR128DA28 / RFM95W"
-Cohesion: 0.22
-Nodes (7): Evidence basis, H1 connector, H2 connector and board signals, Pin Mapping Audit — AVR128DA28 / RFM95W, Radio and MCU pins, RF connector path, Verification
+### Community 112 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
 
-### Community 110 - "test_continuation.py"
-Cohesion: 0.31
-Nodes (5): attempt_rows(), _echo_class(), rows(), test_acc_timeout_after_exact_echo_stays_later_than_local_echo(), test_run_event_rows_preserve_local_echo_failure_and_pairing_identity()
-
-### Community 113 - "Hardware Preflight Report"
-Cohesion: 0.20
-Nodes (7): RCA_FRESH_01, Design evidence, Hardware Preflight Report, Live observations, Prior UPDI evidence, Required physical checks, Safe next step
+### Community 113 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
 
 ### Community 114 - "Connect to a virtual UART on an AVR via UPDI"
 Cohesion: 0.22
@@ -741,685 +741,793 @@ Nodes (8): Buttons, Common ARIA patterns, Error states, Form fields, Links, Live
 Cohesion: 0.25
 Nodes (8): Accessible authentication (3.3.8) — new in 2.2, Consistent help (3.2.6) — new in 2.2, Consistent navigation (3.2.3), Error handling (3.3.1, 3.3.3), Form labels (3.3.2), Page language (3.1.1), Redundant entry (3.3.7) — new in 2.2, Understandable
 
-### Community 117 - "D2-Diagram-Skill"
-Cohesion: 0.25
-Nodes (7): D2-Diagram-Skill, Installation, License, Requirements, Usage, What it does, What you get
+### Community 117 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
 
-### Community 118 - "Frame"
+### Community 118 - "complete_campaign_logs"
+Cohesion: 0.34
+Nodes (4): complete_campaign_logs(), packet_event(), payload_event(), RfEvidenceTests
+
+### Community 119 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
+
+### Community 120 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
+
+### Community 121 - "20261113T074705Z/H01/provenance/manifest.json"
 Cohesion: 0.22
-Nodes (10): Firmware payload evidence, ack_matches(), decode_frame(), decode_payload(), Frame, campaign_id, destination, sequence (+2 more)
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
 
-### Community 119 - "role_log.h"
-Cohesion: 0.31
-Nodes (17): updi_role_log(), updi_role_log_airtime(), updi_role_log_boot(), updi_role_log_campaign(), updi_role_log_identity(), updi_role_log_identity_crc8(), updi_role_log_packet(), updi_role_log_payload() (+9 more)
+### Community 122 - "20261113T074705Z/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
 
-### Community 120 - "Q crossed-untouched SIB-only batch — POST-00130"
-Cohesion: 0.25
-Nodes (6): Batch result, Host identity and preflight, Post-batch path and ownership, Q crossed-untouched SIB-only batch — POST-00130, Software source identity, Stop state
+### Community 123 - "20261113T075357Z/H01/provenance/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
 
-### Community 121 - "D2-Diagram-Skill"
-Cohesion: 0.25
-Nodes (7): D2-Diagram-Skill, Installation, License, Requirements, Usage, What it does, What you get
+### Community 124 - "20261113T075357Z/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
 
-### Community 122 - "Syntax cheat-sheet (most-used)"
-Cohesion: 0.25
-Nodes (8): Connections, Containers, Icons, Local icon library — check first, Markdown labels (C4-style hierarchy), Style (use sparingly — prefer classes), Syntax cheat-sheet (most-used), Title and legend
+### Community 125 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
 
-### Community 123 - "role_log_test.cpp"
-Cohesion: 0.08
-Nodes (6): complete_tx(), deliver(), reset_radio(), SPIClass, SPISettings, clear_capture()
+### Community 126 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
 
-### Community 124 - "STAR"
-Cohesion: 0.25
-Nodes (8): Action, Decision logic, Execution, Result, Situation, STAR, Task, Trade-offs
+### Community 127 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
 
-### Community 125 - "How to run an RCA: the actual process"
-Cohesion: 0.25
-Nodes (8): How to run an RCA: the actual process, Step 1: Write a precise problem statement, Step 2: Collect evidence before forming a hypothesis, Step 3: Map contributing factors before narrowing to root cause, Step 4: Select your method and investigate, Step 5: Validate before you conclude, Step 6: Define corrective actions that address the cause, not the symptom, Step 7: Monitor whether the fix worked
+### Community 128 - "src/sleep.cpp"
+Cohesion: 0.18
+Nodes (5): SleepState, force_wakeup, is_sleeping, last_rtc_ticks, unix_time
 
-### Community 126 - "Continuation State"
-Cohesion: 0.25
-Nodes (7): Continuation State, Current causal boundary, Current physical labels (pending confirmation), New evidence in this epoch, Next smallest discriminator, Safety, Verified inherited evidence
-
-### Community 127 - "Evidence log"
-Cohesion: 0.25
-Nodes (7): Bounded OCD message snapshot, Evidence log, Final structured outputs, Historical input (not fresh lane-linked evidence), Read-only GPR2 / FLAG_RX follow-up, Scope correction for legacy probe records, Strict no-register-write 38400 baseline
-
-### Community 128 - "Lane B"
-Cohesion: 0.25
-Nodes (7): Adapter observation, Fresh independent SIB sample, Lane B, Phase 1 baseline disposition, RCA_CROSSOVER_01 pre-crossover confirmation, Strict read-only Phase 1 baseline, Target and probe state
-
-### Community 129 - "RCA_POST_SWAP_01 — Lane P inventory"
-Cohesion: 0.25
-Nodes (7): Current P mapping, Evidence integrity, Ownership and host observations, POST-001 SIB-only result, Probe boundary, RCA_POST_SWAP_01 — Lane P inventory, Tool versions and source hashes
+### Community 129 - "20261113T153146Z/manifest.json"
+Cohesion: 0.05
+Nodes (37): mismatches, recorded_files, mismatches, recorded_files, mismatches, recorded_files, classification, eeprom_writes (+29 more)
 
 ### Community 130 - "Frontend Design"
 Cohesion: 0.29
 Nodes (6): Design principles, Frontend Design, Ground your designs in the subject matter, More on writing in design, Process: plan, review against the brief, build, critique, Restraint and self-critique
 
-### Community 132 - "DuplicateTracker"
-Cohesion: 0.29
-Nodes (5): DuplicateTracker, campaign_id_, initialized_, seen_, source_
+### Community 131 - "config"
+Cohesion: 0.07
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
 
-### Community 133 - "AVR128DA28 untouched crossed-state RCA"
-Cohesion: 0.29
-Nodes (6): Action, AVR128DA28 untouched crossed-state RCA, Required answers, Result, Situation, Task
-
-### Community 134 - "19. Evidence standards for root-cause claims"
-Cohesion: 0.29
-Nodes (7): 19. Evidence standards for root-cause claims, BLOCKED, DISFAVORED, FALSIFIED, PROVEN, STRONGLY_SUPPORTED, SUPPORTED
-
-### Community 135 - "Frequently asked questions"
-Cohesion: 0.29
-Nodes (7): Every team, every use case, the right momentum, Frequently asked questions, Q1. What are the 5 steps of root cause analysis?, Q2. What are the 5 core principles of RCA?, Q3. Is RCA part of Six Sigma?, Q4. What are the 7 steps of root cause analysis?, Q5. What are the 6 steps of RCA?
-
-### Community 136 - "fresh/memory/HANDOFF.md"
-Cohesion: 0.29
-Nodes (3): RCA_FRESH_01 execution ledger, Fresh AVR128DA28 UPDI RCA — RCA_FRESH_01, Frozen current topology — RCA_FRESH_01
-
-### Community 137 - "Handoff — `RCA_CROSSOVER_01`"
-Cohesion: 0.29
-Nodes (6): Current finding, Handoff — `RCA_CROSSOVER_01`, Inherited state and safety, Next step, Physical boundary, Work completed
-
-### Community 138 - "Target Electrical Investigator — RCA_PHY_01"
-Cohesion: 0.29
-Nodes (6): Board artifact audit, Finding, Hypothesis-specific falsifiers and least-cost discriminators, Smallest next physical discriminator, Source evidence files, Target Electrical Investigator — RCA_PHY_01
-
-### Community 140 - "Design principles — what makes the output "professional""
+### Community 132 - "guard-100/manifest.json"
 Cohesion: 0.22
-Nodes (9): Animation — only on actual data flow, Color discipline, Connections, Design principles — what makes the output "professional", Direction, Hierarchy & scope, Labels, Shape vocabulary — match the shape to the concept (+1 more)
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
 
-### Community 141 - "11. TDD requirements for host automation"
+### Community 133 - "guard-50/H01/provenance/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
+
+### Community 134 - "guard-50/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
+
+### Community 135 - "Gate 1 source audit"
 Cohesion: 0.33
-Nodes (6): 11. TDD requirements for host automation, Classifier tests, Identity tests, Integration tests without hardware, Metrics tests, Parser/event tests
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
 
-### Community 142 - "Common mistakes that make RCA useless"
+### Community 136 - "tools/arq_trial.py"
+Cohesion: 0.11
+Nodes (29): build_soak_plan(), campaign(), progress(), run_one(), capture_tracker_diagnostics(), checked_events(), close_updi_without_recovery(), diagnostic_case() (+21 more)
+
+### Community 137 - "20261113T211753Z/README.md"
+Cohesion: 0.14
+Nodes (8): Incident timeline, Execution journal, Hardware measurements and gaps, Forward-link sanity check, SX127x register and RF evidence, Cross-experiment comparison, LoRa ARQ V1 root-cause investigation — 20261113T211753Z, Review map
+
+### Community 138 - "config"
+Cohesion: 0.07
+Nodes (28): config, ack_max_ms, ack_min_ms, bandwidth_khz, coding_rate, crc_enabled, explicit_header, fault_ack_stride (+20 more)
+
+### Community 139 - "Gate 1 source audit"
 Cohesion: 0.33
-Nodes (6): 1\. Stopping at the first plausible answer, 2\. Treating "human error" as a root cause, 3\. Running the investigation with the people who built the thing, 4\. Writing corrective actions without assigning owners, 5\. Closing the report without scheduling a follow-up, Common mistakes that make RCA useless
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
 
-### Community 143 - "The five RCA methods, explained with worked examples"
-Cohesion: 0.33
-Nodes (6): 1\. The 5 Whys, 2\. Fishbone diagram (Ishikawa diagram), 3\. Change analysis, 4\. Event analysis (timeline reconstruction), 5\. Pareto analysis, The five RCA methods, explained with worked examples
+### Community 140 - "Bus"
+Cohesion: 0.07
+Nodes (11): printf(), Bus, fifo, finish_delay, regs, reset_mode, ticks, main() (+3 more)
 
-### Community 144 - "Focused physical-layer RCA plan"
-Cohesion: 0.33
-Nodes (5): Authorized experiment design (pending safe physical access), Execution, Focused physical-layer RCA plan, Inherited boundary and physical gate, Safety and deliverables
+### Community 141 - "arduino"
+Cohesion: 0.10
+Nodes (6): loop(), ReadTemperatureCelsius(), TaskHeartbeat, _ts, main(), reset_radio()
 
-### Community 145 - "Investigation Handoff"
-Cohesion: 0.33
-Nodes (5): Current finding, Interpretation cautions, Investigation Handoff, Next discriminator, Safety/state
+### Community 142 - "install"
+Cohesion: 0.06
+Nodes (18): boot(), ApplicationPageWriteTests, BootPackageTests, CompiledHandoffTests, ReceiverBootTests, recording_command(), command(), install() (+10 more)
 
-### Community 146 - "Post-swap physical freeze"
-Cohesion: 0.33
-Nodes (5): Confounds, Evidence boundary, Mapping provenance, Post-swap physical freeze, Software gate and safety
-
-### Community 147 - "RCA_BOARD_SWAP_01 execution plan"
-Cohesion: 0.33
-Nodes (5): Contract and physical gate, Hypothesis and experiment, RCA_BOARD_SWAP_01 execution plan, Safety and stop boundary, Software and ownership
-
-### Community 150 - "Specialized diagram syntax (quick reference)"
+### Community 143 - "source/src/mvp/main.cpp"
 Cohesion: 0.40
-Nodes (5): Grid / matrix, Sequence diagram, Specialized diagram syntax (quick reference), SQL table (ERD), UML class
+Nodes (11): debug_init(), debug_write(), debug_write_float(), debug_write_hex(), debug_write_int(), field(), line(), loop() (+3 more)
 
-### Community 151 - "library.json"
+### Community 145 - "src/arq/main.cpp"
+Cohesion: 0.23
+Nodes (21): command(), command_byte(), discard(), event(), fatal(), frame_event(), loop(), receive() (+13 more)
+
+### Community 146 - "Gate 1 live UPDI report — 20261113T153146Z"
+Cohesion: 0.14
+Nodes (12): A — Action, Findings, Gate 1 live UPDI report — 20261113T153146Z, Next step, R — Result, S — Situation, T — Task, Gate 1 source audit (+4 more)
+
+### Community 147 - "updi_probe.py"
+Cohesion: 0.19
+Nodes (11): _probe_device(), ProbeEvidence, firmware_fingerprint_evidence(), identify_mcu(), _is_access_error(), _port_busy(), probe_firmware_identity(), probe_target_sib() (+3 more)
+
+### Community 148 - "Gateway Hardware SSOT — Rudolph Gateway"
+Cohesion: 0.18
+Nodes (11): 1. System topology, 2. Daughterboard MCU and RFM95W SSOT, 3. Daughterboard external connectors, 4. Four module slot mappings from Main Board, 5. Power, RF and hardware safety, 6. Minimal validation gates, Gateway Hardware SSOT — Rudolph Gateway, H1 (10-pin; only pins 1–5 used in the source schematic) (+3 more)
+
+### Community 149 - "CaptureTests"
+Cohesion: 0.07
+Nodes (3): CaptureTests, command(), monotonic()
+
+### Community 150 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
+
+### Community 151 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
+
+### Community 152 - "STAR — Tracker→Rudolph receiver errata and transport follow-up"
 Cohesion: 0.33
-Nodes (5): jgromes/RadioLib, dependencies, jgromes/RadioLib, name, version
-
-### Community 152 - "pymcuprog/nvm.py"
-Cohesion: 0.03
-Nodes (13): Suggested Questions, get_nvm_access_provider(), NvmAccessProviderCmsisDapAvr, NvmAccessProviderCmsisDapTool, NvmAccessProviderCmsisDapAvr32, NvmAccessProviderCmsisDapDebugwire, NvmAccessProviderCmsisDapMegaAvrJtag, NvmAccessProviderCmsisDapMZeroPlus (+5 more)
+Nodes (6): A — Decision logic and execution, R — Result, proposed minimum correction and limits, Reproduce offline, S — Situation, STAR — Tracker→Rudolph receiver errata and transport follow-up, T — Task and hard constraints
 
 ### Community 153 - "Bash Defensive Patterns"
 Cohesion: 0.40
 Nodes (4): Bash Defensive Patterns, Best Practices Summary, Detailed patterns and worked examples, When to Use This Skill
 
-### Community 154 - ".automation/research/pymcuprog/pymcuprog/avr32target.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/avr32target.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 155 - ".automation/research/pymcuprog/pymcuprog/avr8target.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/avr8target.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 156 - ".automation/research/pymcuprog/pymcuprog/avrdebugger.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/avrdebugger.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 157 - ".automation/research/pymcuprog/pymcuprog/backend.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/backend.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 158 - ".automation/research/pymcuprog/pymcuprog/hexfileutils.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/hexfileutils.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 159 - ".automation/research/pymcuprog/pymcuprog/__init__.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/__init__.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 160 - ".automation/research/pymcuprog/pymcuprog/nvm.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/nvm.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 161 - ".automation/research/pymcuprog/pymcuprog/nvmavr32.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/nvmavr32.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 162 - ".automation/research/pymcuprog/pymcuprog/nvmdebugwire.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/nvmdebugwire.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 163 - ".automation/research/pymcuprog/pymcuprog/nvmmegaavrjtag.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/nvmmegaavrjtag.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 164 - ".automation/research/pymcuprog/pymcuprog/nvmmzeroplus.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/nvmmzeroplus.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 165 - ".automation/research/pymcuprog/pymcuprog/nvmpic.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/nvmpic.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 166 - ".automation/research/pymcuprog/pymcuprog/nvmserialupdi.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/nvmserialupdi.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 167 - ".automation/research/pymcuprog/pymcuprog/nvmspi.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/nvmspi.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 168 - ".automation/research/pymcuprog/pymcuprog/nvmtpi.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/nvmtpi.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 169 - ".automation/research/pymcuprog/pymcuprog/nvmxmega.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/nvmxmega.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 170 - ".automation/research/pymcuprog/pymcuprog/pymcuprog_errors.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/pymcuprog_errors.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 171 - ".automation/research/pymcuprog/pymcuprog/pymcuprog_main.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/pymcuprog_main.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 172 - ".automation/research/pymcuprog/pymcuprog/pymcuprog.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/pymcuprog.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 173 - ".automation/research/pymcuprog/pymcuprog/samtarget.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/samtarget.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 174 - ".automation/research/pymcuprog/pymcuprog/serialupdi/application.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/application.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 175 - ".automation/research/pymcuprog/pymcuprog/serialupdi/constants.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/constants.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 176 - ".automation/research/pymcuprog/pymcuprog/serialupdi/__init__.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/__init__.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 177 - ".automation/research/pymcuprog/pymcuprog/serialupdi/link.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/link.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 178 - ".automation/research/pymcuprog/pymcuprog/serialupdi/nvm.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/nvm.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 179 - ".automation/research/pymcuprog/pymcuprog/serialupdi/nvmp0.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/nvmp0.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 180 - ".automation/research/pymcuprog/pymcuprog/serialupdi/nvmp2.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/nvmp2.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 181 - ".automation/research/pymcuprog/pymcuprog/serialupdi/nvmp3.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/nvmp3.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 182 - ".automation/research/pymcuprog/pymcuprog/serialupdi/nvmp4.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/nvmp4.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 183 - ".automation/research/pymcuprog/pymcuprog/serialupdi/nvmp5.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/nvmp5.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 184 - ".automation/research/pymcuprog/pymcuprog/serialupdi/physical.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/physical.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 185 - ".automation/research/pymcuprog/pymcuprog/serialupdi/readwrite.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/readwrite.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 186 - ".automation/research/pymcuprog/pymcuprog/serialupdi/timeout.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/serialupdi/timeout.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 187 - ".automation/research/pymcuprog/pymcuprog/toolconnection.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/toolconnection.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 188 - ".automation/research/pymcuprog/pymcuprog/utils.py"
-Cohesion: 0.40
-Nodes (5): .automation/research/pymcuprog/pymcuprog/utils.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 189 - ".automation/updi-baseline/src/receiver/main.cpp"
-Cohesion: 0.40
-Nodes (5): .automation/updi-baseline/src/receiver/main.cpp, ast_hash, mtime, seen, semantic_hash
-
-### Community 190 - "docs/updi-console-report.md"
-Cohesion: 0.40
-Nodes (5): docs/updi-console-report.md, ast_hash, mtime, seen, semantic_hash
-
-### Community 191 - "docs/updi-progress.md"
-Cohesion: 0.40
-Nodes (5): docs/updi-progress.md, ast_hash, mtime, seen, semantic_hash
-
-### Community 192 - "evidence/updi/baseline-default-trace.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/baseline-default-trace.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 193 - "evidence/updi/baseline-programming-baud-trace.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/baseline-programming-baud-trace.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 194 - "evidence/updi/baseline-reset-trace.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/baseline-reset-trace.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 195 - "evidence/updi/baseline-terminal.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/baseline-terminal.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 196 - "evidence/updi/baseline-trace.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/baseline-trace.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 197 - "evidence/updi/deep-debug/01-snapshot.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/01-snapshot.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 198 - "evidence/updi/deep-debug/02-control.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/02-control.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 199 - "evidence/updi/deep-debug/03-oracle-snapshot.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/03-oracle-snapshot.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 200 - "evidence/updi/deep-debug/04-startup.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/04-startup.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 201 - "evidence/updi/deep-debug/05-revid.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/05-revid.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 202 - "evidence/updi/deep-debug/06-read-0x1c.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/06-read-0x1c.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 203 - "evidence/updi/deep-debug/06-read-0x1d.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/06-read-0x1d.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 204 - "evidence/updi/deep-debug/06-read-0x1e.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/06-read-0x1e.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 205 - "evidence/updi/deep-debug/06-read-0x1f.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/06-read-0x1f.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 206 - "evidence/updi/deep-debug/06-read-0x40.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/06-read-0x40.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 207 - "evidence/updi/deep-debug/06-read-0x63.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/06-read-0x63.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 208 - "evidence/updi/deep-debug/07-startup.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/07-startup.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 209 - "evidence/updi/deep-debug/08-sib.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/08-sib.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 210 - "evidence/updi/deep-debug/09-official-control.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/09-official-control.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 211 - "evidence/updi/deep-debug/10-key-snapshot.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/10-key-snapshot.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 212 - "evidence/updi/deep-debug/11-bor-clear.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/11-bor-clear.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 213 - "evidence/updi/deep-debug/12-bod-intctrl.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/12-bod-intctrl.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 214 - "evidence/updi/deep-debug/13-scratch.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/13-scratch.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 215 - "evidence/updi/deep-debug/14-startup.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/14-startup.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 216 - "evidence/updi/deep-debug/15-bod-0x80.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/15-bod-0x80.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 217 - "evidence/updi/deep-debug/15-bod-0x81.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/15-bod-0x81.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 218 - "evidence/updi/deep-debug/15-bod-0x88.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/15-bod-0x88.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 219 - "evidence/updi/deep-debug/15-bod-0x89.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/15-bod-0x89.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 220 - "evidence/updi/deep-debug/15-bod-0x8a.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/15-bod-0x8a.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 221 - "evidence/updi/deep-debug/15-bod-0x8b.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/15-bod-0x8b.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 222 - "evidence/updi/deep-debug/16-official-break-revid.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/16-official-break-revid.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 223 - "evidence/updi/deep-debug/17-progmode.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/17-progmode.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 224 - "evidence/updi/deep-debug/18-after-prog-exit.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/18-after-prog-exit.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 225 - "evidence/updi/deep-debug/19-post-exit.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/19-post-exit.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 226 - "evidence/updi/deep-debug/20-key-after-prog.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/20-key-after-prog.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 227 - "evidence/updi/deep-debug/21-bor-marker.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/21-bor-marker.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 228 - "evidence/updi/deep-debug/22-diagnostic-reset.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/22-diagnostic-reset.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 229 - "evidence/updi/deep-debug/23-extra-0x100.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/deep-debug/23-extra-0x100.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 230 - "evidence/updi/final-failure-trace.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/final-failure-trace.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 231 - "evidence/updi/final-terminal-gate.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/final-terminal-gate.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 232 - "evidence/updi/patched-default-trace.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/patched-default-trace.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 233 - "evidence/updi/patched-first-failure.json"
-Cohesion: 0.40
-Nodes (5): evidence/updi/patched-first-failure.json, ast_hash, mtime, seen, semantic_hash
-
-### Community 234 - "evidence/updi/status-snapshot.txt"
-Cohesion: 0.40
-Nodes (5): evidence/updi/status-snapshot.txt, ast_hash, mtime, seen, semantic_hash
-
-### Community 235 - "external/upditerm/demo.c"
-Cohesion: 0.40
-Nodes (5): external/upditerm/demo.c, ast_hash, mtime, seen, semantic_hash
-
-### Community 236 - "external/upditerm/README.md"
-Cohesion: 0.40
-Nodes (5): external/upditerm/README.md, ast_hash, mtime, seen, semantic_hash
-
-### Community 237 - "external/upditerm/updi_stdio.c"
-Cohesion: 0.40
-Nodes (5): external/upditerm/updi_stdio.c, ast_hash, mtime, seen, semantic_hash
-
-### Community 238 - "external/upditerm/updi_stdio.h"
-Cohesion: 0.40
-Nodes (5): external/upditerm/updi_stdio.h, ast_hash, mtime, seen, semantic_hash
-
-### Community 239 - "external/upditerm/updi_uart.c"
-Cohesion: 0.40
-Nodes (5): external/upditerm/updi_uart.c, ast_hash, mtime, seen, semantic_hash
-
-### Community 240 - "external/upditerm/updi_uart.h"
-Cohesion: 0.40
-Nodes (5): external/upditerm/updi_uart.h, ast_hash, mtime, seen, semantic_hash
-
-### Community 241 - "external/upditerm/upditerm.py"
-Cohesion: 0.40
-Nodes (5): external/upditerm/upditerm.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 242 - "get-platformio.py"
-Cohesion: 0.40
-Nodes (5): get-platformio.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 243 - "patches/upditerm/README.md"
-Cohesion: 0.40
-Nodes (5): patches/upditerm/README.md, ast_hash, mtime, seen, semantic_hash
-
-### Community 244 - "pyproject.toml"
-Cohesion: 0.40
-Nodes (5): pyproject.toml, ast_hash, mtime, seen, semantic_hash
-
-### Community 245 - "README.md"
-Cohesion: 0.40
-Nodes (5): README.md, ast_hash, mtime, seen, semantic_hash
-
-### Community 246 - "src/lora/__init__.py"
-Cohesion: 0.40
-Nodes (5): src/lora/__init__.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 247 - "src/receiver/main.cpp"
-Cohesion: 0.40
-Nodes (5): src/receiver/main.cpp, ast_hash, mtime, seen, semantic_hash
-
-### Community 248 - "src/sender/main.cpp"
-Cohesion: 0.40
-Nodes (5): src/sender/main.cpp, ast_hash, mtime, seen, semantic_hash
-
-### Community 249 - "test/test_upditerm.py"
-Cohesion: 0.40
-Nodes (5): test/test_upditerm.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 250 - "tools/updi-session.py"
-Cohesion: 0.40
-Nodes (5): tools/updi-session.py, ast_hash, mtime, seen, semantic_hash
-
-### Community 251 - "tools/updi-sib.sh"
-Cohesion: 0.40
-Nodes (5): tools/updi-sib.sh, ast_hash, mtime, seen, semantic_hash
-
-### Community 252 - "role_detector.py"
-Cohesion: 0.18
-Nodes (8): DetectedDevice, USBDevice, classify_devices(), diff_device_presence(), _identity_role(), _probe_for(), _registry_hint(), _registry_record()
-
-### Community 253 - "5. Two-subagent architecture: exactly two workers"
-Cohesion: 0.40
-Nodes (5): 5. Two-subagent architecture: exactly two workers, Coordinator, Lane Worker A, Lane Worker B, Port contention rule
-
-### Community 254 - "When RCA is worth running"
-Cohesion: 0.40
-Nodes (5): 1\. A production incident had customer impact, 2\. A release missed a hard commitment, 3\. A recurring process is consistently breaking, Something happened more than once, When RCA is worth running
-
-### Community 255 - "Path Q lane — RCA_BOARD_SWAP_01"
-Cohesion: 0.40
-Nodes (4): Inventory, Ownership and host USB observations, Path Q lane — RCA_BOARD_SWAP_01, PRE batch status
-
-### Community 256 - "Post-swap handoff"
-Cohesion: 0.40
-Nodes (4): Measured B state, Pending human action, Post-swap handoff, Verification and artifacts
-
-### Community 257 - "Board Swap Evidence Log"
-Cohesion: 0.40
-Nodes (4): Board Swap Evidence Log, Current epoch, Inherited checkpoint, PRE NO-GO checkpoint
-
-### Community 258 - "Specialized diagram syntax (quick reference)"
-Cohesion: 0.40
-Nodes (5): Grid / matrix, Sequence diagram, Specialized diagram syntax (quick reference), SQL table (ERD), UML class
-
-### Community 259 - "sys"
+### Community 154 - "Storage"
+Cohesion: 0.12
+Nodes (9): ui64toa(), Storage, _first, _raw, _start_block, Storage<T>::peek(), Storage<T>::push(), Storage<T>::setup() (+1 more)
+
+### Community 155 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
+
+### Community 156 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
+
+### Community 157 - "Final RCA — Tracker to Gateway LoRa ARQ V1"
+Cohesion: 0.14
+Nodes (14): Business impact, Confirmed causes, Evidence index, Executive summary, Final RCA — Tracker to Gateway LoRa ARQ V1, Final verdict, Next decision, RC-01 — UPDI STATUS mailbox write-width defect (+6 more)
+
+### Community 158 - "20261113T084503Z/H01/provenance/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
+
+### Community 159 - "20261113T084503Z/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
+
+### Community 160 - "radio"
+Cohesion: 0.17
+Nodes (12): radio, bandwidth_khz, coding_rate, crc_enabled, explicit_header, frequency_hz, iq_inverted, preamble_symbols (+4 more)
+
+### Community 161 - "mcurses.c"
+Cohesion: 0.11
+Nodes (37): addch(), addstr(), addstr_P(), attrset(), clear(), clrtobot(), clrtoeol(), curs_set() (+29 more)
+
+### Community 162 - "Logger"
+Cohesion: 0.25
+Nodes (5): Logger, _capacity, _cursor, _raw, _start_block
+
+### Community 163 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 164 - "Raw LoRa ARQ V1 — STAR report"
+Cohesion: 0.05
+Nodes (29): ARQ debugging, UPDI register evidence, Reverse-raw acquisition — 2026-11-13 12:06:29 UTC, Reverse raw — 2026-11-13 12:15:06 UTC, Driver and IRQ audit, Physical result, Repository and prior evidence, Reverse raw readiness and radio audit — 20261113T123510Z (+21 more)
+
+### Community 166 - "Evidence index"
+Cohesion: 0.50
+Nodes (4): 20261113T121506Z-reverse-raw, 20261113T123620Z-reverse-raw, 20261113T123837Z-standby, Evidence index
+
+### Community 169 - "RADIO_ONLY_FINAL_REPORT.md"
+Cohesion: 0.23
+Nodes (4): Hypothesis Matrix, Power A/B/A Results, 2026-11-14 continuation: 923 MHz test profile, Primary-source log
+
+### Community 170 - "platformio_generate.py"
 Cohesion: 0.09
-Nodes (12): build_d2_command(), main(), parse_d2_config(), render_one(), main(), parse_arguments(), session(), error() (+4 more)
+Nodes (8): ConfigurationTests, RawMvpTests, ReceiverHardwareTests, load(), main(), unique_object(), validate(), shape()
+
+### Community 172 - "runtime-versions.json"
+Cohesion: 0.07
+Nodes (30): Derived mailbox exchange, not a wire capture, Gate 1 command and initialization audit, Historical first failure, kept separate from this blocked run, PESIG and primary references, Repository and implementation of record, Ten source-level safety questions, A — Action, Findings and hypothesis review (+22 more)
+
+### Community 173 - "Console"
+Cohesion: 0.11
+Nodes (3): Console, main(), Session
+
+### Community 174 - "Tracker Hardware SSOT — LoRa Tracker RFM"
+Cohesion: 0.25
+Nodes (8): 1. Board identity and components, 2. AVR128DA28 pin and net SSOT, 3. Power and startup contract, 4. Minimal firmware implementation contract, 5. Acceptance criteria / physical evidence, Exact LoRa RFM95W signal map, Sources, Tracker Hardware SSOT — LoRa Tracker RFM
+
+### Community 176 - "stdio"
+Cohesion: 0.09
+Nodes (8): updi_role_log_dropped(), main(), command(), complete_tx(), deliver(), main(), updi_uart_try_tx(), updi_uart_tx()
+
+### Community 177 - "soak_campaign"
+Cohesion: 0.10
+Nodes (15): ArqSoakPlanTests, fake_campaign(), fake_campaign(), fake_campaign(), fake_campaign(), fake_campaign(), confirmed_rf_preflight(), dynamic_attr() (+7 more)
+
+### Community 178 - "20261114T094223Z-soak-validation/FINAL_RCA.md"
+Cohesion: 0.14
+Nodes (11): Changes, Explicitly not verified, Soak Runner Implementation and Regression, TDD and verification, Current execution status, Implemented, Long-Duration Soak Plan and Readiness, Progressive stages (+3 more)
+
+### Community 179 - "ReliableTransport"
+Cohesion: 0.06
+Nodes (25): ReliableTransport, armed_, context_, error_, event_context_, frequency_, have_accepted_, kMaxData (+17 more)
+
+### Community 181 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 182 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 183 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 184 - "ERRATA_FOLLOWUP_STAR.md"
+Cohesion: 0.14
+Nodes (11): Applicability to 915 MHz / BW125 / SF7, Counter and receive-event interpretation, Exact receiver-IF candidate, RadioLib implementation of record, Receiver errata audit — offline follow-up, 2026-11-13, Exact register comparison and real-driver write order, FACT: option0, 25 modeled register writes, FACT: option1, 29 modeled register writes (+3 more)
+
+### Community 185 - "RingBuffer"
+Cohesion: 0.10
+Nodes (7): RingBuffer, _buffer, RingBuffer<Capacity>::read(), RingBuffer<Capacity>::read_byte(), RingBuffer<Capacity>::write(), RingBuffer<Capacity>::write_byte(), _firstFree
+
+### Community 186 - "915 MHz deployment and bidirectional diagnostic verification"
+Cohesion: 0.20
+Nodes (9): 915 MHz deployment and bidirectional diagnostic verification, Action, Build and preservation, Evidence, Final physical status, Remaining limits, Result, Situation (+1 more)
+
+### Community 187 - "SSOT review — Tracker, Gateway and reverse-raw role mapping"
+Cohesion: 0.20
+Nodes (8): Design facts and physical unknowns, 3.3 V, H1 and UPDI interpretation, Board-level SSOT versus firmware roles, Decision, Finding, Gate 1 boundary, Reverse-raw image assignment, SSOT review — Tracker, Gateway and reverse-raw role mapping
+
+### Community 188 - "ScanResult"
+Cohesion: 0.12
+Nodes (4): DetectedDevice, ScanResult, format_text(), result_to_json()
+
+### Community 189 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 190 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 191 - "Proposed discriminating experiments — NOT executed or authorized here"
+Cohesion: 0.33
+Nodes (5): Evidence-ranked hypothesis matrix, Gate 1 — transport and power evidence, Gate 2 — receiver-only IF A/B, Gate 3 — reference isolation and business ranking, Proposed discriminating experiments — NOT executed or authorized here
+
+### Community 193 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 194 - "Gate 1 live UPDI report — 20261113T153146Z"
+Cohesion: 0.14
+Nodes (12): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity, A — Action, Findings, Gate 1 live UPDI report — 20261113T153146Z (+4 more)
+
+### Community 195 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 196 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 197 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 198 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 199 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 200 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 201 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 202 - "ReaderFreeH01SummaryTests"
+Cohesion: 0.08
+Nodes (4): ArqTests, ReaderFreeH01SummaryTests, main(), reader_free_rx_idle_summary()
+
+### Community 204 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 205 - "Execution journal"
+Cohesion: 0.40
+Nodes (4): Execution journal, Gate 1 live, Next discriminating experiment, SSOT read-only review
+
+### Community 206 - ".test_runner_uses_receiver_ready_then_one_gateway_start"
+Cohesion: 0.18
+Nodes (6): wire(), image_evidence(), journal(), StableTransportProofTests, assess(), validate_stable_transport()
+
+### Community 208 - "Execution Summary"
+Cohesion: 0.40
+Nodes (4): Completed in software, Execution Summary, Next physical action, Physical work and result
+
+### Community 209 - "UPDI"
+Cohesion: 0.11
+Nodes (4): SerialPort, SerialUPDI, TransportError, UPDI
+
+### Community 210 - "LoRa"
+Cohesion: 0.14
+Nodes (10): LoRa, _active, _hardware, _initialized, _last_rssi, _module, _my_addr, _received (+2 more)
+
+### Community 211 - "prebuild-20261113T192904Z/manifest.json"
+Cohesion: 0.40
+Nodes (4): environments, git_head, run_id, source_state
+
+### Community 212 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 213 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
+
+### Community 214 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 215 - "os"
+Cohesion: 0.19
+Nodes (7): bootstrap(), create_temp_dir(), main(), BuildIdentityImagesTests, bootstrap(), create_temp_dir(), main()
+
+### Community 221 - "Scope and baseline"
+Cohesion: 0.29
+Nodes (5): LoRa ARQ V1 root cause war room — 20261113T174604Z, Measurement limits, Preservation, Scope, Scope and baseline
+
+### Community 224 - "pins"
+Cohesion: 0.33
+Nodes (10): cs, dio1, enable, irq, miso, mosi, rst, sck (+2 more)
+
+### Community 225 - "20261113T195218Z/H01/provenance/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
+
+### Community 226 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 227 - "Baseline and scope"
+Cohesion: 0.20
+Nodes (8): Active hardware configuration, Baseline and scope, Environment, Historical classifications kept intact, Preservation, Scope, Diagnostic runner preflight failures, Execution journal
+
+### Community 228 - "20261113T195218Z/manifest.json"
+Cohesion: 0.22
+Nodes (8): boards, receiver, sender, config_hash, radio_power_active_level, spi_route, spi_route, source_hash
+
+### Community 229 - "Source and transport audit"
+Cohesion: 0.50
+Nodes (3): Firmware command and reset-state path, Host Monitor response failure, Source and transport audit
+
+### Community 230 - "LoRa-only ARQ recovery — RCA continuation"
+Cohesion: 0.20
+Nodes (10): Acceptance verdict, Action, LoRa-only ARQ recovery — RCA continuation, Next physical decision, Observation classification, Regulatory and execution follow-up, Required final questions, Result (+2 more)
+
+### Community 232 - "Power and reset evidence"
+Cohesion: 0.67
+Nodes (3): DA-specific fuse/reset interpretation, Power and reset evidence, Smallest discriminating measurements — future authorization only
+
+### Community 233 - "HardwareGateTests"
+Cohesion: 0.06
+Nodes (7): BuildAcceptanceTests, dynamic_attr(), effective_platformio_config(), FlashSafetyTests, HardwareGateTests, command(), hardware_blockers()
+
+### Community 234 - "assert"
+Cohesion: 0.19
+Nodes (9): clear_log(), cmd(), logged(), main(), main(), text(), cmd(), logged() (+1 more)
+
+### Community 235 - "UPDI first-failure boundary"
+Cohesion: 0.33
+Nodes (6): Actual call graph and contracts, Captured evidence, Framing, adapter and lifecycle, Manufacturer cross-check and missing telemetry, UPDI first-failure boundary, flush()
+
+### Community 236 - "Program source finding — SX127x high-band mode"
+Cohesion: 0.22
+Nodes (9): Evidence, Observed runtime state, Program source finding — SX127x high-band mode, Smallest causal experiment, Source path, Test-first correction, Verdict, Verification in this continuation (+1 more)
+
+### Community 237 - "Final RCA — AVR128DA28 Tracker / RFM95W ARQ V1"
+Cohesion: 0.13
+Nodes (15): Business impact, Confirmed findings, Corrective action, Evidence index, Executive summary, Final RCA — AVR128DA28 Tracker / RFM95W ARQ V1, Program-source addendum, Remaining hypotheses (+7 more)
+
+### Community 238 - "files"
+Cohesion: 0.50
+Nodes (4): sha256, size, files, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq/firmware.elf
+
+### Community 239 - "Gate 1 source and safety audit"
+Cohesion: 0.22
+Nodes (8): External source claim record, Gate 1 source and safety audit, Historical separation and preservation, Monitor initialization, No reset, programming or RF actions, Repository selection, STATUS behavior and side effects, Why identity uses raw UPDI reads
+
+### Community 240 - "Power and Interface Topology"
+Cohesion: 0.50
+Nodes (4): Gateway — Rudolph Gateway radio and main-board schematics, Live Host evidence and limits, Power and Interface Topology, Tracker — Tracker RFM schematic, 2025-02-16
+
+### Community 241 - "source/src/arq/main.cpp"
+Cohesion: 0.39
+Nodes (15): command(), command_byte(), discard(), event(), fatal(), frame_event(), loop(), receive() (+7 more)
+
+### Community 242 - "PROGRAMMER_VERIFICATION.md"
+Cohesion: 0.50
+Nodes (3): Identity and non-destructive controls, Programmer Verification, Source and bounds
+
+### Community 243 - "Gate 1 source audit"
+Cohesion: 0.33
+Nodes (5): Gate 1 source audit, Historical incident boundary, Normal UPDI Monitor path, Reset-capable identity alternative excluded, Target and application identity
+
+### Community 245 - "role_log_test.cpp"
+Cohesion: 0.13
+Nodes (4): EepromSpy, reads, writes, clear_capture()
+
+### Community 248 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq/firmware.hex"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq/firmware.hex
+
+### Community 249 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq/lora_build_identity.h"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq/lora_build_identity.h
+
+### Community 250 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq_test/firmware.elf"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq_test/firmware.elf
+
+### Community 251 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq_test/firmware.hex"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq_test/firmware.hex
+
+### Community 252 - "mvp_board.cpp"
+Cohesion: 0.24
+Nodes (3): delay(), pump(), step()
+
+### Community 253 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq_test/lora_build_identity.h"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_arq_test/lora_build_identity.h
+
+### Community 254 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_reverse_raw/firmware.elf"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_reverse_raw/firmware.elf
+
+### Community 255 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_reverse_raw/firmware.hex"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_reverse_raw/firmware.hex
+
+### Community 256 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_reverse_raw/lora_build_identity.h"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/receiver_reverse_raw/lora_build_identity.h
+
+### Community 257 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq/firmware.elf"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq/firmware.elf
+
+### Community 258 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq/firmware.hex"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq/firmware.hex
+
+### Community 259 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq/lora_build_identity.h"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq/lora_build_identity.h
 
 ### Community 260 - "Common issues by impact"
 Cohesion: 0.50
 Nodes (4): Common issues by impact, Critical (fix immediately), Moderate (fix soon), Serious (fix before launch)
 
-### Community 261 - "Fresh Q ownership check — read only"
+### Community 261 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq_test/firmware.elf"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq_test/firmware.elf
+
+### Community 262 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq_test/firmware.hex"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq_test/firmware.hex
+
+### Community 263 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq_test/lora_build_identity.h"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_arq_test/lora_build_identity.h
+
+### Community 264 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_reverse_raw/firmware.elf"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_reverse_raw/firmware.elf
+
+### Community 265 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_reverse_raw/firmware.hex"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_reverse_raw/firmware.hex
+
+### Community 266 - "docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_reverse_raw/lora_build_identity.h"
+Cohesion: 0.67
+Nodes (3): sha256, size, docs/rca/20261113T174604Z/firmware/prebuild-20261113T192904Z/sender_reverse_raw/lora_build_identity.h
+
+### Community 267 - "RawStorage"
+Cohesion: 0.36
+Nodes (3): RawStorage, _cached_block, _cached_pos
+
+### Community 268 - "Reliability Results"
 Cohesion: 0.50
-Nodes (3): Fresh Q ownership check — read only, Owner queries on the stable link, Resolver
+Nodes (3): Physical results, Reliability Results, Software-only results
 
-### Community 262 - "Q PRE host-tool failures"
-Cohesion: 0.50
-Nodes (3): Attempt 1 — parse-time error, Attempt 2 — host runtime error, Q PRE host-tool failures
+### Community 269 - "Execution Journal"
+Cohesion: 0.29
+Nodes (6): Execution Journal, Experiment: Clean build matrix, Experiment: Full host regression, Experiment: Physical soak preflight gate, Experiment: Soak stage ledger and retry recovery, Experiment: Stale runner recovery
 
-### Community 263 - "Theme (color palette) — ask the user first"
-Cohesion: 0.50
-Nodes (4): Custom palette via `theme-overrides`, Full palette catalog, Theme (color palette) — ask the user first, Topic-matched palette picker
-
-### Community 264 - "4. Hard safety and scope constraints"
-Cohesion: 0.50
-Nodes (4): 4.1 Repository scope, 4.2 Flash/fuse safety, 4.3 Physical-action policy, 4. Hard safety and scope constraints
-
-### Community 265 - "8. Persistent memory policy"
-Cohesion: 0.50
-Nodes (4): 8. Persistent memory policy, `memory/CURRENT_STATE.md`, `memory/DECISIONS.md`, `memory/EVIDENCE_LOG.md`
-
-### Community 266 - "Path Q — RCA_POST_SWAP_01 crossed-untouched"
-Cohesion: 0.50
-Nodes (3): Batch result, Evidence, Path Q — RCA_POST_SWAP_01 crossed-untouched
-
-### Community 267 - "Untouched crossed-state implementation plan"
-Cohesion: 0.50
-Nodes (3): Experiment POST-001, Implementation and verification, Untouched crossed-state implementation plan
-
-### Community 268 - "Theme (color palette) — ask the user first"
-Cohesion: 0.50
-Nodes (4): Custom palette via `theme-overrides`, Full palette catalog, Theme (color palette) — ask the user first, Topic-matched palette picker
-
-### Community 269 - "updi_probe.py"
-Cohesion: 0.25
-Nodes (8): identify_mcu(), _is_access_error(), _port_busy(), probe_firmware_identity(), probe_target_sib(), read_firmware_flash(), _require_safe(), _run_bounded()
-
-### Community 271 - "detect_devices.py"
-Cohesion: 0.23
-Nodes (11): build_parser(), _load_registry(), main(), _probe_device(), _run_self_test(), SafetyArgumentParser, _scan(), _watch() (+3 more)
+### Community 270 - "RecordedEvent"
+Cohesion: 0.33
+Nodes (6): RecordedEvent, error, name, sequence, time, type
 
 ### Community 272 - "Testing checklist"
 Cohesion: 0.67
 Nodes (3): Automated testing, Manual testing, Testing checklist
 
-### Community 276 - "USB topology and sysfs snapshot"
-Cohesion: 0.67
-Nodes (3): Topology, USB sysfs attributes, USB topology and sysfs snapshot
-
-### Community 297 - "ScanResult"
-Cohesion: 0.21
-Nodes (11): Current result, Gateway-to-Receiver LoRa Hello World, Hardware stages, Live USB inventory, Shared profile and protocol, Software verification, _print_result(), ScanResult (+3 more)
-
-### Community 298 - "time"
-Cohesion: 0.30
-Nodes (9): command(), main(), one_attempt(), record_raw(), sha(), source_hashes(), StopCampaign, utc_now() (+1 more)
-
-### Community 299 - "firmware_identity.py"
-Cohesion: 0.26
-Nodes (10): FirmwareIdentity, crc8(), FingerprintResult, IdentityParseResult, match_flash_fingerprint(), normalize_ihex_region(), parse_identity_stream(), _parse_ihex() (+2 more)
-
-### Community 300 - "Graph Report - lora  (2026-10-27)"
-Cohesion: 0.22
-Nodes (8): Community Hubs (Navigation), Corpus Check, Graph Freshness, Graph Report - lora  (2026-10-27), Import Cycles, Knowledge Gaps, Summary, Surprising Connections (you probably didn't know these)
-
-### Community 310 - "Graph Report - lora  (2026-10-27)"
-Cohesion: 0.22
-Nodes (8): Community Hubs (Navigation), Corpus Check, Graph Freshness, Graph Report - lora  (2026-10-27), Import Cycles, Knowledge Gaps, Summary, Surprising Connections (you probably didn't know these)
-
-### Community 311 - "usb_inventory.py"
-Cohesion: 0.19
-Nodes (7): discover_usb_devices(), InventoryResult, _normalize_hex(), parse_udev_properties(), _run_command(), start_udev_monitor(), _usb_instance()
-
-### Community 312 - "pytest"
-Cohesion: 0.16
-Nodes (11): wilson_interval(), append_csv(), append_run_csv(), _check_header(), render_summary(), test_invalid_wilson_inputs_are_rejected(), test_summary_reports_counts_rates_latency_and_wilson_interval(), test_wilson_interval_handles_zero_and_full_success_without_zero_width() (+3 more)
-
-### Community 313 - "classify_pairing_matrix"
-Cohesion: 0.22
-Nodes (7): classify_pairing_matrix(), pairing_effects(), test_adapter_target_interaction_is_preserved(), test_partial_rate_difference_is_not_forced_into_binary_pass_fail(), test_07_interaction(), test_two_factor_interaction_is_not_forced_to_single_cause(), test_partial_matrix_classifies_interaction()
-
-### Community 314 - "hello_protocol.h"
+### Community 278 - "External code and primary-source review"
 Cohesion: 0.29
-Nodes (6): State, TEST_ARMED, TEST_COMPLETED, TEST_FAILED, TEST_IDLE, TEST_RUNNING
+Nodes (5): External code and primary-source review, Manufacturer facts used, RadioLib behavior relevant to this run, Reuse decisions, Source log
 
-### Community 316 - "effective_platformio_config"
-Cohesion: 0.09
-Nodes (7): effective_platformio_config(), FlashSafetyTests, ihex_record(), TargetLayoutTests, boot_fuses_match(), firmware_measurement(), parse_ihex_range()
+### Community 279 - "Long-Duration Hardware Soak Readiness — Final RCA Continuation"
+Cohesion: 0.29
+Nodes (7): A — Action, Evidence index, Long-Duration Hardware Soak Readiness — Final RCA Continuation, R — Result, Required answers, S — Situation, T — Task
 
-### Community 317 - "test_device_reconnect.py"
-Cohesion: 0.53
-Nodes (4): DeviceReconnectTests, make_device(), make_probe(), require()
+### Community 280 - "Matched Tracker RX-idle control"
+Cohesion: 0.15
+Nodes (10): Evidence, Experiment, Matched Tracker RX-idle control, Result, Firmware and configuration, Hardware counts, Preservation, Python tests (+2 more)
 
-### Community 318 - "9. CSV report schemas"
-Cohesion: 0.25
-Nodes (8): 9. CSV report schemas, `device_inventory.csv`, `events.csv`, `flash_budget.csv`, `hypothesis_status.csv`, `pairwise_comparison.csv`, `root_cause_ranking.csv`, `runs.csv`
+### Community 281 - "Hardware topology"
+Cohesion: 0.33
+Nodes (5): Board pin maps, Hardware topology, Image identity, Power tree, Runtime roles
+
+### Community 282 - "Regression results"
+Cohesion: 0.33
+Nodes (5): Configuration and firmware builds, Evidence integrity and restoration, Hardware counts, Python, Regression results
+
+### Community 283 - "load_arq"
+Cohesion: 0.31
+Nodes (3): arq_artifacts(), load_arq(), validate_arq()
+
+### Community 285 - "20261114T023251Z/FINAL_RCA.md"
+Cohesion: 0.22
+Nodes (6): Power, reset, and measurement limits, Reset-cause capture, Tracker supply path, What was not measured, Key evidence, RCA continuation — 2026-11-14
+
+### Community 286 - "H01 reader-free hardware result"
+Cohesion: 0.33
+Nodes (5): Evidence, Experiment, H01 reader-free hardware result, Interpretation, Observations
+
+### Community 287 - "src/reverse_raw/main.cpp"
+Cohesion: 0.14
+Nodes (25): command(), command_byte(), configuration(), counter(), event(), loop(), observation(), setup() (+17 more)
+
+### Community 290 - "arq.h"
+Cohesion: 0.19
+Nodes (32): arq_frame, arq_receiver, arq_result, arq_sender, arq_decode(), arq_encode(), arq_valid(), arq_receiver_arm() (+24 more)
+
+### Community 292 - "Experiment plan and next decision"
+Cohesion: 0.40
+Nodes (4): Business ranking, Completed discriminating experiments, Experiment plan and next decision, Next experiment — synchronized power/reset capture
+
+### Community 293 - "ARQ and packet path"
+Cohesion: 0.40
+Nodes (4): ARQ and packet path, Historical raw incident, Normal ARQ and ACK, Reverse-raw path
+
+### Community 294 - "Root-cause analysis"
+Cohesion: 0.40
+Nodes (4): Competing explanations and counterfactuals, Root-cause analysis, Track A — Gate 1 STATUS silence, Track B — reverse RF
+
+### Community 296 - "Corrective actions"
+Cohesion: 0.40
+Nodes (4): Applied and verified, Corrective actions, Minimum proposed repair, Not applied
+
+### Community 297 - "Source log"
+Cohesion: 0.40
+Nodes (4): Claim limits, External technical sources, Local implementation sources, Source log
+
+### Community 299 - "Radio and protocol boundaries"
+Cohesion: 0.40
+Nodes (4): Radio and protocol boundaries, RadioLib and errata, Runtime configuration observed, What the H01 logs establish
+
+### Community 304 - "sleep/sleep.cpp"
+Cohesion: 0.11
+Nodes (14): ISR(), rtc_init(), rtc_reset_ticks(), rtc_start(), rtc_ticks(), sleep_for(), sleep_get_unix_time(), sleep_init() (+6 more)
 
 ### Community 324 - "rf_proof.py"
+Cohesion: 0.11
+Nodes (19): boot_fuses_match(), build_flag_defines(), effective_project_sections(), host_tests(), parse_rf_campaign(), parse_role_log_count(), parse_test_counts(), parse_wrapper_check_count() (+11 more)
+
+### Community 325 - "PacketBoot"
+Cohesion: 0.25
+Nodes (7): PacketBoot, checkpoint, config, device_model, firmware, reset_flags, type
+
+### Community 326 - "Implementation summary"
+Cohesion: 0.50
+Nodes (4): Implementation summary, Implemented, Remaining physical work, Verification
+
+### Community 327 - "Final RCA — LoRa ARQ Hardware Recovery"
+Cohesion: 0.14
+Nodes (14): A — Action, Confirmed software defects, Evidence index, Executive summary, Final RCA — LoRa ARQ Hardware Recovery, Final verdict, Physical inventory and gates, R — Result (+6 more)
+
+### Community 331 - "Execution journal"
+Cohesion: 0.25
+Nodes (8): Bring-up resume — 2026-11-14 13:16 UTC, E00 — Baseline and source references, E01 — TDD and build, E02 — Live preserved-firmware STATUS and register observation, E03 — RF/programming decision, E04 — Integrity, Execution journal, Verified bring-up implementation — 2026-11-14
+
+### Community 333 - "Test-first and physical validation results"
+Cohesion: 0.29
+Nodes (7): 923 MHz continuation, Commands actually executed, Live non-RF experiment E01, Physical RF and power matrix, RED → GREEN, Software results, Test-first and physical validation results
+
+### Community 335 - "RF Configuration and Toolchain Follow-up"
+Cohesion: 0.40
+Nodes (4): Host compiler and test stage, Remaining physical dependencies, RF Configuration and Toolchain Follow-up, Thai RF test profile
+
+### Community 336 - "compare_snapshots"
+Cohesion: 0.17
+Nodes (3): classify(), compare_snapshots(), delta()
+
+### Community 337 - "Regression Results — Current Continuation"
+Cohesion: 0.67
+Nodes (3): Historical run results, Regression Results — Current Continuation, Test-first fixes
+
+### Community 338 - "SX127x HF-mode verification"
+Cohesion: 0.50
+Nodes (4): Preserved-firmware hardware baseline, Register rule and candidate, Software verification, SX127x HF-mode verification
+
+### Community 339 - "stdint"
+Cohesion: 0.06
+Nodes (10): AdditionOverflows(), IsRangeWithin(), arq_receiver_state, arq_sender_state, init_radio(), init_receiver_gpio(), setup(), DecodeLoraConfig() (+2 more)
+
+### Community 340 - "gate1_live.py"
+Cohesion: 0.08
+Nodes (30): read(), controlled_cpu_reset(), firmware_identity_from_events(), Gate1Audit, gpr_roundtrip_succeeded(), halted_gpr_roundtrip(), instrument(), open_exclusive() (+22 more)
+
+### Community 342 - "sd-utils.cpp"
+Cohesion: 0.29
+Nodes (3): get_data_and_log_partitions(), open_file_in_root(), read_line()
+
+### Community 343 - ".test_reader_unexpected_exception_releases_idle_lock_for_cleanup"
+Cohesion: 0.15
+Nodes (3): wait(), wait(), Console
+
+### Community 345 - "run_stable_ack_rf_test"
+Cohesion: 0.19
+Nodes (8): capture_radio_spi_log(), parse_radio_spi_log(), run_stable_ack_rf_test(), command(), record(), run_stable_campaign(), start_rf_monitor(), stop_rf_monitor()
+
+### Community 349 - "LoRa-only diagnostic implementation"
+Cohesion: 0.33
+Nodes (6): Build and restore, Existing protocol and evidence names, LoRa-only diagnostic implementation, Scope and baseline, Source and test boundaries, Startup sequence
+
+### Community 362 - "src/task.h"
+Cohesion: 0.25
+Nodes (4): main(), RestartTask, completions, entries
+
+### Community 363 - "Level"
+Cohesion: 0.29
+Nodes (7): Level, kDebug, kError, kInfo, kOff, kTrace, kWarn
+
+### Community 365 - "PacketAdvertise"
+Cohesion: 0.33
+Nodes (5): DecodePacketAdvertise(), EncodePacketAdvertise(), PacketAdvertise, seq, type
+
+### Community 366 - "adc.cpp"
+Cohesion: 0.43
+Nodes (5): InitializeAdc(), ReadBatteryAdc(), ReadSample(), ReadTemperatureAdc(), WaitForConversion()
+
+### Community 369 - "Component"
+Cohesion: 0.29
+Nodes (6): Component, kApplication, kBoot, kHil, kNvm, Event()
+
+### Community 370 - "reliable_transport_test.cpp"
+Cohesion: 0.33
+Nodes (10): count_transition(), deliver(), dropped(), finish_reply(), loss_scenario(), main(), start_data(), stress_round_trips() (+2 more)
+
+### Community 371 - "Pair"
+Cohesion: 0.17
+Nodes (11): Application, applied, reject, Pair, a, aa, b, bb (+3 more)
+
+### Community 372 - "PacketReportWithAck"
+Cohesion: 0.40
+Nodes (4): PacketReportWithAck, report, seq, type
+
+### Community 373 - "stub/Arduino.h"
+Cohesion: 0.17
+Nodes (3): setup(), random(), randomSeed()
+
+### Community 374 - "Exact RadioLib and register audit"
+Cohesion: 0.33
+Nodes (5): Confirmed errata configuration concern, causal status UNKNOWN, Exact RadioLib and register audit, Initialization and lifecycle, Register definitions and operational evidence, Version clues, not upgrades
+
+### Community 375 - "EventStats"
+Cohesion: 0.20
+Nodes (10): EventStats, ack_accepted, ack_tx, data_tx, duplicates, failures, nack_received, nack_tx (+2 more)
+
+### Community 377 - "Result"
 Cohesion: 0.22
-Nodes (21): application_layout_verified(), capture_radio_spi_log(), capture_usb_topology(), check_port_owners(), clean_builds(), host_tests(), identify_targets(), image_fits_application() (+13 more)
+Nodes (8): Result, Accepted, AckTimeout, InvalidArgument, Pending, RadioError, Rejected, TxTimeout
+
+### Community 378 - "State"
+Cohesion: 0.22
+Nodes (8): State, Complete, Failed, RetryPending, RxWait, TxData, TxResponse, WaitResponse
+
+### Community 385 - "lora_rx.cpp"
+Cohesion: 0.09
+Nodes (16): espcomm_setup(), StoreI2c16(), TaskI2CManager, _cmd, _ts, init_gpio(), lora_rx_hello_boot(), lora_rx_init_lora() (+8 more)
+
+### Community 386 - "error"
+Cohesion: 0.18
+Nodes (14): error(), audit_radio_configuration(), Capture, complete(), prepare(), radio_only_bringup(), read_radio(), reader_free_h01() (+6 more)
+
+### Community 387 - "LossMetrics"
+Cohesion: 0.29
+Nodes (7): LossMetrics, ack_tx, attempts, duplicates, nack_tx, retries, timeouts
+
+### Community 392 - "mvp_stub/Arduino.h"
+Cohesion: 0.29
+Nodes (3): CPUINT(), digitalWriteFast(), digitalWrite()
+
+### Community 394 - "reader_free_h01_summary"
+Cohesion: 0.33
+Nodes (4): TDD and diagnostic-tool changes, Test-harness dispatch mistake, reader_free_h01_summary(), frame_seen()
+
+### Community 395 - "PacketAck"
+Cohesion: 0.33
+Nodes (5): DecodePacketAck(), EncodePacketAck(), PacketAck, seq, type
+
+### Community 396 - "application_bounds_for_environment"
+Cohesion: 0.19
+Nodes (6): DirectionalTests, RadioOnlyTests, TargetLayoutTests, application_bounds_for_environment(), _config_int(), target_fuses()
+
+### Community 398 - "PacketMaintenance"
+Cohesion: 0.33
+Nodes (5): DecodePacketMaintenance(), EncodePacketMaintenance(), PacketMaintenance, command, type
+
+### Community 399 - "PacketMaintenanceAck"
+Cohesion: 0.33
+Nodes (5): DecodePacketMaintenanceAck(), EncodePacketMaintenanceAck(), PacketMaintenanceAck, response, type
+
+### Community 404 - "PacketReport"
+Cohesion: 0.40
+Nodes (4): PacketReport, report, seq, type
+
+### Community 407 - "hashlib"
+Cohesion: 0.12
+Nodes (4): run(), assess(), _status(), run()
+
+### Community 411 - "Revision"
+Cohesion: 0.50
+Nodes (4): Revision, major, minor, raw_revision_id
 
 ## Knowledge Gaps
-- **102 isolated node(s):** `updi-rca`, `lora`, `jgromes/RadioLib`, `kRadioHeaderSize`, `kMaxPayloadSize` (+97 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2510 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **70 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **316 isolated node(s):** `_is_paused`, `latitude`, `longitude`, `quality`, `satellites` (+311 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2545 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **143 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Communities (299 total, 62 thin omitted)` connect `Communities (299 total, 62 thin omitted)` to `Graph Report - lora  (2026-10-27)`?**
-  _High betweenness centrality (0.066) - this node is a cross-community bridge._
-- **Are the 13 inferred relationships involving `Backend` (e.g. with `God Nodes (most connected - your core abstractions)` and `Suggested Questions`) actually correct?**
-  _`Backend` has 13 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `updi-rca`, `lora`, `jgromes/RadioLib` to the rest of the system?**
-  _102 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Communities (299 total, 62 thin omitted)` be split into smaller, more focused modules?**
-  _Cohesion score 0.008403361344537815 - nodes in this community are weakly interconnected._
-- **Why does `Graph Report - lora  (2026-10-27)` connect `Graph Report - lora  (2026-10-27)` to `Communities (299 total, 62 thin omitted)`, `PymcuprogError`, `AvrDebugger`?**
-  _High betweenness centrality (0.065) - this node is a cross-community bridge._
-- **Are the 13 inferred relationships involving `PymcuprogError` (e.g. with `God Nodes (most connected - your core abstractions)` and `Suggested Questions`) actually correct?**
-  _`PymcuprogError` has 13 INFERRED edges - model-reasoned connections that need verification._
-- **Should `PymcuprogSerialUpdiNvmTimeout` be split into smaller, more focused modules?**
-  _Cohesion score 0.051228070175438595 - nodes in this community are weakly interconnected._
+- **Why does `State` connect `State` to `stdint`?**
+  _High betweenness centrality (0.027) - this node is a cross-community bridge._
+- **Are the 2 inferred relationships involving `Gate1Tests` (e.g. with `Gate1Audit` and `TracePort`) actually correct?**
+  _`Gate1Tests` has 2 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `_is_paused`, `latitude`, `longitude` to the rest of the system?**
+  _316 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Task` be split into smaller, more focused modules?**
+  _Cohesion score 0.10826210826210826 - nodes in this community are weakly interconnected._
+- **Why does `analyze()` connect `RCATests` to `main`, `error`, `tools/arq_trial.py`, `pathlib`, `Json`, `compare_snapshots`, `parse_updi`, `main`, `load`?**
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
+- **Should `.TASK` be split into smaller, more focused modules?**
+  _Cohesion score 0.1173054587688734 - nodes in this community are weakly interconnected._
+- **Why does `ReliableTransport` connect `ReliableTransport` to `.emit`, `Component`, `stdint`, `Result`, `State`?**
+  _High betweenness centrality (0.013) - this node is a cross-community bridge._

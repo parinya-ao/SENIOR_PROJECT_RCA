@@ -1,9 +1,0 @@
-label=avrdude_processes
-argv_shell_escaped=pgrep -a -f \[a\]vrdude
-start_utc=2026-10-27T03:30:32.214179198Z
-end_utc=2026-10-27T03:30:32.239585086Z
-start_proc_uptime_s=62217.42
-end_proc_uptime_s=62217.45
-exit_code=1
-stdout_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

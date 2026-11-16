@@ -1,9 +1,0 @@
-test_id,metric,board_a_value,board_b_value,absolute_delta,relative_delta,interpretation,n_a,n_b
-XOVER-001_PRE_SIB,success_rate,"10/10 (100.0%; Wilson95 [72.25%,100.00%])","0/10 (0.0%; Wilson95 [0.00%,27.75%])",-1.000000,-1.000000,Initial lane paths P+X versus Q+Y only; adapter and target are confounded. No crossover was performed.,10,10
-XOVER-001_PRE_SIB,failure_rate,"0/10 (0.0%; Wilson95 [0.00%,27.75%])","10/10 (100.0%; Wilson95 [72.25%,100.00%])",1.000000,UNDEFINED_A_ZERO,Initial lane paths P+X versus Q+Y only; adapter and target are confounded. No crossover was performed.,10,10
-XOVER-001_PRE_SIB,median_latency_ms,156.332 ms,1061.647 ms,905.314707,6.790982,Initial lane paths P+X versus Q+Y only; adapter and target are confounded. No crossover was performed.,10,10
-XOVER-001_PRE_SIB,p95_latency_ms,158.131 ms,1064.128 ms,905.997483,6.729418,Initial lane paths P+X versus Q+Y only; adapter and target are confounded. No crossover was performed.,10,10
-XOVER-001_PRE_CONTROL,success_rate,"10/10 (100.0%; Wilson95 [72.25%,100.00%])","0/10 (0.0%; Wilson95 [0.00%,27.75%])",-1.000000,-1.000000,Initial lane paths P+X versus Q+Y only; adapter and target are confounded. No crossover was performed.,10,10
-XOVER-001_PRE_CONTROL,failure_rate,"0/10 (0.0%; Wilson95 [0.00%,27.75%])","10/10 (100.0%; Wilson95 [72.25%,100.00%])",1.000000,UNDEFINED_A_ZERO,Initial lane paths P+X versus Q+Y only; adapter and target are confounded. No crossover was performed.,10,10
-XOVER-001_PRE_CONTROL,median_latency_ms,201.944 ms,1061.556 ms,859.612582,5.256692,Initial lane paths P+X versus Q+Y only; adapter and target are confounded. No crossover was performed.,10,10
-XOVER-001_PRE_CONTROL,p95_latency_ms,203.732 ms,1063.475 ms,859.742820,5.219973,Initial lane paths P+X versus Q+Y only; adapter and target are confounded. No crossover was performed.,10,10

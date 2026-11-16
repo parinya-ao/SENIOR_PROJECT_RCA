@@ -1,9 +1,0 @@
-epoch_id,domain,status,controlled_cycles,decisive_evidence,unresolved_alternatives
-RCA_FRESH_01,D1,UNRESOLVED,0,,"No controlled intervention; path, power board and target remain confounded"
-RCA_FRESH_01,D2,UNRESOLVED,0,,"No controlled intervention; path, power board and target remain confounded"
-RCA_FRESH_01,D3,UNRESOLVED,0,,"No controlled intervention; path, power board and target remain confounded"
-RCA_FRESH_01,D4,UNRESOLVED,0,,"No controlled intervention; path, power board and target remain confounded"
-RCA_FRESH_01,D5,UNRESOLVED,0,,"No controlled intervention; path, power board and target remain confounded"
-RCA_FRESH_01,D6,UNRESOLVED,0,,"No controlled intervention; path, power board and target remain confounded"
-RCA_FRESH_01,D7,UNRESOLVED,0,,"No controlled intervention; path, power board and target remain confounded"
-RCA_FRESH_01,D8,UNRESOLVED,0,,"No controlled intervention; path, power board and target remain confounded"

@@ -1,8 +1,0 @@
-command=fuser -v /dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0
-start_utc=2026-10-27T03:35:19.483128158Z
-end_utc=2026-10-27T03:35:19.592788290Z
-start_proc_uptime_s=62504.69
-end_proc_uptime_s=62504.80
-exit_code=1
-stdout_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

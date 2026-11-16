@@ -1,0 +1,85 @@
+    1                          2                                3                                4                                   5
+
+
+
+
+A                                                                                                                                                                               A
+
+        VCC
+                                                                                            C3
+                                                                                                           VCC
+                                                                                           100uF
+                                       U1
+                                       AVR128DA28
+                              1                      28                                     C2
+                  A0            PA7              PA6            A1
+                              2                      27                                     0.1uF
+                MOSI            PC0              PA5            LED1
+                              3                      26
+                MISO            PC1              PA4            LED2
+                              4                      25
+                 SCK            PC2              PA3            SCL
+                              5                      24
+                 NSS            PC3              PA2            SDA
+                              6                      23
+                 RST            PD0              PA1            TX
+                              7                      22                                 U2   RFM95/98
+                 INT            PD1      PA0(EXTCLK)            RX
+                              8                      21                               1             16
+                DIO0            PD2             GND                                     GND    DIO2              DIO2
+                              9                      20                               2             15
+                DIO1            PD3             VDD                      MISO           MISO   DIO1              DIO1
+                             10                      19                               3             14
+                DIO2            PD4             UPDI            UPDI     MOSI           MOSI   DIO0              DIO0
+                             11                      18                               4             13
+                DIO3            PD5      PF6(RESET#)                      SCK           SCK    3.3V
+B                            12                      17                               5             12                                                                          B
+                DIO4            PD6    PF1(XTAL32K2)                      NSS           NSS    DIO4              DIO4
+                             13                      16                               6             11
+                DIO5            PD7    PF0(XTAL32K1)                      RST           RESET DIO3               DIO3
+                             14                      15                               7             10
+                                AVDD            GND                      DIO5           DIO5   GND
+                                                                                      8             9                           1
+                                                                                        GND     ANT                                  ANT
+
+
+                                               C1                                                                           3       4
+                                               0.1uF                                                               SB1
+                                                                                                                            5                    U5
+                                                                                                                                                 HX-SMA-P
+                                                                                GND                                         2       1
+
+                                                          GND
+                       VCC                                                                                                          GND
+                               H1                         H2
+                                                                                                     VCC
+                                                                                 R1
+                               1         A0               1                      1k
+                               2         A1               2                                                                       U.FL
+                TX             3        INT               3
+                                                                       LED1
+C                                                                                                                            2 GND   GND 3                                      C
+                                                                                                                                         1 SIG
+               RX              4        SCL               4                               LED1
+              UPDI             5       SDA                5                      R2
+                               6       DIO1               6                      1k                                SB2
+                               7       DIO2               7            LED2
+                               8       DIO3               8                                LED2
+                               9       DIO4               9
+                               10      DIO5               10
+                                                                                                                                                   GND
+                       GND
+
+
+
+
+D                                                                                                                                                                               D
+
+
+                                                                                                 TITLE:
+                                                                                                             LoRa Board                                            REV: 1.0
+
+                                                                                                                   Company: IWING                                  Sheet: 1/1
+                                                                                                                   Date:   2025-04-26            Drawn By: benyapa.ju
+    1                          2                                3                                4                                   5
+

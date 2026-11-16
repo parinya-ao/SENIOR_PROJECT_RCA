@@ -49,46 +49,84 @@ def classify_devices(
         fw_role = _identity_role(fw)
         flash_role = _identity_role(flash)
         enrollment = _registry_record(registry, usb)
-        enrolled_role = enrollment.get("role") if enrollment.get("role") in ("SENDER", "RECEIVER") else None
+        enrolled_role = (
+            enrollment.get("role") if enrollment.get("role") in ("SENDER", "RECEIVER") else None
+        )
         enrollment_id = enrollment.get("physical_id")
-        enrollment_match = bool(enrolled_role and enrollment_id and
-                                probe.physical_id and enrollment_id == probe.physical_id)
+        enrollment_match = bool(
+            enrolled_role
+            and enrollment_id
+            and probe.physical_id
+            and enrollment_id == probe.physical_id
+        )
 
         if not usb.present:
-            detected.append(DetectedDevice(usb, "UNKNOWN", "MISSING", "none",
-                                           ("USB device is not present",)))
+            detected.append(
+                DetectedDevice(usb, "UNKNOWN", "MISSING", "none", ("USB device is not present",))
+            )
             continue
         if probe.access_status == "INACCESSIBLE":
-            detected.append(DetectedDevice(usb, "UNKNOWN", "INACCESSIBLE", "probe",
-                                           (probe.error or "serial interface is busy",),
-                                           mcu=probe.mcu_identity))
+            detected.append(
+                DetectedDevice(
+                    usb,
+                    "UNKNOWN",
+                    "INACCESSIBLE",
+                    "probe",
+                    (probe.error or "serial interface is busy",),
+                    mcu=probe.mcu_identity,
+                )
+            )
             continue
         if probe.access_status == "PROBE_FAILED":
-            detected.append(DetectedDevice(usb, "UNKNOWN", "PROBE_FAILED", "probe",
-                                           (probe.error or "identity probe failed",),
-                                           mcu=probe.mcu_identity))
+            detected.append(
+                DetectedDevice(
+                    usb,
+                    "UNKNOWN",
+                    "PROBE_FAILED",
+                    "probe",
+                    (probe.error or "identity probe failed",),
+                    mcu=probe.mcu_identity,
+                )
+            )
             continue
         if probe.parse_status == "AMBIGUOUS":
-            detected.append(DetectedDevice(usb, "UNKNOWN", "AMBIGUOUS", "firmware_identity",
-                                           (probe.error or "conflicting firmware markers",),
-                                           mcu=probe.mcu_identity))
+            detected.append(
+                DetectedDevice(
+                    usb,
+                    "UNKNOWN",
+                    "AMBIGUOUS",
+                    "firmware_identity",
+                    (probe.error or "conflicting firmware markers",),
+                    mcu=probe.mcu_identity,
+                )
+            )
             continue
 
         if fw_role and flash_role and fw_role != flash_role:
-            detected.append(DetectedDevice(
-                usb, "UNKNOWN", "AMBIGUOUS", "firmware_identity+flash_fingerprint",
-                (f"firmware marker says {fw_role}, flash fingerprint says {flash_role}",),
-                mcu=probe.mcu_identity,
-            ))
+            detected.append(
+                DetectedDevice(
+                    usb,
+                    "UNKNOWN",
+                    "AMBIGUOUS",
+                    "firmware_identity+flash_fingerprint",
+                    (f"firmware marker says {fw_role}, flash fingerprint says {flash_role}",),
+                    mcu=probe.mcu_identity,
+                )
+            )
             continue
         role = fw_role or flash_role or (enrolled_role if enrollment_match else None)
         if role:
             if probe.mcu_identity and probe.mcu_identity != "AVR128DA28":
-                detected.append(DetectedDevice(
-                    usb, "UNKNOWN", "AMBIGUOUS", "firmware_identity",
-                    (f"firmware role is on unexpected MCU {probe.mcu_identity}",),
-                    mcu=probe.mcu_identity,
-                ))
+                detected.append(
+                    DetectedDevice(
+                        usb,
+                        "UNKNOWN",
+                        "AMBIGUOUS",
+                        "firmware_identity",
+                        (f"firmware role is on unexpected MCU {probe.mcu_identity}",),
+                        mcu=probe.mcu_identity,
+                    )
+                )
                 continue
             historical = _registry_hint(registry, usb)
             if historical and historical != role:
@@ -103,7 +141,11 @@ def classify_devices(
             elif fw_role and flash_role:
                 evidence_type = "firmware_identity+flash_fingerprint"
                 details.extend(("valid current firmware identity", "exact application flash match"))
-                build_id = fw.build_id if fw else flash.build_id
+                build_id = (
+                    fw.build_id
+                    if fw is not None
+                    else flash.build_id if flash is not None else None
+                )
             elif fw_role:
                 evidence_type = "firmware_identity"
                 integrity = fw.integrity if fw else "verified"
@@ -113,10 +155,18 @@ def classify_devices(
                 evidence_type = "flash_fingerprint"
                 details.append("exact application-region flash fingerprint match")
                 build_id = flash.build_id if flash else None
-            detected.append(DetectedDevice(
-                usb, role, f"VERIFIED_{role}", evidence_type, tuple(details),
-                build_id=build_id, mcu=probe.mcu_identity, warnings=tuple(warnings),
-            ))
+            detected.append(
+                DetectedDevice(
+                    usb,
+                    role,
+                    f"VERIFIED_{role}",
+                    evidence_type,
+                    tuple(details),
+                    build_id=build_id,
+                    mcu=probe.mcu_identity,
+                    warnings=tuple(warnings),
+                )
+            )
             continue
 
         if probe.error:
@@ -134,7 +184,9 @@ def classify_devices(
         elif probe.legacy_hint:
             details.append("historical identity is a hint only")
             evidence_type = "historical_hint"
-            warnings.append(f"Historical role hint: {probe.legacy_hint}; current role remains UNKNOWN")
+            warnings.append(
+                f"Historical role hint: {probe.legacy_hint}; current role remains UNKNOWN"
+            )
         elif probe.parse_status == "MALFORMED":
             details.append("firmware identity frame was malformed or failed its checksum")
             evidence_type = "firmware_identity"
@@ -150,17 +202,29 @@ def classify_devices(
             identity_status = "AMBIGUOUS"
         else:
             identity_status = "UNKNOWN"
-        detected.append(DetectedDevice(
-            usb, "UNKNOWN", identity_status, evidence_type, tuple(details),
-            mcu=probe.mcu_identity, warnings=tuple(warnings),
-        ))
+        detected.append(
+            DetectedDevice(
+                usb,
+                "UNKNOWN",
+                identity_status,
+                evidence_type,
+                tuple(details),
+                mcu=probe.mcu_identity,
+                warnings=tuple(warnings),
+            )
+        )
 
-    claims = Counter(device.role for device in detected
-                     if device.identity_status in ("VERIFIED_SENDER", "VERIFIED_RECEIVER"))
+    claims = Counter(
+        device.role
+        for device in detected
+        if device.identity_status in ("VERIFIED_SENDER", "VERIFIED_RECEIVER")
+    )
     issues: list[str] = []
     conflicts = {role for role, count in claims.items() if count > 1}
     if conflicts:
-        issues.append("multiple devices claim the same verified role: " + ", ".join(sorted(conflicts)))
+        issues.append(
+            "multiple devices claim the same verified role: " + ", ".join(sorted(conflicts))
+        )
         detected = [
             DetectedDevice(
                 device.usb,
@@ -205,14 +269,18 @@ def diff_device_presence(
     events: list[dict[str, Any]] = []
     for key in sorted(old.keys() - new.keys()):
         prior = old[key]
-        events.append({
-            "event": "disconnected",
-            "port": prior.port,
-            "usb_path": prior.usb.usb_path if prior.usb else None,
-            "role": "UNKNOWN",
-            "identity_status": "MISSING",
-            "last_verified_role": prior.role if prior.identity_status.startswith("VERIFIED_") else None,
-        })
+        events.append(
+            {
+                "event": "disconnected",
+                "port": prior.port,
+                "usb_path": prior.usb.usb_path if prior.usb else None,
+                "role": "UNKNOWN",
+                "identity_status": "MISSING",
+                "last_verified_role": prior.role
+                if prior.identity_status.startswith("VERIFIED_")
+                else None,
+            }
+        )
     for key in sorted(new.keys() - old.keys()):
         current_device = new[key]
         events.append({"event": "connected", **current_device.to_dict()})

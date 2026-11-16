@@ -1,9 +1,0 @@
-label=by_path_listing
-argv_shell_escaped=ls -la /dev/serial/by-path
-start_utc=2026-10-27T03:30:31.832463643Z
-end_utc=2026-10-27T03:30:31.837560438Z
-start_proc_uptime_s=62217.04
-end_proc_uptime_s=62217.04
-exit_code=0
-stdout_sha256=73114c04622abbd6aaf2ff718d08ec85c9cdae53b9168eddead3033e33a0c9ed
-stderr_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855

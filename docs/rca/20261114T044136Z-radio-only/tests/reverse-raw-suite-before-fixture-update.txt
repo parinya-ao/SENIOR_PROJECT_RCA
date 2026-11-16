@@ -1,0 +1,21 @@
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+
+ERROR: test_radio_profile_audit_rejects_iq_modem_and_carrier_mismatch (test_reverse_raw.ReverseRawTests.test_radio_profile_audit_rejects_iq_modem_and_carrier_mismatch)
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_reverse_raw.py", line 32, in test_radio_profile_audit_rejects_iq_modem_and_carrier_mismatch
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tools/arq_trial.py", line 576, in audit_raw_configuration
+raise ValueError('reverse radio configuration mismatch')
+ValueError: reverse radio configuration mismatch
+
+ValueError: reverse radio configuration mismatch
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_reverse_raw.py", line 56, in test_send_waits_for_active_rx_and_retains_device_timeout
+~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "missing single actual raw reception" does not match "reverse radio configuration mismatch"
+
+FAILED (failures=1, errors=1)
+[full output: rtk recall c9b5854dc6ae8b00]

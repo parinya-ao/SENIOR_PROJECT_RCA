@@ -1,0 +1,78 @@
+.........ARQ core: PASS
+.usage: arq_trial [-h] (--campaign | --mvp | --prepare | --validate VALIDATE |
+                 --reverse-raw | --reverse-raw-no-tracker-reader |
+                 --reader-free-h01 | --tracker-rx-idle-control)
+                 [--rf-path-confirmed]
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+usage: arq_trial [-h] (--campaign | --mvp | --prepare | --validate VALIDATE |
+                 --reverse-raw | --reverse-raw-no-tracker-reader |
+                 --reader-free-h01 | --tracker-rx-idle-control)
+                 [--rf-path-confirmed]
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+....................................usage: python -m unittest [-h] [--scan | --watch | --self-test] [--json]
+                          [--explain] [--registry REGISTRY] [--probe-updi]
+                          [--probe-firmware] [--probe-flash] [--hardware-safe]
+                          [--authorize-flash-read] [--boot-layout-verified]
+                          [--baudrate BAUDRATE]
+                          [--probe-timeout PROBE_TIMEOUT]
+                          [--poll-interval POLL_INTERVAL]
+python -m unittest: error: UPDI probes require --hardware-safe after physical wiring checks
+..........................................................................................begin -> carrier E4C000 -> IRQ read/W1C -> TX/FIFO -> finish 833us/standby -> RX -> FIFO/CRC/clear: PASS
+begin -> carrier E4C000 -> IRQ read/W1C -> TX/FIFO -> finish 833us/standby -> RX -> FIFO/CRC/clear: PASS
+........send: tests/arq/stub/RadioLib.h:36: int SX1276::begin(float, float, int, int, int, int, int, int): Assertion `f == 923 && bw == 125 && sf == 7 && cr == 5 && sync == 0x12 && p == 2 && pre == 8 && gain == 0' failed.
+EIn file included from tests/rca_errata_test.cpp:3:
+tests/radiolib_hal_test.cpp: In function ‘int characterized_driver_main()’:
+tests/radiolib_hal_test.cpp:85:1: warning: control reaches end of non-void function [-Wreturn-type]
+   85 | }
+      | ^
+real driver errata option: modeled RX registers verified; no RF inference
+In file included from tests/rca_errata_test.cpp:3:
+tests/radiolib_hal_test.cpp: In function ‘int characterized_driver_main()’:
+tests/radiolib_hal_test.cpp:85:1: warning: control reaches end of non-void function [-Wreturn-type]
+   85 | }
+      | ^
+real driver errata option: modeled RX registers verified; no RF inference
+.............................usage: python -m unittest [-h] evidence
+python -m unittest: error: the following arguments are required: evidence
+.............s.......................SENDER: tests/arq/stub/RadioLib.h:36: int SX1276::begin(float, float, int, int, int, int, int, int): Assertion `f == 923 && bw == 125 && sf == 7 && cr == 5 && sync == 0x12 && p == 2 && pre == 8 && gain == 0' failed.
+E...usage: arq_trial [-h] (--campaign | --mvp | --prepare | --validate VALIDATE |
+                 --reverse-raw | --reverse-raw-no-tracker-reader |
+                 --reader-free-h01 | --tracker-rx-idle-control)
+                 [--rf-path-confirmed]
+arq_trial: error: RF transmission requires --rf-path-confirmed after physical inspection
+.....................<MagicMock name='campaign()' id='140232363637936'>
+{"standby_evidence": "/tmp/tmplnp33mr4/standby"}
+run-dir
+run-dir
+HOST_SIMULATION DATA_ACK=PASS DATA=1 PAYLOAD_MATCH=11/11 ACK=1 RETRIES=0 EEPROM_WRITES=0
+[gateway] [GATEWAY] RADIO_SPI_VERSION=0x12
+[gateway] [GATEWAY] RF_TX_DISABLED_DIAGNOSTIC
+..................................................................
+======================================================================
+ERROR: test_fake_radio_send_path_without_hardware (test_rca.RCATests.test_fake_radio_send_path_without_hardware)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_rca.py", line 33, in test_fake_radio_send_path_without_hardware
+    subprocess.run([exe,case],check=True,timeout=5)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['/tmp/tmpvnhm7yml/send', 'partial']' died with <Signals.SIGABRT: 6>.
+
+======================================================================
+ERROR: test_command_gating_payload_crc_timeout_and_cleanup (test_reverse_raw.ReverseRawTests.test_command_gating_payload_crc_timeout_and_cleanup)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_reverse_raw.py", line 92, in test_command_gating_payload_crc_timeout_and_cleanup
+    subprocess.run([binary],check=True)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.14/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['/tmp/tmp26u_y15h/SENDER']' died with <Signals.SIGABRT: 6>.
+
+----------------------------------------------------------------------
+Ran 301 tests in 13.025s
+
+FAILED (errors=2, skipped=1)

@@ -1,0 +1,30 @@
+arq_trial.py: error: one of the arguments --campaign --mvp --prepare --validate --reverse-raw --reverse-raw-no-tracker-reader --reader-free-h01 --tracker-rx-idle-control is required
+
+ERROR: test_soak_cli_dispatches_the_verified_stage_plan (test_arq_soak.ArqSoakPlanTests.test_soak_cli_dispatches_the_verified_stage_plan)
+
+Traceback (most recent call last):
+File "/usr/lib64/python3.14/argparse.py", line 2047, in _parse_known_args2
+File "/usr/lib64/python3.14/argparse.py", line 2360, in _parse_known_args
+raise ArgumentError(None, msg % ' '.join(names))
+argparse.ArgumentError: one of the arguments --campaign --mvp --prepare --validate --reverse-raw --reverse-raw-no-tracker-reader --reader-free-h01 --tracker-rx-idle-control is required
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 56, in test_soak_cli_dispatches_the_verified_stage_plan
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tools/arq_trial.py", line 1035, in main
+File "/usr/lib64/python3.14/argparse.py", line 2008, in parse_args
+File "/usr/lib64/python3.14/argparse.py", line 2018, in parse_known_args
+File "/usr/lib64/python3.14/argparse.py", line 2049, in _parse_known_args2
+File "/usr/lib64/python3.14/argparse.py", line 2785, in error
+File "/usr/lib64/python3.14/argparse.py", line 2772, in exit
+~~~~~~~~~^^^^^^^^
+SystemExit: 2
+
+Traceback (most recent call last):
+File "/home/parinya/university/SENIOR_PROJECT_RCA/tests/test_arq_soak.py", line 44, in test_soak_cli_fails_closed_without_power_and_rf_readiness
+~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'safe power' not found in 'usage: arq_trial.py [-h] (--campaign | --mvp | --prepare |\n                    --validate VALIDATE | --reverse-raw |\n                    --reverse-raw-n...
+
+FAILED (failures=1, errors=1)
+[full output: rtk recall 1c3a3c063bdd23a1]
