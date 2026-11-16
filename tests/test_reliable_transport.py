@@ -15,7 +15,7 @@ class ReliableTransportTests(unittest.TestCase):
             binary = Path(directory) / "test"
             ssot = Path(directory) / "ssot.o"
             subprocess.run(
-                ["clang", "--driver-mode=g++", "-std=c++17", "-Isrc", "-Iinclude", "-c", "src/ssot.cpp", "-o", str(ssot)],
+                ["clang", "--driver-mode=g++", "-std=c++17", "-Isrc", "-Iinclude", "-c", "stable_lib/ssot/src/ssot/codec.cpp", "-o", str(ssot)],
                 cwd=ROOT,
                 check=True,
             )
@@ -36,16 +36,16 @@ class ReliableTransportTests(unittest.TestCase):
                 "-DLORA_ROLE_SENDER=1",
                 "-Itests/mvp_stub",
                 "-Itests/radio_stub",
-                "-Isrc/shared",
+                "-Istable_lib/shared",
                 "-Isrc",
                 "-Iinclude",
                 "-Istable_lib/lora",
-                "-Ilib/updi_uart/src",
+                "-Istable_lib/updi_uart/src",
                 source,
                 *extra,
                 str(ssot),
-                "src/ssot/session.cpp",
-                "src/ssot/control_input.cpp",
+                "stable_lib/ssot/src/ssot/session.cpp",
+                "stable_lib/ssot/src/ssot/control_input.cpp",
                 "-o",
                 str(binary),
             ]
@@ -74,14 +74,14 @@ class ReliableTransportTests(unittest.TestCase):
 
     def test_transport(self) -> None:
         self.assertTrue(
-            (ROOT / "src/shared/reliable_transport.h").exists(),
+            (ROOT / "stable_lib/shared/reliable_transport.h").exists(),
             "shared SSOT reliable transport is missing",
         )
         self.compile_run("tests/reliable_transport_test.cpp")
 
     def test_application(self) -> None:
         self.assertTrue(
-            (ROOT / "src/reliable/main.cpp").exists(), "shared bidirectional application is missing"
+            (ROOT / "stable_lib/reliable_app/reliable_app.cpp").exists(), "shared bidirectional application is missing"
         )
         self.compile_run(
             "tests/reliable_app_test.cpp", "stable_lib/lora/lora.cpp", '-DLORA_BUILD_ID="HOST_TEST"'

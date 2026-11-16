@@ -41,7 +41,7 @@ class CppMigrationTests(unittest.TestCase):
                         "-std=c++17",
                         "-fsyntax-only",
                         "-Isrc",
-                        "-Isrc/arq",
+                        "-Istable_lib/arq/src/arq/src",
                         "-Iinclude",
                         "-x",
                         "c++",

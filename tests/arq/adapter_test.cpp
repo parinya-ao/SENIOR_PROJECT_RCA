@@ -3,11 +3,10 @@
 
 #include <assert.h>
 
-#include "../../src/arq/application.cpp"
-#include "../../src/arq/board_ssot.c"
-#include "../../src/arq/commands.cpp"
-#include "../../src/arq/diagnostics.cpp"
-#include "../../src/arq/main.cpp"
+#include "../../stable_lib/arq/src/arq/application.cpp"
+#include "../../stable_lib/arq/src/arq/board_ssot.c"
+#include "../../stable_lib/arq/src/arq/commands.cpp"
+#include "../../stable_lib/arq/src/arq/diagnostics.cpp"
 #include "diagnostics_test_access.h"
 using namespace arq::app;
 static void send_command(const char* s) {
@@ -27,7 +26,7 @@ static void drain_status(char* out, size_t capacity,
       irq_flags = 0xC2;
     }
     registers[0] = registers[1] = 0;
-    loop();
+    Poll();
     if (registers[0]) {
       assert(length + 1 < capacity);
       out[length++] = registers[0];
@@ -40,13 +39,13 @@ static void drain_status(char* out, size_t capacity,
 }
 int main(int argc, char** argv) {
   if (argc > 1 && !strcmp(argv[1], "status-rx-burst")) {
-    setup();
+    Initialize();
     assert(ready);
     send_command("ARM 12345678");
     // Reproduce the physical RX_IRQ/LENGTH_DISCARD burst overlapping STATUS.
     packet_length = 0;
     irq_flags = 0xC2;
-    loop();
+    Poll();
     send_command("STATUS");
     assert(arq::diagnostics::OverflowCount() == 0);
     char output[8192];
@@ -62,7 +61,7 @@ int main(int argc, char** argv) {
   gpio_value[PIN_PF0] = gpio_value[PIN_PF1] = HIGH;
   if (argc > 1 && !strcmp(argv[1], "card")) {
     sd_inserted = true;
-    setup();
+    Initialize();
     assert(!ready && !begun && !tx_starts);
     assert(gpio_value[PIN_PA7] == HIGH);
     assert(gpio_mode[PIN_PC3] == INPUT && gpio_value[PIN_PC3] == LOW);
@@ -73,22 +72,22 @@ int main(int argc, char** argv) {
 #endif
 #if defined(LORA_ROLE_SENDER)
   if (argc > 1 && !strcmp(argv[1], "ack-sequences")) {
-    setup();
+    Initialize();
     send_command("ARM 12345678");
     const uint16_t sequences[] = {0, 1, 32768, 65535};
     for (uint16_t seq : sequences) {
       sender.sequence = seq;
       clock_ms += ARQ_SPACING_MS;
       send_command("SEND 48656C6C6F20576F726C64");
-      loop();
+      Poll();
       irq_flags = 8;
-      loop();
+      Poll();
       assert(sender.state == arq::SenderState::kWaitingAck);
       arq::Frame ack = {arq::kAck, 2, 1, 0x12345678, seq, 0, 0, {0}};
       packet_length = arq::EncodeFrame(&ack, packet, 44);
       irq_flags = 0x40;
       ResetLog();
-      loop();
+      Poll();
       assert(sender.state == arq::SenderState::kDelivered &&
              sender.sequence == (uint16_t)(seq + 1));
       char expected[20];
@@ -102,7 +101,7 @@ int main(int argc, char** argv) {
       assert(deliveries == 1);
       ResetLog();
       irq_flags = 0x40;
-      loop();
+      Poll();
       for (uint8_t i = 0; i < arq::diagnostics::PendingLineCount(); i++)
         assert(!strstr(QueuedLogLine(i), "e=DELIVERED "));
     }
@@ -110,19 +109,19 @@ int main(int argc, char** argv) {
     return 0;
   }
   if (argc > 1 && !strcmp(argv[1], "expired-ack")) {
-    setup();
+    Initialize();
     send_command("ARM 12345678");
     send_command("SEND 48656C6C6F20576F726C64");
-    loop();
+    Poll();
     irq_flags = 8;
-    loop();
+    Poll();
     assert(sender.state == arq::SenderState::kWaitingAck);
     arq::Frame ack = {arq::kAck, 2, 1, 0x12345678, 0, 0, 0, {0}};
     packet_length = arq::EncodeFrame(&ack, packet, 44);
     irq_flags = 0x40;
     ResetLog();
     clock_ms = sender.terminal_at;
-    loop();
+    Poll();
     assert(sender.state == arq::SenderState::kFailed &&
            sender.result == arq::Result::kTimeoutExhausted &&
            sender.sequence == 0);
@@ -144,7 +143,7 @@ int main(int argc, char** argv) {
     if (!strcmp(argv[1], "crc")) crc_status = -1;
     if (!strcmp(argv[1], "iq")) iq_status = -1;
     if (!strcmp(argv[1], "standby")) standby_status = -1;
-    setup();
+    Initialize();
     if (!strcmp(argv[1], "rx")) {
       assert(ready);
       rx_status = -1;
@@ -153,7 +152,7 @@ int main(int argc, char** argv) {
     assert(!ready);
     return 0;
   }
-  setup();
+  Initialize();
   assert(ready && !sender.armed && !receiver.armed);
   assert(raw_regs[1] == 0x81);  // Standby keeps the mode bits while clearing
                                 // only the HF/LF selector.
@@ -178,7 +177,7 @@ int main(int argc, char** argv) {
   ResetLog();
   /* Polling diagnostics survive destructive driver reads and logger loss. */
   unsigned observed_before = rx_done;
-  loop();
+  Poll();
   assert(!tx_starts);
   send_command("SEND 48656C6C6F20576F726C64");
   assert(!tx_starts);
@@ -190,13 +189,13 @@ int main(int argc, char** argv) {
   send_command("ARM 12345678garbage");
 #if defined(LORA_ROLE_SENDER)
   send_command("SEND 48656C6C6F20576F726C64");
-  loop();
+  Poll();
   assert(tx_starts == 1 && sent_length == 23);
   assert(raw_regs[1] == 0x83);
   send_command("ARM 00000001");
   assert(sender.session == 0x12345678);
   irq_flags = 8;
-  loop();
+  Poll();
   assert(sender.state == arq::SenderState::kWaitingAck);
   assert(raw_regs[1] == 0x85);
   arq::Frame ack = {arq::kAck, 2, 1, 0x12345678, 0, 0, 0, {0}};
@@ -211,7 +210,7 @@ int main(int argc, char** argv) {
     ResetLog();
     int starts = rx_starts;
     irq_flags = 0x40;
-    loop();
+    Poll();
     assert(sender.state == arq::SenderState::kWaitingAck &&
            rx_starts == starts + 1 && !irq_flags);
   }
@@ -219,7 +218,7 @@ int main(int argc, char** argv) {
   packet_length = arq::EncodeFrame(&ack, packet, 44);
   irq_flags = 0x40;
   clock_ms = sender.retry_at;
-  loop();
+  Poll();
   assert(sender.state == arq::SenderState::kDelivered);
   bool delivered_sequence_seen = false;
   for (uint8_t i = 0; i < arq::diagnostics::PendingLineCount(); i++)
@@ -231,7 +230,7 @@ int main(int argc, char** argv) {
   send_command("X");
   send_command("SEND 00");
   assert(sender.state == arq::SenderState::kDelivered);
-  loop();
+  Poll();
   assert(parked && !radio_tx);
 #else
   arq::Frame data = {arq::kData, 1,  2,
@@ -244,13 +243,13 @@ int main(int argc, char** argv) {
     packet_length = length;
     irq_flags = 0x40;
     int starts = rx_starts;
-    loop();
+    Poll();
     assert(receiver.deliveries == 0 && rx_starts == starts + 1);
   }
   packet_length = arq::EncodeFrame(&data, packet, 44);
   data_status = -7;
   irq_flags = 0x60;
-  loop();
+  Poll();
   assert(receiver.deliveries == 0 && crc_errors == 1);
   data_status = 0;
   assert(rx_done == observed_before + 5 && last_rx_flags == 0x60);
@@ -260,23 +259,23 @@ int main(int argc, char** argv) {
   send_command("FAULT 1 1");
   packet_length = arq::EncodeFrame(&data, packet, 44);
   irq_flags = 0x40;
-  loop();
+  Poll();
   assert(receiver.deliveries == 1 && suppressed == 1 && tx_starts == 0);
   packet_length = arq::EncodeFrame(&data, packet, 44);
   irq_flags = 0x40;
-  loop();
+  Poll();
   assert(receiver.duplicates == 1);
   send_command("ARM 12345678");
   assert(strstr(QueuedLogLine(arq::diagnostics::PendingLineCount() - 1),
                 "e=ARM "));
   clock_ms += ARQ_RESPONSE_GUARD_MS;
-  loop();
+  Poll();
   assert(tx_starts == 1 && sent_length == 12);
   assert(raw_regs[1] == 0x83);
   assert(gpio_value[PIN_PA7] == LOW);
   cleanup_status = -1;
   irq_flags = 8;
-  loop();
+  Poll();
   assert(receiver.deliveries == 1 && !ready);
   cleanup_status = 0;
   ready = true;
@@ -292,7 +291,7 @@ int main(int argc, char** argv) {
   monitor = true;
   registers[1] = 1;
   uint32_t before = clock_ms;
-  loop();
+  Poll();
   assert(clock_ms - before < 20);
   send_command("ARM zzzzzzzz");
   for (int i = 0; i < 200; i++) FeedCommandByte('A');

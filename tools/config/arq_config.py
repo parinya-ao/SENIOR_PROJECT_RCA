@@ -192,6 +192,6 @@ def arq_artifacts(c: Json, radio: Json, system: Json, source: str) -> dict[str, 
     return {
         "include/generated/arq_config.h": "\n".join(h) + "\n",
         "include/generated/board_ssot.h": "\n".join(board_h) + "\n",
-        "src/arq/board_ssot.c": "\n".join(board_c) + "\n",
+        "stable_lib/arq/src/arq/board_ssot.c": "\n".join(board_c) + "\n",
         "generated/arq_manifest.json": json.dumps(manifest, sort_keys=True, indent=2) + "\n",
     }

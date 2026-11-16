@@ -125,7 +125,7 @@ def effective_platformio_config(
     gateway_app_start: str = "0x00000",
     receiver_app_start: str = "0x05800",
 ) -> str:
-    shared = ["-DAPPLICATION_BUILD", "-DLORA_SSOT_GENERATED=1", "-Isrc/shared"]
+    shared = ["-DAPPLICATION_BUILD", "-DLORA_SSOT_GENERATED=1", "-Istable_lib/shared"]
     sender_flags = list(sender_flags or shared)
     sender_hello_flags = list(
         sender_hello_flags or [*shared, "-DHELLO_TEST_MODE=1", "-DHELLO_RAM_ONLY_TEST=1"]
@@ -290,7 +290,7 @@ class HardwareGateTests(unittest.TestCase):
             self.assertTrue(rf_proof.receiver_boot_handoff_supported(proof, args, "active config"))
 
     def test_sender_uses_only_supported_stable_lora_calls(self) -> None:
-        source = (Path(__file__).resolve().parents[1] / "src/sender/lib/lora_rx.cpp").read_text()
+        source = (Path(__file__).resolve().parents[1] / "stable_lib/gateway_app/lora_rx.cpp").read_text()
         self.assertIn("../../../stable_lib/lora/lora.h", source)
         self.assertIn("reliable::Transport<LoRa>", source)
         self.assertIn("transport.SendReliableData", source)
@@ -318,23 +318,23 @@ class HardwareGateTests(unittest.TestCase):
              "rst":"PD1","irq":"PD3","dio1":"PD2","enable":"PA7"},
         )
         constructor = "LoRa lora(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1)"
-        self.assertIn(constructor,(root/"src/sender/lib/lora_rx.cpp").read_text())
-        self.assertIn(constructor,(root/"src/reliable/main.cpp").read_text())
-        self.assertIn(constructor,(root/"src/receiver/main.cpp").read_text())
+        self.assertIn(constructor,(root/"stable_lib/gateway_app/lora_rx.cpp").read_text())
+        self.assertIn(constructor,(root/"stable_lib/reliable_app/reliable_app.cpp").read_text())
+        self.assertIn(constructor,(root/"stable_lib/legacy_receiver/legacy_receiver.cpp").read_text())
 
     def test_both_radio_setups_keep_dio1_input_and_reset_deasserted(self) -> None:
         root = Path(__file__).resolve().parents[1]
-        sender = (root / "src/sender/lib/io.cpp").read_text()
+        sender = (root / "stable_lib/gateway_app/io.cpp").read_text()
         self.assertIn("pinModeFast(PIN_LORA_DIO1, INPUT);", sender)
         self.assertIn("digitalWriteFast(PIN_LORA_RST, HIGH);", sender)
-        receiver = (root / "src/receiver/main.cpp").read_text()
+        receiver = (root / "stable_lib/legacy_receiver/legacy_receiver.cpp").read_text()
         self.assertIn("pinModeFast(LORA_PIN_RST, INPUT);", receiver)
         self.assertIn("pinModeFast(LORA_PIN_DIO1, INPUT);", receiver)
 
     def test_led_and_debug_uart_macros_follow_schematic_and_dxcore_directions(self) -> None:
         root = Path(__file__).resolve().parents[1]
         expected_leds = {"PIN_LED1": "PIN_PA5", "PIN_LED2": "PIN_PA4"}
-        for relative in ("src/sender/lib/io.h",):
+        for relative in ("stable_lib/gateway_app/io.h",):
             source = (root / relative).read_text()
             bindings = {}
             for line in source.splitlines():
@@ -343,7 +343,7 @@ class HardwareGateTests(unittest.TestCase):
                     bindings[parts[1]] = parts[2]
             self.assertEqual(bindings, expected_leds, relative)
 
-        sender_io = (root / "src/sender/lib/io.h").read_text()
+        sender_io = (root / "stable_lib/gateway_app/io.h").read_text()
         self.assertIn("#define PIN_DEBUG_TX PIN_PA0", sender_io)
         self.assertIn("#define PIN_DEBUG_RX PIN_PA1", sender_io)
 
@@ -407,7 +407,7 @@ class HardwareGateTests(unittest.TestCase):
                 "-DAPPLICATION_BUILD",
                 "-DLORA_SSOT_GENERATED=1",
                 "-DHELLO_RF_LONG_RANGE=1",
-                "-Isrc/shared",
+                "-Istable_lib/shared",
             ]
         )
         self.assertFalse(validator(changed_receiver))
@@ -991,7 +991,7 @@ class RfEvidenceTests(unittest.TestCase):
         self.assertIn("multiple campaign IDs", evidence["issues"])
 
     def test_sender_no_longer_uses_the_removed_eeprom_campaign_gate(self) -> None:
-        source = (Path(__file__).resolve().parents[1] / "src/sender/lib/lora_rx.cpp").read_text()
+        source = (Path(__file__).resolve().parents[1] / "stable_lib/gateway_app/lora_rx.cpp").read_text()
         self.assertNotIn("EEPROM", source)
         self.assertNotIn("CampaignBuildGateResult", source)
         self.assertIn("StartRadioTransaction", source)

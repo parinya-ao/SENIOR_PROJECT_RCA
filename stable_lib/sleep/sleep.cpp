@@ -1,116 +1,85 @@
-#include <Arduino.h>
-#include <avr/sleep.h>
-#include <avr/interrupt.h>
-#include <avr/wdt.h>
-#include <util/atomic.h>
-#include <TimeLib.h>
+// Implements tracker sleep policy on top of the AVR128DA28 RTC primitives.
 #include "sleep.h"
 
-static volatile uint32_t _rtc_ticks;
-static volatile uint32_t g_sleep_unix_time;
-volatile bool g_sleep_force_wakeup;
-bool g_sleep_is_sleeping;
+#include <Arduino.h>
+#include <TimeLib.h>
 
-/************************************************************
- * Initialize RTC with PIT interrupt
- * (adapted from https://github.com/SpenceKonde/megaTinyCore/blob/master/megaavr/extras/PowerSave.md)
- */
-static void rtc_init(void) {
-    while (RTC.STATUS > 0) {}             /* Wait for all register to be synchronized */
-    RTC.CLKSEL = RTC_CLKSEL_OSC32K_gc;    /* 32.768kHz Internal Ultra-Low-Power Oscillator (OSCULP32K) */
+#include "iw/avr128da28/device.h"
+#include "iw/avr128da28/sleep.h"
 
-    RTC.PITINTCTRL = RTC_PI_bm;           /* PIT Interrupt: enabled */
+namespace {
 
-    RTC.PITCTRLA = RTC_PERIOD_CYC32768_gc
-                 | RTC_PITEN_bm;          /* Enable PIT counter: enabled */
+constexpr uint32_t kMaximumSleepSeconds = 86400U;
+
+// This state is private to the sleep owner; ForceWakeup is the only ISR-facing
+// operation and protects the volatile fields with the platform critical-section
+// primitive.
+struct SleepState {
+  volatile uint32_t unix_time;
+  volatile bool force_wakeup;
+  bool is_sleeping;
+  uint32_t last_rtc_ticks;
+};
+
+// P10-ISR-001: sleep and wake ISR paths share this bounded state owner.
+SleepState g_sleep_state{};
+
+}  // namespace
+
+void InitializeSleep() {
+  g_sleep_state = {};
+  iw::avr128da28::InitializeRtc();
+  iw::avr128da28::ConfigureStandbySleep();
 }
 
-ISR(RTC_PIT_vect) {
-    RTC.PITINTFLAGS = RTC_PI_bm;          /* Clear interrupt flag by writing '1' (required) */
-    _rtc_ticks++;
-    g_sleep_unix_time++;
-}
-
-/************************************************************
- * Return the current value of RTC's ticks
- */
-static uint32_t rtc_ticks() {
-    uint32_t val;
-
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-    {
-        val = _rtc_ticks;
+void SleepFor(uint32_t seconds) {
+  const uint32_t start_ticks = iw::avr128da28::ReadRtcTicks();
+  const uint32_t bounded_seconds =
+      seconds > kMaximumSleepSeconds ? kMaximumSleepSeconds : seconds;
+  if (bounded_seconds == 0U) {
+    g_sleep_state.is_sleeping = false;
+    return;
+  }
+  bool should_wake = false;
+  g_sleep_state.is_sleeping = true;
+  g_sleep_state.force_wakeup = false;
+  for (uint32_t elapsed = 0U; elapsed < bounded_seconds && !should_wake;
+       ++elapsed) {
+    iw::avr128da28::EnterStandbySleep();
+    iw::avr128da28::ResetWatchdog();
+    const uint8_t saved_status = iw::avr128da28::SaveAndDisableInterrupts();
+    if (g_sleep_state.force_wakeup ||
+        iw::avr128da28::ReadRtcTicks() - start_ticks >= bounded_seconds) {
+      should_wake = true;
     }
-    return val;
+    iw::avr128da28::RestoreInterruptState(saved_status);
+  }
+  g_sleep_state.is_sleeping = false;
 }
 
-/************************************************************
- * Reset RTC's ticks
- */
-static void rtc_reset_ticks() {
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-    {
-        _rtc_ticks = 0;
-    }
+// Advances the wall clock by the RTC ticks elapsed since the previous call.
+uint32_t SleepRtcTicks() {
+  const uint32_t ticks = iw::avr128da28::ReadRtcTicks();
+  const uint32_t elapsed = ticks - g_sleep_state.last_rtc_ticks;
+  if (elapsed != 0U) {
+    const uint8_t saved_status = iw::avr128da28::SaveAndDisableInterrupts();
+    g_sleep_state.unix_time += elapsed;
+    iw::avr128da28::RestoreInterruptState(saved_status);
+    g_sleep_state.last_rtc_ticks = ticks;
+  }
+  return ticks;
 }
 
-/************************************************************
- * Enable RTC
- */
-static void rtc_start() {
-    while (RTC.STATUS > 0) {} // Wait for all register to be synchronized
-    RTC.CNT = 0;
-    RTC.CTRLA |= RTC_RTCEN_bm;
-    rtc_reset_ticks();
+uint32_t GetUnixTime() { return g_sleep_state.unix_time; }
+
+void SetUnixTime(uint32_t timestamp) {
+  const uint8_t saved_status = iw::avr128da28::SaveAndDisableInterrupts();
+  g_sleep_state.unix_time = timestamp;
+  iw::avr128da28::RestoreInterruptState(saved_status);
 }
 
-/************************************************************
- * Disable RTC
- */
-static void rtc_stop() {
-    while (RTC.STATUS > 0) {} // Wait for all register to be synchronized
-    RTC.CTRLA &= ~RTC_RTCEN_bm;
-}
-
-/************************************************************
- * Go into standby sleep for the specified seconds
- */
-void sleep_init() {
-    g_sleep_force_wakeup = false;
-    g_sleep_is_sleeping = false;
-    g_sleep_unix_time = 0;
-    rtc_init();
-    rtc_reset_ticks();
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-    sleep_enable();     
-}
-
-/************************************************************
- * Go into standby sleep for the specified seconds
- */
-void sleep_for(uint32_t seconds) {
-    uint32_t ts = rtc_ticks();
-    bool force_wakeup = false;
-    g_sleep_is_sleeping = true;
-    g_sleep_force_wakeup = false;
-    while (rtc_ticks() - ts < seconds) {
-        sleep_cpu();
-        wdt_reset();
-        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-            if (g_sleep_force_wakeup) {
-                force_wakeup = true;
-            }
-        }
-        if (force_wakeup) {
-            break;
-        }
-    }
-    g_sleep_is_sleeping = false;
-}
-
-/************************************************************
- * Return the number of seconds since last reboot
- */
-uint32_t sleep_rtc_ticks() {
-    return rtc_ticks();
+void ForceWakeup() {
+  const uint8_t saved_status = iw::avr128da28::SaveAndDisableInterrupts();
+  g_sleep_state.force_wakeup = true;
+  iw::avr128da28::RestoreInterruptState(saved_status);
 }

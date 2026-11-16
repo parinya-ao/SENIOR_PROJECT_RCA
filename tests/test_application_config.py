@@ -75,8 +75,8 @@ class ApplicationConfigTests(unittest.TestCase):
             path = Path(directory)
             (path / "application_config.h").write_text(render(config))
             (path / "test.cpp").write_text(f'''#include <assert.h>
-#include "{ROOT}/src/arq/diagnostics.cpp"
-#include "{ROOT}/src/reverse_raw/main.cpp"
+#include "{ROOT}/stable_lib/arq/src/arq/diagnostics.cpp"
+#include "{ROOT}/stable_lib/reverse_raw_app/reverse_raw_app.cpp"
 const arq_board board_ssot = {{3,4,5,6}};
 void board_ssot_init() {{}}
 int main() {{

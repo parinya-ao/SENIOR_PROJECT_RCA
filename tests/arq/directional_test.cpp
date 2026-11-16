@@ -6,11 +6,10 @@
 
 #include <assert.h>
 
-#include "../../src/arq/application.cpp"
-#include "../../src/arq/board_ssot.c"
-#include "../../src/arq/commands.cpp"
-#include "../../src/arq/diagnostics.cpp"
-#include "../../src/arq/main.cpp"
+#include "../../stable_lib/arq/src/arq/application.cpp"
+#include "../../stable_lib/arq/src/arq/board_ssot.c"
+#include "../../stable_lib/arq/src/arq/commands.cpp"
+#include "../../stable_lib/arq/src/arq/diagnostics.cpp"
 #include "diagnostics_test_access.h"
 using namespace arq::app;
 
@@ -26,7 +25,7 @@ static bool logged(const char* name) {
 }
 int main(int argc, char** argv) {
   bool nack = argc > 1 && !strcmp(argv[1], "nack");
-  setup();
+  Initialize();
   assert(ready && parked && !tx_starts);
   cmd("ARM 12345678");
   assert(raw_regs[1] == 0x85);
@@ -38,7 +37,7 @@ int main(int argc, char** argv) {
   for (size_t i = 0; i < strlen(payload); i++)
     sprintf(text + 5 + 2 * i, "%02X", (uint8_t)payload[i]);
   cmd(text);
-  loop();
+  Poll();
   assert(tx_starts == 1 && raw_regs[1] == 0x83);
   arq::Frame data;
   assert(arq::DecodeFrame(&data, sent, sent_length));
@@ -48,7 +47,7 @@ int main(int argc, char** argv) {
   assert(data.length == strlen(payload) &&
          !memcmp(data.payload, payload, data.length));
   irq_flags = 8;
-  loop();
+  Poll();
   assert(sender.state == arq::SenderState::kWaitingAck && raw_regs[1] == 0x85);
   arq::Frame response = {
       (uint8_t)(nack ? arq::kNack : arq::kAck),
@@ -68,7 +67,7 @@ int main(int argc, char** argv) {
     if (invalid == 3) --packet_length;
     irq_flags = 0x40;
     clear_log();
-    loop();
+    Poll();
     assert(sender.state == arq::SenderState::kWaitingAck);
     assert(!logged("e=DELIVERED ") && !logged("e=REJECTED "));
   }
@@ -77,19 +76,19 @@ int main(int argc, char** argv) {
   clear_log();
   if (argc > 1 && !strcmp(argv[1], "expired")) {
     clock_ms = sender.terminal_at;
-    loop();
+    Poll();
     assert(sender.result == arq::Result::kTimeoutExhausted &&
            sender.sequence == 0);
     assert(!logged("e=DELIVERED "));
     return 0;
   }
-  loop();
+  Poll();
   assert(sender.result == (nack ? arq::Result::kRejected : arq::Result::kOk));
   assert(sender.sequence == (nack ? 0 : 1));
   assert(logged(nack ? "e=REJECTED " : "e=DELIVERED ") && logged(" q=0 "));
   irq_flags = 0x40;
   clear_log();
-  loop();  // duplicate control cannot repeat success
+  Poll();  // duplicate control cannot repeat success
   assert(!logged("e=DELIVERED ") && !logged("e=REJECTED "));
 #else
   arq::Frame data = {arq::kData,
@@ -105,13 +104,13 @@ int main(int argc, char** argv) {
   packet_length = arq::EncodeFrame(&data, packet, 44);
   irq_flags = 0x40;
   clear_log();
-  loop();
+  Poll();
   assert(receiver.deliveries == (nack ? 0 : 1) && response_wait &&
          tx_starts == 0);
   assert(logged(nack ? "e=DATA_REJECT " : "e=ACCEPT "));
   clock_ms += ARQ_RESPONSE_GUARD_MS;
   clear_log();
-  loop();
+  Poll();
   assert(tx_starts == 1 && raw_regs[1] == 0x83);
   arq::Frame response;
   assert(arq::DecodeFrame(&response, sent, sent_length));
@@ -123,15 +122,15 @@ int main(int argc, char** argv) {
          response.sequence == data.sequence);
   irq_flags = 8;
   clear_log();
-  loop();
+  Poll();
   assert(completed == 1 && raw_regs[1] == 0x85);
   assert(logged("e=TX_DONE ") && !arq::diagnostics::OverflowCount());
   irq_flags = 8;
-  loop();
+  Poll();
   assert(completed == 1 && tx_starts == 1);  // stale TX IRQ
 #endif
   cmd("X");
-  loop();
+  Poll();
   assert(parked && raw_regs[1] == 0x81);
 #if defined(LORA_ROLE_RECEIVER)
   assert(gpio_value[PIN_PA7] == LOW && gpio_value[PIN_PD5] == HIGH &&

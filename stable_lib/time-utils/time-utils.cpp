@@ -1,52 +1,42 @@
-#include <TimeLib.h>
-#include <stdio.h>
+// Converts the tracker wall-clock state to calendar fields and display text.
 #include "time-utils.h"
 
-char _datetime_string[30];
+#include <TimeLib.h>
+#include <stdio.h>
 
-void init_time() {
-    set_time(2000, 1, 1, 0, 0, 0);
+namespace {
+
+// Shared formatting buffer; callers must consume the result before the next
+// GetCurrentTimeString() call.
+char g_datetime_string[30];
+
+}  // namespace
+
+void InitializeTime() { SetTime(2000, 1, 1, 0, 0, 0); }
+
+void SetTime(uint16_t year, uint8_t month, uint8_t day, uint8_t hour,
+             uint8_t minute, uint8_t second) {
+  tmElements_t time_elements;
+  time_elements.Year = year - 1970;
+  time_elements.Month = month;
+  time_elements.Day = day;
+  time_elements.Hour = hour;
+  time_elements.Minute = minute;
+  time_elements.Second = second;
+  const uint32_t unix_time = makeTime(time_elements);
+
+  SetUnixTime(unix_time);
 }
 
-/************************************
- *
- */
-void set_time(uint16_t year,
-              uint8_t  month,
-              uint8_t  day,
-              uint8_t  hour,
-              uint8_t  minute,
-              uint8_t  second) {
-    tmElements_t tm;
-    tm.Year   = year - 1970;
-    tm.Month  = month;
-    tm.Day    = day;
-    tm.Hour   = hour;
-    tm.Minute = minute;
-    tm.Second = second;
-    uint32_t ts = makeTime(tm);
+uint32_t GetTotalSeconds() { return GetUnixTime(); }
 
-    sleep_set_unix_time(ts);
+char* GetCurrentTimeString() {
+  snprintf(g_datetime_string, sizeof(g_datetime_string),
+           "%u-%02u-%02u %02u:%02u:%02u", static_cast<unsigned int>(GetYear()),
+           static_cast<unsigned int>(GetMonth()),
+           static_cast<unsigned int>(GetDay()),
+           static_cast<unsigned int>(GetHours()),
+           static_cast<unsigned int>(GetMinutes()),
+           static_cast<unsigned int>(GetSeconds()));
+  return g_datetime_string;
 }
-
-/************************************
- *
- */
-uint32_t get_total_seconds() {
-    return sleep_get_unix_time();
-}
-
-/************************************
- *
- */
-char* get_current_time_str() {
-    sprintf(_datetime_string, "%d-%02d-%02d %02d:%02d:%02d",
-            get_year(),
-            get_month(),
-            get_day(),
-            get_hours(),
-            get_minutes(),
-            get_seconds());
-    return _datetime_string;
-}
-

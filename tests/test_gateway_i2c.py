@@ -15,11 +15,11 @@ class GatewayI2cTests(unittest.TestCase):
             result = subprocess.run(
                 ["g++", "-std=c++17", "-Wno-return-type",
                  "-Itests/gateway_stub", "-Itests/mvp_stub", "-Itests/radio_stub",
-                 "-Iinclude", "-Isrc/shared", "-Ilib/task/src",
-                 "-Ilib/iw_core/src", "-Ilib/iw_tracker_radio_protocol/src",
-                 "-Ilib/updi_uart/src", "-DLORA_ROLE_SENDER=1",
-                 "tests/gateway_i2c_test.cpp", "lib/task/src/task.cpp",
-                 "lib/iw_core/src/byte_codec.cpp", "-o", binary],
+                 "-Iinclude", "-Istable_lib/shared", "-Istable_lib/task",
+                 "-Istable_lib/iw_core/src", "-Istable_lib/iw_tracker_radio_protocol/src",
+                 "-Istable_lib/updi_uart/src", "-DLORA_ROLE_SENDER=1",
+                 "tests/gateway_i2c_test.cpp", "stable_lib/task/task.cpp",
+                 "stable_lib/iw_core/src/byte_codec.cpp", "-o", binary],
                 cwd=ROOT, capture_output=True, text=True,
             )
             self.assertEqual(result.returncode, 0, result.stderr)

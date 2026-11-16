@@ -321,7 +321,7 @@ class Radio915ValidationTests(unittest.TestCase):
                         *flags,
                         "-",
                     ],
-                    input='#include "src/shared/hello_config.h"\n'
+                    input='#include "stable_lib/shared/hello_config.h"\n'
                     'static_assert(HELLO_RF_TX_POWER_DBM == 5, "candidate power");\n',
                     text=True,
                     capture_output=True,

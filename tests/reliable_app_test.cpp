@@ -32,12 +32,12 @@ extern "C" bool updi_uart_try_tx(uint8_t c) {
   updi_uart_tx(c);
   return true;
 }
-#include "../src/reliable/main.cpp"
+#include "../stable_lib/reliable_app/reliable_app.cpp"
 
 static void command(const char* text) {
   input = text;
   for (unsigned i = 0; i < 100; ++i) {
-    loop();
+    reliable_app::Poll();
     ++host_ms;
   }
 }
@@ -58,14 +58,14 @@ static void deliver(uint8_t source, uint8_t destination, const uint8_t* payload,
 static void complete_tx() {
   fake_radio::state.irq_flags = 8;
   fake_radio::state.sent_action();
-  loop();
+  reliable_app::Poll();
 }
 #endif
 
 int main() {
 #if defined(TEST_LOG_DISABLED)
   SPI.reset();
-  setup();
+  reliable_app::Initialize();
   command("S");
   assert(used == 0 && updi_log_count == 0);
   assert(fake_radio::state.transmit_starts == 1);
@@ -76,7 +76,7 @@ int main() {
   {
     mailbox_ready = false;
     SPI.reset();
-    setup();
+    reliable_app::Initialize();
     for (unsigned i = 0; i < 100; ++i) updi_role_log(kRole, "backpressure");
     assert(updi_role_log_dropped() > 0);
     for (unsigned i = 0; i < 30; ++i)
@@ -87,10 +87,10 @@ int main() {
     complete_tx();
     const uint8_t ack[] = {ssot::kAckType, ssot::kSequence};
     deliver(kPeerAddress, kLocalAddress, ack, sizeof ack);
-    loop();
+    reliable_app::Poll();
     assert(transport.result() == decltype(transport)::Result::kAccepted);
     mailbox_ready = true;
-    for (unsigned i = 0; i < 30; ++i) loop();
+    for (unsigned i = 0; i < 30; ++i) reliable_app::Poll();
     assert(used > 0);
     puts("PASS radio progresses while OCD is unavailable");
     return 0;
@@ -98,7 +98,7 @@ int main() {
 #endif
 
   SPI.reset();
-  setup();
+  reliable_app::Initialize();
 #if HELLO_RF_DIAGNOSTIC_ONLY
   command("S");
   assert(fake_radio::state.transmit_starts == 0);
@@ -120,12 +120,12 @@ int main() {
                           'l',
                           'd'};
   deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, data, sizeof data);
-  loop();
+  reliable_app::Poll();
   assert(fake_radio::state.tx_copy[4] == ssot::kNackType);
   complete_tx();
   // N rejects exactly one DATA; the retransmission must be accepted.
   deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, data, sizeof data);
-  loop();
+  reliable_app::Poll();
   assert(fake_radio::state.tx_copy[4] == ssot::kAckType);
   complete_tx();
   uint8_t next_data[sizeof data];
@@ -135,11 +135,11 @@ int main() {
   const int before = fake_radio::state.transmit_starts;
   deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, next_data,
           sizeof next_data);
-  loop();
+  reliable_app::Poll();
   assert(fake_radio::state.transmit_starts == before);
   deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, next_data,
           sizeof next_data);
-  loop();
+  reliable_app::Poll();
   assert(fake_radio::state.transmit_starts == before + 1 &&
          fake_radio::state.tx_copy[4] == ssot::kAckType);
   complete_tx();
@@ -176,13 +176,13 @@ int main() {
   complete_tx();
   const uint8_t nack[] = {ssot::kNackType, ssot::kSequence};
   deliver(LORA_RECEIVER_ADDRESS, LORA_SENDER_ADDRESS, nack, sizeof nack);
-  loop();
-  loop();
+  reliable_app::Poll();
+  reliable_app::Poll();
   assert(fake_radio::state.transmit_starts == 2);
   complete_tx();
   const uint8_t ack[] = {ssot::kAckType, ssot::kSequence};
   deliver(LORA_RECEIVER_ADDRESS, LORA_SENDER_ADDRESS, ack, sizeof ack);
-  loop();
+  reliable_app::Poll();
   assert(transport.result() == decltype(transport)::Result::kAccepted);
   command("");  // Drain deferred event logging after RF completes.
   assert(strstr(logs, "ACK_ACCEPTED"));

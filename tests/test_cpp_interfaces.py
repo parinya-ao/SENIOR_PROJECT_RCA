@@ -16,9 +16,9 @@ class CppInterfaceTests(unittest.TestCase):
                 binary = str(Path(directory) / role)
                 result = subprocess.run(
                     ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
-                     "-Iinclude", "-Isrc/arq", "-DARQ_TEST_MODE=1",
+                     "-Iinclude", "-Istable_lib/arq/src/arq/src", "-DARQ_TEST_MODE=1",
                      "-DLORA_ROLE_" + role, "tests/arq/commands_test.cpp",
-                     "src/arq/commands.cpp", "-o", binary],
+                     "stable_lib/arq/src/arq/commands.cpp", "-o", binary],
                     cwd=ROOT, capture_output=True, text=True,
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
@@ -63,7 +63,7 @@ class CppInterfaceTests(unittest.TestCase):
              "-x", "c++", "-"],
             cwd=ROOT, capture_output=True, text=True,
             input='''#include "arq/sender.h"
-#include "ssot/session.h"
+#include "session.h"
 static_assert(sizeof(arq::SenderState) == sizeof(int));
 static_assert(sizeof(ssot::CampaignState) == sizeof(int));
 arq::Sender sender{};

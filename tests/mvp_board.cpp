@@ -43,16 +43,20 @@ void delay(unsigned ms) {
 }
 
 #ifdef LORA_ROLE_RECEIVER
-#include "../src/receiver/main.cpp"
-static void step() { loop(); }
+#define LORA_APP_LEGACY_RECEIVER 1
+#include "../stable_lib/legacy_receiver/legacy_receiver.cpp"
+static void step() { legacy_receiver::Poll(); }
 static const char* state_name() {
   return radio_ready ? "RX_READY" : "RADIO_INIT_FAILED";
 }
 #else
-#include "../src/sender/lib/lora_rx.cpp"
+#define LORA_APP_GATEWAY 1
+#include "../stable_lib/gateway_app/lora_rx.cpp"
+namespace gateway_app {
 iw::core::RingBuffer<application_config::gateway::kResultBufferBytes> ringbuf;
 TaskScheduler scheduler;
-static void step() { scheduler.Loop(); }
+}  // namespace gateway_app
+static void step() { gateway_app::scheduler.Loop(); }
 static const char* state_name() {
   switch (transport.state()) {
     case decltype(transport)::State::kRxWait:
@@ -95,7 +99,7 @@ int main() {
   SPI.reset();
   fake_radio::state.airtime_us = 50000;  // Synthetic timing; no RF measurement.
 #ifdef LORA_ROLE_RECEIVER
-  setup();
+  legacy_receiver::Initialize();
 #else
   RegisterRadioTask();
   StartHelloTestIfEnabled();

@@ -1,10 +1,10 @@
 #include <algorithm>
 
-#include "../src/mvp/main.cpp"
+#include "../stable_lib/mvp_app/mvp_app.cpp"
 
 int main() {
   onPreMain();
-  setup();
+  mvp_app::Initialize();
   assert(ready && swapped && begun && !monitor);
   assert(stage_count >= 7 && reset_flags == 4);
 #if defined(LORA_ROLE_RECEIVER)
@@ -20,55 +20,55 @@ int main() {
     irq_flags = 0x40;
     const uint32_t old = matches;
     const int starts = rx_starts;
-    loop();
+    mvp_app::Poll();
     assert(matches == old + (length == 11));
     assert(rx_starts == starts + 1);
   }
   packet_length = 11;
   memcpy(packet, "hello world", 11);
   irq_flags = 0x40;
-  loop();
+  mvp_app::Poll();
   assert(matches == 1);
   memcpy(packet, kPayload, kPayloadBytes);
   data_status = RADIOLIB_ERR_CRC_MISMATCH;
   irq_flags = 0x60;
-  loop();
+  mvp_app::Poll();
   assert(matches == 1 && crc_errors == 1);
   data_status = -24;
   irq_flags = 0x40;
-  loop();
+  mvp_app::Poll();
   assert(matches == 1);
   data_status = 0;
   irq_flags = 0x40;
   rx_status = -1;
-  loop();
+  mvp_app::Poll();
   assert(!ready);
 #else
-  loop();
+  mvp_app::Poll();
   assert(tx_starts == 1 && sent_length == 11 &&
          memcmp(sent, "Hello World", 11) == 0);
   irq_flags = 0x08;
-  loop();
+  mvp_app::Poll();
   assert(!transmitting && cleanups == 1);
-  loop();
+  mvp_app::Poll();
   assert(tx_starts == 1);
   clock_ms += 3000;
-  loop();
+  mvp_app::Poll();
   assert(transmitting && tx_starts == 2);
   clock_ms += 3000;
-  loop();
+  mvp_app::Poll();
   assert(!transmitting && cleanups == 2);
   input_pending = true;
   input = 'X';
-  loop();
+  mvp_app::Poll();
   clock_ms += 15000;
-  loop();
+  mvp_app::Poll();
   assert(stopped && tx_starts == 2);
   stopped = false;
-  loop();
+  mvp_app::Poll();
   irq_flags = 0x08;
   cleanup_status = -1;
-  loop();
+  mvp_app::Poll();
   assert(!ready);
 #endif
   monitor = true;
@@ -79,7 +79,7 @@ int main() {
   assert(log_ok);
   registers[1] = 1;
   const uint32_t before = clock_ms;
-  loop();
+  mvp_app::Poll();
   assert(clock_ms - before < 2000);
   debug_init();
   debug_write_float(-1.25f);

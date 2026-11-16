@@ -75,7 +75,7 @@ class ReceiverHardwareTests(unittest.TestCase):
 
     def test_gpio_powers_radio_before_spi_without_touching_sd_or_reset(self) -> None:
         # Compile the actual static GPIO function, replacing only Arduino I/O.
-        source = (ROOT / "src/receiver/main.cpp").read_text()
+        source = (ROOT / "stable_lib/legacy_receiver/legacy_receiver.cpp").read_text()
         first = source.index("static void InitializeReceiverGpio()")
         last = source.index("\nvoid setup()", first)
         aliases = "\n".join(

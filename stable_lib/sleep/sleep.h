@@ -1,35 +1,27 @@
-#pragma once
+// Exposes tracker sleep policy and its interrupt-safe wall-clock state.
+#ifndef IW_SLEEP_POLICY_SLEEP_H_
+#define IW_SLEEP_POLICY_SLEEP_H_
+
 #include <stdint.h>
-#include <util/atomic.h>
 
-extern volatile bool g_sleep_force_wakeup;
-extern bool g_sleep_is_sleeping;
-extern volatile uint32_t g_sleep_unix_time;
+#include "iw/avr128da28/device.h"
 
-void sleep_init();
-void sleep_for(uint32_t seconds);
-uint32_t sleep_rtc_ticks();
+// Initializes the RTC and standby-sleep policy state.
+void InitializeSleep();
 
-/************************************************************
- * Return current unix timestamp (the number of seconds since epoch)
- */
-inline uint32_t sleep_get_unix_time() {
-    return g_sleep_unix_time;
-}
-/************************************************************
- * Set current unix time stamp (the number of seconds since epoch)
- */
-inline void sleep_set_unix_time(uint32_t ts) {
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-        g_sleep_unix_time = ts;
-    }
-}
+// Sleeps for up to seconds, returning earlier when ForceWakeup() is requested.
+void SleepFor(uint32_t seconds);
 
-/************************************************************
- * Force sleep_for() to wake up right away (max 1 second delay)
- */
-inline void sleep_force_wakeup() {
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-        g_sleep_force_wakeup = true;
-    }
-}
+// Advances wall-clock state from RTC ticks and returns the current tick count.
+[[nodiscard]] uint32_t SleepRtcTicks();
+
+// Returns the current wall-clock timestamp in Unix seconds.
+[[nodiscard]] uint32_t GetUnixTime();
+
+// Sets the wall-clock timestamp while preserving the interrupt state.
+void SetUnixTime(uint32_t timestamp);
+
+// Requests SleepFor() to wake on its next RTC cycle (at most one second).
+void ForceWakeup();
+
+#endif  // IW_SLEEP_POLICY_SLEEP_H_

@@ -56,6 +56,14 @@
 // SPI: MOSI=PC0, MISO=PC1, SCK=PC2.
 ```
 
+Gateway compile-time pins and status LED timing are defined in
+`include/gateway_ssot.hpp`. The LoRa frequency remains sourced from
+`config/radio_915.toml` through the generated radio profile; do not add a local
+frequency value. LED1 toggles every 1000 ms; LED2 toggles every 100 ms while
+DATA, ACK, or NACK is transmitting, then turns off. The excluded SX1262 sketch
+has separate historical example pins in `GatewaySSOT::ExcludedSx1262Experiment`;
+they are not the active Gateway RFM95/98 pin map.
+
 The supplied repository's `PIN_MAPPING_AUDIT.md` records `SPI.swap(SPI1_SWAP_DEFAULT)` as the intended **DxCore 1.6.2 SPI1** route for PC0–PC2, before RadioLib initialization. Gateway radio NSS is PC3. `src/receiver/main.cpp` implements the **Tracker Receiver** and consumes its separately generated board pins; the common SPI peripheral does not imply common NSS, reset, interrupt or power-enable pins.
 
 ## 3. Daughterboard external connectors

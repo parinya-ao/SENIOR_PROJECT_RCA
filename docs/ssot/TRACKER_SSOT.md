@@ -102,6 +102,13 @@ Do **not** copy Gateway radio pin macros into this Tracker build. The correct SP
 - [ ] Reset cause captured; MCU VDD waveform checked for sag at switch-on.
 - [ ] No RF transmission until fitted antenna/module frequency are confirmed.
 
+## 6. Firmware configuration
+
+The separate 17-field tracker configuration model is documented in
+[`TRACKER_CONFIG_SSOT.md`](TRACKER_CONFIG_SSOT.md) and defined in
+`include/tracker_config.h`. It does not override the active one-shot receiver
+profile or the hardware facts in this file.
+
 ## Sources
 
 - Local design: `Schematic_LoRa-Tracker-RFM_2025-02-16.pdf` (2025-02-16, sheet 1/1), `pcb-top.pdf`, `pcb-bottom.pdf`.

@@ -1,0 +1,11 @@
+#ifndef SENIOR_PROJECT_RCA_STABLE_LIB_LEGACY_SENDER_LEGACY_SENDER_H_
+#define SENIOR_PROJECT_RCA_STABLE_LIB_LEGACY_SENDER_LEGACY_SENDER_H_
+
+namespace legacy_sender {
+
+void Initialize();
+void Poll();
+
+}  // namespace legacy_sender
+
+#endif  // SENIOR_PROJECT_RCA_STABLE_LIB_LEGACY_SENDER_LEGACY_SENDER_H_

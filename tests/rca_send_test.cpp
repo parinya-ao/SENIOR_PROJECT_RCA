@@ -1,8 +1,8 @@
 // Offline execution of the actual SEND parser against existing fake SPI/radio.
 #include <assert.h>
 
-#include "../src/arq/diagnostics.cpp"
-#include "../src/reverse_raw/main.cpp"
+#include "../stable_lib/arq/src/arq/diagnostics.cpp"
+#include "../stable_lib/reverse_raw_app/reverse_raw_app.cpp"
 const arq_board board_ssot = {3, 4, 5, 6};
 void board_ssot_init(void) {}
 static void text(const char* s) {
@@ -10,7 +10,7 @@ static void text(const char* s) {
 }
 int main(int argc, char** argv) {
   assert(argc == 2);
-  setup();
+  reverse_raw_app::Initialize();
   assert(ready && !active && !tx_starts);
   if (!strcmp(argv[1], "wrong")) {
     text("SEND 4865\n");
@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
   assert(tx_starts == 1);
   // A disconnected logger must not prevent bounded radio cleanup.
   clock_ms += 3001;
-  loop();
+  reverse_raw_app::Poll();
   assert(!active && cleanups == 1);
   if (!strcmp(argv[1], "backpressure"))
     assert(arq::diagnostics::OverflowCount() > 0);

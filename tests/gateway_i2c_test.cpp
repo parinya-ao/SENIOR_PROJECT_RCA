@@ -4,7 +4,7 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include "../src/sender/lib/espcomm.cpp"
+#include "../stable_lib/gateway_app/espcomm.cpp"
 
 uint32_t host_ms = 0;
 namespace fake_spi {
@@ -12,9 +12,11 @@ State state{};
 }
 SPIClass SPI;
 void delay(unsigned) {}
+namespace gateway_app {
 iw::core::RingBuffer<application_config::gateway::kResultBufferBytes> ringbuf;
 TaskScheduler scheduler;
 int16_t current_temperature = 0;
+}  // namespace gateway_app
 static int configurations, rejections;
 void InitializeRadio(Address address) {
   assert(address == LORA_SENDER_ADDRESS);

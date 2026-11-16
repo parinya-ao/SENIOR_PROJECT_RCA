@@ -1,0 +1,11 @@
+#ifndef SENIOR_PROJECT_RCA_STABLE_LIB_LEGACY_RECEIVER_LEGACY_RECEIVER_H_
+#define SENIOR_PROJECT_RCA_STABLE_LIB_LEGACY_RECEIVER_LEGACY_RECEIVER_H_
+
+namespace legacy_receiver {
+
+void Initialize();
+void Poll();
+
+}  // namespace legacy_receiver
+
+#endif  // SENIOR_PROJECT_RCA_STABLE_LIB_LEGACY_RECEIVER_LEGACY_RECEIVER_H_

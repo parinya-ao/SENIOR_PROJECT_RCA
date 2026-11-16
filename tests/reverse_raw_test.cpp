@@ -1,7 +1,7 @@
 #include <assert.h>
 
-#include "../src/arq/diagnostics.cpp"
-#include "../src/reverse_raw/main.cpp"
+#include "../stable_lib/arq/src/arq/diagnostics.cpp"
+#include "../stable_lib/reverse_raw_app/reverse_raw_app.cpp"
 #include "arq/diagnostics_test_access.h"
 const arq_board board_ssot = {3, 4, 5, 6};
 void board_ssot_init(void) {}
@@ -15,7 +15,7 @@ static const char* logged(const char* name) {
   return "";
 }
 int main(int argc, char** argv) {
-  setup();
+  reverse_raw_app::Initialize();
   assert(ready && !active && !tx_starts);
   assert(last_begin_frequency_mhz == 915.0f);
   assert((raw_regs[RADIOLIB_SX127X_REG_OP_MODE] & 0x08) == 0);
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
       cmd("RX");
       assert(rx_starts == 1 && irq_flags == 0x50);
       clock_ms += 15001;
-      loop();
+      reverse_raw_app::Poll();
       assert(matches == 1 && !active && !irq_flags);
       assert(strstr(logged("RAW_RX_DONE"), "flags=80 headers=4660 packets=1"));
       assert(!*logged("RAW_RX_TIMEOUT"));
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     cmd("RX");
     if (!strcmp(argv[1], "timeout")) {
       clock_ms += 15001;
-      loop();
+      reverse_raw_app::Poll();
       assert(!active && !matches);
       assert(strstr(logged("RAW_RX_TIMEOUT"), "headers=0 packets=0"));
       return 0;
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     if (!strcmp(argv[1], "bad-length")) {
       packet_length = 255;
       irq_flags = 0x40;
-      loop();
+      reverse_raw_app::Poll();
       assert(active && !matches);
       cmd("X");
       return 0;
@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
     }
     cmd("SEND 48656C6C6F20576F726C64");
     irq_flags = 8;
-    loop();
+    reverse_raw_app::Poll();
     assert(!active && cleanups == 1);
     return 0;
 #endif
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
   cmd("SEND 48656C6C6F20576F726C64");
   assert(tx_starts == 1);
   clock_ms += 3001;
-  loop();
+  reverse_raw_app::Poll();
   assert(!active && cleanups == 1);
   cmd("SEND 48656C6C6F20576F726C64");
   assert(tx_starts == 1);
@@ -100,11 +100,11 @@ int main(int argc, char** argv) {
   memcpy(packet, "Hello World", 11);
   packet_length = 11;
   irq_flags = 0x60;
-  loop();
+  reverse_raw_app::Poll();
   assert(!matches && active);
   packet_length = 11;
   irq_flags = 0x40;
-  loop();
+  reverse_raw_app::Poll();
   assert(matches == 1 && !active);
   cmd("RX");
   assert(!active);  // a run has exactly one bounded observation

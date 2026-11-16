@@ -10,8 +10,8 @@ class SenderStableTransportTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.source = (ROOT / "src/sender/lib/lora_rx.cpp").read_text()
-        cls.transport = (ROOT / "src/shared/reliable_transport.h").read_text()
+        cls.source = (ROOT / "stable_lib/gateway_app/lora_rx.cpp").read_text()
+        cls.transport = (ROOT / "stable_lib/shared/reliable_transport.h").read_text()
 
     def test_sender_constructs_stable_radio_from_role_pins(self) -> None:
         self.assertIn("../../../stable_lib/lora/lora.h", self.source)

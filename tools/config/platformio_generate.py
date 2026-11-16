@@ -99,6 +99,6 @@ def checked_cpp(build_env, node):
     return checked.Object(node)
 
 
-for source in ("src/ssot.cpp", "src/arq/codec.cpp", "src/arq/sender.cpp", "src/arq/receiver.cpp", "src/ssot/session.cpp", "src/ssot/control_input.cpp",
-               "src/arq/commands.cpp", "src/arq/diagnostics.cpp"):
+for source in ("stable_lib/ssot/src/ssot/codec.cpp", "stable_lib/arq/src/arq/codec.cpp", "stable_lib/arq/src/arq/sender.cpp", "stable_lib/arq/src/arq/receiver.cpp", "stable_lib/ssot/src/ssot/session.cpp", "stable_lib/ssot/src/ssot/control_input.cpp",
+               "stable_lib/arq/src/arq/commands.cpp", "stable_lib/arq/src/arq/diagnostics.cpp"):
     env.AddBuildMiddleware(checked_cpp, "*" + source)
