@@ -6,15 +6,23 @@ from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 from unittest.mock import patch
 
 from tools import arq_trial
 
 
 class ReaderFreeH01SummaryTests(unittest.TestCase):
-    def summarize(self, events, before=None, after=None):
+    def summarize(
+        self,
+        events: list[dict[str, Any]],
+        before: dict[str, Any] | None = None,
+        after: dict[str, Any] | None = None,
+    ) -> Any:
         summarize = getattr(arq_trial, "reader_free_h01_summary", None)
-        self.assertTrue(callable(summarize), "reader-free H01 summary is missing")
+        if not callable(summarize):
+            msg = "reader-free H01 summary is missing"
+            self.fail(msg)
         return summarize(events, before, after)
 
     def test_valid_h01_events_confirm_data_ack_and_delivery(self) -> None:
@@ -127,7 +135,9 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
 
     def test_reader_free_h01_firmware_metadata_binds_identity_to_hex_hash(self) -> None:
         describe = getattr(arq_trial, "reader_free_h01_firmware", None)
-        self.assertTrue(callable(describe), "reader-free H01 firmware metadata helper is missing")
+        if not callable(describe):
+            msg = "reader-free H01 firmware metadata helper is missing"
+            self.fail(msg)
         with tempfile.TemporaryDirectory() as directory:
             build = Path(directory) / ".pio/build/receiver_arq_radio_only"
             build.mkdir(parents=True)
@@ -143,13 +153,20 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
         self.assertEqual(result["sha256"], hashlib.sha256(b":00000001FF\n").hexdigest())
         self.assertEqual(result["build_id"], "a" * 64)
 
-    def test_reader_free_session_initializes_updi_without_sending_an_application_command(self) -> None:
+    def test_reader_free_updi_session_sends_no_application_command(self) -> None:
         open_session = getattr(arq_trial, "open_reader_free_h01_session", None)
-        self.assertTrue(callable(open_session), "reader-free UPDI session opener is missing")
-        calls = []
+        if not callable(open_session):
+            msg = "reader-free UPDI session opener is missing"
+            self.fail(msg)
+        calls: list[tuple[str, int]] = []
         session = object()
         upditerm = ModuleType("upditerm")
-        upditerm.SerialUPDI = lambda port, baud: calls.append((port, baud)) or session
+
+        def serial_updi(port: str, baud: int) -> object:
+            calls.append((port, baud))
+            return session
+
+        setattr(upditerm, "SerialUPDI", serial_updi)
 
         with patch.dict(sys.modules, {"upditerm": upditerm}):
             actual_session, actual_protocol = open_session("/dev/test-tracker")
@@ -160,7 +177,9 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
 
     def test_rx_idle_summary_keeps_missing_after_state_unknown(self) -> None:
         summarize = getattr(arq_trial, "reader_free_rx_idle_summary", None)
-        self.assertTrue(callable(summarize), "reader-free RX idle summary is missing")
+        if not callable(summarize):
+            msg = "reader-free RX idle summary is missing"
+            self.fail(msg)
 
         result = summarize({"before": {"gpior0": 0x20}, "after": None})
 
@@ -169,7 +188,9 @@ class ReaderFreeH01SummaryTests(unittest.TestCase):
 
     def test_rx_idle_summary_recognizes_only_new_por_flag(self) -> None:
         summarize = getattr(arq_trial, "reader_free_rx_idle_summary", None)
-        self.assertTrue(callable(summarize), "reader-free RX idle summary is missing")
+        if not callable(summarize):
+            msg = "reader-free RX idle summary is missing"
+            self.fail(msg)
 
         result = summarize(
             {

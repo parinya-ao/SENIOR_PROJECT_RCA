@@ -1,7 +1,7 @@
 #ifndef LORA_RX_H
 #define LORA_RX_H
 
-#include "lora.h"
+#include "../../../stable_lib/lora/lora.h"
 
 void lora_rx_setup();
 void lora_rx_init_lora(Address my_addr);

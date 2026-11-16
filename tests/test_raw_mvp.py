@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools/config"))
@@ -15,14 +16,14 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 class RawMvpTests(unittest.TestCase):
     def test_legacy_boot_repair_refuses_replacement_geometry(self) -> None:
-        import receiver_boot as boot
+        import tools.receiver_boot as boot
 
         proof = SimpleNamespace(run_dir=ROOT)
         with self.assertRaisesRegex(ValueError, "fuse geometry"):
             boot.prepare(proof)
 
     def test_current_target_snapshot_is_strict_about_serial_and_fuses(self) -> None:
-        import receiver_boot as boot
+        import tools.receiver_boot as boot
 
         inventory = json.loads((ROOT / "config/current_hardware.json").read_text())
         with tempfile.TemporaryDirectory() as directory:
@@ -30,7 +31,9 @@ class RawMvpTests(unittest.TestCase):
             for role in ("receiver", "gateway"):
                 expected = inventory[role]
 
-                def command(name, argv, timeout):
+                def command(
+                    name: str, argv: list[str], timeout: int, expected: Any = expected
+                ) -> tuple[int, bytes, bytes]:
                     for memory in ("signature", "sernum", "fuses", "lock", "flash", "eeprom"):
                         data = {
                             "signature": bytes.fromhex("1e970a"),
@@ -49,8 +52,14 @@ class RawMvpTests(unittest.TestCase):
                 for memory in ("sernum", "fuses"):
                     original = proof.command
 
-                    def wrong(name, argv, timeout):
-                        result = original(name, argv, timeout)
+                    def wrong(
+                        name: str,
+                        argv: list[str],
+                        timeout: int,
+                        original: Any = original,
+                        memory: str = memory,
+                    ) -> tuple[int, bytes, bytes]:
+                        result = cast("tuple[int, bytes, bytes]", original(name, argv, timeout))
                         path = proof.run_dir / (name + "-" + memory + ".bin")
                         path.write_bytes(b"\0" * len(path.read_bytes()))
                         return result
@@ -61,13 +70,13 @@ class RawMvpTests(unittest.TestCase):
                     proof.command = original
 
     def test_replacement_receiver_geometry(self) -> None:
-        from validate_lora_ssot import load
+        from tools.config.validate_lora_ssot import load
 
         board = load(ROOT / "config/lora_system.json")["receiver_board"]
         self.assertEqual((board["bootsize"], board["bodcfg"], board["image_start"]), (0, 0, 0))
 
     def test_mvp_roles_are_registered(self) -> None:
-        from generate_lora_config import load_radio_profile
+        from tools.config.generate_lora_config import load_radio_profile
 
         profile = load_radio_profile()
         for role in ("sender", "receiver"):

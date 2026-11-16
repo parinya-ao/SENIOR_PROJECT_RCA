@@ -4,6 +4,8 @@ python tools/arq_trial.py --campaign   # program verified pages, then sequential
 python tools/arq_trial.py --validate artifacts/arq/<run>/H01/bundle.json
 """
 
+from __future__ import annotations
+
 import argparse
 import fcntl
 import hashlib
@@ -17,68 +19,83 @@ import statistics
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
+Json = Any
 AVR_DA_GPIOR0 = 0x1C
 AVR_DA_RSTCTRL_RSTFR = 0x40
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "tools/config"))
-import receiver_boot as boot
-import rf_proof as rf
+import receiver_boot as boot  # type: ignore[import-not-found]
+import rf_proof as rf  # type: ignore[import-not-found]
 
 
-def sha(path):
+def sha(path: str | Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def write_virtual_uart(writer, payload, *, per_byte_timeout=2.0, accepted=None):
+def write_virtual_uart(
+    writer: Any, payload: bytes, *, per_byte_timeout: float = 2.0, accepted: bytearray | None = None
+) -> bytes:
     accepted = accepted if accepted is not None else bytearray()
     for index, byte in enumerate(payload):
         deadline = time.monotonic() + per_byte_timeout
         while not writer.send1(byte, blocking=False):
             if time.monotonic() >= deadline:
-                raise TimeoutError(f"virtual UART byte {index} was not accepted")
+                msg = f"virtual UART byte {index} was not accepted"
+                raise TimeoutError(msg)
             time.sleep(0.01)
         accepted.append(byte)
     return bytes(accepted)
 
 
-def read_reset_state(session, protocol):
+def read_reset_state(session: Any, protocol: Any) -> dict[str, int]:
     link = getattr(session, "updi", session)
-    return dict(
-        gpior0=link.lds8(AVR_DA_GPIOR0),
-        rstfr=link.lds8(AVR_DA_RSTCTRL_RSTFR),
-        uart_flags=link.lds8(protocol.UART_FLAGS),
-    )
+    return {
+        "gpior0": link.lds8(AVR_DA_GPIOR0),
+        "rstfr": link.lds8(AVR_DA_RSTCTRL_RSTFR),
+        "uart_flags": link.lds8(protocol.UART_FLAGS),
+    }
 
 
-def sample_updi_idle(session, protocol, seconds):
+def sample_updi_idle(session: Any, protocol: Any, seconds: float) -> dict[str, Json]:
     start_ns = time.monotonic_ns()
     before = read_reset_state(session, protocol)
     time.sleep(seconds)
     after = read_reset_state(session, protocol)
     end_ns = time.monotonic_ns()
-    return dict(
-        before=before, after=after, start_ns=start_ns, end_ns=end_ns, duration_ns=end_ns - start_ns
-    )
+    return {
+        "before": before,
+        "after": after,
+        "start_ns": start_ns,
+        "end_ns": end_ns,
+        "duration_ns": end_ns - start_ns,
+    }
 
 
-def parse_event(line):
+def parse_event(line: str) -> Json | None:
     if not line.startswith("A "):
         return None
     pairs = dict(re.findall(r"(\w+)=([^\s]+)", line))
     if not {"t", "e", "s"} <= pairs.keys():
-        raise ValueError("incomplete event")
+        msg = "incomplete event"
+        raise ValueError(msg)
     # AVR printf_min ignores zero-padding; ARM input remains exactly eight hex digits.
     if not re.fullmatch(r"[0-9A-F]{1,8}", pairs["s"]):
-        raise ValueError("invalid event session")
+        msg = "invalid event session"
+        raise ValueError(msg)
     int(pairs["t"])
     return pairs
 
 
-def wire_frame(raw):
+def wire_frame(raw: str) -> dict[str, Json]:
     b = bytes.fromhex(raw)
     if (
         len(b) < 12
@@ -88,22 +105,24 @@ def wire_frame(raw):
         or b[10] > 32
         or len(b) != 12 + b[10]
     ):
-        raise ValueError("invalid wire frame")
+        msg = "invalid wire frame"
+        raise ValueError(msg)
     if (
         (b[1] in (1, 2) and b[11])
         or (b[1] != 1 and b[10])
         or (b[1] == 3 and b[11] not in (1, 2, 3))
     ):
-        raise ValueError("invalid wire fields")
-    return dict(
-        type=b[1],
-        src=b[2],
-        dst=b[3],
-        session=int.from_bytes(b[4:8], "little"),
-        sequence=int.from_bytes(b[8:10], "little"),
-        reason=b[11],
-        payload=b[12:],
-    )
+        msg = "invalid wire fields"
+        raise ValueError(msg)
+    return {
+        "type": b[1],
+        "src": b[2],
+        "dst": b[3],
+        "session": int.from_bytes(b[4:8], "little"),
+        "sequence": int.from_bytes(b[8:10], "little"),
+        "reason": b[11],
+        "payload": b[12:],
+    }
 
 
 SOAK_INTERVAL_MIN_SECONDS = 60
@@ -117,11 +136,12 @@ SOAK_DURATION_STAGES = {"1-hour": 3600, "8-hours": 8 * 3600, "24-hours": 24 * 36
 SOAK_STAGE_ORDER = tuple(SOAK_SESSION_STAGES) + tuple(SOAK_DURATION_STAGES)
 
 
-def missing_soak_prerequisites(stage, completed):
+def missing_soak_prerequisites(stage: str, completed: dict[str, Json]) -> list[str]:
     if stage not in SOAK_STAGE_ORDER:
-        raise ValueError("unknown soak stage")
+        msg = "unknown soak stage"
+        raise ValueError(msg)
 
-    def passed(value):
+    def passed(value: Json) -> bool:
         return value == "PASS" or (isinstance(value, dict) and value.get("status") == "PASS")
 
     return [
@@ -131,14 +151,15 @@ def missing_soak_prerequisites(stage, completed):
     ]
 
 
-def wilson_interval95(successes, trials):
+def wilson_interval95(successes: int, trials: int) -> dict[str, float] | None:
     if (
         type(successes) is not int
         or type(trials) is not int
         or trials < 0
         or not 0 <= successes <= trials
     ):
-        raise ValueError("invalid binomial counts")
+        msg = "invalid binomial counts"
+        raise ValueError(msg)
     if trials == 0:
         return None
     z = 1.959963984540054
@@ -147,12 +168,13 @@ def wilson_interval95(successes, trials):
     scale = 1 + z2 / trials
     center = (p + z2 / (2 * trials)) / scale
     margin = z * math.sqrt((p * (1 - p) + z2 / (4 * trials)) / trials) / scale
-    return dict(lower=max(0.0, center - margin), upper=min(1.0, center + margin))
+    return {"lower": max(0.0, center - margin), "upper": min(1.0, center + margin)}
 
 
-def summarize_soak_results(results, target_sessions):
+def summarize_soak_results(results: list[Json], target_sessions: int) -> dict[str, Json]:
     if type(target_sessions) is not int or target_sessions < 1:
-        raise ValueError("invalid soak target")
+        msg = "invalid soak target"
+        raise ValueError(msg)
     attempted = len(results)
     successes = sum(r.get("complete") is True and r.get("delivered") == 1 for r in results)
     first = sum(r.get("first_attempt", 0) for r in results)
@@ -174,57 +196,62 @@ def summarize_soak_results(results, target_sessions):
         if isinstance(r.get("session_duration_s"), (int, float))
     ]
 
-    def latency(values):
+    def latency(values: list[float]) -> dict[str, Json]:
         ordered = sorted(values)
         count = len(ordered)
 
-        def nearest(q):
+        def nearest(q: float) -> float | None:
             return ordered[math.ceil(q * count) - 1] if count else None
 
-        return dict(
-            count=count,
-            mean=statistics.fmean(ordered) if count else None,
-            median=statistics.median(ordered) if count else None,
-            p50=statistics.median(ordered) if count else None,
-            p90=nearest(0.90) if count >= 20 else None,
-            p95=nearest(0.95) if count >= 20 else None,
-            p99=nearest(0.99) if count >= 100 else None,
-            maximum=max(ordered) if count else None,
-            percentile_minimum_samples=dict(p90=20, p95=20, p99=100),
-        )
+        return {
+            "count": count,
+            "mean": statistics.fmean(ordered) if count else None,
+            "median": statistics.median(ordered) if count else None,
+            "p50": statistics.median(ordered) if count else None,
+            "p90": nearest(0.90) if count >= 20 else None,
+            "p95": nearest(0.95) if count >= 20 else None,
+            "p99": nearest(0.99) if count >= 100 else None,
+            "maximum": max(ordered) if count else None,
+            "percentile_minimum_samples": {"p90": 20, "p95": 20, "p99": 100},
+        }
 
     timeouts = [r.get("ack_timeouts") for r in results]
     reset_counts = [r.get("unexpected_resets") for r in results]
-    return dict(
-        target_sessions=target_sessions,
-        sessions_attempted=attempted,
-        successes=successes,
-        failures=attempted - successes,
-        sessions_not_completed=max(0, target_sessions - attempted),
-        first_attempt_successes=first,
-        success_rate=successes / attempted if attempted else None,
-        first_attempt_success_rate=first / attempted if attempted else None,
-        success_rate_95_ci=wilson_interval95(successes, attempted),
-        data_attempts=sum(attempts) if attempts_known else None,
-        retransmissions=retransmissions,
-        ack_timeouts=sum(timeouts) if all(type(n) is int and n >= 0 for n in timeouts) else None,
-        unexpected_resets=sum(reset_counts)
+    return {
+        "target_sessions": target_sessions,
+        "sessions_attempted": attempted,
+        "successes": successes,
+        "failures": attempted - successes,
+        "sessions_not_completed": max(0, target_sessions - attempted),
+        "first_attempt_successes": first,
+        "success_rate": successes / attempted if attempted else None,
+        "first_attempt_success_rate": first / attempted if attempted else None,
+        "success_rate_95_ci": wilson_interval95(successes, attempted),
+        "data_attempts": sum(attempts) if attempts_known else None,
+        "retransmissions": retransmissions,
+        "ack_timeouts": sum(timeouts) if all(type(n) is int and n >= 0 for n in timeouts) else None,
+        "unexpected_resets": sum(reset_counts)
         if all(type(n) is int and n >= 0 for n in reset_counts)
         else None,
-        ack_rtt_ms=latency(rtts),
-        host_session_elapsed_s=latency(durations),
-    )
+        "ack_rtt_ms": latency(rtts),
+        "host_session_elapsed_s": latency(durations),
+    }
 
 
-def soak_result_metrics(report, bundle_path, elapsed_s):
+def soak_result_metrics(
+    report: dict[str, Json], bundle_path: str | Path, elapsed_s: float
+) -> dict[str, Json]:
     if report.get("complete") is not True or report.get("delivered") != 1:
-        raise ValueError("soak session lacks validated DATA/ACK completion")
+        msg = "soak session lacks validated DATA/ACK completion"
+        raise ValueError(msg)
     events = json.loads(Path(bundle_path).read_text()).get("events")
     if not isinstance(events, list):
-        raise ValueError("soak session event evidence missing")
+        msg = "soak session event evidence missing"
+        raise ValueError(msg)
     terminal = [e for e in events if e.get("role") == "sender" and e.get("e") == "DELIVERED"]
     if len(terminal) != 1:
-        raise ValueError("soak session terminal event missing or ambiguous")
+        msg = "soak session terminal event missing or ambiguous"
+        raise ValueError(msg)
     attempts = int(terminal[0]["v"])
     sequence = int(terminal[0]["q"])
     data = []
@@ -234,7 +261,8 @@ def soak_result_metrics(report, bundle_path, elapsed_s):
             if frame["type"] == 1 and frame["sequence"] == sequence:
                 data.append(event)
     if attempts < 1 or len(data) != attempts:
-        raise ValueError("soak retry count differs from captured DATA frames")
+        msg = "soak retry count differs from captured DATA frames"
+        raise ValueError(msg)
     return dict(
         report,
         attempts=attempts,
@@ -246,16 +274,18 @@ def soak_result_metrics(report, bundle_path, elapsed_s):
     )
 
 
-def lora_time_on_air_us(payload_length, config):
+def lora_time_on_air_us(payload_length: int, config: dict[str, Json]) -> int:
     """Semtech SX127x LoRa packet airtime for the selected radio profile."""
     if type(payload_length) is not int or not 1 <= payload_length <= 255:
-        raise ValueError("invalid LoRa payload length")
+        msg = "invalid LoRa payload length"
+        raise ValueError(msg)
     sf = config["spreading_factor"]
     bw_hz = config["bandwidth_khz"] * 1000
     coding_rate = config["coding_rate"] - 4
     preamble = config["preamble_symbols"]
     if not 6 <= sf <= 12 or bw_hz <= 0 or not 1 <= coding_rate <= 4 or preamble < 0:
-        raise ValueError("invalid LoRa airtime profile")
+        msg = "invalid LoRa airtime profile"
+        raise ValueError(msg)
     crc = int(bool(config["crc_enabled"]))
     implicit = int(not config["explicit_header"])
     de = int((1 << sf) * 1_000_000 > 16_000 * bw_hz)
@@ -265,12 +295,13 @@ def lora_time_on_air_us(payload_length, config):
     payload_symbols = 8 + max(quotient * (coding_rate + 4), 0)
     quarter_symbols = 4 * preamble + 17 + 4 * payload_symbols
     numerator_us = quarter_symbols * (1 << sf) * 1_000_000
-    return (numerator_us + 4 * bw_hz - 1) // (4 * bw_hz)
+    return int((numerator_us + 4 * bw_hz - 1) // (4 * bw_hz))
 
 
-def build_soak_plan(stage, config):
+def build_soak_plan(stage: str, config: dict[str, Json]) -> dict[str, Json]:
     if stage not in SOAK_SESSION_STAGES and stage not in SOAK_DURATION_STAGES:
-        raise ValueError("unknown soak stage")
+        msg = "unknown soak stage"
+        raise ValueError(msg)
     data_bytes = 12 + config["payload_limit"]
     control_bytes = 12
     attempts = config["max_retries"] + 1
@@ -279,7 +310,8 @@ def build_soak_plan(stage, config):
     minimum_firmware_spacing_ms = math.ceil(data_airtime / 10)
     firmware_spacing = config["spacing_ms"]
     if firmware_spacing < minimum_firmware_spacing_ms:
-        raise ValueError("ARQ firmware spacing does not meet the 1% DATA airtime target")
+        msg = "ARQ firmware spacing does not meet the 1% DATA airtime target"
+        raise ValueError(msg)
     gateway_airtime = data_airtime * attempts
     tracker_airtime = control_airtime * attempts
     interval = max(
@@ -289,35 +321,47 @@ def build_soak_plan(stage, config):
     sessions = (
         SOAK_SESSION_STAGES[stage] if duration is None else math.ceil(duration / interval) + 1
     )
-    return dict(
-        stage=stage,
-        target_duration_s=duration,
-        sessions=sessions,
-        session_interval_s=interval,
-        minimum_interval_s_for_one_percent=math.ceil(
+    return {
+        "stage": stage,
+        "target_duration_s": duration,
+        "sessions": sessions,
+        "session_interval_s": interval,
+        "minimum_interval_s_for_one_percent": math.ceil(
             max(gateway_airtime, tracker_airtime) / 10_000
         ),
-        maximum_wire_data_bytes=data_bytes,
-        control_frame_bytes=control_bytes,
-        max_attempts=attempts,
-        data_toa_us=data_airtime,
-        control_toa_us=control_airtime,
-        firmware_tx_spacing_ms=firmware_spacing,
-        firmware_frame_duty_percent=100 * data_airtime / (firmware_spacing * 1000),
-        gateway_worst_case_session_airtime_us=gateway_airtime,
-        tracker_worst_case_session_airtime_us=tracker_airtime,
-        gateway_duty_percent_at_interval=100 * gateway_airtime / (interval * 1_000_000),
-        tracker_duty_percent_at_interval=100 * tracker_airtime / (interval * 1_000_000),
-        duty_cycle_target_percent=1.0,
-        regulatory_note="1% is a conservative planning target; actual EIRP, equipment conformity and authorization must be verified separately.",
-    )
+        "maximum_wire_data_bytes": data_bytes,
+        "control_frame_bytes": control_bytes,
+        "max_attempts": attempts,
+        "data_toa_us": data_airtime,
+        "control_toa_us": control_airtime,
+        "firmware_tx_spacing_ms": firmware_spacing,
+        "firmware_frame_duty_percent": 100 * data_airtime / (firmware_spacing * 1000),
+        "gateway_worst_case_session_airtime_us": gateway_airtime,
+        "tracker_worst_case_session_airtime_us": tracker_airtime,
+        "gateway_duty_percent_at_interval": 100 * gateway_airtime / (interval * 1_000_000),
+        "tracker_duty_percent_at_interval": 100 * tracker_airtime / (interval * 1_000_000),
+        "duty_cycle_target_percent": 1.0,
+        "regulatory_note": (
+            "1% is a conservative planning target; actual EIRP, equipment conformity "
+            "and authorization must be verified separately."
+        ),
+    }
 
 
-def run_paced_sessions(session_count, interval_s, run_one, *, clock=None, sleep=None):
+def run_paced_sessions(
+    session_count: int,
+    interval_s: float,
+    run_one: Callable[[int], Json],
+    *,
+    clock: Callable[[], float] | None = None,
+    sleep: Callable[[float], None] | None = None,
+) -> list[Json]:
     if type(session_count) is not int or not 1 <= session_count <= 10000:
-        raise ValueError("invalid soak session count")
+        msg = "invalid soak session count"
+        raise ValueError(msg)
     if type(interval_s) is not int or interval_s < SOAK_INTERVAL_MIN_SECONDS:
-        raise ValueError("soak interval is below the airtime safety floor")
+        msg = "soak interval is below the airtime safety floor"
+        raise ValueError(msg)
     clock = clock or time.monotonic
     sleep = sleep or time.sleep
     results = []
@@ -333,11 +377,13 @@ def run_paced_sessions(session_count, interval_s, run_one, *, clock=None, sleep=
     return results
 
 
-def reader_free_h01_summary(events, reset_before=None, reset_after=None):
+def reader_free_h01_summary(
+    events: list[Json], reset_before: Json | None = None, reset_after: Json | None = None
+) -> dict[str, Json]:
     """Summarize H01 boundaries without treating absent logs as failed events."""
     malformed_frames = []
 
-    def frame_seen(role, name, frame_type) -> bool | None:
+    def frame_seen(role: str, name: str, frame_type: int) -> bool | None:
         for event in events:
             if event.get("role") != role or event.get("e") != name or "bytes" not in event:
                 continue
@@ -345,10 +391,10 @@ def reader_free_h01_summary(events, reset_before=None, reset_after=None):
                 if wire_frame(event["bytes"])["type"] == frame_type:
                     return True
             except (TypeError, ValueError) as error:
-                malformed_frames.append(dict(role=role, event=name, error=str(error)))
+                malformed_frames.append({"role": role, "event": name, "error": str(error)})
         return None
 
-    def tx_done_seen(role) -> bool | None:
+    def tx_done_seen(role: str) -> bool | None:
         rows = [
             event for event in events if event.get("role") == role and event.get("e") == "TX_DONE"
         ]
@@ -358,7 +404,7 @@ def reader_free_h01_summary(events, reset_before=None, reset_after=None):
             try:
                 if event.get("rc") == "0" and int(event["v"]) & 0x08:
                     return True
-            except KeyError, TypeError, ValueError:
+            except (KeyError, TypeError, ValueError):
                 continue
         return False
 
@@ -379,10 +425,10 @@ def reader_free_h01_summary(events, reset_before=None, reset_after=None):
         if not isinstance(reset_after, dict) or type(reset_after.get("gpior0")) is not int
         else bool(reset_after["gpior0"] & 0x01)
     )
-    return dict(
-        gateway_data_tx_done=tx_done_seen("sender"),
-        tracker_data_rx=frame_seen("receiver", "RX", 1),
-        tracker_data_accepted=next(
+    return {
+        "gateway_data_tx_done": tx_done_seen("sender"),
+        "tracker_data_rx": frame_seen("receiver", "RX", 1),
+        "tracker_data_accepted": next(
             (
                 True
                 for event in events
@@ -390,22 +436,22 @@ def reader_free_h01_summary(events, reset_before=None, reset_after=None):
             ),
             None,
         ),
-        tracker_ack_tx_started=frame_seen("receiver", "TX", 2),
-        tracker_ack_tx_done=tx_done_seen("receiver"),
-        gateway_ack_rx=frame_seen("sender", "RX", 2),
-        gateway_terminal=terminals[-1] if terminals else None,
-        reset_state_before=reset_before,
-        reset_state_after=reset_after,
-        porf_before=before_por,
-        porf_after=after_por,
-        porf_transition_to_set=None
+        "tracker_ack_tx_started": frame_seen("receiver", "TX", 2),
+        "tracker_ack_tx_done": tx_done_seen("receiver"),
+        "gateway_ack_rx": frame_seen("sender", "RX", 2),
+        "gateway_terminal": terminals[-1] if terminals else None,
+        "reset_state_before": reset_before,
+        "reset_state_after": reset_after,
+        "porf_before": before_por,
+        "porf_after": after_por,
+        "porf_transition_to_set": None
         if before_por is None or after_por is None
         else after_por and not before_por,
-        malformed_frames=malformed_frames,
-    )
+        "malformed_frames": malformed_frames,
+    }
 
 
-def reader_free_rx_idle_summary(sample):
+def reader_free_rx_idle_summary(sample: Json) -> Json:
     before = sample.get("before") if isinstance(sample, dict) else None
     after = sample.get("after") if isinstance(sample, dict) else None
     before_por = (
@@ -424,40 +470,45 @@ def reader_free_rx_idle_summary(sample):
         classification = "POR_OBSERVED"
     else:
         classification = "NO_POR_OBSERVED"
-    return dict(
-        classification=classification,
-        before=before,
-        after=after,
-        porf_before=before_por,
-        porf_after=after_por,
-        porf_transition_to_set=None
+    return {
+        "classification": classification,
+        "before": before,
+        "after": after,
+        "porf_before": before_por,
+        "porf_after": after_por,
+        "porf_transition_to_set": None
         if before_por is None or after_por is None
         else after_por and not before_por,
-    )
+    }
 
 
-def reader_free_h01_firmware(root, role, *, reverse=False):
+def reader_free_h01_firmware(
+    root: Path, role: str, *, reverse: bool = False
+) -> Json:
     if role not in ("receiver", "sender"):
-        raise ValueError("unknown ARQ role")
+        msg = "unknown ARQ role"
+        raise ValueError(msg)
     environment = role + "_arq_radio_only" + ("_reverse" if reverse else "")
     directory = Path(root) / ".pio/build" / environment
     identity = (directory / "lora_build_identity.h").read_text()
     match = re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"', identity)
     if not match:
         raise ValueError("missing firmware build identity: " + environment)
-    return dict(
-        environment=environment, sha256=sha(directory / "firmware.hex"), build_id=match.group(1)
-    )
+    return {
+        "environment": environment,
+        "sha256": sha(directory / "firmware.hex"),
+        "build_id": match.group(1),
+    }
 
 
-def open_reader_free_h01_session(port):
+def open_reader_free_h01_session(port: str) -> Json:
     sys.path.insert(0, str(ROOT / "third_party/upditerm"))
-    import upditerm
+    import upditerm  # type: ignore[import-not-found]
 
     return upditerm.SerialUPDI(port, 38400), upditerm
 
 
-def reserve_session(directory):
+def reserve_session(directory: Path) -> int:
     directory.mkdir(parents=True, exist_ok=True)
     # Lock a stable inode; replace only the counter so crashes cannot truncate it.
     with (directory / "session.lock").open("a") as lock:
@@ -465,15 +516,16 @@ def reserve_session(directory):
         counter = directory / "session.json"
         value = json.loads(counter.read_text()) if counter.exists() else 0
         if type(value) is not int or not 0 <= value < 0xFFFFFFFF:
-            raise ValueError("session counter exhausted/corrupt")
+            msg = "session counter exhausted/corrupt"
+            raise ValueError(msg)
         value += 1
-        from generate_lora_config import _write_atomic
+        from generate_lora_config import _write_atomic  # type: ignore[import-not-found]
 
         _write_atomic(counter, json.dumps(value) + "\n")
         return value
 
 
-def checked_events(events, directory):
+def checked_events(events: Json, directory: Path) -> list[Json]:
     captured = []
     for role in ("sender", "receiver"):
         rows = []
@@ -487,19 +539,20 @@ def checked_events(events, directory):
             if event["role"] == role
         ]
         if supplied != rows:
-            raise ValueError("event journal differs from raw captured stream")
+            msg = "event journal differs from raw captured stream"
+            raise ValueError(msg)
         captured += rows
     return captured
 
 
-def status_complete(events, role, session):
+def status_complete(events: Json, role: str, session: int) -> bool:
     rows = [e for e in events if e["role"] == role and int(e["s"], 16) == session]
     statuses = [i for i, e in enumerate(rows) if e["e"] == "STATUS"]
     ends = [i for i, e in enumerate(rows) if e["e"] == "STATUS_END"]
     return bool(statuses and ends and ends[-1] > statuses[-1] and rows[ends[-1]].get("v") == "0")
 
 
-def validate_bundle(b, directory=None):
+def validate_bundle(b: Json, directory: Path | None = None) -> Json:
     required = {
         "acquisition",
         "session",
@@ -518,21 +571,26 @@ def validate_bundle(b, directory=None):
         or b.get("synthetic") is not False
         or b["acquisition"] != "updi-live"
     ):
-        raise ValueError("not a complete live-acquisition bundle; text/simulation is insufficient")
+        msg = "not a complete live-acquisition bundle; text/simulation is insufficient"
+        raise ValueError(msg)
     if not b["programming"] or set(b["firmware"]) != {"sender", "receiver"} or not b["files"]:
-        raise ValueError("missing programming/firmware provenance")
+        msg = "missing programming/firmware provenance"
+        raise ValueError(msg)
     if directory is None:
-        raise ValueError("bundle directory required for independent file verification")
+        msg = "bundle directory required for independent file verification"
+        raise ValueError(msg)
     directory = Path(directory).resolve()
     for name, expected in b["files"].items():
         p = (directory / name).resolve()
         if not p.is_relative_to(directory) or sha(p) != expected:
-            raise ValueError("evidence file integrity mismatch")
+            msg = "evidence file integrity mismatch"
+            raise ValueError(msg)
     events = checked_events(b["events"], directory)
     session = b["session"]
     count = b["count"]
     if type(count) is not int or count < 1 or count > 100:
-        raise ValueError("invalid trial count")
+        msg = "invalid trial count"
+        raise ValueError(msg)
     for role in ("sender", "receiver"):
         rows = [x for x in events if x["role"] == role]
         arms = [
@@ -546,31 +604,37 @@ def validate_bundle(b, directory=None):
             or statuses[-1]["ready"] != "1"
             or not status_complete(events, role, session)
         ):
-            raise ValueError("missing ARM/final status or overflow/radio failure")
+            msg = "missing ARM/final status or overflow/radio failure"
+            raise ValueError(msg)
         if any(int(x["s"], 16) != session for x in rows[rows.index(arms[0]) + 1 :]):
-            raise ValueError("reset/session changed during trial")
+            msg = "reset/session changed during trial"
+            raise ValueError(msg)
         identities = [x for x in rows if x["e"] == "IDENTITY"]
         if not identities or any(
             x["config"] != b["config_hash"] or x["build"] != b["programming"][role]["build_id"]
             for x in identities
         ):
-            raise ValueError("firmware/config identity mismatch")
+            msg = "firmware/config identity mismatch"
+            raise ValueError(msg)
         if any(x["e"] == "BOOT" and x.get("v") != "0" for x in rows[rows.index(arms[0]) + 1 :]):
             # Retained BOOT repeats via STATUS; compare reset flags, not their nonzero value.
             boots = [x.get("v") for x in rows if x["e"] == "BOOT"]
             if len(set(boots)) > 1:
-                raise ValueError("reset evidence")
+                msg = "reset evidence"
+                raise ValueError(msg)
     relevant = [x for x in events if int(x["s"], 16) == session]
     manifest = json.loads((directory / "provenance/manifest.json").read_text())
     if manifest["config_hash"] != b["config_hash"]:
-        raise ValueError("manifest/config hash mismatch")
+        msg = "manifest/config hash mismatch"
+        raise ValueError(msg)
     for role in ("sender", "receiver"):
         env = b["programming"][role]["environment"]
         image = directory / "provenance" / (env + ".hex")
         if sha(image) != b["firmware"][role]:
-            raise ValueError("firmware hash mismatch")
-        before = {}
-        after = {}
+            msg = "firmware hash mismatch"
+            raise ValueError(msg)
+        before: dict[str, bytes] = {}
+        after: dict[str, bytes] = {}
         for memory in ("signature", "sernum", "flash", "eeprom", "fuses", "lock"):
             for label, target in (("before", before), ("after", after)):
                 target[memory] = (
@@ -580,10 +644,11 @@ def validate_bundle(b, directory=None):
         first = region["start"]
         end = (region["end_exclusive"] + 511) // 512 * 512
         boot.require_preserved(before, after, first, end)
-        from device_detection.firmware_identity import normalize_ihex_region
+        from device_detection.firmware_identity import normalize_ihex_region  # type: ignore[import-not-found]
 
         if after["flash"][first:end] != normalize_ihex_region(image.read_text(), first, end):
-            raise ValueError("independent installed-image mismatch")
+            msg = "independent installed-image mismatch"
+            raise ValueError(msg)
     terminals = [
         x
         for x in relevant
@@ -593,15 +658,18 @@ def validate_bundle(b, directory=None):
     ]
     expected = "REJECTED" if b["gate"] == "H02" else "DELIVERED"
     if len(terminals) != count or any(x["e"] != expected for x in terminals):
-        raise ValueError("missing/failed terminal outcomes")
+        msg = "missing/failed terminal outcomes"
+        raise ValueError(msg)
     if len({x["q"] for x in terminals}) != count:
-        raise ValueError("reused sequence")
+        msg = "reused sequence"
+        raise ValueError(msg)
     frames = []
     for x in relevant:
         if x["e"] in ("TX", "RX"):
             f = wire_frame(x["bytes"])
             if f["session"] != session:
-                raise ValueError("stale session RF")
+                msg = "stale session RF"
+                raise ValueError(msg)
             frames.append((x, f))
     for terminal in terminals:
         seq = int(terminal["q"])
@@ -611,7 +679,8 @@ def validate_bundle(b, directory=None):
             if x["role"] == "sender" and x["e"] == "TX" and f["type"] == 1 and f["sequence"] == seq
         ]
         if not data or len({x["bytes"] for x, f in data}) != 1:
-            raise ValueError("missing/nonimmutable DATA")
+            msg = "missing/nonimmutable DATA"
+            raise ValueError(msg)
         d = data[0][1]
         cfg = manifest["config"]
         payload = cfg["negative_payload" if b["gate"] == "H02" else "payload"].encode("ascii")
@@ -620,9 +689,11 @@ def validate_bundle(b, directory=None):
             or d["dst"] != cfg["receiver_id"]
             or d["payload"] != payload
         ):
-            raise ValueError("incorrect DATA")
+            msg = "incorrect DATA"
+            raise ValueError(msg)
         if int(terminal["v"]) != len(data):
-            raise ValueError("attempt count differs from RF frames")
+            msg = "attempt count differs from RF frames"
+            raise ValueError(msg)
         kind = 3 if expected == "REJECTED" else 2
         controls = [
             (x, f)
@@ -636,15 +707,18 @@ def validate_bundle(b, directory=None):
         if not any(x["role"] == "receiver" and x["e"] == "TX" for x, f in controls) or not any(
             x["role"] == "sender" and x["e"] == "RX" for x, f in controls
         ):
-            raise ValueError("matching real control pair missing")
+            msg = "matching real control pair missing"
+            raise ValueError(msg)
         if not any(
             x["role"] == "receiver" and x["e"] == "RX" and x["bytes"] == data[0][0]["bytes"]
             for x, f in frames
         ):
-            raise ValueError("receiver DATA evidence missing")
+            msg = "receiver DATA evidence missing"
+            raise ValueError(msg)
     status = [x for x in relevant if x["role"] == "receiver" and x["e"] == "STATUS"][-1]
     if int(status["app"]) != (0 if expected == "REJECTED" else count):
-        raise ValueError("application delivery count")
+        msg = "application delivery count"
+        raise ValueError(msg)
     if b["gate"] in ("H03", "H06"):
         drops = (
             1
@@ -655,41 +729,46 @@ def validate_bundle(b, directory=None):
             )
         )
         if int(status["sup"]) != drops or int(status["dup"]) < drops:
-            raise ValueError("injected-loss accounting")
+            msg = "injected-loss accounting"
+            raise ValueError(msg)
     if int(status["gen"]) != int(status["sup"]) + int(status["att"]) or int(status["done"]) != int(
         status["att"]
     ):
-        raise ValueError("response accounting incomplete")
+        msg = "response accounting incomplete"
+        raise ValueError(msg)
     samples = [int(x["v"]) for x in relevant if x["role"] == "sender" and x["e"] == "RTT"]
     sample_counts = [x for x in relevant if x["role"] == "sender" and x["e"] == "RTT_COUNT"]
     if not sample_counts or int(sample_counts[-1]["v"]) != len(samples):
-        raise ValueError("RTT evidence incomplete")
+        msg = "RTT evidence incomplete"
+        raise ValueError(msg)
     samples.sort()
-    return dict(
-        complete=True,
-        validation_scope="integrity-and-completeness; physical origin requires trusted acquisition",
-        messages=count,
-        delivered=sum(x["e"] == "DELIVERED" for x in terminals),
-        first_attempt=sum(x["v"] == "1" and x["e"] == "DELIVERED" for x in terminals),
-        rtt=dict(
-            count=len(samples),
-            min=min(samples) if samples else None,
-            max=max(samples) if samples else None,
-            average=sum(samples) / len(samples) if samples else None,
-            p95=samples[math.ceil(0.95 * len(samples)) - 1] if samples else None,
+    return {
+        "complete": True,
+        "validation_scope": (
+            "integrity-and-completeness; physical origin requires trusted acquisition"
         ),
-    )
+        "messages": count,
+        "delivered": sum(x["e"] == "DELIVERED" for x in terminals),
+        "first_attempt": sum(x["v"] == "1" and x["e"] == "DELIVERED" for x in terminals),
+        "rtt": {
+            "count": len(samples),
+            "min": min(samples) if samples else None,
+            "max": max(samples) if samples else None,
+            "average": sum(samples) / len(samples) if samples else None,
+            "p95": samples[math.ceil(0.95 * len(samples)) - 1] if samples else None,
+        },
+    }
 
 
 class Capture:
-    def __init__(self, proof) -> None:
+    def __init__(self, proof: Json) -> None:
         self.proof = proof
-        self.monitors = {}
-        self.queue = queue.Queue()
-        self.events = []
-        self.commands = []
-        self.errors = []
-        self.monitor_exits = []
+        self.monitors: dict[str, Json] = {}
+        self.queue: queue.Queue[tuple[str, str, bytes]] = queue.Queue()
+        self.events: list[Json] = []
+        self.commands: list[Json] = []
+        self.errors: list[str] = []
+        self.monitor_exits: list[Json] = []
 
     def start(self) -> None:
         for role, target in (("receiver", "receiver"), ("sender", "gateway")):
@@ -697,17 +776,25 @@ class Capture:
                 self.proof, role, rf.PORTS[target], self.queue
             )
 
-    def command(self, role, text) -> None:
+    def command(self, role: str, text: str) -> None:
         process = self.monitors[role]["process"]
         if process.poll() is not None:
-            raise ValueError("monitor disconnected")
+            msg = "monitor disconnected"
+            raise ValueError(msg)
         data = (text + "\n").encode("ascii")
         if process.stdin.write(data) != len(data):
-            raise ValueError("short command write")
+            msg = "short command write"
+            raise ValueError(msg)
         process.stdin.flush()
-        self.commands.append(dict(role=role, text=text, host_ns=time.monotonic_ns()))
+        self.commands.append({"role": role, "text": text, "host_ns": time.monotonic_ns()})
 
-    def wait(self, predicate, seconds=30, *, ignore_exited_roles=()) -> None:
+    def wait(
+        self,
+        predicate: Callable[[], bool],
+        seconds: float = 30,
+        *,
+        ignore_exited_roles: Iterable[str] = (),
+    ) -> None:
         deadline = time.monotonic() + seconds
         ignored = set(ignore_exited_roles)
         while time.monotonic() < deadline:
@@ -715,9 +802,12 @@ class Capture:
                 code = monitor["process"].poll()
                 if code is not None:
                     if role not in ignored:
-                        raise ValueError(f"{role} monitor exited")
-                    if not any(exit["role"] == role for exit in self.monitor_exits):
-                        self.monitor_exits.append(dict(role=role, exit_code=code))
+                        msg = f"{role} monitor exited"
+                        raise ValueError(msg)
+                    if not any(
+                        completed["role"] == role for completed in self.monitor_exits
+                    ):
+                        self.monitor_exits.append({"role": role, "exit_code": code})
             if predicate():
                 return
             try:
@@ -729,13 +819,16 @@ class Capture:
                 if event:
                     event.update(role=role, host_ns=time.monotonic_ns())
                     self.events.append(event)
-        raise ValueError("incomplete evidence: capture deadline")
+        msg = "incomplete evidence: capture deadline"
+        raise ValueError(msg)
 
-    def acquire(self, programming, config_hash, seconds=45, expected_session=0) -> None:
+    def acquire(
+        self, programming: Json, config_hash: str, seconds: float = 45, expected_session: int = 0
+    ) -> None:
         """Drain startup, then recover each missing status once within one deadline."""
         deadline = time.monotonic() + seconds
 
-        def complete(role):
+        def complete(role: str) -> bool:
             rows = [e for e in self.events if e["role"] == role]
             starts = [i for i, e in enumerate(rows) if e["e"] == "BOOT"]
             if not starts:
@@ -743,16 +836,20 @@ class Capture:
             block = rows[starts[-1] :]
             for e in block:
                 if int(e["s"], 16) != expected_session:
-                    raise ValueError("unexpected startup session before acquisition")
+                    msg = "unexpected startup session before acquisition"
+                    raise ValueError(msg)
                 if e["e"] == "IDENTITY" and (
                     e.get("build") != programming[role]["build_id"]
                     or e.get("config") != config_hash
                 ):
-                    raise ValueError("installed firmware/config mismatch before ARM")
+                    msg = "installed firmware/config mismatch before ARM"
+                    raise ValueError(msg)
                 if e["e"] == "STATUS" and (e.get("ready") != "1" or e.get("overflow") != "0"):
-                    raise ValueError("startup radio failure or logger overflow")
+                    msg = "startup radio failure or logger overflow"
+                    raise ValueError(msg)
                 if e["e"] == "STATUS_END" and e.get("v") != "0":
-                    raise ValueError("startup logger overflow")
+                    msg = "startup logger overflow"
+                    raise ValueError(msg)
             return {"BOOT", "IDENTITY", "STATUS", "REG", "STATUS_END"} <= {
                 e["e"] for e in block
             } and status_complete(block, role, expected_session)
@@ -766,9 +863,12 @@ class Capture:
             if complete(role):
                 continue
             self.command(role, "STATUS")
-            self.wait(lambda: complete(role), max(0, deadline - time.monotonic()))
+            self.wait(
+                cast(Callable[[], bool], lambda role=role: complete(role)),
+                max(0, deadline - time.monotonic()),
+            )
 
-    def seen(self, role, event):
+    def seen(self, role: str, event: str) -> list[Json]:
         return [x for x in self.events if x["role"] == role and x["e"] == event]
 
     def close(self) -> None:
@@ -794,10 +894,20 @@ class Capture:
                     self.events.append(event)
 
 
-def trial(parent, gate, count, manifest, programming, firmware, startup_session=0, run_label=None):
+def trial(
+    parent: Json,
+    gate: str,
+    count: int,
+    manifest: Json,
+    programming: Json,
+    firmware: Json,
+    startup_session: int = 0,
+    run_label: str | None = None,
+) -> Json:
     run_dir = parent / gate if run_label is None else parent / Path(run_label)
     if run_label is not None and (Path(run_label).is_absolute() or ".." in Path(run_label).parts):
-        raise ValueError("invalid trial run label")
+        msg = "invalid trial run label"
+        raise ValueError(msg)
     proof = rf.ProofRun(run_dir)
     c = Capture(proof)
     provenance = proof.run_dir / "provenance"
@@ -806,16 +916,16 @@ def trial(parent, gate, count, manifest, programming, firmware, startup_session=
         if p.is_file():
             shutil.copy2(p, provenance / p.name)
     session = reserve_session(ROOT / "artifacts/arq")
-    bundle = dict(
-        acquisition="updi-live",
-        synthetic=False,
-        gate=gate,
-        count=count,
-        session=session,
-        config_hash=manifest["config_hash"],
-        firmware=firmware,
-        programming=programming,
-    )
+    bundle = {
+        "acquisition": "updi-live",
+        "synthetic": False,
+        "gate": gate,
+        "count": count,
+        "session": session,
+        "config_hash": manifest["config_hash"],
+        "firmware": firmware,
+        "programming": programming,
+    }
     try:
         bundle["phase"] = "acquisition"
         c.start()
@@ -826,7 +936,8 @@ def trial(parent, gate, count, manifest, programming, firmware, startup_session=
         c.wait(lambda: all(c.seen(r, "ARM") for r in ("sender", "receiver")))
         for r in ("sender", "receiver"):
             if c.seen(r, "ARM")[-1].get("rc") != "0":
-                raise ValueError("ARM failed")
+                msg = "ARM failed"
+                raise ValueError(msg)
         stride, budget = (
             (1, 1)
             if gate == "H03"
@@ -843,7 +954,7 @@ def trial(parent, gate, count, manifest, programming, firmware, startup_session=
         for i in range(count):
             c.command("sender", "SEND " + payload)
             c.wait(
-                lambda: (
+                cast(Callable[[], bool], lambda i=i: (
                     len(
                         [
                             x
@@ -860,7 +971,7 @@ def trial(parent, gate, count, manifest, programming, firmware, startup_session=
                         ]
                     )
                     > i
-                ),
+                )),
                 180,
             )
             terminal = [
@@ -874,9 +985,9 @@ def trial(parent, gate, count, manifest, programming, firmware, startup_session=
                 raise ValueError("transaction failed: " + terminal["e"])
         for r in ("sender", "receiver"):
             c.command(r, "X")
-            c.wait(lambda: bool(c.seen(r, "PARKED")), 10)
+            c.wait(cast(Callable[[], bool], lambda r=r: bool(c.seen(r, "PARKED"))), 10)
             c.command(r, "STATUS")
-            c.wait(lambda: status_complete(c.events, r, session), 45)
+            c.wait(cast(Callable[[], bool], lambda r=r: status_complete(c.events, r, session)), 45)
         bundle.update(events=c.events, commands=c.commands)
     except Exception as failure:
         bundle["failure_reason"] = str(failure)
@@ -917,7 +1028,12 @@ def trial(parent, gate, count, manifest, programming, firmware, startup_session=
     return report
 
 
-def campaign(gates=None, *, soak_plan=None, run_dir=None):
+def campaign(
+    gates: Iterable[tuple[str, int]] | None = None,
+    *,
+    soak_plan: Json | None = None,
+    run_dir: Path | None = None,
+) -> Json:
     from generate_lora_config import generate
 
     generate(check=True)
@@ -929,24 +1045,43 @@ def campaign(gates=None, *, soak_plan=None, run_dir=None):
     if run_dir is not None and not parent.resolve().is_relative_to(
         (ROOT / "artifacts/arq").resolve()
     ):
-        raise ValueError("campaign evidence path must remain under artifacts/arq")
+        msg = "campaign evidence path must remain under artifacts/arq"
+        raise ValueError(msg)
     proof = rf.ProofRun(parent)
     manifest = json.loads((ROOT / "generated/arq_manifest.json").read_text())
     config = subprocess.check_output(
         ["pio", "project", "config", "--json-output"], cwd=ROOT, text=True
     )
     if rf.check_port_owners(proof, "arq-preflight"):
-        raise ValueError("UPDI ports owned")
+        msg = "UPDI ports owned"
+        raise ValueError(msg)
     programming = {}
     firmware = {}
     results = []
     soak_state = "CREATED" if soak_plan else None
     progress_path = parent / "soak" / "soak-progress.jsonl"
+
+    def progress(event: str, **details: Json) -> None:
+        if soak_plan is None:
+            return
+        row = dict(
+            event=event,
+            utc=datetime.now(UTC).isoformat(),
+            monotonic_ns=time.monotonic_ns(),
+            **details,
+        )
+        with progress_path.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(row, sort_keys=True) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+
     if soak_plan:
         if gates is not None:
-            raise ValueError("soak plan cannot be combined with protocol gate list")
+            msg = "soak plan cannot be combined with protocol gate list"
+            raise ValueError(msg)
         if soak_plan["session_interval_s"] < SOAK_INTERVAL_MIN_SECONDS:
-            raise ValueError("soak plan interval is below the airtime safety floor")
+            msg = "soak plan interval is below the airtime safety floor"
+            raise ValueError(msg)
         (parent / "soak").mkdir()
         soak_plan = dict(
             soak_plan,
@@ -956,26 +1091,12 @@ def campaign(gates=None, *, soak_plan=None, run_dir=None):
         )
         (parent / "soak-plan.json").write_text(json.dumps(soak_plan, indent=2) + "\n")
 
-        def progress(event, **details) -> None:
-            row = dict(
-                event=event,
-                utc=datetime.now(UTC).isoformat(),
-                monotonic_ns=time.monotonic_ns(),
-                **details,
-            )
-            with progress_path.open("a", encoding="utf-8") as stream:
-                stream.write(json.dumps(row, sort_keys=True) + "\n")
-                stream.flush()
-                os.fsync(stream.fileno())
-
         progress(
             "SOAK_CREATED",
             stage=soak_plan["stage"],
             sessions=soak_plan["sessions"],
             session_interval_s=soak_plan["session_interval_s"],
         )
-    else:
-        progress = None
     try:
         for role in ("receiver", "sender"):
             environment = role + "_arq_radio_only"
@@ -985,11 +1106,16 @@ def campaign(gates=None, *, soak_plan=None, run_dir=None):
             firmware[role] = sha(parent / (environment + ".hex"))
             # Fresh serial/signature/fuses plus independent full-memory comparison.
             if rf.check_port_owners(proof, environment + "-preflight"):
-                raise ValueError("UPDI ports owned")
+                msg = "UPDI ports owned"
+                raise ValueError(msg)
             if rf.program_application(proof, environment, config):
                 raise ValueError("programming failed: " + role)
             identity = (ROOT / ".pio/build" / environment / "lora_build_identity.h").read_text()
-            build_id = re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"', identity).group(1)
+            build_match = re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"', identity)
+            if build_match is None:
+                msg = "missing build identity in compiled firmware header"
+                raise ValueError(msg)
+            build_id = build_match.group(1)
             # Existing exact images still need an independent after snapshot for bundle validation.
             after = parent / f"{environment}-after-page-write-flash.bin"
             if not after.exists():
@@ -999,16 +1125,19 @@ def campaign(gates=None, *, soak_plan=None, run_dir=None):
                     "gateway" if role == "sender" else "receiver",
                     current_target=True,
                 )
-            programming[role] = dict(
-                environment=environment, hex_sha256=firmware[role], build_id=build_id, verified=True
-            )
+            programming[role] = {
+                "environment": environment,
+                "hex_sha256": firmware[role],
+                "build_id": build_id,
+                "verified": True,
+            }
         (parent / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         startup_session = 0
         if soak_plan:
             soak_state = "RUNNING"
             progress("FIRMWARE_VERIFIED", roles=programming)
 
-            def run_one(index):
+            def run_one(index: int) -> Json:
                 nonlocal startup_session
                 gate = f"SOAK-{index + 1:06d}"
                 started = time.monotonic()
@@ -1079,7 +1208,7 @@ def campaign(gates=None, *, soak_plan=None, run_dir=None):
             progress("RESTORE_STARTED", soak_state=soak_state)
         try:
             restored = prepare()
-            proof.note("restore.json", json.dumps(dict(standby_evidence=str(restored))) + "\n")
+            proof.note("restore.json", json.dumps({"standby_evidence": str(restored)}) + "\n")
             if soak_plan:
                 progress("RESTORE_VERIFIED", standby_evidence=str(restored), soak_state=soak_state)
         except Exception as error:
@@ -1119,11 +1248,12 @@ ARQ_REGISTER_ADDRESSES = (
 HELLO_PAYLOAD = b"HELLO_LORA"
 
 
-def audit_radio_configuration(event, *, rx):
+def audit_radio_configuration(event: Json, *, rx: Json) -> Json:
     values = bytes.fromhex(event["bytes"])
     if len(values) != len(ARQ_REGISTER_ADDRESSES):
-        raise ValueError("incomplete ARQ radio snapshot")
-    registers = dict(zip(ARQ_REGISTER_ADDRESSES, values))
+        msg = "incomplete ARQ radio snapshot"
+        raise ValueError(msg)
+    registers = dict(zip(ARQ_REGISTER_ADDRESSES, values, strict=False))
     # Reviewed 915 MHz, SF7/BW125/CR4:5, +2 dBm PA_BOOST diagnostic profile.
     expected = {
         1: 0x85 if rx else 0x81,
@@ -1144,8 +1274,8 @@ def audit_radio_configuration(event, *, rx):
         0x21: 8,
         0x41: 0,
     }
-    mismatches = {
-        f"{address:02X}": dict(expected=value, observed=registers[address])
+    mismatches: dict[str, Json] = {
+        f"{address:02X}": {"expected": value, "observed": registers[address]}
         for address, value in expected.items()
         if registers[address] != value
     }
@@ -1156,15 +1286,16 @@ def audit_radio_configuration(event, *, rx):
         mismatches["31"] = "RX erratum/SF detection mismatch"
     if mismatches:
         raise ValueError("ARQ radio configuration mismatch: " + json.dumps(mismatches))
-    return dict(
-        frequency_hz=int.from_bytes(values[1:4], "big") * 32000000 // (1 << 19),
-        registers={f"{address:02X}": value for address, value in registers.items()},
-    )
+    return {
+        "frequency_hz": int.from_bytes(values[1:4], "big") * 32000000 // (1 << 19),
+        "registers": {f"{address:02X}": value for address, value in registers.items()},
+    }
 
 
-def diagnostic_case(test_id=None):
+def diagnostic_case(test_id: str | None = None) -> Json:
     if test_id not in (None, "T01", "T02", "T03", "T04"):
-        raise ValueError("unknown diagnostic test")
+        msg = "unknown diagnostic test"
+        raise ValueError(msg)
     reverse = test_id in ("T03", "T04")
     nack = test_id in ("T02", "T04")
     payload = (
@@ -1172,32 +1303,35 @@ def diagnostic_case(test_id=None):
         if test_id is None
         else (b"REJECT_LORA" if nack else (b"HELLO_LORA_TR" if reverse else b"HELLO_LORA_GW"))
     )
-    return dict(
-        reverse=reverse,
-        nack=nack,
-        payload=payload,
-        sender_role="receiver" if reverse else "sender",
-        receiver_role="sender" if reverse else "receiver",
-    )
+    return {
+        "reverse": reverse,
+        "nack": nack,
+        "payload": payload,
+        "sender_role": "receiver" if reverse else "sender",
+        "receiver_role": "sender" if reverse else "receiver",
+    }
 
 
-def hello_airtime_budget(config, payload=HELLO_PAYLOAD):
+def hello_airtime_budget(config: Json, payload: bytes = HELLO_PAYLOAD) -> Json:
     data = lora_time_on_air_us(12 + len(payload), config)
     ack = lora_time_on_air_us(12, config)
     turnaround = config["response_guard_ms"] * 1000
     if data >= config["tx_ms"] * 1000 or ack + turnaround >= config["ack_min_ms"] * 1000:
-        raise ValueError("HELLO_LORA airtime/turnaround exceeds firmware deadline")
-    return dict(
-        payload_hex=payload.hex(),
-        max_attempts=1,
-        data_toa_us=data,
-        ack_toa_us=ack,
-        turnaround_guard_us=turnaround,
-        ack_deadline_min_ms=config["ack_min_ms"],
-    )
+        msg = "HELLO_LORA airtime/turnaround exceeds firmware deadline"
+        raise ValueError(msg)
+    return {
+        "payload_hex": payload.hex(),
+        "max_attempts": 1,
+        "data_toa_us": data,
+        "ack_toa_us": ack,
+        "turnaround_guard_us": turnaround,
+        "ack_deadline_min_ms": config["ack_min_ms"],
+    }
 
 
-def validate_hello_exchange(events, session, *, test_id=None):
+def validate_hello_exchange(
+    events: Json, session: int, *, test_id: str | None = None
+) -> Json:
     case = diagnostic_case(test_id)
     tx, rx = case["sender_role"], case["receiver_role"]
     src, dst = (2, 1) if case["reverse"] else (1, 2)
@@ -1209,17 +1343,19 @@ def validate_hello_exchange(events, session, *, test_id=None):
             continue
         frame = wire_frame(event["bytes"])
         if frame["session"] != session or frame["sequence"] != 0:
-            raise ValueError("HELLO_LORA stale session/sequence")
+            msg = "HELLO_LORA stale session/sequence"
+            raise ValueError(msg)
         data = frame["type"] == 1
         if (frame["src"], frame["dst"], frame["payload"], frame["type"], frame["reason"]) != (
             (src, dst, case["payload"], 1, 0)
             if data
             else (dst, src, b"", control_type, control_reason)
         ):
-            raise ValueError("HELLO_LORA DATA/ACK mismatch")
+            msg = "HELLO_LORA DATA/ACK mismatch"
+            raise ValueError(msg)
         frames.append((event, frame))
 
-    def frame_rows(role, name, kind):
+    def frame_rows(role: str, name: str, kind: int) -> list[Json]:
         return [
             e
             for e, f in frames
@@ -1228,9 +1364,12 @@ def validate_hello_exchange(events, session, *, test_id=None):
 
     data = frame_rows(tx, "TX", 1)
     if len(data) > 1:
-        raise ValueError("more than one physical DATA attempt")
+        msg = "more than one physical DATA attempt"
+        raise ValueError(msg)
 
-    def checkpoint(role, name, *, value=None, sequence=0, rc="0"):
+    def checkpoint(
+        role: str, name: str, *, value: Json = None, sequence: int = 0, rc: str = "0"
+    ) -> Json:
         matches = [e for e in rows if e.get("role") == role and e.get("e") == name]
         if not matches:
             return None
@@ -1278,7 +1417,7 @@ def validate_hello_exchange(events, session, *, test_id=None):
             "gateway_ack_accepted",
         )
     )
-    result = dict(zip(keys, values))
+    result = dict(zip(keys, values, strict=False))
     # Serial streams may interleave; each board's own causal order must hold.
     chains = {
         tx: ["TX", "TX_DONE", "RX", terminal],
@@ -1292,11 +1431,11 @@ def validate_hello_exchange(events, session, *, test_id=None):
     return result
 
 
-def radio_only_bringup(args, *, exchange=False):
+def radio_only_bringup(args: Json, *, exchange: bool = False) -> Json:
     """Program Tracker first, inspect both radios, and park the installed diagnostics."""
     from types import SimpleNamespace
 
-    from arq_config import load_arq
+    from arq_config import load_arq  # type: ignore[import-not-found]
     from device_detection.firmware_identity import normalize_ihex_region
     from generate_lora_config import digest, generate
 
@@ -1314,20 +1453,20 @@ def radio_only_bringup(args, *, exchange=False):
     )
     proof = rf.ProofRun(run_dir)
     capture = Capture(proof)
-    report = dict(
-        status="UNKNOWN",
-        exchange_requested=exchange,
-        airtime=budget,
-        programming={},
-        rf_release="operator-confirmed" if exchange else "PENDING",
-        radio={},
-        cleanup={},
-        test_id=test_id,
-        direction="tracker-to-gateway" if reverse else "gateway-to-tracker",
-    )
+    report = {
+        "status": "UNKNOWN",
+        "exchange_requested": exchange,
+        "airtime": budget,
+        "programming": {},
+        "rf_release": "operator-confirmed" if exchange else "PENDING",
+        "radio": {},
+        "cleanup": {},
+        "test_id": test_id,
+        "direction": "tracker-to-gateway" if reverse else "gateway-to-tracker",
+    }
     session = 0
 
-    def read_radio(role, rx, status_session):
+    def read_radio(role: str, rx: bool, status_session: int) -> Json:
         start = len(capture.events)
         capture.command(role, "STATUS")
         capture.wait(lambda: status_complete(capture.events[start:], role, status_session), 45)
@@ -1349,7 +1488,8 @@ def radio_only_bringup(args, *, exchange=False):
             ["pio", "project", "config", "--json-output"], cwd=ROOT, text=True
         )
         if not rf.upload_ports_match(config) or not rf.upload_config_preserves_flash(config):
-            raise ValueError("upload mapping/preservation configuration mismatch")
+            msg = "upload mapping/preservation configuration mismatch"
+            raise ValueError(msg)
         candidates = {}
         for role in ("receiver", "sender"):
             environment = role + "_arq_radio_only" + ("_reverse" if reverse else "")
@@ -1358,7 +1498,7 @@ def radio_only_bringup(args, *, exchange=False):
                 if reverse
                 else reader_free_h01_firmware(ROOT, role)
             )
-            if metadata["build_id"] != digest(dict(environment=environment, arq=manifest)):
+            if metadata["build_id"] != digest({"environment": environment, "arq": manifest}):
                 raise ValueError("stale candidate build identity: " + role)
             image = ROOT / ".pio/build" / environment / "firmware.hex"
             data = image.read_bytes()
@@ -1375,10 +1515,12 @@ def radio_only_bringup(args, *, exchange=False):
         for role in ("receiver", "sender"):
             environment = candidates[role]["environment"]
             if rf.check_port_owners(proof, environment + "-preflight"):
-                raise ValueError("UPDI ports owned")
+                msg = "UPDI ports owned"
+                raise ValueError(msg)
             identity_args = SimpleNamespace(physical_mapping_verified=True, power_verified=True)
             if rf.identify_targets(proof, identity_args, config):
-                raise ValueError("current identity/fuse preflight failed")
+                msg = "current identity/fuse preflight failed"
+                raise ValueError(msg)
             metadata = candidates[role]
             if rf.program_application(proof, environment, config):
                 raise ValueError("programming/readback failed: " + role)
@@ -1394,13 +1536,13 @@ def radio_only_bringup(args, *, exchange=False):
         for role in ("sender", "receiver") if reverse else ("receiver", "sender"):
             capture.command(role, f"ARM {session:08X}")
             capture.wait(
-                lambda: bool(
+                cast(Callable[[], bool], lambda role=role: bool(
                     [
                         e
                         for e in capture.seen(role, "ARM")
                         if int(e["s"], 16) == session and e.get("rc") == "0"
                     ]
-                ),
+                )),
                 15,
             )
             report["radio"][role] = read_radio(role, True, session)
@@ -1428,9 +1570,11 @@ def radio_only_bringup(args, *, exchange=False):
                 report["radio"][role] = read_radio(role, True, session)
             report["exchange"] = validate_hello_exchange(capture.events, session, test_id=test_id)
             if report["exchange"]["complete"] is not True:
-                raise ValueError("HELLO_LORA checkpoints incomplete")
+                msg = "HELLO_LORA checkpoints incomplete"
+                raise ValueError(msg)
         elif any(e.get("e") in ("TX", "TX_DONE", "REQUEST") for e in capture.events):
-            raise ValueError("unexpected RF activity in non-transmitting bring-up")
+            msg = "unexpected RF activity in non-transmitting bring-up"
+            raise ValueError(msg)
         report["status"] = "PASS"
     except Exception as error:
         report.update(status="UNKNOWN", failure=f"{type(error).__name__}: {error}")
@@ -1443,10 +1587,10 @@ def radio_only_bringup(args, *, exchange=False):
                 capture.command(role, "X")
                 # Drain STOP before the 14-line STATUS block to fit the 16-slot logger.
                 capture.wait(
-                    lambda: any(
+                    cast(Callable[[], bool], lambda role=role, start=start: any(
                         e.get("role") == role and e.get("e") == "STOP"
                         for e in capture.events[start:]
-                    ),
+                    )),
                     15,
                 )
                 stopped = next(
@@ -1472,7 +1616,7 @@ def radio_only_bringup(args, *, exchange=False):
                     capture.events, session, test_id=test_id
                 )
             except ValueError as error:
-                report["exchange"] = dict(complete=False, validation_error=str(error))
+                report["exchange"] = {"complete": False, "validation_error": str(error)}
         report.update(
             events=capture.events,
             commands=capture.commands,
@@ -1485,7 +1629,7 @@ def radio_only_bringup(args, *, exchange=False):
     return run_dir
 
 
-def prepare():
+def prepare() -> Json:
     """Install unarmed normal firmware and verify standby without ARM or SEND."""
     from generate_lora_config import generate
 
@@ -1497,20 +1641,24 @@ def prepare():
         ["pio", "project", "config", "--json-output"], cwd=ROOT, text=True
     )
     if rf.check_port_owners(proof, "standby-preflight"):
-        raise ValueError("UPDI ports owned")
+        msg = "UPDI ports owned"
+        raise ValueError(msg)
     programming = {}
     for role in ("receiver", "sender"):
         env = role + "_arq"
         image = ROOT / ".pio/build" / env / "firmware.hex"
         (proof.run_dir / (env + ".hex")).write_bytes(image.read_bytes())
         if rf.check_port_owners(proof, env + "-preflight"):
-            raise ValueError("UPDI ports owned")
+            msg = "UPDI ports owned"
+            raise ValueError(msg)
         if rf.program_application(proof, env, config):
             raise ValueError("standby programming/readback failed: " + role)
         identity = (ROOT / ".pio/build" / env / "lora_build_identity.h").read_text()
-        programming[role] = dict(
-            build_id=re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"', identity).group(1)
-        )
+        build_match = re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"', identity)
+        if build_match is None:
+            msg = "missing build identity in compiled firmware header"
+            raise ValueError(msg)
+        programming[role] = {"build_id": build_match.group(1)}
     capture = Capture(proof)
     try:
         capture.start()
@@ -1523,10 +1671,10 @@ def prepare():
             capture.command(r, "X")
             capture.command(r, "STATUS")
             capture.wait(
-                lambda: (
+                cast(Callable[[], bool], lambda r=r: (
                     len(capture.seen(r, "STATUS_END")) > counts[r]
                     and status_complete(capture.events, r, 0)
-                ),
+                )),
                 45,
             )
         for r in ("sender", "receiver"):
@@ -1538,21 +1686,26 @@ def prepare():
             ):
                 raise ValueError("radio did not verify standby: " + r)
         if capture.seen("sender", "TX") or capture.seen("receiver", "TX"):
-            raise ValueError("unexpected RF transmission")
+            msg = "unexpected RF transmission"
+            raise ValueError(msg)
     finally:
         capture.close()
         (proof.run_dir / "status.json").write_text(json.dumps(capture.events, indent=2) + "\n")
     if capture.errors:
         proof.note("capture-errors.json", json.dumps(capture.errors) + "\n")
-        raise ValueError("standby capture cleanup failed")
+        msg = "standby capture cleanup failed"
+        raise ValueError(msg)
     proof.note(
         "standby-verified.json",
         json.dumps(
-            dict(
-                standby=True,
-                rf_transmissions=0,
-                firmware={r: sha(proof.run_dir / (r + "_arq.hex")) for r in ("sender", "receiver")},
-            ),
+            {
+                "standby": True,
+                "rf_transmissions": 0,
+                "firmware": {
+                    r: sha(proof.run_dir / (r + "_arq.hex"))
+                    for r in ("sender", "receiver")
+                },
+            },
             indent=2,
         )
         + "\n",
@@ -1560,9 +1713,10 @@ def prepare():
     return proof.run_dir
 
 
-def validate_reverse(events):
+def validate_reverse(events: Json) -> Json:
     if any(e.get("overflow", "0") != "0" for e in events):
-        raise ValueError("raw logger overflow")
+        msg = "raw logger overflow"
+        raise ValueError(msg)
     starts = [e for e in events if e["role"] == "receiver" and e["e"] == "RAW_TX"]
     done = [
         e
@@ -1579,9 +1733,11 @@ def validate_reverse(events):
         or starts[0].get("flags") != "11"
         or len(done) != 1
     ):
-        raise ValueError("missing single successful raw transmission")
+        msg = "missing single successful raw transmission"
+        raise ValueError(msg)
     if len(received) != 1:
-        raise ValueError("missing single actual raw reception")
+        msg = "missing single actual raw reception"
+        raise ValueError(msg)
     packet = received[0]
     flags = int(packet["flags"])
     if (
@@ -1591,37 +1747,42 @@ def validate_reverse(events):
         or packet.get("match") != "1"
         or packet.get("bytes") != "48656C6C6F20576F726C64"
     ):
-        raise ValueError("raw RxDone/CRC/payload mismatch")
-    return dict(
-        complete=True,
-        payload=packet["bytes"],
-        rssi=int(packet["rssi"]),
-        snr=int(packet["snr"]),
-        validation_scope="captured physical UPDI; radio metrics in hundredths",
-    )
+        msg = "raw RxDone/CRC/payload mismatch"
+        raise ValueError(msg)
+    return {
+        "complete": True,
+        "payload": packet["bytes"],
+        "rssi": int(packet["rssi"]),
+        "snr": int(packet["snr"]),
+        "validation_scope": "captured physical UPDI; radio metrics in hundredths",
+    }
 
 
-def audit_raw_configuration(event) -> None:
+def audit_raw_configuration(event: Json) -> None:
     values = bytes.fromhex(event["bytes"])
     # Address order matches reverse_raw configuration(); compare PHY, not mode/DIO state.
     expected = bytes.fromhex("E4C000F084727404000812271D")
     if len(values) != 23 or values[0] not in (0x11, 0x12, 0x13) or values[2:15] != expected:
-        raise ValueError("reverse radio configuration mismatch")
+        msg = "reverse radio configuration mismatch"
+        raise ValueError(msg)
 
 
-def reverse_exchange(c):
+def reverse_exchange(c: Json) -> Json:
     # Host deadline starts before RX: delayed mailbox delivery cannot extend the RF window.
     armed = time.monotonic()
     c.command("sender", "RX")
     c.wait(lambda: bool(c.seen("sender", "RAW_RX_READY")), 5)
     ready = c.seen("sender", "RAW_RX_READY")[-1]
     if ready.get("rc") != "0" or int(ready.get("mode", "0")) & 0xCF != 0x85:
-        raise ValueError("reverse RX continuous not verified")
+        msg = "reverse RX continuous not verified"
+        raise ValueError(msg)
     if time.monotonic() - armed >= 10 or c.seen("sender", "RAW_RX_TIMEOUT"):
-        raise ValueError("reverse receive window expired before SEND")
+        msg = "reverse receive window expired before SEND"
+        raise ValueError(msg)
     configs = c.seen("sender", "RAW_RX_ACTIVE")
     if not configs:
-        raise ValueError("missing active RX configuration")
+        msg = "missing active RX configuration"
+        raise ValueError(msg)
     audit_raw_configuration(configs[-1])
     c.command("receiver", "SEND 48656C6C6F20576F726C64")
     # Allow the bounded device timeout plus mailbox drain; preserve its actual event.
@@ -1642,23 +1803,25 @@ def reverse_exchange(c):
     return validate_reverse(c.events)
 
 
-def send_command_without_reader(proof, port, command, firmware):
+def send_command_without_reader(
+    proof: Json, port: str, command: str, firmware: Path
+) -> Json:
     sys.path.insert(0, str(ROOT / "third_party/upditerm"))
     import upditerm
 
     payload = (command + "\n").encode("ascii")
     accepted = bytearray()
-    record = dict(
-        port=port,
-        firmware=firmware,
-        command=command,
-        request_hex=payload.hex(),
-        monitor_reader_running=False,
-        normal_startup_breaks=2,
-        cpu_reset_requested=False,
-        monotonic_start_ns=time.monotonic_ns(),
-        utc_start=datetime.now(UTC).isoformat(),
-    )
+    record = {
+        "port": port,
+        "firmware": firmware,
+        "command": command,
+        "request_hex": payload.hex(),
+        "monitor_reader_running": False,
+        "normal_startup_breaks": 2,
+        "cpu_reset_requested": False,
+        "monotonic_start_ns": time.monotonic_ns(),
+        "utc_start": datetime.now(UTC).isoformat(),
+    }
     session = None
     try:
         session = upditerm.SerialUPDI(port, 38400)
@@ -1684,7 +1847,7 @@ def send_command_without_reader(proof, port, command, firmware):
     return session, upditerm, record
 
 
-def close_updi_without_recovery(session) -> None:
+def close_updi_without_recovery(session: Any) -> None:
     if session:
         link = getattr(session, "updi", session)
         if not link or not link.ser:
@@ -1696,7 +1859,7 @@ def close_updi_without_recovery(session) -> None:
         serial_device.close()
 
 
-def resync_reset_state_once(session, protocol, port):
+def resync_reset_state_once(session: Any, protocol: Any, port: str) -> Json:
     """Reconnect once without CPU reset, then read only startup reset evidence."""
     close_updi_without_recovery(session)
     fresh = protocol.UPDI(port, 38400)
@@ -1704,7 +1867,14 @@ def resync_reset_state_once(session, protocol, port):
     return fresh, read_reset_state(fresh, protocol)
 
 
-def drain_updi_messages(session, protocol, *, max_bytes=4096, timeout=5.0, quiet_period=0.1):
+def drain_updi_messages(
+    session: Any,
+    protocol: Any,
+    *,
+    max_bytes: int = 4096,
+    timeout: float = 5.0,
+    quiet_period: float = 0.1,
+) -> Json:
     link = getattr(session, "updi", session)
     start = time.monotonic()
     last_message = start
@@ -1725,7 +1895,9 @@ def drain_updi_messages(session, protocol, *, max_bytes=4096, timeout=5.0, quiet
     return bytes(output), statuses
 
 
-def capture_tracker_diagnostics(c, proof, session, protocol, record, prefix):
+def capture_tracker_diagnostics(
+    c: Json, proof: Json, session: Any, protocol: Any, record: Json, prefix: str
+) -> bytes:
     link = getattr(session, "updi", session)
     flags = link.lds8(protocol.UART_FLAGS)
     record[f"{prefix}_uart_flags"] = flags
@@ -1745,29 +1917,31 @@ def capture_tracker_diagnostics(c, proof, session, protocol, record, prefix):
                 host_read_ns=observed_ns,
             )
             c.events.append(event)
-    return output
+    return bytes(output)
 
 
-def reverse_exchange_without_tracker_reader(c, proof, tracker_firmware):
+def reverse_exchange_without_tracker_reader(c: Json, proof: Json, tracker_firmware: Json) -> Json:
     armed = time.monotonic()
     c.command("sender", "RX")
     c.wait(lambda: bool(c.seen("sender", "RAW_RX_READY")), 5)
     ready = c.seen("sender", "RAW_RX_READY")[-1]
     if ready.get("rc") != "0" or int(ready.get("mode", "0")) & 0xCF != 0x85:
-        raise ValueError("reverse RX continuous not verified")
+        msg = "reverse RX continuous not verified"
+        raise ValueError(msg)
     configs = c.seen("sender", "RAW_RX_ACTIVE")
     if not configs:
-        raise ValueError("missing active RX configuration")
+        msg = "missing active RX configuration"
+        raise ValueError(msg)
     audit_raw_configuration(configs[-1])
     if time.monotonic() - armed >= 10 or c.seen("sender", "RAW_RX_TIMEOUT"):
-        raise ValueError("reverse receive window expired before SEND")
+        msg = "reverse receive window expired before SEND"
+        raise ValueError(msg)
     session, protocol, command = send_command_without_reader(
         proof, rf.PORTS["receiver"], "SEND 48656C6C6F20576F726C64", tracker_firmware
     )
-    output = b""
     try:
         c.wait(lambda: bool(c.seen("sender", "RAW_RX") or c.seen("sender", "RAW_RX_TIMEOUT")), 20)
-        output = capture_tracker_diagnostics(c, proof, session, protocol, command, "post_window")
+        capture_tracker_diagnostics(c, proof, session, protocol, command, "post_window")
     except Exception as first_error:
         command["post_window_error"] = f"{type(first_error).__name__}: {first_error}"
         proof.note("tracker-direct-command.json", json.dumps(command, indent=2) + "\n")
@@ -1779,7 +1953,7 @@ def reverse_exchange_without_tracker_reader(c, proof, tracker_firmware):
             session = protocol.UPDI(rf.PORTS["receiver"], 38400)
             session.key(protocol.KEY_OCD)
             command["resync_reset_state"] = read_reset_state(session, protocol)
-            output = capture_tracker_diagnostics(c, proof, session, protocol, command, "resync")
+            capture_tracker_diagnostics(c, proof, session, protocol, command, "resync")
         except Exception as recovery_error:
             command["resync_error"] = f"{type(recovery_error).__name__}: {recovery_error}"
     finally:
@@ -1800,28 +1974,33 @@ def reverse_exchange_without_tracker_reader(c, proof, tracker_firmware):
             and packet.get("match") == "1"
             and packet.get("bytes") == "48656C6C6F20576F726C64"
         )
-        return dict(
-            complete=valid,
-            result="RX_OBSERVED" if valid else "RX_INVALID",
-            packet=packet,
-            tracker_tx_started=bool(tx_started),
-            tracker_tx_done=tx_done[-1] if tx_done else None,
-            tracker_events=tracker_events,
-            validation_scope="Gateway physically captured the payload; Tracker output was read only after the RX window",
-        )
+        return {
+            "complete": valid,
+            "result": "RX_OBSERVED" if valid else "RX_INVALID",
+            "packet": packet,
+            "tracker_tx_started": bool(tx_started),
+            "tracker_tx_done": tx_done[-1] if tx_done else None,
+            "tracker_events": tracker_events,
+            "validation_scope": (
+                "Gateway physically captured the payload; Tracker output was read only "
+                "after the RX window"
+            ),
+        }
     timeout = c.seen("sender", "RAW_RX_TIMEOUT")[-1]
-    return dict(
-        complete=False,
-        result="RX_TIMEOUT",
-        receiver=timeout,
-        tracker_tx_started=bool(tx_started),
-        tracker_tx_done=tx_done[-1] if tx_done else None,
-        tracker_events=tracker_events,
-        validation_scope="Gateway timed out; Tracker buffered events were read after the RX window",
-    )
+    return {
+        "complete": False,
+        "result": "RX_TIMEOUT",
+        "receiver": timeout,
+        "tracker_tx_started": bool(tx_started),
+        "tracker_tx_done": tx_done[-1] if tx_done else None,
+        "tracker_events": tracker_events,
+        "validation_scope": (
+            "Gateway timed out; Tracker buffered events were read after the RX window"
+        ),
+    }
 
 
-def park_reverse(c):
+def park_reverse(c: Json) -> list[str]:
     errors = []
     for role in c.monitors:
         try:
@@ -1836,7 +2015,7 @@ def park_reverse(c):
     return errors
 
 
-def reverse_raw(*, tracker_reader=True):
+def reverse_raw(*, tracker_reader: bool = True) -> Json:
     """One explicitly commanded Tracker TX, Gateway RX; always restore normal images."""
     from generate_lora_config import generate
 
@@ -1848,13 +2027,13 @@ def reverse_raw(*, tracker_reader=True):
         ["pio", "project", "config", "--json-output"], cwd=ROOT, text=True
     )
     c = Capture(proof)
-    bundle = dict(
-        acquisition="updi-live",
-        synthetic=False,
-        phase="programming",
-        tracker_monitor="reader-and-writer" if tracker_reader else "UPDI-writer-only",
-        firmware={},
-    )
+    bundle: dict[str, Json] = {
+        "acquisition": "updi-live",
+        "synthetic": False,
+        "phase": "programming",
+        "tracker_monitor": "reader-and-writer" if tracker_reader else "UPDI-writer-only",
+        "firmware": {},
+    }
     try:
         for role in ("sender", "receiver"):
             env = role + "_reverse_raw"
@@ -1864,12 +2043,17 @@ def reverse_raw(*, tracker_reader=True):
                     proof.run_dir / (env + "." + suffix),
                 )
             identity = (ROOT / ".pio/build" / env / "lora_build_identity.h").read_text()
-            bundle["firmware"][role] = dict(
-                sha256=sha(proof.run_dir / (env + ".hex")),
-                build_id=re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"', identity).group(1),
-            )
+            build_match = re.search(r'LORA_BUILD_ID "([0-9a-f]{64})"', identity)
+            if build_match is None:
+                msg = "missing build identity in compiled firmware header"
+                raise ValueError(msg)
+            bundle["firmware"][role] = {
+                "sha256": sha(proof.run_dir / (env + ".hex")),
+                "build_id": build_match.group(1),
+            }
             if rf.check_port_owners(proof, env + "-preflight"):
-                raise ValueError("UPDI ports owned")
+                msg = "UPDI ports owned"
+                raise ValueError(msg)
             if rf.program_application(proof, env, config):
                 raise ValueError("reverse programming failed: " + role)
         bundle["phase"] = "acquisition"
@@ -1880,7 +2064,7 @@ def reverse_raw(*, tracker_reader=True):
                 proof, "sender", rf.PORTS["gateway"], c.queue
             )
 
-        def status(role) -> bool:
+        def status(role: str) -> bool:
             ids = c.seen(role, "IDENTITY")
             rows = c.seen(role, "RAW_STATUS")
             configs = c.seen(role, "RAW_CONFIG")
@@ -1891,9 +2075,11 @@ def reverse_raw(*, tracker_reader=True):
                 or ids[-1]["config"]
                 != json.loads((ROOT / "generated/arq_manifest.json").read_text())["config_hash"]
             ):
-                raise ValueError("reverse firmware/config identity mismatch")
+                msg = "reverse firmware/config identity mismatch"
+                raise ValueError(msg)
             if rows[-1].get("rc") != "0" or rows[-1].get("overflow") != "0":
-                raise ValueError("reverse radio not ready")
+                msg = "reverse radio not ready"
+                raise ValueError(msg)
             audit_raw_configuration(configs[-1])
             return True
 
@@ -1907,7 +2093,10 @@ def reverse_raw(*, tracker_reader=True):
         for role in monitor_roles:
             if not status(role):
                 c.command(role, "STATUS")
-                c.wait(lambda: status(role), max(0, deadline - time.monotonic()))
+                c.wait(
+                    cast(Callable[[], bool], lambda role=role: status(role)),
+                    max(0, deadline - time.monotonic()),
+                )
         bundle["phase"] = "rf-trial"
         if tracker_reader:
             bundle["result"] = reverse_exchange(c)
@@ -1937,19 +2126,20 @@ def reverse_raw(*, tracker_reader=True):
         (proof.run_dir / "bundle.json").write_text(json.dumps(bundle, indent=2) + "\n")
         # Monitors release both ports before normal-image restoration and verification.
         restored = prepare()
-        proof.note("restore.json", json.dumps(dict(standby_evidence=str(restored))) + "\n")
+        proof.note("restore.json", json.dumps({"standby_evidence": str(restored)}) + "\n")
     if c.errors:
         raise ValueError("incomplete raw capture tail: " + str(c.errors))
     print(json.dumps(bundle["result"]))
     return proof.run_dir
 
 
-def reader_free_h01(*, rx_idle_seconds=None):
+def reader_free_h01(*, rx_idle_seconds: float | None = None) -> Json:
     """Run one reader-free H01 exchange or a bounded Tracker RX-only control."""
     if rx_idle_seconds is not None and (
         type(rx_idle_seconds) is not int or not 1 <= rx_idle_seconds <= 120
     ):
-        raise ValueError("RX idle control must be between 1 and 120 seconds")
+        msg = "RX idle control must be between 1 and 120 seconds"
+        raise ValueError(msg)
     from generate_lora_config import generate
 
     generate(check=True)
@@ -1969,45 +2159,48 @@ def reader_free_h01(*, rx_idle_seconds=None):
     tracker_session = None
     protocol = None
     tracker_record = {}
-    bundle = dict(
-        acquisition="updi-live",
-        synthetic=False,
-        experiment="TRACKER_RX_IDLE" if rx_idle_seconds is not None else "H01",
-        direction="Gateway DATA TX -> Tracker RX/ACK TX -> Gateway RX",
-        tracker_output_reader=False,
-        config_hash=manifest["config_hash"],
-        firmware={},
-        tracker_commands=[],
-        tracker_output={},
-        tracker_reset_before=None,
-        tracker_reset_after=None,
-        rf_transmissions=0,
-    )
+    bundle = {
+        "acquisition": "updi-live",
+        "synthetic": False,
+        "experiment": "TRACKER_RX_IDLE" if rx_idle_seconds is not None else "H01",
+        "direction": "Gateway DATA TX -> Tracker RX/ACK TX -> Gateway RX",
+        "tracker_output_reader": False,
+        "config_hash": manifest["config_hash"],
+        "firmware": {},
+        "tracker_commands": [],
+        "tracker_output": {},
+        "tracker_reset_before": None,
+        "tracker_reset_after": None,
+        "rf_transmissions": 0,
+    }
 
-    def tracker_command(text, name):
+    def tracker_command(text: str, name: str) -> Json:
         payload = (text + "\n").encode("ascii")
         accepted = bytearray()
         started = time.monotonic_ns()
         write_virtual_uart(tracker_session, payload, accepted=accepted)
-        record = dict(
-            command=text,
-            request_hex=payload.hex(),
-            accepted_hex=accepted.hex(),
-            accepted_length=len(accepted),
-            monotonic_start_ns=started,
-            monotonic_end_ns=time.monotonic_ns(),
-            result="mailbox_bytes_accepted",
-        )
+        record = {
+            "command": text,
+            "request_hex": payload.hex(),
+            "accepted_hex": accepted.hex(),
+            "accepted_length": len(accepted),
+            "monotonic_start_ns": started,
+            "monotonic_end_ns": time.monotonic_ns(),
+            "result": "mailbox_bytes_accepted",
+        }
         bundle["tracker_commands"].append(record)
         proof.note(f"tracker-command-{name}.json", json.dumps(record, indent=2) + "\n")
         return record
 
-    def drain_tracker(name):
-        link = getattr(tracker_session, "updi", tracker_session)
+    def drain_tracker(name: str, session: Any, current_protocol: Any) -> Json:
+        if session is None or current_protocol is None:
+            msg = "Tracker UPDI session is unavailable"
+            raise RuntimeError(msg)
+        link = getattr(session, "updi", session)
         start = time.monotonic_ns()
-        flags = link.lds8(protocol.UART_FLAGS)
+        flags = link.lds8(current_protocol.UART_FLAGS)
         output, statuses = drain_updi_messages(
-            tracker_session, protocol, timeout=12.0, quiet_period=0.25
+            session, current_protocol, timeout=12.0, quiet_period=0.25
         )
         path = run_dir / f"tracker-output-{name}.bin"
         path.write_bytes(output)
@@ -2017,7 +2210,7 @@ def reader_free_h01(*, rx_idle_seconds=None):
             try:
                 event = parse_event(raw.decode("ascii", errors="replace"))
             except ValueError as error:
-                parse_errors.append(dict(raw_hex=raw.hex(), error=str(error)))
+                parse_errors.append({"raw_hex": raw.hex(), "error": str(error)})
                 continue
             if event:
                 event.update(
@@ -2028,48 +2221,49 @@ def reader_free_h01(*, rx_idle_seconds=None):
                 )
                 c.events.append(event)
                 events.append(event)
-        result = dict(
-            output_file=str(path.relative_to(ROOT)),
-            output_hex=output.hex(),
-            output_length=len(output),
-            uart_flags=flags,
-            uart_rx_pending=bool(flags & protocol.FLAG_RX),
-            ocd_status_reads=statuses,
-            parse_errors=parse_errors,
-            monotonic_start_ns=start,
-            monotonic_end_ns=time.monotonic_ns(),
-        )
+        result = {
+            "output_file": str(path.relative_to(ROOT)),
+            "output_hex": output.hex(),
+            "output_length": len(output),
+            "uart_flags": flags,
+            "uart_rx_pending": bool(flags & current_protocol.FLAG_RX),
+            "ocd_status_reads": statuses,
+            "parse_errors": parse_errors,
+            "monotonic_start_ns": start,
+            "monotonic_end_ns": time.monotonic_ns(),
+        }
         bundle["tracker_output"][name] = result
         proof.note(f"tracker-output-{name}.json", json.dumps(result, indent=2) + "\n")
         return events
 
     try:
         if rf.check_port_owners(proof, "h01-reader-free-preflight"):
-            raise ValueError("UPDI ports owned")
+            msg = "UPDI ports owned"
+            raise ValueError(msg)
         programming = {}
         firmware = {}
         roles = ("receiver",) if rx_idle_seconds is not None else ("receiver", "sender")
         for role in roles:
-            environment = role + "_arq_radio_only"
-            for suffix in ("hex", "elf"):
-                source = ROOT / ".pio/build" / environment / ("firmware." + suffix)
-                destination = run_dir / (environment + "." + suffix)
+            env_name = role + "_arq_radio_only"
+            for file_suffix in ("hex", "elf"):
+                source = ROOT / ".pio/build" / env_name / ("firmware." + file_suffix)
+                destination = run_dir / (env_name + "." + file_suffix)
                 destination.write_bytes(source.read_bytes())
             metadata = reader_free_h01_firmware(ROOT, role)
-            firmware_sha = sha(run_dir / (environment + ".hex"))
+            firmware_sha = sha(run_dir / (env_name + ".hex"))
             if firmware_sha != metadata["sha256"]:
                 raise ValueError("copied firmware hash differs: " + role)
-            if rf.check_port_owners(proof, environment + "-preflight"):
+            if rf.check_port_owners(proof, env_name + "-preflight"):
                 raise ValueError("UPDI port owned: " + role)
-            if rf.program_application(proof, environment, config):
+            if rf.program_application(proof, env_name, config):
                 raise ValueError("programming/readback failed: " + role)
             firmware[role] = metadata
-            programming[role] = dict(
-                environment=environment,
-                hex_sha256=firmware_sha,
-                build_id=metadata["build_id"],
-                verified=True,
-            )
+            programming[role] = {
+                "environment": env_name,
+                "hex_sha256": firmware_sha,
+                "build_id": metadata["build_id"],
+                "verified": True,
+            }
         (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         bundle.update(
             firmware=firmware,
@@ -2084,7 +2278,7 @@ def reader_free_h01(*, rx_idle_seconds=None):
                 proof, "sender", rf.PORTS["gateway"], c.queue
             )
 
-            def gateway_status():
+            def gateway_status() -> Json:
                 return status_complete(c.events, "sender", 0)
 
             try:
@@ -2105,22 +2299,23 @@ def reader_free_h01(*, rx_idle_seconds=None):
                 or gateway_ready[-1].get("ready") != "1"
                 or gateway_ready[-1].get("overflow") != "0"
             ):
-                raise ValueError("Gateway identity/readiness not verified")
+                msg = "Gateway identity/readiness not verified"
+                raise ValueError(msg)
 
         tracker_session, protocol = open_reader_free_h01_session(rf.PORTS["receiver"])
-        tracker_record = dict(
-            port=rf.PORTS["receiver"],
-            firmware_sha256=firmware["receiver"]["sha256"],
-            application_command_sent=False,
-            normal_startup_breaks=2,
-            cpu_reset_requested=False,
-            baseline_reset_state=read_reset_state(tracker_session, protocol),
-            monotonic_start_ns=time.monotonic_ns(),
-            utc_start=datetime.now(UTC).isoformat(),
-        )
+        tracker_record = {
+            "port": rf.PORTS["receiver"],
+            "firmware_sha256": firmware["receiver"]["sha256"],
+            "application_command_sent": False,
+            "normal_startup_breaks": 2,
+            "cpu_reset_requested": False,
+            "baseline_reset_state": read_reset_state(tracker_session, protocol),
+            "monotonic_start_ns": time.monotonic_ns(),
+            "utc_start": datetime.now(UTC).isoformat(),
+        }
         proof.note("tracker-updi-session.json", json.dumps(tracker_record, indent=2) + "\n")
         bundle["tracker_reset_before"] = tracker_record.get("baseline_reset_state")
-        drain_tracker("preflight-status")
+        drain_tracker("preflight-status", tracker_session, protocol)
         tracker_identity = c.seen("receiver", "IDENTITY")
         tracker_status = c.seen("receiver", "STATUS")
         if (
@@ -2132,28 +2327,33 @@ def reader_free_h01(*, rx_idle_seconds=None):
             or tracker_status[-1].get("overflow") != "0"
             or not status_complete(c.events, "receiver", 0)
         ):
-            raise ValueError("Tracker reader-free STATUS/identity not verified")
+            msg = "Tracker reader-free STATUS/identity not verified"
+            raise ValueError(msg)
 
         session_id = reserve_session(ROOT / "artifacts/arq")
         bundle["session"] = session_id
         tracker_command(f"ARM {session_id:08X}", "arm")
-        arm_events = drain_tracker("arm")
+        arm_events = drain_tracker("arm", tracker_session, protocol)
         if not any(
             e.get("e") == "ARM" and e.get("rc") == "0" and int(e["s"], 16) == session_id
             for e in arm_events
         ):
-            raise ValueError("Tracker ARM was not observed")
+            msg = "Tracker ARM was not observed"
+            raise ValueError(msg)
         if not any(e.get("e") == "RX_READY" and e.get("rc") == "0" for e in arm_events):
-            raise ValueError("Tracker RX_READY was not observed")
+            msg = "Tracker RX_READY was not observed"
+            raise ValueError(msg)
         tracker_command("STATUS", "armed-status")
-        armed_status = drain_tracker("armed-status")
+        armed_status = drain_tracker("armed-status", tracker_session, protocol)
         tracker_regs = [
             e for e in armed_status if e.get("e") == "REG" and int(e["s"], 16) == session_id
         ]
         if not tracker_regs or bytes.fromhex(tracker_regs[-1]["bytes"])[0] & 0xCF != 0x85:
-            raise ValueError("Tracker radio not verified in RX Continuous")
+            msg = "Tracker radio not verified in RX Continuous"
+            raise ValueError(msg)
         if not status_complete(c.events, "receiver", session_id):
-            raise ValueError("Tracker armed STATUS block incomplete")
+            msg = "Tracker armed STATUS block incomplete"
+            raise ValueError(msg)
 
         if rx_idle_seconds is not None:
             c.close()
@@ -2168,27 +2368,27 @@ def reader_free_h01(*, rx_idle_seconds=None):
                     tracker_session, idle_after = resync_reset_state_once(
                         tracker_session, protocol, rf.PORTS["receiver"]
                     )
-                    bundle["tracker_reset_resync"] = dict(
-                        startup_breaks=2,
-                        cpu_reset_requested=False,
-                        session="fresh UPDI/OCD, no application command",
-                    )
+                    bundle["tracker_reset_resync"] = {
+                        "startup_breaks": 2,
+                        "cpu_reset_requested": False,
+                        "session": "fresh UPDI/OCD, no application command",
+                    }
                 except Exception as resync_error:
                     idle_after = None
                     bundle["tracker_reset_resync_error"] = (
                         f"{type(resync_error).__name__}: {resync_error}"
                     )
-            bundle["idle_sample"] = dict(
-                start_monotonic_ns=idle_start,
-                end_monotonic_ns=time.monotonic_ns(),
-                duration_target_s=rx_idle_seconds,
-                before=idle_before,
-                after=idle_after,
-                tracker_mode="RX_CONTINUOUS",
-                rf_transmissions=0,
-            )
+            bundle["idle_sample"] = {
+                "start_monotonic_ns": idle_start,
+                "end_monotonic_ns": time.monotonic_ns(),
+                "duration_target_s": rx_idle_seconds,
+                "before": idle_before,
+                "after": idle_after,
+                "tracker_mode": "RX_CONTINUOUS",
+                "rf_transmissions": 0,
+            }
             bundle["tracker_reset_after"] = idle_after
-            drain_tracker("post-idle-window")
+            drain_tracker("post-idle-window", tracker_session, protocol)
             bundle["result"] = reader_free_rx_idle_summary(bundle["idle_sample"])
             bundle["classification"] = bundle["result"]["classification"]
         else:
@@ -2203,7 +2403,8 @@ def reader_free_h01(*, rx_idle_seconds=None):
             )
             rx_state = c.seen("sender", "RX_STATE")
             if not rx_state or bytes.fromhex(rx_state[-1]["bytes"])[0] & 0xCF != 0x85:
-                raise ValueError("Gateway radio not verified in RX Continuous")
+                msg = "Gateway radio not verified in RX Continuous"
+                raise ValueError(msg)
 
             payload = HELLO_PAYLOAD.hex()
             command = "SEND " + payload
@@ -2237,16 +2438,16 @@ def reader_free_h01(*, rx_idle_seconds=None):
                     tracker_session, bundle["tracker_reset_after"] = resync_reset_state_once(
                         tracker_session, protocol, rf.PORTS["receiver"]
                     )
-                    bundle["tracker_reset_resync"] = dict(
-                        startup_breaks=2,
-                        cpu_reset_requested=False,
-                        session="fresh UPDI/OCD, no application command",
-                    )
+                    bundle["tracker_reset_resync"] = {
+                        "startup_breaks": 2,
+                        "cpu_reset_requested": False,
+                        "session": "fresh UPDI/OCD, no application command",
+                    }
                 except Exception as resync_error:
                     bundle["tracker_reset_resync_error"] = (
                         f"{type(resync_error).__name__}: {resync_error}"
                     )
-            drain_tracker("post-transaction")
+            drain_tracker("post-transaction", tracker_session, protocol)
             bundle["result"] = reader_free_h01_summary(
                 c.events, bundle["tracker_reset_before"], bundle["tracker_reset_after"]
             )
@@ -2269,7 +2470,7 @@ def reader_free_h01(*, rx_idle_seconds=None):
             bundle["tracker_reset_error"] = f"{type(reset_error).__name__}: {reset_error}"
         if tracker_session and protocol:
             try:
-                drain_tracker("failure-window")
+                drain_tracker("failure-window", tracker_session, protocol)
             except Exception as drain_error:
                 bundle["tracker_drain_error"] = f"{type(drain_error).__name__}: {drain_error}"
         bundle["result"] = reader_free_h01_summary(
@@ -2287,21 +2488,21 @@ def reader_free_h01(*, rx_idle_seconds=None):
         }
         (run_dir / "bundle.json").write_text(json.dumps(bundle, indent=2) + "\n")
         restored = prepare()
-        proof.note("restore.json", json.dumps(dict(standby_evidence=str(restored))) + "\n")
+        proof.note("restore.json", json.dumps({"standby_evidence": str(restored)}) + "\n")
     print(
         json.dumps(
-            dict(
-                run_dir=str(run_dir),
-                classification=bundle.get("classification"),
-                result=bundle.get("result"),
-            ),
+            {
+                "run_dir": str(run_dir),
+                "classification": bundle.get("classification"),
+                "result": bundle.get("result"),
+            },
             indent=2,
         )
     )
     return run_dir
 
 
-def soak_campaign(stage, args):
+def soak_campaign(stage: str, args: Json) -> Json:
     errors = hardware_gate_errors(args, True)
     if errors:
         raise ValueError("soak preflight incomplete: " + "; ".join(errors))
@@ -2311,7 +2512,8 @@ def soak_campaign(stage, args):
     if ledger_path.exists():
         ledger = json.loads(ledger_path.read_text())
         if ledger.get("schema_version") != 1 or not isinstance(ledger.get("stages"), dict):
-            raise ValueError("invalid soak ledger; refusing to overwrite it")
+            msg = "invalid soak ledger; refusing to overwrite it"
+            raise ValueError(msg)
     else:
         ledger = {"schema_version": 1, "stages": {}}
     missing = missing_soak_prerequisites(stage, ledger["stages"])
@@ -2323,7 +2525,8 @@ def soak_campaign(stage, args):
     run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ") + "-soak-" + stage
     run_dir = artifact_root / run_id
     if run_dir.exists():
-        raise ValueError("soak run directory already exists")
+        msg = "soak run directory already exists"
+        raise ValueError(msg)
     previous = ledger["stages"].get(stage)
     history = []
     if isinstance(previous, dict):
@@ -2332,7 +2535,8 @@ def soak_campaign(stage, args):
         if prior_run.get("status") == "RUNNING":
             process_id = prior_run.get("process_id")
             if type(process_id) is not int or process_id < 1:
-                raise ValueError("prior running stage has no verifiable process ID")
+                msg = "prior running stage has no verifiable process ID"
+                raise ValueError(msg)
             try:
                 os.kill(process_id, 0)
             except ProcessLookupError:
@@ -2341,32 +2545,34 @@ def soak_campaign(stage, args):
                     failure="prior soak host process is absent; termination reason unknown",
                 )
             except (PermissionError, OSError) as error:
-                raise ValueError("cannot verify prior soak process") from error
+                msg = "cannot verify prior soak process"
+                raise ValueError(msg) from error
             else:
-                raise ValueError("prior soak stage process is still active")
+                msg = "prior soak stage process is still active"
+                raise ValueError(msg)
         history.append(prior_run)
     elif previous is not None:
-        history.append(dict(status=previous, legacy_receipt=True))
+        history.append({"status": previous, "legacy_receipt": True})
 
     def save_ledger() -> None:
         temporary = ledger_path.with_suffix(".json.tmp")
         temporary.write_text(json.dumps(ledger, indent=2, sort_keys=True) + "\n")
-        os.replace(temporary, ledger_path)
+        temporary.replace(ledger_path)
 
-    record = dict(
-        status="RUNNING",
-        run_directory=str(run_dir),
-        started_utc=datetime.now(UTC).isoformat(),
-        process_id=os.getpid(),
-        plan=plan,
-        summary=None,
-        observed_duration_s=None,
-        history=history,
-    )
+    record = {
+        "status": "RUNNING",
+        "run_directory": str(run_dir),
+        "started_utc": datetime.now(UTC).isoformat(),
+        "process_id": os.getpid(),
+        "plan": plan,
+        "summary": None,
+        "observed_duration_s": None,
+        "history": history,
+    }
     ledger["stages"][stage] = record
     save_ledger()
 
-    def read_run_evidence():
+    def read_run_evidence() -> Json:
         results_path = run_dir / "campaign.json"
         progress_path = run_dir / "soak" / "soak-progress.jsonl"
         results = json.loads(results_path.read_text()) if results_path.is_file() else []
@@ -2386,7 +2592,7 @@ def soak_campaign(stage, args):
 
     def update_partial_record() -> None:
         try:
-            results, progress, starts, completes, span_s = read_run_evidence()
+            results, _progress, _starts, completes, span_s = read_run_evidence()
             record.update(
                 summary=summarize_soak_results(results, plan["sessions"]),
                 completed_sessions=len(completes),
@@ -2400,10 +2606,12 @@ def soak_campaign(stage, args):
         results_path = run_dir / "campaign.json"
         progress_path = run_dir / "soak" / "soak-progress.jsonl"
         if not results_path.is_file() or not progress_path.is_file():
-            raise ValueError("incomplete soak evidence: campaign or progress ledger missing")
+            msg = "incomplete soak evidence: campaign or progress ledger missing"
+            raise ValueError(msg)
         results, progress, starts, completes, span_s = read_run_evidence()
         if len(starts) != len(results) or len(completes) != len(results):
-            raise ValueError("incomplete soak evidence: session start/completion mismatch")
+            msg = "incomplete soak evidence: session start/completion mismatch"
+            raise ValueError(msg)
         summary = summarize_soak_results(results, plan["sessions"])
         record.update(
             summary=summary,
@@ -2442,8 +2650,8 @@ def soak_campaign(stage, args):
         raise
 
 
-def hardware_gate_errors(args, require_rf):
-    errors = rf.physical_readiness_errors(args, require_rf=require_rf)
+def hardware_gate_errors(args: Json, require_rf: bool) -> list[str]:
+    errors = [str(error) for error in rf.physical_readiness_errors(args, require_rf=require_rf)]
     if require_rf and not getattr(args, "rf_path_confirmed", False):
         errors.append("RF connector/antenna path not physically confirmed")
     if require_rf and not getattr(args, "authorize_rf_test", False):

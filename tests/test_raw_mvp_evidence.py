@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-import rf_proof
+from tools import rf_proof
 
 RX = (
     "[MVP RECEIVER] RX_READY rc=0\n"
@@ -34,6 +34,7 @@ class RawEvidenceTests(unittest.TestCase):
                 ],
                 capture_output=True,
                 text=True,
+            check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn('"passed": true', result.stdout)

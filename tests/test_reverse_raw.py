@@ -3,6 +3,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,7 +14,7 @@ class ReverseRawTests(unittest.TestCase):
         from tools.arq_trial import audit_raw_configuration
 
         values = bytes.fromhex("1281E4C000F084727404000812271D00000023C3000009")
-        audit_raw_configuration(dict(bytes=values.hex()))
+        audit_raw_configuration({"bytes": values.hex()})
 
     def test_cleanup_parks_live_peer_when_other_monitor_has_exited(self) -> None:
         from unittest.mock import Mock
@@ -38,8 +39,8 @@ class ReverseRawTests(unittest.TestCase):
             altered = bytearray(values)
             altered[index] ^= 1
             with self.assertRaisesRegex(ValueError, "configuration"):
-                audit_raw_configuration(dict(bytes=altered.hex()))
-        audit_raw_configuration(dict(bytes=values.hex()))
+                audit_raw_configuration({"bytes": altered.hex()})
+        audit_raw_configuration({"bytes": values.hex()})
 
     def test_send_waits_for_active_rx_and_retains_device_timeout(self) -> None:
         from types import SimpleNamespace
@@ -52,12 +53,17 @@ class ReverseRawTests(unittest.TestCase):
                 r: {"process": SimpleNamespace(poll=lambda: None)} for r in ("sender", "receiver")
             }
 
-            def command(role, text) -> None:
-                c.commands.append(dict(role=role, text=text))
+            def command(
+                role: str, text: str, c: Any = c, mode: int = mode
+            ) -> None:
+                c.commands.append({"role": role, "text": text})
                 rows = []
                 if text == "RX":
                     rows = [
-                        "A t=0 e=RAW_RX_ACTIVE s=0 bytes=1285E4C000F084727404000812271D00000023C3000009",
+                        (
+                            "A t=0 e=RAW_RX_ACTIVE s=0 bytes="
+                            "1285E4C000F084727404000812271D00000023C3000009"
+                        ),
                         f"A t=0 e=RAW_RX_READY s=0 rc=0 mode={mode} overflow=0",
                     ]
                 if text.startswith("SEND"):
@@ -74,7 +80,7 @@ class ReverseRawTests(unittest.TestCase):
                         ("sender", "stdout", b"A t=15000 e=RAW_RX_TIMEOUT s=0 rc=0 flags=0")
                     )
 
-            c.command = command
+            setattr(c, "command", command)
             with self.assertRaisesRegex(
                 ValueError,
                 "missing single actual raw reception" if mode == 0x85 else "RX continuous",
@@ -87,11 +93,11 @@ class ReverseRawTests(unittest.TestCase):
         from tools import arq_trial as a
 
         c = a.Capture(None)
-        c.events = [dict(role="sender", e="RAW_RX_READY", rc="0", mode="133")]
+        c.events = [{"role": "sender", "e": "RAW_RX_READY", "rc": "0", "mode": "133"}]
         with (
             patch.object(c, "command") as command,
             patch.object(c, "wait"),
-            patch.object(a.time, "monotonic", side_effect=[0, 11]),
+            patch.object(getattr(a, "time"), "monotonic", side_effect=[0, 11]),
         ):
             with self.assertRaisesRegex(ValueError, "window expired"):
                 a.reverse_exchange(c)
@@ -101,19 +107,19 @@ class ReverseRawTests(unittest.TestCase):
         from tools.arq_trial import validate_reverse
 
         events = [
-            dict(role="receiver", e="RAW_TX", rc="0", flags="11", overflow="0"),
-            dict(role="receiver", e="RAW_TX_DONE", rc="0", flags="8", overflow="0"),
-            dict(
-                role="sender",
-                e="RAW_RX",
-                rc="0",
-                flags="64",
-                len="11",
-                match="1",
-                bytes="48656C6C6F20576F726C64",
-                rssi="-8350",
-                snr="-125",
-            ),
+            {"role": "receiver", "e": "RAW_TX", "rc": "0", "flags": "11", "overflow": "0"},
+            {"role": "receiver", "e": "RAW_TX_DONE", "rc": "0", "flags": "8", "overflow": "0"},
+            {
+                "role": "sender",
+                "e": "RAW_RX",
+                "rc": "0",
+                "flags": "64",
+                "len": "11",
+                "match": "1",
+                "bytes": "48656C6C6F20576F726C64",
+                "rssi": "-8350",
+                "snr": "-125",
+            },
         ]
         self.assertTrue(validate_reverse(events)["complete"])
         for key, value in [("flags", "96"), ("bytes", "00"), ("rc", "-7"), ("match", "0")]:
@@ -124,7 +130,7 @@ class ReverseRawTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_reverse(events[1:])
         with self.assertRaises(ValueError):
-            validate_reverse(events + [events[0]])
+            validate_reverse([*events, events[0]])
 
     def test_reverse_cli_requires_physical_gate(self) -> None:
         from tools import arq_trial

@@ -141,7 +141,11 @@ def classify_devices(
             elif fw_role and flash_role:
                 evidence_type = "firmware_identity+flash_fingerprint"
                 details.extend(("valid current firmware identity", "exact application flash match"))
-                build_id = fw.build_id if fw else flash.build_id
+                build_id = (
+                    fw.build_id
+                    if fw is not None
+                    else flash.build_id if flash is not None else None
+                )
             elif fw_role:
                 evidence_type = "firmware_identity"
                 integrity = fw.integrity if fw else "verified"

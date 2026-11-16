@@ -6,10 +6,20 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-import receiver_boot as boot
+import tools.receiver_boot as boot
+from tools.device_detection.firmware_identity import normalize_ihex_region
+
+
+def recording_command(commands: list[list[str]]) -> Any:
+    def command(name: str, argv: list[str], *_args: Any) -> tuple[int, bytes, bytes]:
+        commands.append(argv)
+        return 0, b"", b""
+
+    return command
 
 
 class ReceiverBootTests(unittest.TestCase):
@@ -18,9 +28,9 @@ class ReceiverBootTests(unittest.TestCase):
             run_dir = Path()
 
             def __init__(self) -> None:
-                self.calls = []
+                self.calls: list[tuple[str, list[str], Any]] = []
 
-            def command(self, name, command, timeout):
+            def command(self, name: Any, command: Any, timeout: Any) -> Any:
                 self.calls.append((name, command, timeout))
                 return (1 if len(self.calls) == 1 else 0), b"", b""
 
@@ -70,8 +80,8 @@ class ReceiverBootTests(unittest.TestCase):
             boot.reset_target(b"\xff" * 4, 0x5800)
 
     def test_missing_or_wrong_specific_authorization_opens_no_port(self) -> None:
-        proof = SimpleNamespace(note=lambda *_: None)
-        args = SimpleNamespace(
+        proof: Any = SimpleNamespace(note=lambda *_: None)
+        args: Any = SimpleNamespace(
             authorize_receiver_boot_page0=None, receiver_boot_package=None, authorize_upload=True
         )
         with patch.object(boot, "read_snapshot") as snapshot:
@@ -106,7 +116,7 @@ class ReceiverBootTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             package = Path(directory) / "map.json"
             package.write_text("{}")
-            args = SimpleNamespace(
+            args: Any = SimpleNamespace(
                 receiver_boot_package=package,
                 authorize_upload=True,
                 authorize_receiver_boot_page0=boot.sha(package.read_bytes()),
@@ -114,7 +124,7 @@ class ReceiverBootTests(unittest.TestCase):
                 physical_mapping_verified=False,
                 power_verified=False,
             )
-            proof = SimpleNamespace(note=lambda *_: None)
+            proof: Any = SimpleNamespace(note=lambda *_: None)
             with (
                 patch.object(boot, "load_package", return_value={}),
                 patch.object(boot, "read_snapshot") as snapshot,
@@ -124,6 +134,8 @@ class ReceiverBootTests(unittest.TestCase):
 
 
 class CompiledHandoffTests(unittest.TestCase):
+    code: bytes
+
     @classmethod
     def setUpClass(cls) -> None:
         temporary = tempfile.TemporaryDirectory()
@@ -159,16 +171,16 @@ class CompiledHandoffTests(unittest.TestCase):
 
     def test_compiled_handoff_uses_correct_byte_target_and_interrupt_state(self) -> None:
         result = boot.trace_stub(self.code, bytes.fromhex("52c00000"))
-        self.assertEqual(result, dict(application_entered=True, cpuint=0, interrupts=False))
+        self.assertEqual(result, {"application_entered": True, "cpuint": 0, "interrupts": False})
         self.assertLess(len(self.code), 512)
         self.assertIn(bytes.fromhex("0c94002c"), self.code)
 
     def test_blank_or_any_wrong_reset_byte_parks(self) -> None:
-        cases = [b"\xff" * 4]
+        cases: list[bytes] = [b"\xff" * 4]
         for index in range(4):
-            entry = bytearray.fromhex("52c00000")
-            entry[index] ^= 1
-            cases.append(entry)
+            corrupted = bytearray.fromhex("52c00000")
+            corrupted[index] ^= 1
+            cases.append(bytes(corrupted))
         for entry in cases:
             with self.subTest(entry=entry):
                 result = boot.trace_stub(self.code, entry)
@@ -178,6 +190,9 @@ class CompiledHandoffTests(unittest.TestCase):
 
 
 class BootPackageTests(unittest.TestCase):
+    directory: Path
+    package: Path
+
     @classmethod
     def setUpClass(cls) -> None:
         if (
@@ -186,20 +201,21 @@ class BootPackageTests(unittest.TestCase):
             ]
             != 44
         ):
+            msg = "archived BOOTSIZE=44 repair does not apply to the replacement Receiver"
             raise unittest.SkipTest(
-                "archived BOOTSIZE=44 repair does not apply to the replacement Receiver"
+                msg
             )
         temporary = tempfile.TemporaryDirectory()
         cls.addClassCleanup(temporary.cleanup)
         cls.directory = Path(temporary.name)
 
-        def command(name, argv, timeout=None):
-            result = subprocess.run(argv, capture_output=True, timeout=timeout)
+        def command(name: Any, argv: Any, timeout: Any=None) -> Any:
+            result = subprocess.run(argv, capture_output=True, timeout=timeout, check=False)
             (cls.directory / (name + ".stdout.log")).write_bytes(result.stdout)
             (cls.directory / (name + ".stderr.log")).write_bytes(result.stderr)
             return result.returncode, result.stdout, result.stderr
 
-        proof = SimpleNamespace(
+        proof: Any = SimpleNamespace(
             run_dir=cls.directory,
             command=command,
             note=lambda name, content: (cls.directory / name).write_text(content),
@@ -225,45 +241,45 @@ class BootPackageTests(unittest.TestCase):
         finally:
             image.write_bytes(original)
 
-    def snapshots(self):
+    def snapshots(self) -> Any:
         original = boot.BACKUP.read_bytes()
         report = boot.load_package(self.package)
-        spi = boot.normalize_ihex_region(
+        spi = normalize_ihex_region(
             (self.directory / "receiver-spi-full-pages.hex").read_text(),
             boot.APP_START,
             report["application_write_range"][1],
         )
-        base = dict(
-            signature=bytes.fromhex("1e970a"),
-            sernum=bytes.fromhex(report["expected_serial"]),
-            fuses=boot.BACKUP.with_name("receiver-candidate-backup-fuses.bin").read_bytes(),
-            eeprom=boot.BACKUP.with_name("receiver-candidate-backup-eeprom.bin").read_bytes(),
-            lock=bytes.fromhex("5cc5c55c"),
-            flash=original,
-        )
+        base = {
+            "signature": bytes.fromhex("1e970a"),
+            "sernum": bytes.fromhex(report["expected_serial"]),
+            "fuses": boot.BACKUP.with_name("receiver-candidate-backup-fuses.bin").read_bytes(),
+            "eeprom": boot.BACKUP.with_name("receiver-candidate-backup-eeprom.bin").read_bytes(),
+            "lock": bytes.fromhex("5cc5c55c"),
+            "flash": original,
+        }
         app = dict(
             base,
             flash=original[: boot.APP_START]
             + spi
             + original[report["application_write_range"][1] :],
         )
-        page = boot.normalize_ihex_region(
+        page = normalize_ihex_region(
             (self.directory / "receiver-boot-page0.hex").read_text(), 0, 512
         )
         patched = dict(app, flash=page + app["flash"][512:])
         return base, app, patched
 
     def test_authorized_installer_programs_app_before_boot_with_preservation(self) -> None:
-        import rf_proof as rf
+        import tools.rf_proof as rf
 
         snapshots = self.snapshots()
-        commands = []
-        proof = SimpleNamespace(
+        commands: list[list[str]] = []
+        proof: Any = SimpleNamespace(
             run_dir=self.directory,
-            command=lambda name, argv, *a: commands.append(argv) or (0, b"", b""),
+            command=recording_command(commands),
             note=lambda name, text: (self.directory / name).write_text(text),
         )
-        args = SimpleNamespace(
+        args: Any = SimpleNamespace(
             receiver_boot_package=self.package,
             authorize_upload=True,
             authorize_receiver_boot_page0=boot.sha(self.package.read_bytes()),
@@ -283,18 +299,18 @@ class BootPackageTests(unittest.TestCase):
         self.assertTrue(all("-e" not in command for command in commands))
 
     def test_restore_can_recover_partly_erased_page_without_rewriting_app(self) -> None:
-        import rf_proof as rf
+        import tools.rf_proof as rf
 
-        base, app, _ = self.snapshots()
+        _base, app, _ = self.snapshots()
         damaged = dict(app, flash=b"\xff" * 512 + app["flash"][512:])
-        commands = []
-        proof = SimpleNamespace(
+        commands: list[list[str]] = []
+        proof: Any = SimpleNamespace(
             run_dir=self.directory,
-            command=lambda name, argv, *a: commands.append(argv) or (0, b"", b""),
+            command=recording_command(commands),
             note=lambda name, text: (self.directory / name).write_text(text),
         )
         report = boot.load_package(self.package)
-        args = SimpleNamespace(
+        args: Any = SimpleNamespace(
             receiver_boot_package=self.package,
             authorize_upload=True,
             authorize_receiver_boot_restore=report["restore_hex_sha256"],
@@ -311,19 +327,19 @@ class BootPackageTests(unittest.TestCase):
         self.assertEqual(commands[0][commands[0].index("-T") + 1], "erase flash 0x0 0x200")
 
     def test_app_preservation_failure_prevents_boot_write(self) -> None:
-        import rf_proof as rf
+        import tools.rf_proof as rf
 
         base, app, _ = self.snapshots()
         broken = bytearray(app["flash"])
         broken[1000] ^= 1
         app["flash"] = bytes(broken)
-        commands = []
-        proof = SimpleNamespace(
+        commands: list[list[str]] = []
+        proof: Any = SimpleNamespace(
             run_dir=self.directory,
-            command=lambda name, argv, *a: commands.append(argv) or (0, b"", b""),
+            command=recording_command(commands),
             note=lambda *_: None,
         )
-        args = SimpleNamespace(
+        args: Any = SimpleNamespace(
             receiver_boot_package=self.package,
             authorize_upload=True,
             authorize_receiver_boot_page0=boot.sha(self.package.read_bytes()),
@@ -341,8 +357,8 @@ class BootPackageTests(unittest.TestCase):
 
 class ApplicationPageWriteTests(unittest.TestCase):
     def test_guarded_writer_rejects_live_serial_before_erase(self) -> None:
-        import rf_proof as rf
-        from test_rf_proof import effective_platformio_config
+        import tools.rf_proof as rf
+        from tests.test_rf_proof import effective_platformio_config
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -350,13 +366,13 @@ class ApplicationPageWriteTests(unittest.TestCase):
             build.mkdir(parents=True)
             data = boot.ihex(b"abcd", boot.APP_START).encode()
             (build / "firmware.hex").write_bytes(data)
-            commands = []
+            commands: list[list[str]] = []
 
-            def command(name, argv, *unused):
+            def command(name: Any, argv: Any, *unused: Any) -> Any:
                 commands.append(argv)
                 return 0, b"avrdude version 8.1", b""
 
-            proof = SimpleNamespace(run_dir=root, command=command, note=lambda *_: None)
+            proof: Any = SimpleNamespace(run_dir=root, command=command, note=lambda *_: None)
             with (
                 patch.object(rf, "ROOT", root),
                 patch.object(boot, "read_snapshot", return_value={"sernum": b"wrong"}),
@@ -373,9 +389,9 @@ class ApplicationPageWriteTests(unittest.TestCase):
             self.assertFalse(any("-T" in command for command in commands))
 
     def test_tracker_selector_rejects_wrong_identity_or_hash_before_programming(self) -> None:
-        import rf_proof as rf
+        import tools.rf_proof as rf
 
-        args = SimpleNamespace(
+        args: Any = SimpleNamespace(
             target_role="receiver",
             target_serial="bad",
             image_sha256="bad",
@@ -383,7 +399,7 @@ class ApplicationPageWriteTests(unittest.TestCase):
             page_end=0x9800,
             authorize_upload=True,
         )
-        proof = SimpleNamespace(note=lambda *_: None)
+        proof: Any = SimpleNamespace(note=lambda *_: None)
         with patch.object(rf, "program_application") as writer:
             self.assertNotEqual(rf.tracker_app_upload(proof, args, ""), 0)
             writer.assert_not_called()
@@ -395,8 +411,8 @@ class ApplicationPageWriteTests(unittest.TestCase):
             boot.require_preserved(before, dict(before, usersig=b"b"), 0, 512)
 
     def test_guarded_app_writer_erases_only_its_page_with_installed_avrdude_dryrun(self) -> None:
-        import rf_proof as rf
-        from test_rf_proof import effective_platformio_config
+        import tools.rf_proof as rf
+        from tests.test_rf_proof import effective_platformio_config
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -408,9 +424,9 @@ class ApplicationPageWriteTests(unittest.TestCase):
             before = dict.fromkeys(("signature", "sernum", "fuses", "eeprom", "lock"), b"unchanged")
             before["flash"] = original
             (root / "before.bin").write_bytes(original)
-            commands = []
+            commands: list[list[str]] = []
 
-            def command(name, argv, *args):
+            def command(name: Any, argv: Any, *args: Any) -> Any:
                 commands.append(argv)
                 if "--version" in argv:
                     return 0, b"avrdude version 8.1", b""
@@ -421,16 +437,16 @@ class ApplicationPageWriteTests(unittest.TestCase):
                 at = simulated.index("-T")
                 simulated[at:at] = ["-U", f"flash:w:{root / 'before.bin'}:r"]
                 simulated += ["-U", f"flash:r:{root / 'after.bin'}:r"]
-                result = subprocess.run(simulated, capture_output=True)
+                result = subprocess.run(simulated, capture_output=True, check=False)
                 return result.returncode, result.stdout, result.stderr
 
-            def snapshot(proof, name, role, **options):
+            def snapshot(proof: Any, name: Any, role: Any, **options: Any) -> Any:
                 self.assertTrue(options.get("current_target"))
                 if "before" in name:
                     return dict(before)
                 return dict(before, flash=(root / "after.bin").read_bytes())
 
-            proof = SimpleNamespace(run_dir=root, command=command, note=lambda *_: None)
+            proof: Any = SimpleNamespace(run_dir=root, command=command, note=lambda *_: None)
             with (
                 patch.object(rf, "ROOT", root),
                 patch.object(boot, "read_snapshot", side_effect=snapshot),

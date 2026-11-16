@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,9 +103,9 @@ class ArqTests(unittest.TestCase):
             subprocess.run([str(binary)], check=True)
 
     def test_config_and_board_generation(self) -> None:
-        from arq_config import arq_artifacts, load_arq, validate_arq
-        from generate_lora_config import load_radio_profile
-        from validate_lora_ssot import load
+        from tools.config.arq_config import arq_artifacts, load_arq, validate_arq
+        from tools.config.generate_lora_config import load_radio_profile
+        from tools.config.validate_lora_ssot import load
 
         cfg = load_arq()
         self.assertEqual(cfg["frequency_hz"], 915_000_000)
@@ -149,8 +150,13 @@ class ArqTests(unittest.TestCase):
 
         self.assertIsNone(parse_event("transport banner"))
         event = parse_event("A t=42 e=ARM s=12345678 q=0 a=0 rc=0 v=1")
+        if event is None:
+            self.fail("valid ARM event did not parse")
         self.assertEqual(event["s"], "12345678")
-        self.assertEqual(parse_event("A t=1 e=BOOT s=0")["s"], "0")
+        boot_event = parse_event("A t=1 e=BOOT s=0")
+        if boot_event is None:
+            self.fail("valid BOOT event did not parse")
+        self.assertEqual(boot_event["s"], "0")
         with tempfile.TemporaryDirectory() as d:
             self.assertEqual(reserve_session(Path(d)), 1)
             self.assertEqual(reserve_session(Path(d)), 2)
@@ -174,7 +180,12 @@ class ArqTests(unittest.TestCase):
                 checked_events([], directory)
             from tools.arq_trial import parse_event
 
-            events = [dict(parse_event(line), role=r, host_ns=1) for r in ("sender", "receiver")]
+            events: list[dict[str, Any]] = []
+            for role in ("sender", "receiver"):
+                event = parse_event(line)
+                if event is None:
+                    self.fail("valid event did not parse")
+                events.append({**event, "role": role, "host_ns": 1})
             self.assertEqual(len(checked_events(events, directory)), 2)
             events[0]["rc"] = "-1"
             with self.assertRaises(ValueError):
@@ -192,16 +203,16 @@ class ArqTests(unittest.TestCase):
         from tools.arq_trial import status_complete
 
         events = [
-            dict(role="sender", e="STATUS", s="0"),
-            dict(role="sender", e="STATUS_END", s="0", v="0"),
+            {"role": "sender", "e": "STATUS", "s": "0"},
+            {"role": "sender", "e": "STATUS_END", "s": "0", "v": "0"},
         ]
         self.assertFalse(status_complete(events, "sender", 1))
-        events.append(dict(role="sender", e="STATUS", s="1"))
-        events.append(dict(role="sender", e="STATUS_END", s="1", v="1"))
+        events.append({"role": "sender", "e": "STATUS", "s": "1"})
+        events.append({"role": "sender", "e": "STATUS_END", "s": "1", "v": "1"})
         self.assertFalse(status_complete(events, "sender", 1))
-        events.append(dict(role="sender", e="STATUS_END", s="1", v="0"))
+        events.append({"role": "sender", "e": "STATUS_END", "s": "1", "v": "0"})
         self.assertTrue(status_complete(events, "sender", 1))
-        events.append(dict(role="sender", e="STATUS", s="1"))
+        events.append({"role": "sender", "e": "STATUS", "s": "1"})
         self.assertFalse(status_complete(events, "sender", 1))
 
     def test_rf_cli_requires_physical_confirmation(self) -> None:

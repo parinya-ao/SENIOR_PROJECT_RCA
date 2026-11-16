@@ -34,9 +34,11 @@ extend-exclude = [
     "artifacts",
     "docs/rca",
     "graphify-out",
+    "generated/**",
     "third_party",
     "get-platformio.py",
     "tools/config/lora_profile.py", # Generated from the radio configuration.
+    "tools/config/platformio_generate.py", # Loaded by PlatformIO with SCons-injected globals.
 ]
 
 [tool.ruff.lint]
@@ -44,17 +46,70 @@ select = ["ALL"]
 # The formatter owns these choices; D212 selects first-line docstring summaries.
 ignore = [
     "W191", "E111", "E114", "E117", "D203", "D206", "D213", "D300",
-    "Q000", "Q001", "Q002", "Q003", "Q004", "COM812", "COM819",
+    "Q000", "Q001", "Q002", "Q003", "Q004", "COM812", "COM819", "CPY001",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Keep the existing unittest framework and its assertion/exception APIs.
-"tests/**/*.py" = ["PT009", "PT027", "S101"]
+# Tests use dynamic hardware fakes, protocol constants, and local imports to isolate hardware.
+"tests/**/*.py" = [
+    "PT009", "PT027", "S101", "INP001", "D100", "D101", "D102", "D103", "D107",
+    "S603", "S607", "SLF001", "ANN401", "ARG001", "ARG002", "ARG005", "B007",
+    "B009", "B010", "BLE001", "C901", "FBT001", "FBT002", "FBT003", "N802", "N805",
+    "PERF401", "PLC0415", "PLR0402", "PLR0913", "PLR0917", "PLR2004", "RUF012",
+    "SIM117", "TC003", "TC006", "T201",
+]
+# Tool entry points intentionally print their CLI results.
+"tools/**/*.py" = ["T201"]
+# The one-pass RCA validator collects errors while enforcing bundle integrity.
+"tools/rca/analyze.py" = ["C901", "PLR0912", "PLR0915", "TRY301"]
+# These hardware/evidence CLIs use dynamic JSON boundaries, late imports to avoid cycles,
+# protocol constants, and linear state validation; keep those checks on the typed boundaries.
+"tools/arq_trial.py" = [
+    "ANN401", "BLE001", "C901", "D101", "D102", "D103", "D107", "E402",
+    "FBT001", "FBT002", "FBT003", "PLC0415", "PLR0912", "PLR0913", "PLR0915",
+    "PLR0917", "PLR2004", "S603", "S607", "TC003", "TC006", "TRY004", "TRY300", "TRY301",
+]
+"tools/rf_proof.py" = [
+    "ANN401", "BLE001", "C901", "D101", "D102", "D103", "D107", "FBT001", "FBT002",
+    "FBT003", "PLC0415", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917",
+    "PLR2004", "S603", "S607", "TC003", "TC006", "TRY300", "TRY301",
+]
+"tools/rca/gate1_live.py" = [
+    "ANN401", "BLE001", "C901", "D101", "D102", "D103", "D105", "D107", "E402",
+    "FBT001", "FBT002", "FBT003", "PLC0415", "PLR0912", "PLR0913", "PLR0915",
+    "PLR0917", "PLR2004", "S603", "S607", "TC003", "TC006", "TRY300", "TRY301",
+]
+"tools/detect_devices.py" = [
+    "ANN401", "C901", "D101", "D102", "D103", "E402", "FBT001", "FBT002", "FBT003",
+    "PLR0912", "TC003",
+]
+"tools/device_detection/firmware_identity.py" = [
+    "C901", "DTZ007", "PLR0911", "PLR0912", "PLR0915",
+]
+"tools/device_detection/usb_inventory.py" = ["BLE001", "C901", "PLC0415", "PLR0912", "PLR0915"]
+"tools/device_detection/role_detector.py" = ["C901", "PLR0912", "PLR0915"]
+"tools/device_detection/updi_probe.py" = ["PLR0913"]
+"tools/validate_repo_isolation.py" = ["C901", "PLR0912", "PLR0913", "S603", "S607"]
+"tools/boot_analysis.py" = ["C901", "PLR0912", "S603"]
+"tools/rca/updi_idle_control.py" = ["BLE001", "E402", "TRY301"]
+"tools/config/arq_config.py" = ["C901", "PLC0415"]
+"tools/config/validate_lora_ssot.py" = ["C901"]
+"tools/device_detection/output.py" = ["C901"]
+"tools/config/generate_lora_config.py" = ["PLC0415"]
+"tools/rca/errata_audit.py" = ["E402"]
+"tests/test_source_fingerprint.py" = ["E402"]
+"tests/test_radio_915_ssot.py" = ["S102"]
+"tests/test_arq_reader_free.py" = ["TRY004"]
+"src/lora/__init__.py" = ["T201"]
 
 [tool.mypy]
 python_version = "3.14"
 files = ["src/lora", "tools", "tests"]
-exclude = ['^(\.pio|artifacts|docs/rca|generated|graphify-out|third_party)/', '^tools/config/lora_profile\.py$']
+exclude = [
+    '^(\.pio|artifacts|docs/rca|generated|graphify-out|third_party)/',
+    '^(get-platformio\.py|tools/bootstrap/get-platformio\.py)$',
+    '^tools/config/(lora_profile|platformio_generate)\.py$',
+]
 explicit_package_bases = true
 mypy_path = ["$MYPY_CONFIG_FILE_DIR/src"]
 strict = true

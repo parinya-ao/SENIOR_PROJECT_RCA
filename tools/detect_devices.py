@@ -8,6 +8,7 @@ import select
 import subprocess
 import sys
 import time
+from collections.abc import Iterable
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -34,7 +35,11 @@ from tools.device_detection.usb_inventory import (
 
 
 class SafetyArgumentParser(argparse.ArgumentParser):
-    def parse_args(self, args=None, namespace=None):
+    def parse_args(
+        self,
+        args: Iterable[str] | None = None,
+        namespace: Any = None,
+    ) -> Any:
         parsed = super().parse_args(args, namespace)
         if (
             parsed.probe_updi or parsed.probe_firmware or parsed.probe_flash
@@ -156,11 +161,11 @@ def _load_registry(path: Path | None) -> tuple[dict[str, Any], list[FirmwareRefe
 
 
 def _probe_device(
-    device,
+    device: Any,
     args: argparse.Namespace,
     references: list[FirmwareReference],
     *,
-    command_runner=subprocess.run,
+    command_runner: Any = subprocess.run,
 ) -> ProbeEvidence:
     port = device.usb_by_path[0] if device.usb_by_path else device.device_node
     base = ProbeEvidence()
@@ -222,7 +227,7 @@ def _probe_device(
 def _scan(
     args: argparse.Namespace,
     *,
-    inventory_fn=discover_usb_devices,
+    inventory_fn: Any = discover_usb_devices,
     registry: dict[str, Any] | None = None,
     references: list[FirmwareReference] | None = None,
     probe_cache: dict[str, tuple[str, str | None, ProbeEvidence]] | None = None,
@@ -257,7 +262,11 @@ def _print_result(
         print(format_text(result, explain=explain))
 
 
-def _watch(args, registry, references) -> int:
+def _watch(
+    args: argparse.Namespace,
+    registry: dict[str, Any] | None,
+    references: list[FirmwareReference],
+) -> int:
     monitor = start_udev_monitor()
     cache: dict[str, tuple[str, str | None, ProbeEvidence]] = {}
     previous_result, inventory = _scan(
@@ -281,7 +290,7 @@ def _watch(args, registry, references) -> int:
                 ready, _, _ = select.select([monitor.stdout], [], [], args.poll_interval)
                 if ready:
                     line = monitor.stdout.readline()
-                    triggered = line.startswith("UDEV ") or line.startswith("ACTION=")
+                    triggered = line.startswith(("UDEV ", "ACTION="))
                 if time.monotonic() >= next_fallback:
                     triggered = True
                     next_fallback = time.monotonic() + max(args.poll_interval, 1.0)
@@ -325,6 +334,7 @@ def _run_self_test() -> int:
     completed = subprocess.run(
         [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"],
         cwd=ROOT,
+    check=False,
     )
     return completed.returncode
 

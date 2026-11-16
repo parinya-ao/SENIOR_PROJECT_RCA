@@ -23,14 +23,14 @@ class RadioLibHalTests(unittest.TestCase):
             "modules/SX127x/SX1276.cpp",
             "utils/Utils.cpp",
         ]
-        configuration = dict(
-            (section, dict(values))
+        configuration = {
+            section: dict(values)
             for section, values in json.loads(
                 subprocess.check_output(
                     ["pio", "project", "config", "--json-output"], cwd=ROOT, text=True
                 )
             )
-        )
+        }
         errata_flags = [
             [
                 flag

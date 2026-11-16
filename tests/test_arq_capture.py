@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import Mock, patch
 
 from tools.arq_trial import (
@@ -51,9 +52,9 @@ class CaptureTests(unittest.TestCase):
         class Writer:
             def __init__(self) -> None:
                 self.responses = [False, True, True]
-                self.calls = []
+                self.calls: list[tuple[Any, Any]] = []
 
-            def send1(self, byte, blocking):
+            def send1(self, byte: Any, blocking: Any) -> Any:
                 self.calls.append((byte, blocking))
                 return self.responses.pop(0)
 
@@ -73,7 +74,7 @@ class CaptureTests(unittest.TestCase):
             def __init__(self) -> None:
                 self.responses = [True, False]
 
-            def send1(self, byte, blocking):
+            def send1(self, byte: Any, blocking: Any) -> Any:
                 return self.responses.pop(0)
 
         accepted = bytearray()
@@ -94,9 +95,9 @@ class CaptureTests(unittest.TestCase):
         class Link:
             def __init__(self) -> None:
                 self.messages = [ord("A"), ord("B")]
-                self.calls = []
+                self.calls: list[Any] = []
 
-            def ldcs(self, address):
+            def ldcs(self, address: Any) -> Any:
                 self.calls.append(address)
                 if address == Protocol.ASI_OCD_STATUS:
                     return Protocol.OCDMV if self.messages else 0
@@ -112,10 +113,10 @@ class CaptureTests(unittest.TestCase):
         class Clock:
             now = 0.0
 
-            def monotonic(self):
+            def monotonic(self) -> Any:
                 return self.now
 
-            def sleep(self, seconds) -> None:
+            def sleep(self, seconds: Any) -> None:
                 self.now += seconds
 
         clock = Clock()
@@ -132,7 +133,7 @@ class CaptureTests(unittest.TestCase):
                 self.first = bytearray(line[:8])
                 self.rest = bytearray(line[8:])
 
-            def ldcs(self, address):
+            def ldcs(self, address: Any) -> Any:
                 if address == Protocol.ASI_OCD_STATUS:
                     return Protocol.OCDMV if self.first or (clock.now >= 6.0 and self.rest) else 0
                 if self.first:
@@ -160,12 +161,12 @@ class CaptureTests(unittest.TestCase):
             def __init__(self) -> None:
                 self.output = bytearray(message)
 
-            def lds8(self, address) -> int:
+            def lds8(self, address: Any) -> int:
                 if address != Protocol.UART_FLAGS:
                     raise AssertionError(address)
                 return 1
 
-            def ldcs(self, address):
+            def ldcs(self, address: Any) -> Any:
                 if address == Protocol.ASI_OCD_STATUS:
                     return Protocol.OCDMV if self.output else 0
                 return self.output.pop(0)
@@ -173,7 +174,7 @@ class CaptureTests(unittest.TestCase):
         c = Capture(None)
         with tempfile.TemporaryDirectory() as directory:
             proof = SimpleNamespace(run_dir=Path(directory))
-            record = {}
+            record: dict[str, Any] = {}
             output = capture_tracker_diagnostics(c, proof, Link(), Protocol, record, "post_window")
             self.assertEqual(output, message)
             self.assertEqual(
@@ -205,9 +206,9 @@ class CaptureTests(unittest.TestCase):
 
         class Link:
             def __init__(self) -> None:
-                self.calls = []
+                self.calls: list[tuple[Any, ...]] = []
 
-            def lds8(self, address):
+            def lds8(self, address: Any) -> Any:
                 self.calls.append(address)
                 return {0x1C: 0x02, 0x40: 0, 0x1E: 1}[address]
 
@@ -228,21 +229,21 @@ class CaptureTests(unittest.TestCase):
         device = Device()
         old_link = SimpleNamespace(ser=SimpleNamespace(dev=device))
         old_session = SimpleNamespace(updi=old_link)
-        calls = []
+        calls: list[tuple[Any, ...]] = []
 
         class Protocol:
             KEY_OCD = b"OCD"
             UART_FLAGS = 0x1E
 
             class UPDI:
-                def __init__(self, port, baud) -> None:
+                def __init__(self, port: Any, baud: Any) -> None:
                     calls.append(("open", port, baud))
-                    self.reads = []
+                    self.reads: list[Any] = []
 
-                def key(self, value) -> None:
+                def key(self, value: Any) -> None:
                     calls.append(("key", value))
 
-                def lds8(self, address):
+                def lds8(self, address: Any) -> Any:
                     calls.append(("read", address))
                     return {0x1C: 1, 0x40: 0, 0x1E: 0}[address]
 
@@ -251,7 +252,8 @@ class CaptureTests(unittest.TestCase):
             "resync_reset_state_once",
             None,
         )
-        self.assertTrue(callable(resync), "read-only reset-state resync helper is missing")
+        if not callable(resync):
+            self.fail("read-only reset-state resync helper is missing")
         session, state = resync(old_session, Protocol, "/dev/test-tracker")
 
         self.assertTrue(device.closed)
@@ -276,7 +278,7 @@ class CaptureTests(unittest.TestCase):
             def __init__(self) -> None:
                 self.values = iter([32, 0, 1, 32, 0, 1])
 
-            def lds8(self, address):
+            def lds8(self, address: Any) -> Any:
                 return next(self.values)
 
         with (
@@ -303,38 +305,40 @@ class CaptureTests(unittest.TestCase):
             with (
                 patch.object(arq_trial, "ROOT", root),
                 patch("generate_lora_config.generate"),
-                patch.object(arq_trial.subprocess, "check_output", return_value="config"),
-                patch.object(arq_trial.rf, "check_port_owners", return_value=[]),
-                patch.object(arq_trial.rf, "program_application", return_value=1),
+                patch.object(
+                    getattr(arq_trial, "subprocess"), "check_output", return_value="config"
+                ),
+                patch.object(getattr(arq_trial, "rf"), "check_port_owners", return_value=[]),
+                patch.object(getattr(arq_trial, "rf"), "program_application", return_value=1),
                 patch.object(arq_trial, "prepare", return_value=root / "standby") as restore,
             ):
                 with self.assertRaisesRegex(ValueError, "programming failed"):
                     arq_trial.campaign()
                 restore.assert_called_once()
 
-    def make_capture(self, responses=True):
+    def make_capture(self, responses: Any=True) -> Any:
         c = Capture(None)
         get = c.queue.get
-        c.queue.get = lambda **kwargs: get(block=False)
+        setattr(c.queue, "get", lambda **kwargs: get(block=False))
         c.monitors = {
             r: {"process": SimpleNamespace(poll=lambda: None)} for r in ("sender", "receiver")
         }
-        self.clock = 0
+        self.clock: float = 0.0
 
-        def monotonic():
+        def monotonic() -> Any:
             self.clock += 0.25
             return self.clock
 
-        def command(role, text) -> None:
-            c.commands.append(dict(role=role, text=text))
+        def command(role: Any, text: Any) -> None:
+            c.commands.append({"role": role, "text": text})
             if responses and text == "STATUS":
                 for event in self.status(role):
                     c.queue.put((role, "stdout", event.encode()))
 
-        c.command = command
+        setattr(c, "command", command)
         return c, monotonic
 
-    def status(self, role, overflow=0, build="build"):
+    def status(self, role: Any, overflow: Any=0, build: Any="build") -> Any:
         return [
             "A t=1 e=BOOT s=0 rc=0 v=4",
             f"A t=1 e=IDENTITY s=0 build={build} config=config",
@@ -343,14 +347,16 @@ class CaptureTests(unittest.TestCase):
             f"A t=1 e=STATUS_END s=0 v={overflow}",
         ]
 
-    def acquire(self, c, clock) -> None:
+    def acquire(self, c: Any, clock: Any) -> None:
         with patch("tools.arq_trial.time.monotonic", clock):
             c.acquire({r: {"build_id": "build"} for r in c.monitors}, "config")
 
     def test_missing_startup_recovers_once_and_drains_each_role(self) -> None:
         c, clock = self.make_capture()
         self.acquire(c, clock)
-        self.assertEqual(c.commands, [dict(role=r, text="STATUS") for r in ("sender", "receiver")])
+        self.assertEqual(
+            c.commands, [{"role": r, "text": "STATUS"} for r in ("sender", "receiver")]
+        )
         self.assertLess(self.clock, 45)
 
     def test_absent_and_partial_responses_stop_without_arm(self) -> None:
@@ -406,7 +412,7 @@ class CaptureTests(unittest.TestCase):
                 5,
                 ignore_exited_roles=("receiver",),
             )
-        self.assertEqual(c.monitor_exits, [dict(role="receiver", exit_code=1)])
+        self.assertEqual(c.monitor_exits, [{"role": "receiver", "exit_code": 1}])
 
     def test_cleanup_stops_all_monitors_and_retains_partial_evidence(self) -> None:
         c, _ = self.make_capture()

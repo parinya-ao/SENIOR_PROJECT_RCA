@@ -1,23 +1,34 @@
 """Offline Gate 1 evidence assessment. This module never opens a device."""
 
+from __future__ import annotations
+
 import copy
 import hashlib
 import statistics
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, Sequence
 
 from tools.arq_trial import parse_event, status_complete
 from tools.rca.analyze import parse_updi
 
+Json = Any
+_MAX_GATE1_ATTEMPTS = 20
 
-def response(expected_length, expected_value, actual):
+
+def response(
+    expected_length: object, expected_value: bytes | None, actual: bytes | None
+) -> dict[str, Json]:
     """Preserve the difference between an unavailable capture and captured b''."""
-    result = dict(
-        expected_response_length=expected_length,
-        expected_response_value=expected_value.hex() if expected_value is not None else None,
-        actual_response_hex="UNKNOWN" if actual is None else actual.hex(),
-        actual_response_length="UNKNOWN" if actual is None else len(actual),
-        classification=None,
-    )
+    result = {
+        "expected_response_length": expected_length,
+        "expected_response_value": expected_value.hex() if expected_value is not None else None,
+        "actual_response_hex": "UNKNOWN" if actual is None else actual.hex(),
+        "actual_response_length": "UNKNOWN" if actual is None else len(actual),
+        "classification": None,
+    }
     if actual is None or type(expected_length) is not int or expected_length < 0:
         result["classification"] = "EVIDENCE_INCOMPLETE"
     elif len(actual) != expected_length:
@@ -27,7 +38,7 @@ def response(expected_length, expected_value, actual):
     return result
 
 
-def verify_hashes(directory, hashes):
+def verify_hashes(directory: str | Path, hashes: Mapping[str, str]) -> list[str]:
     """Read only, including when a file is missing or its path escapes the bundle."""
     root = Path(directory).resolve()
     bad = []
@@ -42,10 +53,11 @@ def verify_hashes(directory, hashes):
     return bad
 
 
-def _status(raw, identity):
-    rows = [parse_event(line) for line in raw.splitlines()]
-    if not rows or any(row is None for row in rows):
+def _status(raw: str, identity: Json) -> bool:
+    parsed_rows = [parse_event(line) for line in raw.splitlines()]
+    if not parsed_rows or any(row is None for row in parsed_rows):
         return False
+    rows = cast("list[dict[str, Json]]", parsed_rows)
     required = {
         "BOOT",
         "IDENTITY",
@@ -69,7 +81,7 @@ def _status(raw, identity):
         row["role"] = identity["role"]
     status = next(row for row in rows if row["e"] == "STATUS")
     build = next(row for row in rows if row["e"] == "IDENTITY")
-    return (
+    return bool(
         rows[-1]["e"] == "STATUS_END"
         and status_complete(rows, identity["role"], 0)
         and status.get("ready") == "1"
@@ -79,27 +91,33 @@ def _status(raw, identity):
     )
 
 
-def assess(records, identity, *, safe_path=False, owners=()):
+def assess(  # noqa: C901, PLR0912, PLR0915 -- evaluates each transaction's evidence in order
+    records: Iterable[Json],
+    identity: Json,
+    *,
+    safe_path: bool = False,
+    owners: Sequence[str] = (),
+) -> Json:
     """Assess an offline replay, stopping at its first failure, never retrying.
 
     safe_path is an externally audited precondition, not permission to contact a
     device. This function and its callers here implement no hardware execution.
     """
-    result = dict(
-        verdict="GATE1_INCONCLUSIVE",
-        classification="EVIDENCE_INCOMPLETE",
-        attempted=0,
-        passed=0,
-        failed=0,
-        timed_out=0,
-        response_mismatches=0,
-        monitor_crashes=0,
-        identity_mismatches=0,
-        first_failure=None,
-        usb_disconnected="UNKNOWN",
-        root_cause="UNKNOWN",
-        latency_ms=dict(minimum="UNKNOWN", median="UNKNOWN", maximum="UNKNOWN"),
-    )
+    result: dict[str, Json] = {
+        "verdict": "GATE1_INCONCLUSIVE",
+        "classification": "EVIDENCE_INCOMPLETE",
+        "attempted": 0,
+        "passed": 0,
+        "failed": 0,
+        "timed_out": 0,
+        "response_mismatches": 0,
+        "monitor_crashes": 0,
+        "identity_mismatches": 0,
+        "first_failure": None,
+        "usb_disconnected": "UNKNOWN",
+        "root_cause": "UNKNOWN",
+        "latency_ms": {"minimum": "UNKNOWN", "median": "UNKNOWN", "maximum": "UNKNOWN"},
+    }
     if not safe_path:
         result.update(verdict="GATE1_BLOCKED", classification="UNSAFE_COMMAND_PATH")
         return result
@@ -115,11 +133,13 @@ def assess(records, identity, *, safe_path=False, owners=()):
     previous_end = -1
     durations = []
     for index, row in enumerate(records, 1):
-        if index > 20:
+        if index > _MAX_GATE1_ATTEMPTS:
             result.update(verdict="GATE1_INCONCLUSIVE", classification="EVIDENCE_INCOMPLETE")
             return result
         result["attempted"] += 1
         classification = None
+        start: int | None = None
+        end: int | None = None
         try:
             start, end = row.get("monotonic_start_ns"), row.get("monotonic_end_ns")
             if (
@@ -164,7 +184,7 @@ def assess(records, identity, *, safe_path=False, owners=()):
                             break
                 if classification is None and not _status(row["status_payload_raw"], identity):
                     classification = "EVIDENCE_INCOMPLETE"
-        except KeyError, ValueError, TypeError, AttributeError:
+        except (KeyError, ValueError, TypeError, AttributeError):
             classification = "EVIDENCE_INCOMPLETE"
         if classification:
             failure = copy.deepcopy(row)
@@ -180,12 +200,16 @@ def assess(records, identity, *, safe_path=False, owners=()):
                 first_failure=failure,
             )
             return result
-        durations.append((end - start) / 1_000_000)
-        result["latency_ms"] = dict(
-            minimum=min(durations), median=statistics.median(durations), maximum=max(durations)
-        )
-        previous_end = end
+        start_ns = cast("int", start)
+        end_ns = cast("int", end)
+        durations.append((end_ns - start_ns) / 1_000_000)
+        result["latency_ms"] = {
+            "minimum": min(durations),
+            "median": statistics.median(durations),
+            "maximum": max(durations),
+        }
+        previous_end = end_ns
         result["passed"] += 1
-    if result["passed"] == 20:
+    if result["passed"] == _MAX_GATE1_ATTEMPTS:
         result.update(verdict="GATE1_PASS", classification=None)
     return result

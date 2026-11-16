@@ -1,33 +1,48 @@
 """Reject build and source references that escape this repository."""
 
+from __future__ import annotations
+
 import configparser
 import os
 import shlex
 import subprocess
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 LIBRARY_MANIFESTS = {"library.json", "library.properties", "module.json"}
 SOURCE_DIRS = ("src", "lib", "include", "generated", "config", "third_party", "tools")
 INCLUDE_FLAGS = ("-I", "-isystem", "-iquote")
 
 
-def _inside(root, path) -> bool | None:
+def _inside(root: Path, path: Path) -> bool:
     try:
         path.relative_to(root)
-        return True
     except ValueError:
         return False
+    else:
+        return True
 
 
-def _label(root, path):
+def _label(root: Path, path: Path) -> str:
     try:
         return path.relative_to(root).as_posix()
     except ValueError:
         return str(path)
 
 
-def _resolved(root, source, value, kind, errors, must_exist=False):
+def _resolved(
+    root: Path,
+    source: Path,
+    value: str,
+    kind: str,
+    errors: list[str],
+    *,
+    must_exist: bool = False,
+) -> Path | None:
     value = value.strip().strip("\"'")
     for variable in ("${PROJECT_DIR}", "${project_dir}", "${platformio.project_dir}"):
         value = value.replace(variable, str(root))
@@ -54,7 +69,7 @@ def _resolved(root, source, value, kind, errors, must_exist=False):
     return result
 
 
-def _source_symlinks(root):
+def _source_symlinks(root: Path) -> Iterator[Path]:
     for name in SOURCE_DIRS:
         start = root / name
         if start.is_symlink():
@@ -63,8 +78,8 @@ def _source_symlinks(root):
         if not start.is_dir():
             continue
         for current, directories, files in os.walk(start, followlinks=False):
-            for name in directories + files:
-                path = Path(current) / name
+            for entry in directories + files:
+                path = Path(current) / entry
                 if path.is_symlink():
                     yield path
             directories[:] = [
@@ -72,17 +87,19 @@ def _source_symlinks(root):
             ]
 
 
-def _check_symlink(root, path, errors, label) -> None:
+def _check_symlink(root: Path, path: Path, errors: list[str], label: str) -> None:
     try:
         target = path.resolve(strict=True)
-    except OSError, RuntimeError:
+    except (OSError, RuntimeError):
         errors.append(f"{label} {_label(root, path)} is broken or cyclic")
         return
     if not _inside(root, target):
         errors.append(f"{label} {_label(root, path)} escapes the repository ({target})")
 
 
-def _tracked_symlinks(root, errors, physical) -> None:
+def _tracked_symlinks(
+    root: Path, errors: list[str], physical: set[Path]
+) -> None:
     result = subprocess.run(
         ["git", "ls-files", "-s", "-z"],
         cwd=root,
@@ -115,7 +132,7 @@ def _tracked_symlinks(root, errors, physical) -> None:
                 .stdout.decode("utf-8")
                 .strip()
             )
-        except subprocess.CalledProcessError, UnicodeError:
+        except (subprocess.CalledProcessError, UnicodeError):
             errors.append(f"tracked symlink {_label(root, path)} cannot be read from the index")
             continue
         target = Path(target_text)
@@ -123,7 +140,7 @@ def _tracked_symlinks(root, errors, physical) -> None:
             target = path.parent / target
         try:
             resolved = target.resolve(strict=False)
-        except OSError, RuntimeError:
+        except (OSError, RuntimeError):
             errors.append(f"tracked symlink {_label(root, path)} is broken or cyclic")
             continue
         if not _inside(root, resolved):
@@ -134,7 +151,7 @@ def _tracked_symlinks(root, errors, physical) -> None:
             errors.append(f"tracked symlink {_label(root, path)} is missing from the worktree")
 
 
-def _items(value):
+def _items(value: str) -> list[str]:
     return [
         item.strip().strip("\"'")
         for line in value.splitlines()
@@ -143,7 +160,7 @@ def _items(value):
     ]
 
 
-def _local_dependency(value):
+def _local_dependency(value: str) -> str | None:
     for scheme in ("symlink://", "file://"):
         if value.startswith(scheme):
             return value[len(scheme) :]
@@ -152,10 +169,13 @@ def _local_dependency(value):
     return None
 
 
-def _check_config(root, path, errors, visited) -> None:
-    path = _resolved(root, path, str(path), "configuration", errors, must_exist=True)
-    if path is None or path in visited:
+def _check_config(
+    root: Path, path: Path, errors: list[str], visited: set[Path]
+) -> None:
+    resolved = _resolved(root, path, str(path), "configuration", errors, must_exist=True)
+    if resolved is None or resolved in visited:
         return
+    path = resolved
     visited.add(path)
     parser = configparser.ConfigParser(interpolation=None, strict=False)
     try:
@@ -207,16 +227,17 @@ def _check_config(root, path, errors, visited) -> None:
             index += 1
 
 
-def validate_repo(project_root):
+def validate_repo(project_root: str | Path) -> list[str]:
+    """Report repository build or source paths that escape the project root."""
     root = Path(project_root).resolve()
-    errors = []
+    errors: list[str] = []
 
     for directory, _, files in os.walk(root / "lib") if (root / "lib").is_dir() else ():
-        for name in files:
-            if name in LIBRARY_MANIFESTS:
-                errors.append(
-                    f"first-party library metadata is forbidden: {_label(root, Path(directory) / name)}"
-                )
+        errors.extend(
+            f"first-party library metadata is forbidden: {_label(root, Path(directory) / name)}"
+            for name in files
+            if name in LIBRARY_MANIFESTS
+        )
 
     physical = set(_source_symlinks(root))
     for path in sorted(physical):
@@ -232,6 +253,7 @@ def validate_repo(project_root):
 
 
 def main() -> int:
+    """Run the repository isolation check and return its process status."""
     errors = validate_repo(Path(__file__).resolve().parents[1])
     if errors:
         print("\n".join(f"ERROR: {error}" for error in errors), file=sys.stderr)

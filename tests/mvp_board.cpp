@@ -1,6 +1,5 @@
 // HOST SIMULATION ONLY. Runs one real firmware role per native process.
 #include <Arduino.h>
-#include <EEPROM.h>
 #include <RadioLib.h>
 #include <cstdio>
 #include <cstdlib>
@@ -11,7 +10,6 @@
 namespace fake_radio { State state{}; }
 namespace fake_spi { State state{}; }
 SPIClass SPI;
-EepromSpy EEPROM;
 uint32_t host_ms = 0;
 static std::deque<uint8_t> console_input;
 
@@ -42,19 +40,21 @@ void delay(unsigned ms) {
 #ifdef LORA_ROLE_RECEIVER
 #include "../src/receiver/main.cpp"
 static void step() { loop(); }
-static const char* state_name() { return armed_session ? "RX_READY" : "WAIT_SESSION"; }
+static const char* state_name() { return radio_ready ? "RX_READY" : "RADIO_INIT_FAILED"; }
 #else
 #include "../src/sender/lib/lora_rx.cpp"
 iw::core::RingBuffer<4096> ringbuf;
 TaskScheduler scheduler;
 static void step() { scheduler.Loop(); }
 static const char* state_name() {
-    switch (test_campaign.state) {
-        case SSOT_TEST_IDLE: return "TEST_IDLE";
-        case SSOT_TEST_ARMED: return "TEST_ARMED";
-        case SSOT_TEST_RUNNING: return "TEST_RUNNING";
-        case SSOT_TEST_COMPLETED: return "TEST_COMPLETED";
-        case SSOT_TEST_FAILED: return "TEST_FAILED";
+    switch (transport.state()) {
+        case decltype(transport)::State::RxWait: return "RX_WAIT";
+        case decltype(transport)::State::TxData: return "TX_DATA";
+        case decltype(transport)::State::WaitResponse: return "WAIT_ACK";
+        case decltype(transport)::State::RetryPending: return "RETRY_PENDING";
+        case decltype(transport)::State::TxResponse: return "TX_RESPONSE";
+        case decltype(transport)::State::Complete: return "COMPLETE";
+        case decltype(transport)::State::Failed: return "FAILED";
     }
     return "UNKNOWN";
 }
@@ -67,8 +67,8 @@ static void pump() {
         delay(1);
         if (fake_radio::state.transmit_starts != reported_tx) {
             std::cout << "HOST_FRAME ";
-            for (unsigned j = 0; j < fake_radio::state.tx_size; ++j) {
-                std::printf("%02X", fake_radio::state.tx_data[j]);
+                for (unsigned j = 0; j < fake_radio::state.tx_size; ++j) {
+                std::printf("%02X", fake_radio::state.tx_copy[j]);
             }
             std::cout << '\n';
             reported_tx = fake_radio::state.transmit_starts;
@@ -91,9 +91,7 @@ int main() {
     while (std::getline(std::cin, command)) {
         if (command == "STATUS") {
             std::cout << "HOST_STATUS {\"state\":\"" << state_name()
-                      << "\",\"tx\":" << fake_radio::state.transmit_starts
-                      << ",\"eeprom_reads\":" << EEPROM.reads
-                      << ",\"eeprom_writes\":" << EEPROM.writes << "}\n";
+                      << "\",\"tx\":" << fake_radio::state.transmit_starts << "}\n";
         } else if (command.compare(0, 3, "RX ") == 0) {
             const std::string hex = command.substr(3);
             if (hex.size() % 2 || hex.size() / 2 > 255) return 2;

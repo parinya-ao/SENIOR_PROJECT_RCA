@@ -8,6 +8,8 @@ ROLES = ("SENDER", "RECEIVER")
 
 @dataclass(frozen=True)
 class USBDevice:
+    """USB serial adapter metadata without assigning an agent role."""
+
     device_node: str
     real_device_path: str
     usb_path: str | None = None
@@ -25,13 +27,16 @@ class USBDevice:
 
     @property
     def port(self) -> str:
+        """Return the current device-node path used to open the adapter."""
         return self.device_node
 
     @property
     def stable_key(self) -> str:
+        """Return the best available key that survives port renumbering."""
         return self.usb_path or self.real_device_path
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize adapter identifiers and probe metadata."""
         return {
             "device_node": self.device_node,
             "port": self.port,
@@ -53,6 +58,8 @@ class USBDevice:
 
 @dataclass(frozen=True)
 class FirmwareIdentity:
+    """A role and build identifier decoded from firmware evidence."""
+
     role: str
     build_id: str
     protocol: int
@@ -62,6 +69,8 @@ class FirmwareIdentity:
 
 @dataclass(frozen=True)
 class ProbeEvidence:
+    """Results from current firmware, flash, MCU, and access probes."""
+
     firmware_identity: FirmwareIdentity | None = None
     fingerprint_identity: FirmwareIdentity | None = None
     firmware_status: str = "NOT_ATTEMPTED"
@@ -78,6 +87,8 @@ class ProbeEvidence:
 
 @dataclass(frozen=True)
 class DetectedDevice:
+    """A USB device paired with its current role and supporting evidence."""
+
     usb: USBDevice | None
     role: str = "UNKNOWN"
     identity_status: str = "UNKNOWN"
@@ -89,13 +100,16 @@ class DetectedDevice:
 
     @property
     def port(self) -> str | None:
+        """Return the current port path when a USB device is present."""
         return self.usb.port if self.usb else None
 
     @property
     def stable_key(self) -> str:
+        """Return the USB identity key, or `missing` when no device exists."""
         return self.usb.stable_key if self.usb else "missing"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the detected role, identity, and evidence."""
         device = self.usb.to_dict() if self.usb else {}
         return {
             **device,
@@ -112,6 +126,8 @@ class DetectedDevice:
 
 @dataclass(frozen=True)
 class ScanResult:
+    """Complete role-detection result for the current USB inventory."""
+
     status: str
     devices: tuple[DetectedDevice, ...]
     missing_roles: tuple[str, ...] = ()
@@ -127,13 +143,16 @@ class ScanResult:
 
     @property
     def sender(self) -> DetectedDevice | None:
+        """Return the unique verified sender, if one was found."""
         return self._unique_role("SENDER")
 
     @property
     def receiver(self) -> DetectedDevice | None:
+        """Return the unique verified receiver, if one was found."""
         return self._unique_role("RECEIVER")
 
     def to_dict(self, inventory: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Serialize role results and optional raw inventory details."""
         result: dict[str, Any] = {
             "status": self.status,
             "devices": [device.to_dict() for device in self.devices],

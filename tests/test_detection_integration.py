@@ -1,17 +1,24 @@
+from __future__ import annotations
+
 import importlib
 import json
 import unittest
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Never
 from unittest.mock import patch
-from typing import Never
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 evidence = importlib.import_module("tools.device_detection.evidence")
 identity = importlib.import_module("tools.device_detection.firmware_identity")
 detector = importlib.import_module("tools.device_detection.role_detector")
 output = importlib.import_module("tools.device_detection.output")
 updi_probe = importlib.import_module("tools.device_detection.updi_probe")
+Json = Any
 
 
-def require(test, module, name):
+def require(test: unittest.TestCase, module: ModuleType, name: str) -> Json:
     value = getattr(module, name, None)
     test.assertIsNotNone(value, f"{module.__name__}.{name} must exist")
     return value
@@ -137,9 +144,10 @@ class DetectionIntegrationTests(unittest.TestCase):
             return
         calls = []
 
-        def runner(*args, **kwargs) -> Never:
+        def runner(*args: Json, **_kwargs: Json) -> Never:
             calls.append(args[0])
-            raise AssertionError("blocked probe must not run a command")
+            msg = "blocked probe must not run a command"
+            raise AssertionError(msg)
 
         with self.assertRaises(PermissionError):
             sib("/dev/fake", hardware_safe=False, command_runner=runner)
@@ -153,12 +161,13 @@ class DetectionIntegrationTests(unittest.TestCase):
             return
         opened = []
 
-        def runner(argv, **kwargs):
+        def runner(_argv: list[str], **_kwargs: Json) -> Json:
             return type("Completed", (), {"returncode": 0, "stdout": "", "stderr": "python 42"})()
 
-        def pio(argv, **kwargs) -> Never:
+        def pio(argv: list[str], **_kwargs: Json) -> Never:
             opened.append(argv)
-            raise AssertionError("busy device must not be opened")
+            msg = "busy device must not be opened"
+            raise AssertionError(msg)
 
         result = probe("/dev/fake", hardware_safe=True, command_runner=runner, popen=pio)
         self.assertEqual(result.access_status, "INACCESSIBLE")
@@ -173,14 +182,14 @@ class DetectionIntegrationTests(unittest.TestCase):
         class Process:
             returncode = 0
 
-            def communicate(self, timeout=None):
+            def communicate(self, _timeout: float | None = None) -> tuple[str, str]:
                 return "AVR128DA28 SIB", ""
 
-        def pio(argv, **kwargs):
+        def pio(argv: list[str], **_kwargs: Json) -> Json:
             seen.append(argv)
             return Process()
 
-        def runner(argv, **kwargs):
+        def runner(_argv: list[str], **_kwargs: Json) -> Json:
             return type("Completed", (), {"returncode": 1, "stdout": "", "stderr": ""})()
 
         result = probe("/dev/fake", hardware_safe=True, command_runner=runner, popen=pio)
@@ -198,17 +207,17 @@ class DetectionIntegrationTests(unittest.TestCase):
         class Process:
             returncode = 0
 
-            def communicate(self, timeout=None):
+            def communicate(self, _timeout: float | None = None) -> tuple[str, str]:
                 return "", ""
 
-        def pio(argv, **kwargs):
+        def pio(argv: list[str], **_kwargs: Json) -> Json:
             seen.extend(argv)
             log_path = argv[argv.index("-l") + 1]
-            with open(log_path, "wb") as stream:
+            with Path(log_path).open("wb") as stream:
                 stream.write(b"[SENDER] ID V1 sender Nov  6 2026 05:00:00 CRC=15\r\n")
             return Process()
 
-        def runner(argv, **kwargs):
+        def runner(_argv: list[str], **_kwargs: Json) -> Json:
             return type("Completed", (), {"returncode": 1, "stdout": "", "stderr": ""})()
 
         result = probe("/dev/fake", hardware_safe=True, command_runner=runner, popen=pio)

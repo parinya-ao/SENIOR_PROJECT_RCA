@@ -1,5 +1,5 @@
-#include <cstdint>
-#include <cstdio>
+#include <stdint.h>
+#include <stdio.h>
 
 enum { LOW = 0, HIGH = 1, INPUT = 0, OUTPUT = 1 };
 enum {
@@ -39,17 +39,17 @@ void delay(unsigned ms) { elapsed_ms += ms; }
 
 #define CHECK(condition) do { \
     if (!(condition)) { \
-        std::fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #condition); \
+        fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #condition); \
         return 1; \
     } \
 } while (0)
 
 int main() {
     init_receiver_gpio();
-    CHECK(PIN_LORA_CS == PIN_PD0);
-    CHECK(PIN_LORA_RST == PIN_PD1);
-    CHECK(PIN_LORA_IRQ == PIN_PD3);
-    CHECK(PIN_LORA_DIO1 == PIN_PD2);
+    CHECK(LORA_PIN_CS == PIN_PD0);
+    CHECK(LORA_PIN_RST == PIN_PD1);
+    CHECK(LORA_PIN_IRQ == PIN_PD3);
+    CHECK(LORA_PIN_DIO1 == PIN_PD2);
     CHECK(enabled && modes[PIN_PA7] == OUTPUT && values[PIN_PA7] == LOW);
     CHECK(elapsed_ms - enabled_at >= 10);
     CHECK(modes[PIN_PD0] == OUTPUT && values[PIN_PD0] == HIGH);
@@ -62,5 +62,5 @@ int main() {
     CHECK(modes[PIN_PD5] == OUTPUT && values[PIN_PD5] == HIGH);
     CHECK(modes[PIN_PD6] == OUTPUT && values[PIN_PD6] == HIGH);
     CHECK(unsafe_operations == 0);
-    std::puts("PASS Receiver GPIO mapping, active-low power, POR and chip-select ordering");
+    puts("PASS Receiver GPIO mapping, active-low power, POR and chip-select ordering");
 }

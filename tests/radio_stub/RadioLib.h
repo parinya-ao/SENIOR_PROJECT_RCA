@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <SPI.h>
 
 #define RADIOLIB_ERR_NONE 0
@@ -26,6 +27,7 @@ struct State {
     size_t airtime_length;
     uint8_t rx_data[255];
     uint8_t* tx_data;
+    uint8_t tx_copy[255];
     uint8_t tx_size;
     float frequency_mhz;
     int8_t tx_power_dbm;
@@ -79,6 +81,12 @@ public:
     explicit SX1276(Module*) {}
 
     void reset() {}
+    int16_t begin() {
+        ++fake_radio::state.begin_calls;
+        fake_radio::state.spi1_route_at_begin =
+            fake_spi::state.route == SPI1_SWAP_DEFAULT;
+        return fake_radio::state.begin_status;
+    }
     int16_t begin(float frequency, float bandwidth, uint8_t spreading_factor,
                   uint8_t coding_rate, uint8_t sync_word, int8_t power,
                   uint16_t preamble, uint8_t gain) {
@@ -157,6 +165,7 @@ public:
         fake_radio::state.op_mode = 0x83;
         fake_radio::state.tx_data = data;
         fake_radio::state.tx_size = len;
+        memcpy(fake_radio::state.tx_copy, data, len);
         return fake_radio::state.start_transmit_status;
     }
     int16_t finishTransmit() {

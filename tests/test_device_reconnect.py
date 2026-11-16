@@ -1,19 +1,26 @@
+from __future__ import annotations
+
 import importlib
 import unittest
+from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 evidence = importlib.import_module("tools.device_detection.evidence")
 identity = importlib.import_module("tools.device_detection.firmware_identity")
 detector = importlib.import_module("tools.device_detection.role_detector")
+Json = Any
 
 
-def require(test, module, name):
+def require(test: unittest.TestCase, module: ModuleType, name: str) -> Json:
     value = getattr(module, name, None)
     test.assertIsNotNone(value, f"{module.__name__}.{name} must exist")
     return value
 
 
-def make_device(port, path):
+def make_device(port: str, path: str) -> Json:
     cls = getattr(evidence, "USBDevice", None)
     if cls is None:
         return None
@@ -26,7 +33,7 @@ def make_device(port, path):
     )
 
 
-def make_probe(role):
+def make_probe(role: str) -> Json:
     marker_cls = getattr(identity, "FirmwareIdentity", None)
     probe_cls = getattr(evidence, "ProbeEvidence", None)
     if not marker_cls or not probe_cls:
@@ -105,7 +112,7 @@ class DeviceReconnectTests(unittest.TestCase):
         first = importlib.import_module("dataclasses").replace(first, usb_instance="3:18")
         inventories = iter([inventory_cls((first,), (), {}), inventory_cls((second,), (), {})])
         args = cli.build_parser().parse_args(["--scan", "--probe-firmware", "--hardware-safe"])
-        cache = {}
+        cache: dict[str, Json] = {}
         with patch.object(
             cli, "_probe_device", side_effect=[make_probe("SENDER"), make_probe("RECEIVER")]
         ) as call:

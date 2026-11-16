@@ -4,11 +4,15 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import Mock, patch
 
 SPEC = importlib.util.spec_from_file_location(
     "upditerm_transport", Path(__file__).resolve().parents[1] / "third_party/upditerm/upditerm.py"
 )
+if SPEC is None or SPEC.loader is None:
+    msg = "unable to load UPDI transport module"
+    raise ImportError(msg)
 upditerm = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(upditerm)
 
@@ -58,7 +62,7 @@ class ReceiveTests(unittest.TestCase):
             r"read_duration_ns=\d+; last_tx=55 85",
         )
 
-    def port(self, response):
+    def port(self, response: bytes) -> Any:
         port = upditerm.SerialPort.__new__(upditerm.SerialPort)
         port.failed = False
         port.port = "mock"
@@ -111,14 +115,14 @@ class ReceiveTests(unittest.TestCase):
     def test_sts8_uses_sixteen_bit_address_for_avr_da_data_space(self) -> None:
         class Link:
             def __init__(self) -> None:
-                self.sent = []
+                self.sent: list[bytes] = []
                 self.responses = [b"\x40", b"\x40"]
-                self.expected = []
+                self.expected: list[bytes | None] = []
 
-            def send(self, data) -> None:
+            def send(self, data: bytes) -> None:
                 self.sent.append(bytes(data))
 
-            def recv(self, length, expected=None):
+            def recv(self, length: int, expected: bytes | None = None) -> bytes:
                 self.expected.append(expected)
                 data = self.responses.pop(0)
                 if expected is not None and data != expected:
@@ -135,7 +139,7 @@ class ReceiveTests(unittest.TestCase):
     def test_reader_transport_failure_exits_while_console_input_is_blocked(self) -> None:
         release = threading.Event()
         done = threading.Event()
-        errors = []
+        errors: list[str] = []
         console = Mock()
         console.get.side_effect = lambda: release.wait(2) and None
         serial = Mock()
@@ -162,12 +166,12 @@ class ReceiveTests(unittest.TestCase):
     def test_reader_unexpected_exception_releases_idle_lock_for_cleanup(self) -> None:
         class Console:
             def __init__(self) -> None:
-                self.input = queue.Queue()
+                self.input: queue.Queue[Any] = queue.Queue()
 
-            def get(self):
+            def get(self) -> Any:
                 return self.input.get()
 
-            def put(self, value) -> None:
+            def put(self, value: Any) -> None:
                 self.input.put(value)
 
         console = Console()

@@ -8,7 +8,10 @@ import subprocess
 from pathlib import Path
 
 
-def analyze(disassembly, application_start):
+def analyze(
+    disassembly: str, application_start: int
+) -> dict[str, object]:
+    """Return statically reachable transfers from boot code into the application region."""
     instructions = {}
     for line in disassembly.splitlines():
         match = re.match(r"^\s*([0-9a-f]+):\s+((?:[0-9a-f]{2}\s+)+)\s*([a-z]+)\s*(.*)", line)
@@ -53,17 +56,18 @@ def analyze(disassembly, application_start):
                 unresolved.append(f"unknown skip at {address:#x}")
         else:
             pending.append(following)
-    return dict(
-        reachable_instruction_count=len(visited),
-        application_transfers=sorted(set(transfers)),
-        unresolved=sorted(set(unresolved)),
-        verdict="UNRESOLVED"
+    return {
+        "reachable_instruction_count": len(visited),
+        "application_transfers": sorted(set(transfers)),
+        "unresolved": sorted(set(unresolved)),
+        "verdict": "UNRESOLVED"
         if unresolved
         else ("TRANSFER_PRESENT" if transfers else "NO_APPLICATION_HANDOFF"),
-    )
+    }
 
 
 def main() -> None:
+    """Run the static boot handoff analysis on one saved flash backup."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("backup", type=Path)
     parser.add_argument("--application-start", type=lambda text: int(text, 0), default=0x5800)
@@ -79,7 +83,10 @@ def main() -> None:
     result.update(
         backup_sha256=hashlib.sha256(args.backup.read_bytes()).hexdigest(),
         application_start=args.application_start,
-        limit="Static reachability only; indirect targets and on-target boot require independent evidence.",
+        limit=(
+            "Static reachability only; indirect targets and on-target boot require "
+            "independent evidence."
+        ),
     )
     print(json.dumps(result, indent=2))
 

@@ -1,14 +1,18 @@
 """Validate the LoRa inputs and generate deterministic firmware and host profiles."""
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
 import tempfile
 import tomllib
 from pathlib import Path
+from typing import Any
 
-from validate_lora_ssot import ROOT, load, validate
+from validate_lora_ssot import ROOT, load, validate  # type: ignore[import-not-found]
+
+Json = Any
 
 RADIO_PROFILE = {
     "schema_version": 1,
@@ -60,49 +64,60 @@ RADIO_PROFILE = {
 }
 
 
-def validate_radio_profile(profile):
-    def check(value, expected, path) -> None:
+def validate_radio_profile(profile: Json) -> Json:
+    """Validate the fixed 915 MHz radio profile and board pin mappings."""
+
+    def check(value: Json, expected: Json, path: str) -> None:
         if isinstance(expected, dict):
             if not isinstance(value, dict) or value.keys() != expected.keys():
-                raise ValueError(f"{path}: missing or unknown fields")
+                msg = f"{path}: missing or unknown fields"
+                raise ValueError(msg)
             for key, expected_value in expected.items():
                 check(value[key], expected_value, f"{path}.{key}")
-        elif path == "radio_915.environments.sender" or path == "radio_915.environments.receiver":
+        elif path in {"radio_915.environments.sender", "radio_915.environments.receiver"}:
             if (
                 type(value) is not list
                 or any(type(item) is not str for item in value)
                 or len(value) != len(set(value))
                 or set(value) != set(expected)
             ):
-                raise ValueError(f"{path}: environment mapping must be unique and complete")
+                msg = f"{path}: environment mapping must be unique and complete"
+                raise ValueError(msg)
         elif type(value) is not type(expected):
-            raise ValueError(f"{path}: invalid type")
+            msg = f"{path}: invalid type"
+            raise ValueError(msg)
         elif value != expected:
-            raise ValueError(f"{path}: unsupported fixed radio setting")
+            msg = f"{path}: unsupported fixed radio setting"
+            raise ValueError(msg)
 
     check(profile, RADIO_PROFILE, "radio_915")
     return profile
 
 
-def load_radio_profile(path=None):
+def load_radio_profile(path: str | Path | None = None) -> Json:
+    """Load the radio TOML profile and validate its exact schema."""
     path = Path(path) if path is not None else ROOT / "config/radio_915.toml"
     try:
         with path.open("rb") as source:
             profile = tomllib.load(source)
     except (OSError, tomllib.TOMLDecodeError) as error:
-        raise ValueError(f"invalid radio profile: {error}") from error
+        msg = f"invalid radio profile: {error}"
+        raise ValueError(msg) from error
     return validate_radio_profile(profile)
 
 
-def canonical(value):
+def canonical(value: Json) -> str:
+    """Serialize JSON values deterministically for fingerprinting."""
     return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
 
 
-def digest(value):
+def digest(value: Json) -> str:
+    """Return the SHA-256 fingerprint of a canonical JSON value."""
     return hashlib.sha256(canonical(value).encode()).hexdigest()
 
 
-def source_fingerprint():
+def source_fingerprint() -> str:
+    """Hash the source inputs that determine generated firmware artifacts."""
     paths = list((ROOT / "src").rglob("*")) + list((ROOT / "tools/config").glob("*.py"))
     paths += [ROOT / "platformio.ini"]
     for directory in ("lib", "include", "third_party"):
@@ -119,27 +134,29 @@ def source_fingerprint():
     )
 
 
-def _radio_manifest(profile):
+def _radio_manifest(profile: Json) -> Json:
+    """Select supported radio values for the shared build manifest."""
     radio = profile["radio"]
-    return dict(
-        frequency_hz=radio["frequency_hz"],
-        frequency_mhz=radio["frequency_hz"] / 1_000_000,
-        tx_power_dbm=radio["tx_power_dbm"],
-        long_range=radio["long_range"],
-        spreading_factor=radio["spreading_factor"],
-        bandwidth_khz=radio["bandwidth_khz"],
-        coding_rate=radio["coding_rate"],
-        sync_word=radio["sync_word"],
-        preamble_symbols=radio["preamble_symbols"],
-        crc_enabled=radio["crc_enabled"],
-        explicit_header=radio["explicit_header"],
-        iq_inverted=radio["iq_inverted"],
-        current_limit_ma=radio["current_limit_ma"],
-        automatic_gain=radio["automatic_gain"],
-    )
+    return {
+        "frequency_hz": radio["frequency_hz"],
+        "frequency_mhz": radio["frequency_hz"] / 1_000_000,
+        "tx_power_dbm": radio["tx_power_dbm"],
+        "long_range": radio["long_range"],
+        "spreading_factor": radio["spreading_factor"],
+        "bandwidth_khz": radio["bandwidth_khz"],
+        "coding_rate": radio["coding_rate"],
+        "sync_word": radio["sync_word"],
+        "preamble_symbols": radio["preamble_symbols"],
+        "crc_enabled": radio["crc_enabled"],
+        "explicit_header": radio["explicit_header"],
+        "iq_inverted": radio["iq_inverted"],
+        "current_limit_ma": radio["current_limit_ma"],
+        "automatic_gain": radio["automatic_gain"],
+    }
 
 
-def _profile_python(radio):
+def _profile_python(radio: Json) -> str:
+    """Render generated Python constants for the fixed radio profile."""
     names = {
         "FREQUENCY_HZ": "frequency_hz",
         "BANDWIDTH_KHZ": "bandwidth_khz",
@@ -162,7 +179,8 @@ def _profile_python(radio):
     return "\n".join(lines) + "\n"
 
 
-def artifacts(config, radio_profile=None):
+def artifacts(config: Json, radio_profile: Json | None = None) -> dict[str, str]:
+    """Build deterministic generated file contents without writing them."""
     validate(config)
     radio_profile = validate_radio_profile(radio_profile or load_radio_profile())
     radio = _radio_manifest(radio_profile)
@@ -175,13 +193,13 @@ def artifacts(config, radio_profile=None):
     }
     fingerprint = digest(shared)
     source_hash = source_fingerprint()
-    manifest = dict(
-        shared=shared,
-        shared_fingerprint=fingerprint,
-        boards={},
-        environments={},
-        source_fingerprint=source_hash,
-    )
+    manifest: dict[str, Json] = {
+        "shared": shared,
+        "shared_fingerprint": fingerprint,
+        "boards": {},
+        "environments": {},
+        "source_fingerprint": source_hash,
+    }
 
     lines = [
         "#pragma once",
@@ -194,15 +212,17 @@ def artifacts(config, radio_profile=None):
         f"#define LORA_ACK_TIMEOUT_MS {config['timeouts']['ack_ms']}",
         f"#define LORA_TX_TIMEOUT_MS {config['timeouts']['tx_ms']}",
     ]
-    for name in (
-        "sender_address",
-        "receiver_address",
-        "sequence",
-        "data_type",
-        "ack_type",
-        "nack_type",
-    ):
-        lines.append(f"#define LORA_{name.upper()} {config['protocol'][name]}")
+    lines.extend(
+        f"#define LORA_{name.upper()} {config['protocol'][name]}"
+        for name in (
+            "sender_address",
+            "receiver_address",
+            "sequence",
+            "data_type",
+            "ack_type",
+            "nack_type",
+        )
+    )
     outputs = {"include/generated/lora_shared_config.h": "\n".join(lines) + "\n"}
 
     radio_source = radio_profile["radio"]
@@ -247,8 +267,9 @@ def artifacts(config, radio_profile=None):
     layout = ["[target_layout]"]
     for role, target in (("sender", "gateway"), ("receiver", "receiver")):
         board = config[f"{role}_board"]
-        for key in ("bootsize", "codesize", "bodcfg"):
-            layout.append(f"{target}_{key} = {hex(board[key])}")
+        layout.extend(
+            f"{target}_{key} = {hex(board[key])}" for key in ("bootsize", "codesize", "bodcfg")
+        )
         layout.append(f"{target}_app_start = {hex(board['image_start'])}")
     layout += [
         "[flash_geometry]",
@@ -260,7 +281,7 @@ def artifacts(config, radio_profile=None):
     for role in ("sender", "receiver"):
         board = config[f"{role}_board"]
         radio_board = radio_profile[role]
-        full = digest(dict(shared=shared, board=board, radio_board=radio_board, role=role))
+        full = digest({"shared": shared, "board": board, "radio_board": radio_board, "role": role})
         manifest["boards"][role] = dict(board, radio_board=radio_board, build_fingerprint=full)
         board_lines = [
             "#pragma once",
@@ -275,16 +296,16 @@ def artifacts(config, radio_profile=None):
 
     for role, environments in radio_profile["environments"].items():
         for environment in environments:
-            manifest["environments"][environment] = dict(
-                role=role,
-                build_id=digest(
-                    dict(
-                        environment=environment,
-                        source=source_hash,
-                        board=manifest["boards"][role]["build_fingerprint"],
-                    )
+            manifest["environments"][environment] = {
+                "role": role,
+                "build_id": digest(
+                    {
+                        "environment": environment,
+                        "source": source_hash,
+                        "board": manifest["boards"][role]["build_fingerprint"],
+                    }
                 ),
-            )
+            }
     outputs["generated/lora_manifest.json"] = json.dumps(manifest, sort_keys=True, indent=2) + "\n"
 
     python_profile = _profile_python(radio_source)
@@ -293,13 +314,17 @@ def artifacts(config, radio_profile=None):
         outputs[f"../iwing-tracker/{integration}/mainboard/src/radio_915_profile.py"] = (
             python_profile
         )
-    from arq_config import arq_artifacts, load_arq
+    from arq_config import (  # type: ignore[import-not-found]
+        arq_artifacts,
+        load_arq,
+    )
 
     outputs.update(arq_artifacts(load_arq(), radio_profile, config, source_hash))
     return outputs
 
 
-def _write_atomic(path, contents) -> None:
+def _write_atomic(path: Path, contents: str) -> None:
+    """Atomically replace a generated file only when its contents differ."""
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.is_file() and path.read_text() == contents:
         return
@@ -311,16 +336,15 @@ def _write_atomic(path, contents) -> None:
             output.write(contents)
             output.flush()
             os.fsync(output.fileno())
-        os.replace(temporary, path)
+        Path(temporary).replace(path)
     except BaseException:
-        try:
-            os.unlink(temporary)
-        except FileNotFoundError:
-            pass
+        with contextlib.suppress(FileNotFoundError):
+            Path(temporary).unlink()
         raise
 
 
-def generate(check=False) -> None:
+def generate(*, check: bool = False) -> None:
+    """Write generated artifacts, or verify them when check is true."""
     config = load(ROOT / "config/lora_system.json")
     radio_profile = load_radio_profile(ROOT / "config/radio_915.toml")
     outputs = artifacts(config, radio_profile)
@@ -328,12 +352,14 @@ def generate(check=False) -> None:
         path = ROOT / name
         if check:
             if not path.is_file() or path.read_text() != contents:
-                raise ValueError(f"stale or missing generated artifact: {name}")
+                msg = f"stale or missing generated artifact: {name}"
+                raise ValueError(msg)
         else:
             _write_atomic(path, contents)
 
 
 def main() -> None:
+    """Run validation or deterministic artifact generation from the CLI."""
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(

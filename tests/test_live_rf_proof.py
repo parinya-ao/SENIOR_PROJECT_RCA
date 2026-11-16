@@ -5,21 +5,22 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-import rf_proof as rf
+import tools.rf_proof as rf
 
 
-def fixture():
+def fixture() -> Any:
     manifest = json.loads((rf.ROOT / "generated/lora_manifest.json").read_text())
     journal = []
     images = {}
 
-    def add(role, text) -> None:
-        journal.append(dict(role=role, line=text if role == "HOST" else f"[{role}] {text}"))
+    def add(role: Any, text: Any) -> None:
+        journal.append({"role": role, "line": text if role == "HOST" else f"[{role}] {text}"})
 
-    def boot(role, environment) -> None:
+    def boot(role: Any, environment: Any) -> None:
         add(role, f"BOOT {environment} fixture")
         add(role, "CONFIG_FINGERPRINT=" + manifest["shared_fingerprint"])
         add(role, "PROTOCOL_VERSION=" + str(manifest["shared"]["protocol"]["version"]))
@@ -34,15 +35,15 @@ def fixture():
             "RADIO_FRAME SW=12 PRE=8 CRC=1 HDR=E IQ=0",
         ):
             add(role, text)
-        images[role] = dict(
-            origin="PHYSICAL_UPDI",
-            run_id="unit-run",
-            verified=True,
-            signature="1e970a",
-            port=rf.PORTS[role.lower()],
-            firmware_sha256="a" * 64,
-            build_id=manifest["environments"][environment]["build_id"],
-        )
+        images[role] = {
+            "origin": "PHYSICAL_UPDI",
+            "run_id": "unit-run",
+            "verified": True,
+            "signature": "1e970a",
+            "port": rf.PORTS[role.lower()],
+            "firmware_sha256": "a" * 64,
+            "build_id": manifest["environments"][environment]["build_id"],
+        }
 
     boot("RECEIVER", "receiver")
     add("RECEIVER", "WAIT_SESSION")
@@ -76,7 +77,7 @@ class LiveProofTests(unittest.TestCase):
             previous = root / "previous"
             previous.mkdir()
             (previous / "run-session.json").write_text('{"session":4660}')
-            proof = SimpleNamespace(note=lambda *_: None)
+            proof: Any = SimpleNamespace(note=lambda *_: None)
             with (
                 patch.object(rf, "ARTIFACTS", root),
                 patch("secrets.randbelow", return_value=0x1233),
@@ -137,7 +138,7 @@ class LiveProofTests(unittest.TestCase):
                 rf.validate_live_proof(original, manifest, changed, "unit-run", 0x1234)["valid"]
             )
         changed = copy.deepcopy(original)
-        changed.insert(0, dict(role="HOST", line="C"))
+        changed.insert(0, {"role": "HOST", "line": "C"})
         self.assertFalse(
             rf.validate_live_proof(changed, manifest, images, "unit-run", 0x1234)["valid"]
         )
@@ -146,11 +147,11 @@ class LiveProofTests(unittest.TestCase):
         manifest, _, images = fixture()
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "receipt.json"
-            path.write_text(json.dumps(dict(origin="PHYSICAL_UPDI", images=images)))
+            path.write_text(json.dumps({"origin": "PHYSICAL_UPDI", "images": images}))
             self.assertFalse(rf.upload_evidence_matches(path, manifest))
 
     def test_fresh_readback_rejects_wrong_image_or_target_serial(self) -> None:
-        from test_rf_proof import ihex_record
+        from tests.test_rf_proof import ihex_record
 
         manifest, _, _ = fixture()
         with tempfile.TemporaryDirectory() as directory:
@@ -170,7 +171,7 @@ class LiveProofTests(unittest.TestCase):
             (root / "config/current_hardware.json").write_text(
                 json.dumps(
                     {
-                        role: dict(device_serial_hex="01 02", port_path=rf.PORTS[role])
+                        role: {"device_serial_hex": "01 02", "port_path": rf.PORTS[role]}
                         for role in ("gateway", "receiver")
                     }
                 )
@@ -185,7 +186,7 @@ class LiveProofTests(unittest.TestCase):
                 expected[role.lower()] = payload + b"\xff" * (131072 - len(payload))
             corrupt = None
 
-            def command(name, argv, *_):
+            def command(name: Any, argv: Any, *_: Any) -> Any:
                 role = name.split("-")[0]
                 for arg in argv:
                     if ":r:" not in arg:
@@ -203,7 +204,7 @@ class LiveProofTests(unittest.TestCase):
 
             run = root / "run"
             run.mkdir()
-            proof = SimpleNamespace(run_dir=run, command=command, note=lambda *_: None)
+            proof: Any = SimpleNamespace(run_dir=run, command=command, note=lambda *_: None)
             with (
                 patch.object(rf, "ROOT", root),
                 patch.object(rf, "ARTIFACTS", artifact),
@@ -215,8 +216,8 @@ class LiveProofTests(unittest.TestCase):
 
     def test_verification_flags_without_measurement_record_cannot_open_monitors(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            proof = SimpleNamespace(run_dir=Path(directory), note=lambda *_: None)
-            args = SimpleNamespace(
+            proof: Any = SimpleNamespace(run_dir=Path(directory), note=lambda *_: None)
+            args: Any = SimpleNamespace(
                 physical_mapping_verified=True,
                 power_verified=True,
                 boot_layout_verified=True,
@@ -242,12 +243,12 @@ class LiveProofTests(unittest.TestCase):
     def test_repeated_wait_start_never_reissues_sender_command(self) -> None:
         self._run_capture(repeat_wait_start=True)
 
-    def _run_capture(self, short_write=False, repeat_wait_start=False) -> None:
-        manifest, journal, images = fixture()
+    def _run_capture(self, short_write: Any=False, repeat_wait_start: Any=False) -> None:
+        _manifest, journal, images = fixture()
         writes = []
 
         class Process:
-            def __init__(self, role, output) -> None:
+            def __init__(self, role: Any, output: Any) -> None:
                 self.role, self.output, self.stdin = role, output, self
 
             def poll(self) -> None:
@@ -256,7 +257,7 @@ class LiveProofTests(unittest.TestCase):
             def flush(self) -> None:
                 pass
 
-            def write(self, data):
+            def write(self, data: Any) -> Any:
                 writes.append((self.role, data))
                 if self.role == "receiver":
                     emit("receiver", ["SESSION_READY C=1234", "RX_READY"], self.output)
@@ -269,12 +270,12 @@ class LiveProofTests(unittest.TestCase):
                             self.output.put((role, "stdout", (item["line"] + "\n").encode()))
                 return 1 if short_write else len(data)
 
-        def emit(role, values, output) -> None:
+        def emit(role: Any, values: Any, output: Any) -> None:
             name = "GATEWAY" if role == "gateway" else "RECEIVER"
             for value in values:
                 output.put((role, "stdout", f"[{name}] {value}\n".encode()))
 
-        def start(proof, role, port, output):
+        def start(proof: Any, role: Any, port: Any, output: Any) -> Any:
             name = "GATEWAY" if role == "gateway" else "RECEIVER"
             initial = [
                 item["line"].split("] ", 1)[1]
@@ -284,14 +285,14 @@ class LiveProofTests(unittest.TestCase):
                 and item["line"] != "[RECEIVER] RX_READY"
             ]
             emit(role, initial, output)
-            return dict(process=Process(role, output), threads=[])
+            return {"process": Process(role, output), "threads": []}
 
         with tempfile.TemporaryDirectory() as directory:
-            proof = SimpleNamespace(
+            proof: Any = SimpleNamespace(
                 run_dir=Path(directory),
                 note=lambda name, content: (Path(directory) / name).write_text(content),
             )
-            args = SimpleNamespace(
+            args: Any = SimpleNamespace(
                 physical_mapping_verified=True,
                 power_verified=True,
                 boot_layout_verified=True,

@@ -16,10 +16,13 @@ class BuildIdentityImagesTests(unittest.TestCase):
             for suffix in ("_arq", "_arq_test", "_reverse_raw"):
                 with self.subTest(environment=role + suffix):
                     directory = ROOT / ".pio/build" / (role + suffix)
-                    build = re.search(
+                    match = re.search(
                         r'LORA_BUILD_ID "([0-9a-f]{64})"',
                         (directory / "lora_build_identity.h").read_text(),
-                    ).group(1)
+                    )
+                    if match is None:
+                        self.fail(f"build identity missing in {directory}")
+                    build = match.group(1)
                     image = (directory / "firmware.hex").read_bytes()
                     region = parse_ihex_range(image)
                     binary = normalize_ihex_region(

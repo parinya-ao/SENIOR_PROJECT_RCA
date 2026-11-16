@@ -95,30 +95,30 @@ class RCATests(unittest.TestCase):
 
     def test_t06_cross_mcu_clock_rejected(self) -> None:
         with self.assertRaises(ValueError):
-            r.delta(dict(role="sender", t="2"), dict(role="receiver", t="1"), clock="mcu")
+            r.delta({"role": "sender", "t": "2"}, {"role": "receiver", "t": "1"}, clock="mcu")
 
     def test_t07_host_delta(self) -> None:
         self.assertEqual(
-            r.delta(dict(host_ns=103525089152263), dict(host_ns=103525089015341)), 136922
+            r.delta({"host_ns": 103525089152263}, {"host_ns": 103525089015341}), 136922
         )
 
     def test_t08_source_and_image_hashes(self) -> None:
         self.assertEqual(r.analyze(B)["evidence_integrity"], "PASS")
         self.assertTrue(r.analyze(B)["identity_checks"])
 
-    def fixture(self):
+    def fixture(self) -> Path:
         d = tempfile.TemporaryDirectory()
         self.addCleanup(d.cleanup)
         p = Path(d.name)
         (p / "a").write_bytes(b"x")
         (p / "bundle.json").write_text(
             json.dumps(
-                dict(
-                    events=[],
-                    commands=[],
-                    firmware={},
-                    files={"a": hashlib.sha256(b"x").hexdigest()},
-                )
+                {
+                    "events": [],
+                    "commands": [],
+                    "firmware": {},
+                    "files": {"a": hashlib.sha256(b"x").hexdigest()},
+                }
             )
         )
         return p
@@ -223,7 +223,10 @@ class RCATests(unittest.TestCase):
     def test_overflow_incomplete(self) -> None:
         b = json.loads((A / "bundle.json").read_text())
         b["events"][0]["overflow"] = "1"
-        self.assertEqual(r.classify(b["events"], False, True)["rf_verdict"], "INCONCLUSIVE")
+        self.assertEqual(
+            r.classify(b["events"], transport_error=False, integrity=True)["rf_verdict"],
+            "INCONCLUSIVE",
+        )
 
     def test_partial_delayed_echo(self) -> None:
         for s, expected in [

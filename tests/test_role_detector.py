@@ -1,18 +1,25 @@
+from __future__ import annotations
+
 import importlib
 import unittest
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 evidence = importlib.import_module("tools.device_detection.evidence")
 identity = importlib.import_module("tools.device_detection.firmware_identity")
 detector = importlib.import_module("tools.device_detection.role_detector")
+Json = Any
 
 
-def require(test, module, name):
+def require(test: unittest.TestCase, module: ModuleType, name: str) -> Json:
     value = getattr(module, name, None)
     test.assertIsNotNone(value, f"{module.__name__}.{name} must exist")
     return value
 
 
-def device(node, usb_path):
+def device(node: str, usb_path: str) -> Json:
     cls = getattr(evidence, "USBDevice", None)
     if cls is None:
         return None
@@ -28,7 +35,7 @@ def device(node, usb_path):
     )
 
 
-def probe(role, build):
+def probe(role: str, build: str) -> Json:
     identity_cls = getattr(identity, "FirmwareIdentity", None)
     probe_cls = getattr(evidence, "ProbeEvidence", None)
     if identity_cls is None or probe_cls is None:

@@ -1,16 +1,18 @@
 import importlib
 import unittest
+from typing import Any
 
 identity = importlib.import_module("tools.device_detection.firmware_identity")
+Json = Any
 
 
-def require(test, name):
+def require(test: unittest.TestCase, name: str) -> Json:
     value = getattr(identity, name, None)
     test.assertIsNotNone(value, f"firmware_identity.{name} must exist")
     return value
 
 
-def crc8(data):
+def crc8(data: bytes) -> int:
     value = 0
     for byte in data:
         value ^= byte
@@ -19,13 +21,18 @@ def crc8(data):
     return value
 
 
-def marker(role="SENDER", build="sender", date="Nov  6 2026", time="05:00:00"):
+def marker(
+    role: str = "SENDER",
+    build: str = "sender",
+    date: str = "Nov  6 2026",
+    time: str = "05:00:00",
+) -> bytes:
     source = f"{role}|V1|{build}|{date}|{time}".encode("ascii")
     checksum = crc8(source)
     return f"[{role}] ID V1 {build} {date} {time} CRC={checksum:02X}\r\n".encode()
 
 
-def ihex_record(address, record_type, data=b""):
+def ihex_record(address: int, record_type: int, data: bytes = b"") -> str:
     body = bytes([len(data), address >> 8, address & 0xFF, record_type]) + data
     check = (-sum(body)) & 0xFF
     return ":" + (body + bytes([check])).hex().upper()

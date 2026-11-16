@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
+import itertools
 import json
 import os
 import queue
@@ -18,6 +20,12 @@ import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping, Sequence
+
+Json = Any
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACTS = ROOT / "artifacts" / "rf-proof"
@@ -91,20 +99,23 @@ def parse_raw_mvp_logs(sender_text: str, receiver_text: str) -> dict[str, object
                 and " PASS bytes=" in line
                 and bytes.fromhex(fields["bytes"]) == b"Hello World"
             ):
-                packets.append(dict(rssi=float(fields["rssi"]), snr=float(fields["snr"])))
-        except ValueError, KeyError:
+                packets.append({"rssi": float(fields["rssi"]), "snr": float(fields["snr"])})
+        except (ValueError, KeyError):
             continue
-    return dict(
-        passed=bool(ready and completed and packets),
-        tx_completed=len(completed),
-        rx_matches=len(packets),
-        rssi=[p["rssi"] for p in packets],
-        snr=[p["snr"] for p in packets],
-        limit="Log structure only; physical provenance and negative-control timing require capture evidence.",
-    )
+    return {
+        "passed": bool(ready and completed and packets),
+        "tx_completed": len(completed),
+        "rx_matches": len(packets),
+        "rssi": [p["rssi"] for p in packets],
+        "snr": [p["snr"] for p in packets],
+        "limit": (
+            "Log structure only; physical provenance and negative-control timing "
+            "require capture evidence."
+        ),
+    }
 
 
-def parse_radio_spi_log(log_text: str, role: str) -> dict[str, object]:
+def parse_radio_spi_log(log_text: str, role: str) -> dict[str, Json]:
     if role not in ("GATEWAY", "RECEIVER"):
         return {
             "role": role,
@@ -185,10 +196,10 @@ RF_EVENT_RE = re.compile(
 EXPECTED_HELLO_PAYLOAD = b"hello world"
 
 
-def parse_rf_campaign(gateway_text: str, receiver_text: str) -> dict[str, object]:
+def parse_rf_campaign(gateway_text: str, receiver_text: str) -> dict[str, Json]:
     sources = {"GATEWAY": gateway_text, "RECEIVER": receiver_text}
     build_markers: dict[str, str] = {}
-    records: list[dict[str, object]] = []
+    records: list[dict[str, Json]] = []
     issues: list[str] = []
     blocked_markers = (
         "RADIO_INIT_FAILED",
@@ -201,9 +212,7 @@ def parse_rf_campaign(gateway_text: str, receiver_text: str) -> dict[str, object
     for expected_role, text in sources.items():
         for line_number, line in enumerate(text.splitlines()):
             if any(marker in line for marker in blocked_markers):
-                for marker in blocked_markers:
-                    if marker in line:
-                        issues.append(marker)
+                issues.extend(marker for marker in blocked_markers if marker in line)
             boot = RF_BOOT_RE.match(line)
             if boot:
                 role, build_name, _ = boot.groups()
@@ -258,7 +267,9 @@ def parse_rf_campaign(gateway_text: str, receiver_text: str) -> dict[str, object
         issues.append("multiple campaign IDs")
     campaign_id = next(iter(campaign_ids)) if len(campaign_ids) == 1 else None
 
-    def matching(role: str, name: str, sequence: int | None = None):
+    def matching(
+        role: str, name: str, sequence: int | None = None
+    ) -> list[dict[str, Json]]:
         return [
             record
             for record in records
@@ -302,8 +313,10 @@ def parse_rf_campaign(gateway_text: str, receiver_text: str) -> dict[str, object
     payload_unverified_sequences = sorted(
         receiver_data_sequences - set(payload_validated_sequences)
     )
-    for sequence in payload_unverified_sequences:
-        issues.append(f"receiver payload unverified for sequence {sequence:02X}")
+    issues.extend(
+        f"receiver payload unverified for sequence {sequence:02X}"
+        for sequence in payload_unverified_sequences
+    )
 
     delivered = []
     for sequence in range(1, 21):
@@ -503,7 +516,8 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
     ):
         proof.note(
             "target-identification.log",
-            "BLOCKED: target-specific BOOT geometry or PlatformIO avrdude is unavailable; no serial ports opened.\n",
+            "BLOCKED: target-specific BOOT geometry or PlatformIO avrdude is unavailable; "
+            "no serial ports opened.\n",
         )
         return 2
 
@@ -558,7 +572,7 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
                 "codesize": codesize_path.read_bytes()[0],
                 "bodcfg": bodcfg_path.read_bytes()[0],
             }
-        except OSError, IndexError:
+        except (OSError, IndexError):
             observed = None
         (proof.run_dir / f"target-{role}-layout.json").write_text(
             json.dumps({"expected": expected_fuses[role], "observed": observed}, indent=2) + "\n"
@@ -575,7 +589,7 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
                 or serial_path.read_bytes() != expected_serial
             ):
                 all_ok = False
-        except OSError, ValueError, KeyError:
+        except (OSError, ValueError, KeyError):
             all_ok = False
 
     ports_after = check_port_owners(proof, "identify-postflight")
@@ -584,7 +598,8 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
     if all_ok:
         proof.note(
             "target-identification.log",
-            "PASS: both UPDI targets match AVR128DA28 and their configured BOOT/APPCODE/BOD fuses; no writes performed.\n",
+            "PASS: both UPDI targets match AVR128DA28 and their configured BOOT/APPCODE/BOD "
+            "fuses; no writes performed.\n",
         )
         return 0
     proof.note(
@@ -597,7 +612,7 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
 def effective_project_sections(config_text: str) -> dict[str, dict[str, object]] | None:
     try:
         configuration = json.loads(config_text)
-    except TypeError, json.JSONDecodeError:
+    except (TypeError, json.JSONDecodeError):
         return None
     if not isinstance(configuration, list):
         return None
@@ -684,12 +699,12 @@ def shared_rf_profile(config_text: str) -> dict[str, object] | None:
         return None
     try:
         sys.path.insert(0, str(ROOT / "tools/config"))
-        from generate_lora_config import generate
+        from generate_lora_config import generate  # type: ignore[import-not-found]
 
         generate(check=True)
         manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
         return dict(manifest["shared"]["radio"])
-    except KeyError, OSError, ValueError:
+    except (KeyError, OSError, ValueError):
         return None
 
 
@@ -713,7 +728,7 @@ def radio_profile_compile_flags(config_text: str) -> list[str] | None:
         if role not in ("sender", "receiver"):
             return None
         return [f"-DLORA_ROLE_{role.upper()}=1"]
-    except KeyError, OSError, ValueError:
+    except (KeyError, OSError, ValueError):
         return None
 
 
@@ -804,13 +819,16 @@ def parse_ihex_range(data: bytes) -> dict[str, int]:
         if not raw_line:
             continue
         if eof or not raw_line.startswith(b":"):
-            raise ValueError("invalid Intel HEX record order or prefix")
+            msg = "invalid Intel HEX record order or prefix"
+            raise ValueError(msg)
         try:
             record = bytes.fromhex(raw_line[1:].decode("ascii"))
         except (UnicodeDecodeError, ValueError) as exc:
-            raise ValueError("invalid Intel HEX encoding") from exc
+            msg = "invalid Intel HEX encoding"
+            raise ValueError(msg) from exc
         if len(record) < 5 or len(record) != record[0] + 5 or sum(record) & 0xFF:
-            raise ValueError("invalid Intel HEX length or checksum")
+            msg = "invalid Intel HEX length or checksum"
+            raise ValueError(msg)
         length = record[0]
         address = int.from_bytes(record[1:3], "big")
         record_type = record[3]
@@ -830,9 +848,11 @@ def parse_ihex_range(data: bytes) -> dict[str, int]:
         elif record_type in (3, 5) and length == 4:
             continue
         else:
-            raise ValueError(f"unsupported Intel HEX record type {record_type}")
+            msg = f"unsupported Intel HEX record type {record_type}"
+            raise ValueError(msg)
     if not eof or lowest is None:
-        raise ValueError("Intel HEX is missing data or EOF record")
+        msg = "Intel HEX is missing data or EOF record"
+        raise ValueError(msg)
     return {"start": lowest, "end_exclusive": highest_exclusive, "data_bytes": data_bytes}
 
 
@@ -858,7 +878,11 @@ def target_fuses(config_text: str, role: str) -> dict[str, int] | None:
         name: _config_int(layout.get(f"{role}_{name}"))
         for name in ("bootsize", "codesize", "bodcfg")
     }
-    return values if all(value is not None for value in values.values()) else None
+    return (
+        cast("dict[str, int]", values)
+        if all(value is not None for value in values.values())
+        else None
+    )
 
 
 def application_bounds_for_environment(
@@ -940,7 +964,7 @@ def application_layout_verified(environments: tuple[str, ...], effective_config:
         hex_path = ROOT / ".pio" / "build" / env / "firmware.hex"
         try:
             image_range = parse_ihex_range(hex_path.read_bytes())
-        except OSError, ValueError:
+        except (OSError, ValueError):
             return False
         if not image_fits_application(image_range, bounds):
             return False
@@ -952,7 +976,9 @@ class ProofRun:
         self.run_dir = run_dir
         self.run_dir.mkdir(parents=True, exist_ok=False)
 
-    def command(self, name: str, argv: list[str], timeout: int | None = None):
+    def command(
+        self, name: str, argv: list[str], timeout: int | None = None
+    ) -> tuple[int, bytes, bytes]:
         try:
             result = subprocess.run(
                 argv, cwd=ROOT, capture_output=True, timeout=timeout, check=False
@@ -1099,8 +1125,8 @@ def host_tests(proof: ProofRun, effective_config: str) -> int:
 
 def firmware_measurement(env: str, output: bytes) -> dict[str, object]:
     build_dir = ROOT / ".pio" / "build" / env
-    manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
-    result: dict[str, object] = {
+    manifest: Json = json.loads((ROOT / "generated/lora_manifest.json").read_text())
+    result: dict[str, Json] = {
         "environment": env,
         "origin": "FIRMWARE_BUILD",
         "build_exit_code": 0,
@@ -1112,14 +1138,14 @@ def firmware_measurement(env: str, output: bytes) -> dict[str, object]:
         path = build_dir / f"firmware.{extension}"
         if path.is_file():
             data = path.read_bytes()
-            file_result: dict[str, object] = {
+            file_result: dict[str, Json] = {
                 "bytes": len(data),
                 "sha256": hashlib.sha256(data).hexdigest(),
             }
             if extension == "hex":
                 try:
                     file_result["address_range"] = parse_ihex_range(data)
-                    from device_detection.firmware_identity import normalize_ihex_region
+                    from device_detection.firmware_identity import normalize_ihex_region  # type: ignore[import-not-found]
 
                     base = file_result["address_range"]["start"]
                     entry = normalize_ihex_region(data.decode("ascii"), base, base + 4)
@@ -1162,7 +1188,7 @@ def firmware_measurement(env: str, output: bytes) -> dict[str, object]:
 
 
 def clean_builds(proof: ProofRun, effective_config: str = "") -> int:
-    measurements = []
+    measurements: list[dict[str, Json]] = []
     for env in ENVIRONMENTS:
         clean_code, _, _ = proof.command(
             f"{env}-clean",
@@ -1189,7 +1215,7 @@ def clean_builds(proof: ProofRun, effective_config: str = "") -> int:
         if build_code != 0:
             return 1
         measurements.append(firmware_measurement(env, stdout + stderr))
-    for env, measurement in zip(ENVIRONMENTS, measurements):
+    for env, measurement in zip(ENVIRONMENTS, measurements, strict=False):
         hex_info = measurement.get("hex", {})
         address_range = hex_info.get("address_range")
         measurement["application_layout_safe"] = image_fits_application(
@@ -1199,7 +1225,10 @@ def clean_builds(proof: ProofRun, effective_config: str = "") -> int:
     layout = (
         "SAFE: all HEX files start at their target fuse boundary and fit the application region.\n"
         if all(item["application_layout_safe"] for item in measurements)
-        else "BLOCKED: HEX range does not start at its target fuse boundary, exceeds the application region, or target geometry is unavailable.\n"
+        else (
+            "BLOCKED: HEX range does not start at its target fuse boundary, exceeds the "
+            "application region, or target geometry is unavailable.\n"
+        )
     )
     proof.note("application-layout.log", layout)
     (proof.run_dir / "firmware-measurements.json").write_text(
@@ -1266,7 +1295,9 @@ def read_only_preflight(
     return 0 if not missing else 2
 
 
-def physical_readiness_errors(args, require_rf=False):
+def physical_readiness_errors(
+    args: argparse.Namespace, require_rf: bool = False
+) -> list[str]:
     errors = []
     if getattr(args, "physical_mapping_verified", False) is not True:
         errors.append("physical board mapping")
@@ -1277,16 +1308,22 @@ def physical_readiness_errors(args, require_rf=False):
     return errors
 
 
-def receiver_boot_handoff_supported(proof, args=None, effective_config=None):
+def receiver_boot_handoff_supported(
+    proof: ProofRun,
+    args: argparse.Namespace | None = None,
+    effective_config: str | None = None,
+) -> bool:
     receipt = getattr(args, "receiver_boot_evidence", None)
     if receipt is not None:
+        if args is None:
+            return False
         if not getattr(args, "boot_layout_verified", False) or physical_readiness_errors(args):
             return False
         try:
-            from receiver_boot import verify_live_receipt
+            from receiver_boot import verify_live_receipt  # type: ignore[import-not-found]
 
-            return verify_live_receipt(proof, receipt)
-        except OSError, ValueError, KeyError, subprocess.SubprocessError:
+            return bool(verify_live_receipt(proof, receipt))
+        except (OSError, ValueError, KeyError, subprocess.SubprocessError):
             return False
     if getattr(args, "boot_layout_verified", False) and effective_config is not None:
         bounds = application_bounds_for_environment(effective_config, "receiver")
@@ -1294,10 +1331,11 @@ def receiver_boot_handoff_supported(proof, args=None, effective_config=None):
         if bounds is not None and bounds[0] == 0 and fuses and fuses["bootsize"] == 0:
             proof.note(
                 "receiver-boot-audit.json",
-                "PASS: verified BOOTSIZE=0 and application entry at 0x0000; no boot handoff required.\n",
+                "PASS: verified BOOTSIZE=0 and application entry at 0x0000; "
+                "no boot handoff required.\n",
             )
             return True
-    from boot_analysis import analyze
+    from boot_analysis import analyze  # type: ignore[import-not-found]
 
     backup = ARTIFACTS / "20261106T104722Z-target-backup/receiver-candidate-backup-flash.bin"
     objdump = Path.home() / ".platformio/packages/toolchain-atmelavr/bin/avr-objdump"
@@ -1313,25 +1351,28 @@ def receiver_boot_handoff_supported(proof, args=None, effective_config=None):
         if audit["verdict"] != "TRANSFER_PRESENT":
             proof.note(
                 "receiver-boot-blocker.log",
-                "BLOCKED: saved Receiver reset path does not establish application entry at 0x5800; boot handoff/recovery must be resolved before writing.\n",
+                "BLOCKED: saved Receiver reset path does not establish application entry at "
+                "0x5800; boot handoff/recovery must be resolved before writing.\n",
             )
             return False
         return audit["application_transfers"] == [0x5800] and not audit["unresolved"]
-    except OSError, ValueError, subprocess.SubprocessError:
+    except (OSError, ValueError, subprocess.SubprocessError):
         return False
 
 
-def prepare_receiver_boot(proof):
+def prepare_receiver_boot(proof: ProofRun) -> int:
     from receiver_boot import prepare
 
     try:
-        return prepare(proof)
+        return cast("int", prepare(proof))
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         proof.note("receiver-boot-prepare.log", f"FAIL: {error}; no hardware accessed.\n")
         return 1
 
 
-def program_receiver_boot(proof, args, restore=False):
+def program_receiver_boot(
+    proof: ProofRun, args: argparse.Namespace, restore: bool = False
+) -> int:
     from receiver_boot import install
 
     if args.stage != ("receiver-boot-restore" if restore else "receiver-boot-install"):
@@ -1341,7 +1382,7 @@ def program_receiver_boot(proof, args, restore=False):
         )
         return 2
     try:
-        return install(proof, args, restore=restore)
+        return cast("int", install(proof, args, restore=restore))
     except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
         proof.note(
             "receiver-boot-install.log", f"FAIL: {error}; no automatic retry or chip erase.\n"
@@ -1350,43 +1391,54 @@ def program_receiver_boot(proof, args, restore=False):
 
 
 def program_application(
-    proof,
-    environment,
-    effective_config,
+    proof: ProofRun,
+    environment: str,
+    effective_config: str,
     *,
-    approved_sha=None,
-    approved_serial=None,
-    approved_pages=None,
-) -> int | None:
+    approved_sha: str | None = None,
+    approved_serial: str | None = None,
+    approved_pages: tuple[int, int] | None = None,
+) -> int:
     """AVRDUDE -D suppresses auto erase; explicitly erase only the validated image pages."""
     from device_detection.firmware_identity import normalize_ihex_region
-    from receiver_boot import AVRDUDE, AVRDUDE_CONF, ihex, read_snapshot, require_preserved
+    from receiver_boot import (
+        AVRDUDE,
+        AVRDUDE_CONF,
+        ihex,
+        read_snapshot,
+        require_preserved,
+    )
 
     role = "receiver" if environment.startswith("receiver") else "gateway"
     try:
         data = (ROOT / ".pio/build" / environment / "firmware.hex").read_bytes()
         region = parse_ihex_range(data)
         bounds = application_bounds_for_environment(effective_config, environment)
-        if not image_fits_application(region, bounds) or region["start"] % 512:
-            raise ValueError("application image does not fit target page boundaries")
+        if bounds is None or not image_fits_application(region, bounds) or region["start"] % 512:
+            msg = "application image does not fit target page boundaries"
+            raise ValueError(msg)
         start, end = region["start"], (region["end_exclusive"] + 511) // 512 * 512
         if end > bounds[1]:
-            raise ValueError("last application page exceeds approved Flash region")
+            msg = "last application page exceeds approved Flash region"
+            raise ValueError(msg)
         if approved_sha is not None and (
             hashlib.sha256(data).hexdigest() != approved_sha or approved_pages != (start, end)
         ):
-            raise ValueError("image hash or application pages differ from authorization")
+            msg = "image hash or application pages differ from authorization"
+            raise ValueError(msg)
         code, out, err = proof.command(
             environment + "-programmer-version", [str(AVRDUDE), "--version"]
         )
         if code or not re.search(rb"\bversion 8\.1\b", out + err):
-            raise ValueError("page-write strategy requires reviewed AVRDUDE 8.1")
-        snapshot_options = dict(current_target=True)
+            msg = "page-write strategy requires reviewed AVRDUDE 8.1"
+            raise ValueError(msg)
+        snapshot_options = {"current_target": True}
         if approved_serial is not None:
             snapshot_options["include_usersig"] = True
         before = read_snapshot(proof, environment + "-before-page-write", role, **snapshot_options)
         if approved_serial is not None and before["sernum"].hex() != approved_serial:
-            raise ValueError("live MCU serial differs from authorization")
+            msg = "live MCU serial differs from authorization"
+            raise ValueError(msg)
         expected = normalize_ihex_region(data.decode("ascii"), start, end)
         if before["flash"][start:end] == expected:
             proof.note(
@@ -1424,14 +1476,17 @@ def program_application(
         after = read_snapshot(proof, environment + "-after-page-write", role, **snapshot_options)
         require_preserved(before, after, start, end)
         if after["flash"][start:end] != expected:
-            raise ValueError("application full-page readback mismatch")
+            msg = "application full-page readback mismatch"
+            raise ValueError(msg)
         return 0
     except (OSError, ValueError, KeyError) as error:
         proof.note(environment + "-program.log", f"FAIL: {error}; no automatic retry.\n")
         return 1
 
 
-def tracker_app_upload(proof, args, effective_config):
+def tracker_app_upload(
+    proof: ProofRun, args: argparse.Namespace, effective_config: str
+) -> int:
     try:
         identity = json.loads((ROOT / "config/current_hardware.json").read_text())["receiver"]
         data = (ROOT / ".pio/build/receiver/firmware.hex").read_bytes()
@@ -1446,15 +1501,18 @@ def tracker_app_upload(proof, args, effective_config):
             or not re.fullmatch(r"[0-9a-f]{64}", args.image_sha256 or "")
             or hashlib.sha256(data).hexdigest() != args.image_sha256
             or pages != (args.page_start, args.page_end)
+            or bounds is None
             or not image_fits_application(region, bounds)
             or pages[1] > bounds[1]
         ):
-            raise ValueError("target, image, page range, or authorization mismatch")
+            msg = "target, image, page range, or authorization mismatch"
+            raise ValueError(msg)
         if (
             proof.command("tracker-path", ["readlink", "-e", PORTS["receiver"]])[0] != 0
             or proof.command("tracker-owners", ["fuser", PORTS["receiver"]])[0] != 1
         ):
-            raise ValueError("Tracker port is missing or occupied")
+            msg = "Tracker port is missing or occupied"
+            raise ValueError(msg)
         return program_application(
             proof,
             "receiver",
@@ -1502,7 +1560,8 @@ def upload(
     if not application_layout_verified(("sender_hello", "receiver"), effective_config):
         proof.note(
             "upload.log",
-            "BLOCKED: firmware HEX is not verified inside its target executable region; no upload attempted.\n",
+            "BLOCKED: firmware HEX is not verified inside its target executable region; "
+            "no upload attempted.\n",
         )
         return 2
     if not upload_config_preserves_flash(effective_config):
@@ -1514,7 +1573,8 @@ def upload(
     if not upload_ports_match(effective_config):
         proof.note(
             "upload.log",
-            "BLOCKED: effective upload ports do not match the verified Sender/Receiver paths; no upload attempted.\n",
+            "BLOCKED: effective upload ports do not match the verified Sender/Receiver paths; "
+            "no upload attempted.\n",
         )
         return 2
     if not args.boot_layout_verified and not args.target_identification_attempted:
@@ -1552,12 +1612,17 @@ def upload(
         proof.note("upload.log", "FAIL: uploaded image readback/signature mismatch.\n")
         return 1
     receipt = proof.run_dir / "physical-upload.json"
-    receipt.write_text(json.dumps(dict(origin="PHYSICAL_UPDI", images=images), indent=2) + "\n")
+    receipt.write_text(json.dumps({"origin": "PHYSICAL_UPDI", "images": images}, indent=2) + "\n")
     args.upload_evidence = receipt
     return 0
 
 
-def start_rf_monitor(proof: ProofRun, role: str, port: str, output_queue: queue.Queue):
+def start_rf_monitor(
+    proof: ProofRun,
+    role: str,
+    port: str,
+    output_queue: queue.Queue[tuple[str, str, bytes | None]],
+) -> dict[str, Any]:
     argv = ["uv", "run", "python", "-u", "third_party/upditerm/upditerm.py", port, "38400"]
     (proof.run_dir / f"rf-monitor-{role}.command.log").write_text(" ".join(argv) + "\n")
     environment = os.environ.copy()
@@ -1576,7 +1641,7 @@ def start_rf_monitor(proof: ProofRun, role: str, port: str, output_queue: queue.
     for stream_name in ("stdout", "stderr"):
         stream = getattr(process, stream_name)
 
-        def pump(name=stream_name, source=stream) -> None:
+        def pump(name: str = stream_name, source: Any = stream) -> None:
             with (proof.run_dir / f"rf-monitor-{role}.{name}.log").open("wb") as log:
                 while True:
                     line = source.readline()
@@ -1593,7 +1658,7 @@ def start_rf_monitor(proof: ProofRun, role: str, port: str, output_queue: queue.
     return {"process": process, "threads": threads}
 
 
-def stop_rf_monitor(monitor) -> int | None:
+def stop_rf_monitor(monitor: dict[str, Any] | None) -> int | None:
     if monitor is None:
         return None
     process = monitor["process"]
@@ -1603,28 +1668,24 @@ def stop_rf_monitor(monitor) -> int | None:
         try:
             process.wait(timeout=2)
         except subprocess.TimeoutExpired:
-            try:
+            with contextlib.suppress(ProcessLookupError):
                 os.killpg(process.pid, signal.SIGTERM)
-            except ProcessLookupError:
-                pass
             try:
                 process.wait(timeout=2)
             except subprocess.TimeoutExpired:
-                try:
+                with contextlib.suppress(ProcessLookupError):
                     os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
                 process.wait()
     for thread in monitor["threads"]:
         thread.join(timeout=2)
-    return process.returncode
+    return cast("int | None", process.returncode)
 
 
-def capture_radio_spi_log(proof: ProofRun, role: str, port: str) -> dict[str, object]:
-    output_queue: queue.Queue = queue.Queue()
-    lines = []
-    monitor = None
-    monitor_error = None
+def capture_radio_spi_log(proof: ProofRun, role: str, port: str) -> dict[str, Json]:
+    output_queue: queue.Queue[tuple[str, str, bytes | None]] = queue.Queue()
+    lines: list[str] = []
+    monitor: dict[str, Any] | None = None
+    monitor_error: str | None = None
     try:
         monitor = start_rf_monitor(proof, role.lower(), port, output_queue)
         deadline = time.monotonic() + RADIO_SPI_TIMEOUT_SECONDS
@@ -1768,7 +1829,8 @@ def radio_spi_smoke(proof: ProofRun, args: argparse.Namespace, effective_config:
     if report["status"] == "PASS":
         proof.note(
             "radio-spi-smoke.log",
-            "PASS: both radios returned a supported SPI version in RF-disabled diagnostic firmware.\n",
+            "PASS: both radios returned a supported SPI version in RF-disabled diagnostic "
+            "firmware.\n",
         )
         return 0
     proof.note(
@@ -1779,7 +1841,7 @@ def radio_spi_smoke(proof: ProofRun, args: argparse.Namespace, effective_config:
     return 2
 
 
-def upload_evidence_matches(path, manifest) -> bool | None:
+def upload_evidence_matches(path: str | Path | None, manifest: Json) -> bool | None:
     if path is None:
         return False
     try:
@@ -1807,15 +1869,18 @@ def upload_evidence_matches(path, manifest) -> bool | None:
             ):
                 return False
         return True
-    except OSError, ValueError, KeyError, TypeError:
+    except (OSError, ValueError, KeyError, TypeError):
         return False
 
 
-def radio_startup_matches(lines, role, radio):
+def radio_startup_matches(lines: Sequence[str], role: str, radio: Mapping[str, Json]) -> bool:
     required = [
         f"[{role}] RADIO_INIT E=0",
         f"[{role}] RADIO_READY",
-        f"[{role}] RADIO_PROFILE F100={round(radio['frequency_mhz'] * 100)} P={radio['tx_power_dbm']}",
+        (
+            f"[{role}] RADIO_PROFILE F100={round(radio['frequency_mhz'] * 100)} "
+            f"P={radio['tx_power_dbm']}"
+        ),
         f"[{role}] RADIO_MOD SF=7 BW=125 CR=5",
         f"[{role}] RADIO_FRAME SW=12 PRE=8 CRC=1 HDR=E IQ=0",
     ]
@@ -1828,7 +1893,9 @@ def radio_startup_matches(lines, role, radio):
     )
 
 
-def validate_symmetric_exchange(logs, session, diagnostic_test):
+def validate_symmetric_exchange(
+    logs: Mapping[str, str], session: int, diagnostic_test: str
+) -> list[str]:
     """Require both endpoints' correlated SSOT events; text alone is not RF proof."""
     if diagnostic_test not in ("T01", "T02", "T03", "T04"):
         return ["invalid symmetric diagnostic"]
@@ -1841,8 +1908,8 @@ def validate_symmetric_exchange(logs, session, diagnostic_test):
         r"^\[(GATEWAY|RECEIVER)\] ([A-Z_]+) T=(\d+) SID=([0-9A-F]{4}) "
         r"SRC=(\d+) DST=(\d+) TYPE=([0-9A-F]{2}) Q=(\d+) E=(-?\d+) IRQ=([0-9A-F]{2})$"
     )
-    events = {sender: [], receiver: []}
-    issues = []
+    events: dict[str, list[tuple[str, int, int]]] = {sender: [], receiver: []}
+    issues: list[str] = []
     for role, text in logs.items():
         if text.splitlines().count(f"[{role}] TRANSPORT=SSOT_SYMMETRIC_V1") != 1:
             issues.append(f"{role}: missing symmetric transport identity")
@@ -1867,9 +1934,10 @@ def validate_symmetric_exchange(logs, session, diagnostic_test):
                 issues.append(f"{role}: invalid transaction identity or result")
             if name.endswith("_TX_DONE") and not irq & 8:
                 issues.append(f"{role}: missing physical TxDone")
-            if name.endswith("_RX") or name == "DATA_VALIDATED":
-                if not irq & 0x40 or irq & 0x20:
-                    issues.append(f"{role}: invalid RX IRQ/CRC")
+            if (name.endswith("_RX") or name == "DATA_VALIDATED") and (
+                not irq & 0x40 or irq & 0x20
+            ):
+                issues.append(f"{role}: invalid RX IRQ/CRC")
             events[role].append((name, int(timestamp), type_))
     required = {
         sender: [
@@ -1888,7 +1956,10 @@ def validate_symmetric_exchange(logs, session, diagnostic_test):
         if selected != names:
             issues.append(f"{role}: incomplete, duplicate, or out-of-order radio events")
         times = [timestamp for _, timestamp, _ in events[role]]
-        if any((right - left) & 0xFFFFFFFF >= 0x80000000 for left, right in zip(times, times[1:])):
+        if any(
+            (right - left) & 0xFFFFFFFF >= 0x80000000
+            for left, right in itertools.pairwise(times)
+        ):
             issues.append(f"{role}: nonmonotonic device timestamps")
     for role, name in [(sender, "DATA_PAYLOAD")] + ([] if nack else [(receiver, "PAYLOAD_BYTES")]):
         expected = (
@@ -1900,7 +1971,14 @@ def validate_symmetric_exchange(logs, session, diagnostic_test):
     return issues
 
 
-def validate_live_proof(journal, manifest, images, run_id, session, diagnostic_test="T01"):
+def validate_live_proof(
+    journal: Sequence[Json],
+    manifest: Json,
+    images: Json,
+    run_id: str,
+    session: int,
+    diagnostic_test: str = "T01",
+) -> dict[str, Json]:
     """Validate captured events; provenance comes from fresh UPDI image readback, not log labels."""
     issues = []
     logs = {
@@ -1936,34 +2014,38 @@ def validate_live_proof(journal, manifest, images, run_id, session, diagnostic_t
         reverse = diagnostic_test in ("T03", "T04")
         nack = diagnostic_test in ("T02", "T04")
         receiving = "GATEWAY" if reverse else "RECEIVER"
-        commands = [
+        symmetric_commands = [
             item["line"] for item in journal if item["role"] == "HOST" and item["line"] != "P"
         ]
-        if commands != [("N" if nack else "R") + f"{session:04X}", f"S{session:04X}"]:
+        if symmetric_commands != [("N" if nack else "R") + f"{session:04X}", f"S{session:04X}"]:
             issues.append("incorrect or repeated symmetric control commands")
-        ready = [
+        ready_positions = [
             i
             for i, item in enumerate(journal)
             if item["role"] == receiving and item["line"] == f"[{receiving}] RX_READY"
         ]
-        start = [
+        start_positions = [
             i
             for i, item in enumerate(journal)
             if item["role"] == "HOST" and item["line"].startswith("S")
         ]
-        if len(ready) != 1 or len(start) != 1 or ready[0] >= start[0]:
+        if (
+            len(ready_positions) != 1
+            or len(start_positions) != 1
+            or ready_positions[0] >= start_positions[0]
+        ):
             issues.append("DATA requested before receiver ready")
-        return dict(
-            valid=not issues,
-            issues=sorted(set(issues)),
-            session=session,
-            origin="STRUCTURAL_LOG_VALIDATION",
-            diagnostic_test=diagnostic_test,
-        )
+        return {
+            "valid": not issues,
+            "issues": sorted(set(issues)),
+            "session": session,
+            "origin": "STRUCTURAL_LOG_VALIDATION",
+            "diagnostic_test": diagnostic_test,
+        }
     commands = [(i, item["line"]) for i, item in enumerate(journal) if item["role"] == "HOST"]
     if [line for _, line in commands] != [f"R{session:04X}", f"S{session:04X}"]:
         issues.append("incorrect, repeated or continuation commands")
-    positions = {}
+    positions: dict[str, list[int]] = {}
     records = []
     for index, item in enumerate(journal):
         role, line = item["role"], item["line"]
@@ -2003,12 +2085,11 @@ def validate_live_proof(journal, manifest, images, run_id, session, diagnostic_t
             issues.append("malformed protocol event")
         if any(
             marker in line for marker in ("FAILED", "TIMEOUT", "CAMPAIGN_CONTINUE", "WAIT_CAMPAIGN")
-        ):
+        ) and "ACK_TIMEOUT C=" not in line:
             # An ACK timeout may precede a bounded retransmission; TX/init failures cannot pass.
-            if "ACK_TIMEOUT C=" not in line:
-                issues.append("radio or protocol failure")
+            issues.append("radio or protocol failure")
 
-    def unique(line):
+    def unique(line: str) -> int:
         found = positions.get(line, [])
         if len(found) != 1:
             issues.append(f"missing or repeated {line}")
@@ -2073,7 +2154,9 @@ def validate_live_proof(journal, manifest, images, run_id, session, diagnostic_t
     }
 
 
-def verify_installed_images(proof, effective_config, manifest, run_id):
+def verify_installed_images(
+    proof: ProofRun, effective_config: str, manifest: Json, run_id: str
+) -> dict[str, Json] | None:
     """Read signature and Flash anew; compare image bytes before allowing any S command."""
     from device_detection.firmware_identity import normalize_ihex_region
     from receiver_boot import read_snapshot_command
@@ -2081,7 +2164,7 @@ def verify_installed_images(proof, effective_config, manifest, run_id):
     core = Path(os.environ.get("PLATFORMIO_CORE_DIR", str(Path.home() / ".platformio")))
     executable = core / "packages/tool-avrdude/avrdude"
     configuration = core / "packages/tool-avrdude/avrdude.conf"
-    images = {}
+    images: dict[str, Json] = {}
     for role, environment in [("GATEWAY", "sender_hello"), ("RECEIVER", "receiver")]:
         image = ROOT / ".pio/build" / environment / "firmware.hex"
         signature_path = proof.run_dir / f"{role.lower()}-live-signature.bin"
@@ -2137,27 +2220,29 @@ def verify_installed_images(proof, effective_config, manifest, run_id):
                 or manifest["environments"][environment]["build_id"].encode() not in expected
             ):
                 return None
-            images[role] = dict(
-                origin="PHYSICAL_UPDI",
-                run_id=run_id,
-                verified=True,
-                signature="1e970a",
-                port=PORTS[role.lower()],
-                environment=environment,
-                serial_number=serial_path.read_bytes().hex(),
-                firmware_sha256=hashlib.sha256(data).hexdigest(),
-                readback_region_sha256=hashlib.sha256(flash[start:end]).hexdigest(),
-                build_id=manifest["environments"][environment]["build_id"],
-                start=start,
-                end=end,
-            )
-        except OSError, ValueError, KeyError:
+            images[role] = {
+                "origin": "PHYSICAL_UPDI",
+                "run_id": run_id,
+                "verified": True,
+                "signature": "1e970a",
+                "port": PORTS[role.lower()],
+                "environment": environment,
+                "serial_number": serial_path.read_bytes().hex(),
+                "firmware_sha256": hashlib.sha256(data).hexdigest(),
+                "readback_region_sha256": hashlib.sha256(flash[start:end]).hexdigest(),
+                "build_id": manifest["environments"][environment]["build_id"],
+                "start": start,
+                "end": end,
+            }
+        except (OSError, ValueError, KeyError):
             return None
     proof.note("live-image-identities.json", json.dumps(images, indent=2) + "\n")
     return images
 
 
-def shared_identity_matches(logs, fingerprint, protocol_version) -> bool:
+def shared_identity_matches(
+    logs: Mapping[str, str], fingerprint: str, protocol_version: int | str
+) -> bool:
     for role in ("GATEWAY", "RECEIVER"):
         lines = logs.get(role, "").splitlines()
         hashes = [line for line in lines if line.startswith(f"[{role}] CONFIG_FINGERPRINT=")]
@@ -2169,22 +2254,27 @@ def shared_identity_matches(logs, fingerprint, protocol_version) -> bool:
     return True
 
 
-def reserve_session(proof, run_id):
+def reserve_session(proof: ProofRun, run_id: str) -> int:
     import secrets
 
     used = set()
     for path in ARTIFACTS.glob("*/run-session.json"):
         try:
             used.add(json.loads(path.read_text())["session"])
-        except OSError, ValueError, KeyError, TypeError:
-            raise ValueError(f"unreadable prior session reservation: {path}")
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            msg = f"unreadable prior session reservation: {path}"
+            raise ValueError(msg) from error
     initial = secrets.randbelow(65535)
     for offset in range(65535):
         session = (initial + offset) % 65535 + 1
         if session not in used:
-            proof.note("run-session.json", json.dumps(dict(run_id=run_id, session=session)) + "\n")
+            proof.note(
+                "run-session.json",
+                json.dumps({"run_id": run_id, "session": session}) + "\n",
+            )
             return session
-    raise ValueError("all 16-bit session IDs are reserved; no RF command issued")
+    msg = "all 16-bit session IDs are reserved; no RF command issued"
+    raise ValueError(msg)
 
 
 def rf_test(
@@ -2201,9 +2291,12 @@ def rf_test(
             "BLOCKED: configuration/image layout/target paths invalid; no ports opened.\n",
         )
         return 2
-    if not args.boot_layout_verified and not args.target_identification_attempted:
-        if identify_targets(proof, args, effective_config) != 0:
-            return 2
+    if (
+        not args.boot_layout_verified
+        and not args.target_identification_attempted
+        and identify_targets(proof, args, effective_config) != 0
+    ):
+        return 2
     blockers = hardware_blockers(
         "rf-test",
         mapping_verified=args.physical_mapping_verified,
@@ -2252,24 +2345,28 @@ def rf_test(
     sender_role = "RECEIVER" if reverse else "GATEWAY"
     environments = {"GATEWAY": "sender_hello", "RECEIVER": "receiver"}
     symmetric = False
-    journal = []
-    monitors = {}
-    output_queue = queue.Queue()
+    journal: list[dict[str, Json]] = []
+    monitors: dict[str, dict[str, Any]] = {}
+    output_queue: queue.Queue[tuple[str, str, bytes | None]] = queue.Queue()
     deadline = time.monotonic() + RF_SINGLE_PACKET_TIMEOUT_SECONDS
     armed = False
     started = False
     capture_error = False
-    completion_seen_at = None
+    completion_seen_at: float | None = None
     stop_reason = ""
-    result = dict(valid=False, issues=["capture incomplete"], origin="UNPROVEN")
+    result: dict[str, Json] = {
+        "valid": False,
+        "issues": ["capture incomplete"],
+        "origin": "UNPROVEN",
+    }
 
-    def record(role, line) -> None:
-        journal.append(dict(role=role, line=line, observed_monotonic_ns=time.monotonic_ns()))
+    def record(role: str, line: str) -> None:
+        journal.append({"role": role, "line": line, "observed_monotonic_ns": time.monotonic_ns()})
 
-    def lines(role):
+    def lines(role: str) -> list[str]:
         return [item["line"] for item in journal if item["role"] == role]
 
-    def identity(role, environment):
+    def identity(role: str, environment: str) -> bool:
         captured = lines(role)
         expected = manifest["environments"][environment]["build_id"]
         return (
@@ -2286,17 +2383,19 @@ def rf_test(
             == 1
         )
 
-    def command(role, prefix) -> None:
+    def command(role: str, prefix: str) -> None:
         text = "P" if prefix == "P" else f"{prefix}{session:04X}"
         process = monitors[role]["process"]
         if (
             prefix != "P"
             and any(monitor["process"].poll() is not None for monitor in monitors.values())
         ) or process.stdin is None:
-            raise OSError("monitor disconnected before control command")
+            msg = "monitor disconnected before control command"
+            raise OSError(msg)
         written = process.stdin.write(text.encode("ascii"))
         if written != len(text):
-            raise OSError("incomplete control-command write")
+            msg = "incomplete control-command write"
+            raise OSError(msg)
         process.stdin.flush()
         record("HOST", text)
 
@@ -2331,9 +2430,8 @@ def rf_test(
                 completion_seen_at = time.monotonic()
             if symmetric and any(
                 name in line for name in ("TRANSACTION_COMPLETE ", "NACK_ACCEPTED ")
-            ):
-                if completion_seen_at is None:
-                    completion_seen_at = time.monotonic()
+            ) and completion_seen_at is None:
+                completion_seen_at = time.monotonic()
             expected_rejection = (
                 nack and "TRANSACTION_FAILED " in line and "TYPE=09" in line and " E=0 " in line
             )
@@ -2392,6 +2490,7 @@ def rf_test(
                 ]
                 if all(parked):
                     break
+                key, stream, raw = "", "", None
                 try:
                     key, stream, raw = output_queue.get(timeout=0.1)
                 except queue.Empty:
@@ -2464,17 +2563,26 @@ def main() -> int:
     parser.add_argument(
         "--power-verified",
         action="store_true",
-        help="confirm safe supply, common ground, UPDI wiring and no CP2102 backfeed; does not assert measurements",
+        help=(
+            "confirm safe supply, common ground, UPDI wiring and no CP2102 backfeed; "
+            "does not assert measurements"
+        ),
     )
     parser.add_argument(
         "--rf-hardware-verified",
         action="store_true",
-        help="confirm connected compatible antennas/modules and permitted RF power including antenna gain",
+        help=(
+            "confirm connected compatible antennas/modules and permitted RF power "
+            "including antenna gain"
+        ),
     )
     parser.add_argument(
         "--no-meter-mode",
         action="store_true",
-        help="no instrument measurements; mapping, electrical safety and RF suitability confirmations remain required",
+        help=(
+            "no instrument measurements; mapping, electrical safety and RF suitability "
+            "confirmations remain required"
+        ),
     )
     parser.add_argument("--authorize-upload", action="store_true")
     parser.add_argument("--target-role", choices=("receiver",))
@@ -2525,16 +2633,16 @@ def main() -> int:
     )
     args = parser.parse_args()
     if args.raw_mvp_logs:
-        result = parse_raw_mvp_logs(*(path.read_text() for path in args.raw_mvp_logs))
-        print(json.dumps(result, indent=2))
-        return 0 if result["passed"] else 1
+        raw_result = parse_raw_mvp_logs(*(path.read_text() for path in args.raw_mvp_logs))
+        print(json.dumps(raw_result, indent=2))
+        return 0 if raw_result["passed"] else 1
     args.boot_layout_verified = False
     args.target_identification_attempted = False
 
     proof = new_run()
     config_code, effective_config = project_configuration(proof)
     profile_ok = valid_rf_profile_config(effective_config)
-    stages = {
+    stages: dict[str, Callable[[], int]] = {
         "config": lambda: config_code,
         "host-tests": lambda: host_tests(proof, effective_config),
         "builds": lambda: clean_builds(proof, effective_config),

@@ -14,12 +14,17 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "tools" / "config"))
 sys.path.insert(0, str(ROOT / "third_party" / "upditerm"))
 
-import rf_proof as rf
-import upditerm
-from arq_trial import close_updi_without_recovery, read_reset_state, sample_updi_idle
+import rf_proof as rf  # type: ignore[import-not-found]
+import upditerm  # type: ignore[import-not-found]
+from arq_trial import (  # type: ignore[import-not-found]
+    close_updi_without_recovery,
+    read_reset_state,
+    sample_updi_idle,
+)
 
 
 def run() -> Path:
+    """Record a bounded, read-only UPDI idle observation."""
     artifacts = ROOT / "artifacts" / "arq"
     run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ-updi-idle-control")
     run_dir = artifacts / run_id
@@ -29,15 +34,15 @@ def run() -> Path:
         run_dir = artifacts / f"{run_id}-{suffix}"
     proof = rf.ProofRun(run_dir)
     port = rf.PORTS["receiver"]
-    record = dict(
-        scope="non-RF UPDI idle control",
-        device_role="Tracker",
-        device_path=port,
-        interval_seconds=15,
-        rf_commands=0,
-        cpu_reset_requested=False,
-        startup_breaks=2,
-    )
+    record = {
+        "scope": "non-RF UPDI idle control",
+        "device_role": "Tracker",
+        "device_path": port,
+        "interval_seconds": 15,
+        "rf_commands": 0,
+        "cpu_reset_requested": False,
+        "startup_breaks": 2,
+    }
     session = None
     try:
         standby_files = sorted(
@@ -45,11 +50,13 @@ def run() -> Path:
             key=lambda path: path.stat().st_mtime_ns,
         )
         if not standby_files:
-            raise RuntimeError("no verified normal standby evidence")
+            msg = "no verified normal standby evidence"
+            raise RuntimeError(msg)
         standby_path = standby_files[-1]
         standby = json.loads(standby_path.read_text())
         if not standby.get("standby") or standby.get("rf_transmissions") != 0:
-            raise RuntimeError("latest normal standby evidence is not verified")
+            msg = "latest normal standby evidence is not verified"
+            raise RuntimeError(msg)
         record["standby_evidence"] = str(standby_path.relative_to(ROOT))
         record["firmware_sha256"] = standby["firmware"]["receiver"]
         owners = rf.check_port_owners(proof, "idle-control")

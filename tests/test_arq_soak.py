@@ -6,14 +6,18 @@ from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, Never, cast
 from unittest.mock import patch
 
 from tools import arq_trial
 from tools.config.arq_config import load_arq
-from typing import Never
 
 
-def confirmed_rf_preflight():
+def dynamic_attr(name: str) -> Any:
+    return getattr(arq_trial, name, None)
+
+
+def confirmed_rf_preflight() -> Any:
     return SimpleNamespace(
         physical_mapping_verified=True,
         power_verified=True,
@@ -23,32 +27,32 @@ def confirmed_rf_preflight():
     )
 
 
-def write_soak_progress(run_dir, plan, *, span_ns=1_000_000_000) -> None:
+def write_soak_progress(run_dir: Any, plan: Any, *, span_ns: Any=1_000_000_000) -> None:
     progress = run_dir / "soak/soak-progress.jsonl"
     progress.parent.mkdir(parents=True)
-    rows = []
+    rows: list[dict[str, Any]] = []
     for index in range(plan["sessions"]):
         started = 100 + span_ns * index // max(1, plan["sessions"] - 1)
         rows.extend(
             (
-                dict(event="SESSION_START", index=index + 1, monotonic_ns=started),
-                dict(event="SESSION_COMPLETE", index=index + 1, monotonic_ns=started + 1),
+                {"event": "SESSION_START", "index": index + 1, "monotonic_ns": started},
+                {"event": "SESSION_COMPLETE", "index": index + 1, "monotonic_ns": started + 1},
             )
         )
-    rows.append(dict(event="RESTORE_VERIFIED"))
+    rows.append({"event": "RESTORE_VERIFIED"})
     progress.write_text("".join(json.dumps(row) + "\n" for row in rows))
 
 
 class ArqSoakPlanTests(unittest.TestCase):
     def test_sf7_airtime_uses_max_wire_frame_and_response_lengths(self) -> None:
-        estimate = getattr(arq_trial, "lora_time_on_air_us", None)
+        estimate = dynamic_attr("lora_time_on_air_us")
         self.assertTrue(callable(estimate), "Semtech airtime calculation is required")
         config = load_arq()
         self.assertEqual(estimate(44, config), 92416)
         self.assertEqual(estimate(12, config), 41216)
 
     def test_stage_plan_is_paced_for_worst_case_retries(self) -> None:
-        build_plan = getattr(arq_trial, "build_soak_plan", None)
+        build_plan = dynamic_attr("build_soak_plan")
         self.assertTrue(callable(build_plan), "bounded soak plan is required")
         plan = build_plan("1-hour", load_arq())
         self.assertEqual(plan["sessions"], 61)
@@ -60,13 +64,13 @@ class ArqSoakPlanTests(unittest.TestCase):
         self.assertLessEqual(plan["tracker_duty_percent_at_interval"], 1.0)
 
     def test_soak_plan_rejects_unknown_stage(self) -> None:
-        build_plan = getattr(arq_trial, "build_soak_plan", None)
+        build_plan = dynamic_attr("build_soak_plan")
         self.assertTrue(callable(build_plan), "bounded soak plan is required")
         with self.assertRaises(ValueError):
             build_plan("unbounded", load_arq())
 
     def test_soak_stages_cannot_skip_failed_or_unrun_predecessors(self) -> None:
-        prerequisites = getattr(arq_trial, "missing_soak_prerequisites", None)
+        prerequisites = dynamic_attr("missing_soak_prerequisites")
         self.assertTrue(callable(prerequisites), "soak stage progression gate is required")
         completed = {"1-session": "PASS", "10-sessions": "PASS"}
         self.assertEqual(prerequisites("100-sessions", completed), [])
@@ -89,18 +93,18 @@ class ArqSoakPlanTests(unittest.TestCase):
             campaign.assert_not_called()
 
     def test_soak_summary_reports_success_ci_retries_and_sample_limits(self) -> None:
-        summarize = getattr(arq_trial, "summarize_soak_results", None)
+        summarize = dynamic_attr("summarize_soak_results")
         self.assertTrue(callable(summarize), "soak reliability summary is required")
         rows = [
-            dict(
-                complete=True,
-                delivered=1,
-                first_attempt=1,
-                attempts=1,
-                retries=0,
-                session_duration_s=2.0,
-                rtt=dict(count=1, average=55),
-            )
+            {
+                "complete": True,
+                "delivered": 1,
+                "first_attempt": 1,
+                "attempts": 1,
+                "retries": 0,
+                "session_duration_s": 2.0,
+                "rtt": {"count": 1, "average": 55},
+            }
             for _ in range(10)
         ]
         summary = summarize(rows, 10)
@@ -116,7 +120,7 @@ class ArqSoakPlanTests(unittest.TestCase):
         self.assertEqual(summary["ack_rtt_ms"]["p90"], None)
 
     def test_soak_metrics_derive_attempts_and_timeouts_from_validated_events(self) -> None:
-        derive = getattr(arq_trial, "soak_result_metrics", None)
+        derive = dynamic_attr("soak_result_metrics")
         self.assertTrue(callable(derive), "soak metrics must be bound to the raw transaction")
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle.json"
@@ -132,7 +136,7 @@ class ArqSoakPlanTests(unittest.TestCase):
                     }
                 )
             )
-            result = derive(dict(complete=True, delivered=1), bundle, 3.5)
+            result = derive({"complete": True, "delivered": 1}, bundle, 3.5)
         self.assertEqual(result["attempts"], 2)
         self.assertEqual(result["retries"], 1)
         self.assertEqual(result["ack_timeouts"], 1)
@@ -154,18 +158,18 @@ class ArqSoakPlanTests(unittest.TestCase):
                 )
             )
 
-            def fake_campaign(*, soak_plan, run_dir):
+            def fake_campaign(*, soak_plan: Any, run_dir: Any) -> Any:
                 run_dir.mkdir(parents=True)
                 rows = [
-                    dict(
-                        complete=True,
-                        delivered=1,
-                        first_attempt=1,
-                        attempts=1,
-                        retries=0,
-                        session_duration_s=2.0,
-                        rtt=dict(count=1, average=55),
-                    )
+                    {
+                        "complete": True,
+                        "delivered": 1,
+                        "first_attempt": 1,
+                        "attempts": 1,
+                        "retries": 0,
+                        "session_duration_s": 2.0,
+                        "rtt": {"count": 1, "average": 55},
+                    }
                     for _ in range(soak_plan["sessions"])
                 ]
                 (run_dir / "campaign.json").write_text(json.dumps(rows))
@@ -191,17 +195,17 @@ class ArqSoakPlanTests(unittest.TestCase):
                 json.dumps({"schema_version": 1, "stages": {"1-session": {"status": "PASS"}}})
             )
 
-            def fake_campaign(*, soak_plan, run_dir):
+            def fake_campaign(*, soak_plan: Any, run_dir: Any) -> Any:
                 run_dir.mkdir(parents=True)
                 rows = [
-                    dict(
-                        complete=True,
-                        delivered=1,
-                        first_attempt=1,
-                        attempts=1,
-                        session_duration_s=2.0,
-                        rtt=dict(count=1, average=55),
-                    )
+                    {
+                        "complete": True,
+                        "delivered": 1,
+                        "first_attempt": 1,
+                        "attempts": 1,
+                        "session_duration_s": 2.0,
+                        "rtt": {"count": 1, "average": 55},
+                    }
                     for _ in range(soak_plan["sessions"])
                 ]
                 rows[-1]["delivered"] = 0
@@ -238,17 +242,17 @@ class ArqSoakPlanTests(unittest.TestCase):
                 )
             )
 
-            def fake_campaign(*, soak_plan, run_dir):
+            def fake_campaign(*, soak_plan: Any, run_dir: Any) -> Any:
                 run_dir.mkdir(parents=True)
                 rows = [
-                    dict(
-                        complete=True,
-                        delivered=1,
-                        first_attempt=1,
-                        attempts=1,
-                        session_duration_s=2.0,
-                        rtt=dict(count=1, average=55),
-                    )
+                    {
+                        "complete": True,
+                        "delivered": 1,
+                        "first_attempt": 1,
+                        "attempts": 1,
+                        "session_duration_s": 2.0,
+                        "rtt": {"count": 1, "average": 55},
+                    }
                     for _ in range(soak_plan["sessions"])
                 ]
                 (run_dir / "campaign.json").write_text(json.dumps(rows))
@@ -270,13 +274,13 @@ class ArqSoakPlanTests(unittest.TestCase):
             artifacts = root / "artifacts/arq"
             artifacts.mkdir(parents=True)
 
-            def interrupted_campaign(*, soak_plan, run_dir) -> Never:
+            def interrupted_campaign(*, soak_plan: Any, run_dir: Any) -> Never:
                 run_dir.mkdir(parents=True)
                 (run_dir / "campaign.json").write_text("[]\n")
                 progress = run_dir / "soak/soak-progress.jsonl"
                 progress.parent.mkdir()
                 progress.write_text(
-                    json.dumps(dict(event="SESSION_START", index=1, monotonic_ns=100)) + "\n"
+                    json.dumps({"event": "SESSION_START", "index": 1, "monotonic_ns": 100}) + "\n"
                 )
                 raise KeyboardInterrupt
 
@@ -312,17 +316,17 @@ class ArqSoakPlanTests(unittest.TestCase):
                 )
             )
 
-            def fake_campaign(*, soak_plan, run_dir):
+            def fake_campaign(*, soak_plan: Any, run_dir: Any) -> Any:
                 run_dir.mkdir(parents=True)
-                row = dict(
-                    complete=True,
-                    delivered=1,
-                    first_attempt=1,
-                    attempts=1,
-                    retries=0,
-                    session_duration_s=2.0,
-                    rtt=dict(count=1, average=55),
-                )
+                row = {
+                    "complete": True,
+                    "delivered": 1,
+                    "first_attempt": 1,
+                    "attempts": 1,
+                    "retries": 0,
+                    "session_duration_s": 2.0,
+                    "rtt": {"count": 1, "average": 55},
+                }
                 (run_dir / "campaign.json").write_text(json.dumps([row]))
                 write_soak_progress(run_dir, soak_plan)
                 return run_dir
@@ -358,7 +362,7 @@ class ArqSoakPlanTests(unittest.TestCase):
             )
             with (
                 patch.object(arq_trial, "ROOT", root),
-                patch.object(arq_trial.os, "kill") as process_alive,
+                patch.object(dynamic_attr("os"), "kill") as process_alive,
                 patch.object(arq_trial, "campaign") as campaign,
             ):
                 with self.assertRaisesRegex(ValueError, "still active"):
@@ -387,24 +391,24 @@ class ArqSoakPlanTests(unittest.TestCase):
                 )
             )
 
-            def fake_campaign(*, soak_plan, run_dir):
+            def fake_campaign(*, soak_plan: Any, run_dir: Any) -> Any:
                 run_dir.mkdir(parents=True)
-                row = dict(
-                    complete=True,
-                    delivered=1,
-                    first_attempt=1,
-                    attempts=1,
-                    retries=0,
-                    session_duration_s=2.0,
-                    rtt=dict(count=1, average=55),
-                )
+                row = {
+                    "complete": True,
+                    "delivered": 1,
+                    "first_attempt": 1,
+                    "attempts": 1,
+                    "retries": 0,
+                    "session_duration_s": 2.0,
+                    "rtt": {"count": 1, "average": 55},
+                }
                 (run_dir / "campaign.json").write_text(json.dumps([row]))
                 write_soak_progress(run_dir, soak_plan)
                 return run_dir
 
             with (
                 patch.object(arq_trial, "ROOT", root),
-                patch.object(arq_trial.os, "kill", side_effect=ProcessLookupError),
+                patch.object(dynamic_attr("os"), "kill", side_effect=ProcessLookupError),
                 patch.object(arq_trial, "campaign", side_effect=fake_campaign),
             ):
                 arq_trial.soak_campaign("1-session", confirmed_rf_preflight())
@@ -416,7 +420,9 @@ class ArqSoakPlanTests(unittest.TestCase):
     def test_soak_plan_reports_firmware_retry_spacing_duty(self) -> None:
         plan = arq_trial.build_soak_plan("10-sessions", load_arq())
         self.assertEqual(plan.get("firmware_tx_spacing_ms"), 10000)
-        self.assertAlmostEqual(plan.get("firmware_frame_duty_percent"), 0.92416, places=5)
+        self.assertAlmostEqual(
+            cast("float", plan.get("firmware_frame_duty_percent")), 0.92416, places=5
+        )
 
     def test_soak_cli_fails_closed_without_power_and_rf_readiness(self) -> None:
         stderr = StringIO()
@@ -449,22 +455,22 @@ class ArqSoakPlanTests(unittest.TestCase):
         self.assertTrue(campaign.call_args.args[1].power_verified)
 
     def test_paced_sessions_enforce_start_spacing_and_stop_on_failure(self) -> None:
-        run_paced = getattr(arq_trial, "run_paced_sessions", None)
+        run_paced = dynamic_attr("run_paced_sessions")
         self.assertTrue(callable(run_paced), "paced soak executor is required")
 
         class Clock:
             now = 0.0
 
-            def monotonic(self):
+            def monotonic(self) -> Any:
                 return self.now
 
-            def sleep(self, seconds) -> None:
+            def sleep(self, seconds: Any) -> None:
                 self.now += seconds
 
         clock = Clock()
         starts = []
 
-        def run_one(index):
+        def run_one(index: Any) -> Any:
             starts.append(clock.now)
             clock.now += 5.0
             return index
@@ -476,10 +482,11 @@ class ArqSoakPlanTests(unittest.TestCase):
         clock.now = 0.0
         calls = []
 
-        def fail_on_second(index) -> None:
+        def fail_on_second(index: Any) -> None:
             calls.append(index)
             if index == 1:
-                raise RuntimeError("session failed")
+                msg = "session failed"
+                raise RuntimeError(msg)
 
         with self.assertRaisesRegex(RuntimeError, "session failed"):
             run_paced(3, 60, fail_on_second, clock=clock.monotonic, sleep=clock.sleep)

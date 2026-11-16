@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT / "tools/config"))
 class ReceiverHardwareTests(unittest.TestCase):
     def test_receiver_configuration_matches_rfm_rev1_and_keeps_gateway_separate(self) -> None:
         config = json.loads((ROOT / "config/lora_system.json").read_text())
-        from generate_lora_config import load_radio_profile
+        from tools.config.generate_lora_config import load_radio_profile
 
         radio = load_radio_profile()
         self.assertEqual(
@@ -55,7 +55,7 @@ class ReceiverHardwareTests(unittest.TestCase):
         )
 
     def test_validator_accepts_receiver_hardware_without_relaxing_gateway_spi(self) -> None:
-        from validate_lora_ssot import validate
+        from tools.config.validate_lora_ssot import validate
 
         config = json.loads((ROOT / "config/lora_system.json").read_text())
         error = None
@@ -73,7 +73,7 @@ class ReceiverHardwareTests(unittest.TestCase):
             with self.subTest(section=section, pin=pin), self.assertRaises(ValueError):
                 validate(changed)
 
-    def test_gpio_powers_radio_before_spi_without_driving_sd_detect_or_unpowered_reset(self) -> None:
+    def test_gpio_powers_radio_before_spi_without_touching_sd_or_reset(self) -> None:
         # Compile the actual static GPIO function, replacing only Arduino I/O.
         source = (ROOT / "src/receiver/main.cpp").read_text()
         first = source.index("static void init_receiver_gpio()")
@@ -81,7 +81,7 @@ class ReceiverHardwareTests(unittest.TestCase):
         aliases = "\n".join(
             line
             for line in source[:first].splitlines()
-            if line.startswith("#define PIN_") or line.startswith("#define LED")
+            if line.startswith(("#define PIN_", "#define LED"))
         )
         fixture = (
             '#include "include/generated/lora_receiver_board.h"\n'
@@ -91,12 +91,13 @@ class ReceiverHardwareTests(unittest.TestCase):
             + source[first:last]
         )
         with tempfile.TemporaryDirectory() as directory:
-            directory = Path(directory)
-            (directory / "receiver_gpio_under_test.h").write_text(fixture)
-            binary = directory / "receiver_gpio_test"
+            directory_path = Path(directory)
+            (directory_path / "receiver_gpio_under_test.h").write_text(fixture)
+            binary = directory_path / "receiver_gpio_test"
             result = subprocess.run(
                 [
-                    "g++",
+                    "clang",
+                    "--driver-mode=g++",
                     "-std=c++11",
                     "-Wall",
                     "-Wextra",
@@ -110,9 +111,10 @@ class ReceiverHardwareTests(unittest.TestCase):
                 ],
                 capture_output=True,
                 text=True,
+            check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            result = subprocess.run([str(binary)], capture_output=True, text=True)
+            result = subprocess.run([str(binary)], capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 

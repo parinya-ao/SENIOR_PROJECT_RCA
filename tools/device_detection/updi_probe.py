@@ -1,13 +1,17 @@
 """Explicit, bounded UPDI probes through the repository's upditerm tool."""
 
+from __future__ import annotations
+
 import re
 import signal
 import subprocess
 import sys
 import tempfile
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from .evidence import ProbeEvidence
 from .firmware_identity import match_flash_fingerprint, parse_identity_stream
@@ -16,9 +20,10 @@ ROOT = Path(__file__).resolve().parents[2]
 UPDITERM = ROOT / "third_party" / "upditerm" / "upditerm.py"
 
 
-def _require_safe(hardware_safe: bool) -> None:
+def _require_safe(*, hardware_safe: bool) -> None:
     if not hardware_safe:
-        raise PermissionError("UPDI access requires --hardware-safe after physical wiring checks")
+        msg = "UPDI access requires --hardware-safe after physical wiring checks"
+        raise PermissionError(msg)
 
 
 def _port_busy(port: str, runner: Callable[..., Any]) -> bool:
@@ -26,7 +31,7 @@ def _port_busy(port: str, runner: Callable[..., Any]) -> bool:
         result = runner(
             ["fuser", "-v", port], capture_output=True, text=True, timeout=1.0, check=False
         )
-    except OSError, subprocess.SubprocessError, TypeError:
+    except (OSError, subprocess.SubprocessError, TypeError):
         return False
     return result.returncode == 0 and bool((result.stdout or "") + (result.stderr or ""))
 
@@ -34,7 +39,10 @@ def _port_busy(port: str, runner: Callable[..., Any]) -> bool:
 def _is_access_error(text: str) -> bool:
     return bool(
         re.search(
-            r"cannot open serial port|permission denied|resource busy|device or resource busy|access is denied",
+            (
+                r"cannot open serial port|permission denied|resource busy|"
+                r"device or resource busy|access is denied"
+            ),
             text,
             re.IGNORECASE,
         )
@@ -58,15 +66,16 @@ def _run_bounded(
         return None, "", str(exc), False
     try:
         stdout, stderr = process.communicate(timeout=timeout)
-        return process.returncode, stdout or "", stderr or "", False
     except subprocess.TimeoutExpired:
         try:
             process.send_signal(signal.SIGINT)
             stdout, stderr = process.communicate(timeout=1.0)
-        except OSError, subprocess.TimeoutExpired:
+        except (OSError, subprocess.TimeoutExpired):
             process.kill()
             stdout, stderr = process.communicate()
         return process.returncode, stdout or "", stderr or "", True
+    else:
+        return process.returncode, stdout or "", stderr or "", False
 
 
 def identify_mcu(sib: str) -> str | None:
@@ -86,7 +95,7 @@ def probe_target_sib(
     upditerm_script: str | Path = UPDITERM,
 ) -> ProbeEvidence:
     """Use upditerm -i without its reset option; only run after explicit safety check."""
-    _require_safe(hardware_safe)
+    _require_safe(hardware_safe=hardware_safe)
     if _port_busy(port, command_runner):
         return ProbeEvidence(
             access_status="INACCESSIBLE",
@@ -120,7 +129,7 @@ def probe_firmware_identity(
     upditerm_script: str | Path = UPDITERM,
 ) -> ProbeEvidence:
     """Capture UPDI virtual-UART output without requesting a target reset."""
-    _require_safe(hardware_safe)
+    _require_safe(hardware_safe=hardware_safe)
     if _port_busy(port, command_runner):
         return ProbeEvidence(
             access_status="INACCESSIBLE",
@@ -167,15 +176,22 @@ def read_firmware_flash(
 ) -> bytes | None:
     """Read flash only under explicit authorization and known target geometry."""
     if not (hardware_safe and authorize_flash_read and boot_layout_verified):
+        msg = (
+            "flash read requires --hardware-safe, --authorize-flash-read, "
+            "and verified BOOT layout"
+        )
         raise PermissionError(
-            "flash read requires --hardware-safe, --authorize-flash-read, and verified BOOT layout"
+            msg
         )
     if mcu_identity != "AVR128DA28":
-        raise PermissionError("flash read requires an identified AVR128DA28 target")
+        msg = "flash read requires an identified AVR128DA28 target"
+        raise PermissionError(msg)
     if flash_size <= 0:
-        raise ValueError("flash_size must be positive")
+        msg = "flash_size must be positive"
+        raise ValueError(msg)
     if _port_busy(port, command_runner):
-        raise PermissionError(f"serial port is already held: {port}")
+        msg = f"serial port is already held: {port}"
+        raise PermissionError(msg)
     with tempfile.TemporaryDirectory(prefix="lora-flash-read-") as temp:
         raw_path = Path(temp) / "flash.bin"
         argv = [
@@ -193,7 +209,7 @@ def read_firmware_flash(
             completed = command_runner(
                 argv, capture_output=True, text=True, timeout=timeout, check=False
             )
-        except OSError, subprocess.SubprocessError:
+        except (OSError, subprocess.SubprocessError):
             return None
         if completed.returncode != 0 or not raw_path.is_file():
             return None
@@ -209,6 +225,7 @@ def firmware_fingerprint_evidence(
     app_start: int,
     app_end: int,
 ) -> ProbeEvidence:
+    """Convert a flash-image comparison into device-detection evidence."""
     result = match_flash_fingerprint(
         actual_flash, references, flash_size=flash_size, app_start=app_start, app_end=app_end
     )

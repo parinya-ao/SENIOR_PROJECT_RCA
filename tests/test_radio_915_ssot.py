@@ -5,15 +5,17 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools/config"))
 
 
-def valid_profile():
+def valid_profile() -> dict[str, Any]:
     return {
         "schema_version": 1,
         "radio": {
@@ -64,7 +66,7 @@ def valid_profile():
     }
 
 
-def write_toml(path, profile) -> None:
+def write_toml(path: Path, profile: dict[str, Any]) -> None:
     # These tests mutate parsed structures; use the project's canonical TOML
     # document for syntax tests and validate dictionaries for focused cases.
     path.write_text((ROOT / "config/radio_915.toml").read_text())
@@ -72,7 +74,7 @@ def write_toml(path, profile) -> None:
 
 class Radio915ValidationTests(unittest.TestCase):
     def test_toml_loads_and_duplicate_or_malformed_syntax_is_rejected(self) -> None:
-        import generate_lora_config as generator
+        import tools.config.generate_lora_config as generator
 
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "radio.toml"
@@ -88,7 +90,7 @@ class Radio915ValidationTests(unittest.TestCase):
                 generator.load_radio_profile(path)
 
     def test_strict_schema_frequency_and_rf_invariants(self) -> None:
-        from generate_lora_config import validate_radio_profile
+        from tools.config.generate_lora_config import validate_radio_profile
 
         base = valid_profile()
         cases = []
@@ -142,16 +144,17 @@ class Radio915ValidationTests(unittest.TestCase):
                 validate_radio_profile(altered)
 
     def test_role_pin_maps_collisions_and_environment_mapping_are_strict(self) -> None:
-        from generate_lora_config import validate_radio_profile
+        from tools.config.generate_lora_config import validate_radio_profile
 
         base = valid_profile()
-        for section, change in (
+        changes: tuple[tuple[str, Callable[[dict[str, Any]], Any]], ...] = (
             ("sender", lambda item: item["pins"].update(cs="PC2")),
             ("receiver", lambda item: item["pins"].update(enable="PA6")),
             ("sender", lambda item: item["pins"].update(extra="PD4")),
             ("receiver", lambda item: item["pins"].pop("dio1")),
             ("receiver", lambda item: item.update(spi_route="SPI1_DEFAULT")),
-        ):
+        )
+        for section, change in changes:
             altered = copy.deepcopy(base)
             change(altered[section])
             with self.subTest(section=section), self.assertRaises(ValueError):
@@ -173,9 +176,9 @@ class Radio915ValidationTests(unittest.TestCase):
             with self.subTest(environments=environments), self.assertRaises(ValueError):
                 validate_radio_profile(altered)
 
-    def test_generation_is_deterministic_check_detects_missing_stale_and_atomic_writes(self) -> None:
-        import generate_lora_config as generator
-        import validate_lora_ssot
+    def test_generation_is_deterministic_and_atomic(self) -> None:
+        import tools.config.generate_lora_config as generator
+        from tools.config import validate_lora_ssot
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "project"
@@ -220,12 +223,12 @@ class Radio915ValidationTests(unittest.TestCase):
                 self.assertEqual(list(header.parent.glob("*.tmp")), [])
 
     def test_generated_host_profile_matches_header_and_role_header_compiles(self) -> None:
-        import generate_lora_config as generator
+        import tools.config.generate_lora_config as generator
 
         generator.generate(check=True)
         profile = json.loads((ROOT / "generated/lora_manifest.json").read_text())["shared"]["radio"]
         self.assertEqual(profile["tx_power_dbm"], 2)
-        namespace = {}
+        namespace: dict[str, Any] = {}
         exec((ROOT / "generated/radio_915_profile.py").read_text(), namespace)
         self.assertEqual(namespace["FREQUENCY_HZ"], 915_000_000)
         self.assertEqual(namespace["FREQUENCY_MHZ"], profile["frequency_mhz"])
@@ -256,6 +259,7 @@ class Radio915ValidationTests(unittest.TestCase):
                 input='#include "include/generated/radio_915_config.h"\n',
                 text=True,
                 capture_output=True,
+            check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
         for roles in ([], ["-DLORA_ROLE_SENDER=1", "-DLORA_ROLE_RECEIVER=1"]):
@@ -274,6 +278,7 @@ class Radio915ValidationTests(unittest.TestCase):
                 input='#include "include/generated/radio_915_config.h"\n',
                 text=True,
                 capture_output=True,
+            check=False,
             )
             self.assertNotEqual(result.returncode, 0)
 
@@ -284,6 +289,7 @@ class Radio915ValidationTests(unittest.TestCase):
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
+            check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
@@ -319,11 +325,12 @@ class Radio915ValidationTests(unittest.TestCase):
                     'static_assert(HELLO_RF_TX_POWER_DBM == 5, "candidate power");\n',
                     text=True,
                     capture_output=True,
+                check=False,
                 )
                 self.assertEqual(result.returncode == 0, valid, result.stderr)
 
-    def test_gateway_mainboards_send_profile_but_keep_address_and_eight_byte_wire_shape(self) -> None:
-        import generate_lora_config as generator
+    def test_gateway_mainboard_profile_keeps_address_wire_shape(self) -> None:
+        import tools.config.generate_lora_config as generator
 
         generator.generate(check=True)
         for relative in ("gateway-lora/mainboard/src", "gateway-lora_dev/mainboard/src"):
@@ -366,9 +373,10 @@ class I2cRadioConfigTests(unittest.TestCase):
                 ],
                 capture_output=True,
                 text=True,
+            check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            result = subprocess.run([str(binary)], capture_output=True, text=True)
+            result = subprocess.run([str(binary)], capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 

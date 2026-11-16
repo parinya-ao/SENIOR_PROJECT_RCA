@@ -35,19 +35,24 @@ roles_by_environment.update({role + "_reverse_raw": role for role in ("sender", 
 try:
     role = roles_by_environment[base_environment]
 except KeyError as error:
-    raise ValueError(f"PlatformIO environment has no radio role: {env['PIOENV']}") from error
+    msg = f"PlatformIO environment has no radio role: {env['PIOENV']}"
+    raise ValueError(msg) from error
 board = config[f"{role}_board"]
 if int(env.GetProjectOption("board_build.text_section_start"), 0) != board["image_start"]:
-    raise ValueError("PlatformIO parsed a stale image start; run generation and rebuild")
+    msg = "PlatformIO parsed a stale image start; run generation and rebuild"
+    raise ValueError(msg)
 flags = env.GetProjectOption("build_flags")
 power_flags = [flag for flag in flags if flag.startswith("-DLORA_TEST_TX_POWER_DBM")]
 if power_flags != (["-DLORA_TEST_TX_POWER_DBM=5"] if env["PIOENV"] in power_candidates else []):
-    raise ValueError("TX power override is restricted to the two +5 dBm comparison targets")
+    msg = "TX power override is restricted to the two +5 dBm comparison targets"
+    raise ValueError(msg)
 for flag in flags:
     if "-DHELLO_RF_" in flag and not flag.startswith("-DHELLO_RF_DIAGNOSTIC_ONLY="):
-        raise ValueError(f"Conflicting radio macro: {flag}; configure config/radio_915.toml")
+        msg = f"Conflicting radio macro: {flag}; configure config/radio_915.toml"
+        raise ValueError(msg)
     if flag.startswith(("-DLORA_ROLE_SENDER", "-DLORA_ROLE_RECEIVER")):
-        raise ValueError(f"Role is generated from config/radio_915.toml: {flag}")
+        msg = f"Role is generated from config/radio_915.toml: {flag}"
+        raise ValueError(msg)
 defines = [(f"LORA_ROLE_{role.upper()}", 1)]
 if role == "receiver":
     defines.append(("LORA_RECEIVER_BOARD", 1))
@@ -60,13 +65,13 @@ build_id = manifest["environments"].get(base_environment, {}).get("build_id")
 if env["PIOENV"] in power_candidates:
     shared = dict(manifest["shared"], radio=dict(manifest["shared"]["radio"], tx_power_dbm=5))
     fingerprint = digest(shared)
-    build_id = digest(dict(base_build_id=build_id, shared_fingerprint=fingerprint))
+    build_id = digest({"base_build_id": build_id, "shared_fingerprint": fingerprint})
     env.Append(CPPDEFINES=[("LORA_TEST_CONFIG_FINGERPRINT", '\\"' + fingerprint + '\\"')])
 if build_id is None:
     from generate_lora_config import digest
 
     arq = json.loads((ROOT / "generated/arq_manifest.json").read_text())
-    build_id = digest(dict(environment=env["PIOENV"], arq=arq))
+    build_id = digest({"environment": env["PIOENV"], "arq": arq})
 contents = '#pragma once\n#define LORA_BUILD_ID "' + build_id + '"\n'
 _write_atomic(identity, contents)
 # The identity must affect SCons' compile signature, including incremental builds.

@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools/config"))
-import generate_lora_config
+from tools.config import generate_lora_config
 
 
 class SourceFingerprintTests(unittest.TestCase):
@@ -20,8 +20,8 @@ class SourceFingerprintTests(unittest.TestCase):
             local.write_text("local v1")
             external.write_text("sibling v1")
             (project / "platformio.ini").write_text("[platformio]\n")
-            original_root = generate_lora_config.ROOT
-            generate_lora_config.ROOT = project
+            original_root = getattr(generate_lora_config, "ROOT")
+            setattr(generate_lora_config, "ROOT", project)
             try:
                 before = generate_lora_config.source_fingerprint()
                 external.write_text("sibling v2")
@@ -29,7 +29,7 @@ class SourceFingerprintTests(unittest.TestCase):
                 local.write_text("local v2")
                 self.assertNotEqual(generate_lora_config.source_fingerprint(), before)
             finally:
-                generate_lora_config.ROOT = original_root
+                setattr(generate_lora_config, "ROOT", original_root)
 
 
 if __name__ == "__main__":

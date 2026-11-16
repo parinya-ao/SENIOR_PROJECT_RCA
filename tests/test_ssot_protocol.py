@@ -2,12 +2,13 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class SsotProtocolTests(unittest.TestCase):
-    def compile_and_run(self, flags=()) -> None:
+    def compile_and_run(self, flags: Any=()) -> None:
         with tempfile.TemporaryDirectory(prefix="ssot-protocol-") as directory:
             binary = Path(directory) / "ssot_protocol_test"
             compile_result = subprocess.run(
@@ -33,11 +34,14 @@ class SsotProtocolTests(unittest.TestCase):
                 capture_output=True,
                 text=True,
                 timeout=30,
+                check=False,
             )
             self.assertEqual(
                 compile_result.returncode, 0, compile_result.stdout + compile_result.stderr
             )
-            result = subprocess.run([str(binary)], capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                [str(binary)], capture_output=True, text=True, timeout=10, check=False
+            )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn("PASS C protocol tests", result.stdout)
 

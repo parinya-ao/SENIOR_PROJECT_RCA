@@ -5,22 +5,22 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import patch
 
-from test_live_rf_proof import fixture
-
+from tests.test_live_rf_proof import fixture
 from tools import rf_proof as rf
 
 
-def symmetric_fixture(test_id):
+def symmetric_fixture(test_id: Any) -> Any:
     manifest, old, images = fixture()
     reverse = test_id in ("T03", "T04")
     nack = test_id in ("T02", "T04")
     sender, receiver = ("RECEIVER", "GATEWAY") if reverse else ("GATEWAY", "RECEIVER")
     journal = []
 
-    def add(role, text) -> None:
-        journal.append(dict(role=role, line=text if role == "HOST" else f"[{role}] {text}"))
+    def add(role: Any, text: Any) -> None:
+        journal.append({"role": role, "line": text if role == "HOST" else f"[{role}] {text}"})
 
     for role in (receiver, sender):
         for item in old:
@@ -39,7 +39,7 @@ def symmetric_fixture(test_id):
     add("HOST", "S1234")
     src, dst = (1, 0) if reverse else (0, 1)
 
-    def event(role, name, type_, irq, response=False) -> None:
+    def event(role: Any, name: Any, type_: Any, irq: Any, response: Any=False) -> None:
         source, destination = (dst, src) if response else (src, dst)
         add(
             role,
@@ -68,14 +68,14 @@ def symmetric_fixture(test_id):
 class SymmetricProofTests(unittest.TestCase):
     def test_runner_selects_receiver_first_and_parks_both(self) -> None:
         for test_id in ("T01", "T02", "T03", "T04"):
-            manifest, records, images = symmetric_fixture(test_id)
+            _manifest, records, images = symmetric_fixture(test_id)
             reverse = test_id in ("T03", "T04")
             receiving = "gateway" if reverse else "receiver"
             sending = "receiver" if reverse else "gateway"
-            writes = []
+            writes: list[Any] = []
 
             class Process:
-                def __init__(self, role, output) -> None:
+                def __init__(self, role: Any, output: Any) -> None:
                     self.role, self.output, self.stdin = role, output, self
 
                 def poll(self) -> None:
@@ -84,7 +84,14 @@ class SymmetricProofTests(unittest.TestCase):
                 def flush(self) -> None:
                     pass
 
-                def write(self, data):
+                def write(
+                    self: Any,
+                    data: Any,
+                    *,
+                    writes: list[Any] = writes,
+                    receiving: str = receiving,
+                    records: Any = records,
+                ) -> Any:
                     writes.append((self.role, data))
                     board = "GATEWAY" if self.role == "gateway" else "RECEIVER"
                     if data == b"P":
@@ -99,21 +106,28 @@ class SymmetricProofTests(unittest.TestCase):
                                 self.output.put((role, "stdout", (item["line"] + "\n").encode()))
                     return len(data)
 
-            def start(proof, role, port, output):
+            def start(
+                proof: Any,
+                role: Any,
+                port: Any,
+                output: Any,
+                *,
+                records: Any = records,
+            ) -> Any:
                 board = "GATEWAY" if role == "gateway" else "RECEIVER"
                 for item in records:
                     if item["role"] == board and not any(
                         x in item["line"] for x in (" C=", " SID=", "RX_READY")
                     ):
                         output.put((role, "stdout", (item["line"] + "\n").encode()))
-                return dict(process=Process(role, output), threads=[])
+                return {"process": Process(role, output), "threads": []}
 
             with tempfile.TemporaryDirectory() as directory:
-                proof = SimpleNamespace(
+                proof: Any = SimpleNamespace(
                     run_dir=Path(directory),
                     note=lambda name, text: (Path(directory) / name).write_text(text),
                 )
-                args = SimpleNamespace(
+                args: Any = SimpleNamespace(
                     physical_mapping_verified=True,
                     power_verified=True,
                     boot_layout_verified=True,
@@ -144,7 +158,7 @@ class SymmetricProofTests(unittest.TestCase):
                 [(receiving, command), (sending, b"S1234"), (receiving, b"P"), (sending, b"P")],
             )
 
-    def check(self, test_id, journal=None):
+    def check(self, test_id: Any, journal: Any=None) -> Any:
         manifest, records, images = symmetric_fixture(test_id)
         return rf.validate_live_proof(
             records if journal is None else journal,

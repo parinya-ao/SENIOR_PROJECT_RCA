@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -86,7 +87,7 @@ class DirectionalTests(unittest.TestCase):
 
 class DirectionalHostTests(unittest.TestCase):
     @staticmethod
-    def events(test_id, session=7):
+    def events(test_id: str, session: int = 7) -> list[dict[str, Any]]:
         reverse = test_id in ("T03", "T04")
         nack = test_id in ("T02", "T04")
         tx, rx = ("receiver", "sender") if reverse else ("sender", "receiver")
@@ -99,7 +100,7 @@ class DirectionalHostTests(unittest.TestCase):
             "<BBBBIHBB", 1, 3 if nack else 2, dst, src, session, 0, 0, 2 if nack else 0
         ).hex()
 
-        def row(role, name, **kw):
+        def row(role: str, name: str, **kw: Any) -> dict[str, Any]:
             return dict(role=role, e=name, s=f"{session:X}", q="0", rc="0", **kw)
 
         decision = row(rx, "DATA_REJECT", v="0") if nack else row(rx, "ACCEPT", v="1")
@@ -138,7 +139,7 @@ class DirectionalHostTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         trial.validate_hello_exchange(bad, 7, test_id=test_id)
                 with self.assertRaises(ValueError):
-                    trial.validate_hello_exchange(events + [events[0]], 7, test_id=test_id)
+                    trial.validate_hello_exchange([*events, events[0]], 7, test_id=test_id)
                 wrong = copy.deepcopy(events)
                 frame = bytearray.fromhex(wrong[6]["bytes"])
                 frame[11] = 1

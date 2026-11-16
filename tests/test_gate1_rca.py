@@ -11,7 +11,9 @@ import tempfile
 import threading
 import time
 import unittest
+from collections.abc import Iterable, Iterator
 from pathlib import Path
+from typing import Any
 
 from tools.rca import gate1
 from tools.rca.gate1_live import (
@@ -40,13 +42,15 @@ from tools.rca.gate1_live import (
     wait_for_reader_idle,
 )
 
-IDENTITY = dict(
-    signature="1e970a",
-    serial="synthetic-tracker",
-    build="synthetic-build",
-    config="synthetic-config",
-    role="receiver",
-)
+Json = Any
+
+IDENTITY = {
+    "signature": "1e970a",
+    "serial": "synthetic-tracker",
+    "build": "synthetic-build",
+    "config": "synthetic-config",
+    "role": "receiver",
+}
 EVENTS = [
     "BOOT",
     "IDENTITY",
@@ -64,7 +68,7 @@ EVENTS = [
 ]
 
 
-def transaction(index):
+def transaction(index: int) -> Json:
     lines = []
     for name in EVENTS:
         extra = " rc=0 v=0"
@@ -73,22 +77,22 @@ def transaction(index):
         if name == "STATUS":
             extra = " ready=1 overflow=0"
         lines.append(f"A t=1 e={name} s=0{extra}\n")
-    return dict(
-        transaction_index=index,
-        monotonic_start_ns=index * 100,
-        monotonic_end_ns=index * 100 + 50,
-        identity=IDENTITY.copy(),
-        request_tx_hex="5354415455530a",
-        status_payload_raw="".join(lines),
-        transport_exchanges=[dict(expected_length=1, expected_hex="40", actual_hex="40")],
-        monitor_exit_code=None,
-        transport_error=None,
-        timeout_reason=None,
-    )
+    return {
+        "transaction_index": index,
+        "monotonic_start_ns": index * 100,
+        "monotonic_end_ns": index * 100 + 50,
+        "identity": IDENTITY.copy(),
+        "request_tx_hex": "5354415455530a",
+        "status_payload_raw": "".join(lines),
+        "transport_exchanges": [{"expected_length": 1, "expected_hex": "40", "actual_hex": "40"}],
+        "monitor_exit_code": None,
+        "transport_error": None,
+        "timeout_reason": None,
+    }
 
 
 class Gate1Tests(unittest.TestCase):
-    def assess(self, rows, **kwargs):
+    def assess(self, rows: Iterable[Json], **kwargs: Json) -> Json:
         kwargs.setdefault("safe_path", True)
         return gate1.assess(rows, IDENTITY, **kwargs)
 
@@ -100,7 +104,7 @@ class Gate1Tests(unittest.TestCase):
         )
 
     def test_T02_first_failure_stops_consumption(self) -> None:
-        def rows():
+        def rows() -> Iterator[Json]:
             yield transaction(1)
             row = transaction(2)
             row["timeout_reason"] = "reader deadline"
@@ -189,11 +193,18 @@ class Gate1Tests(unittest.TestCase):
         )
 
     def test_T13_unsafe_initialization_blocks_without_read(self) -> None:
-        def rows():
-            self.fail("blocked path consumed a transaction")
-            yield
+        class ExplodingRows:
+            def __init__(self, fail: Any) -> None:
+                self.fail = fail
 
-        self.assertEqual(self.assess(rows(), safe_path=False)["verdict"], "GATE1_BLOCKED")
+            def __iter__(self) -> Iterator[Json]:
+                self.fail("blocked path consumed a transaction")
+                return iter(())
+
+        self.assertEqual(
+            self.assess(ExplodingRows(self.fail), safe_path=False)["verdict"],
+            "GATE1_BLOCKED",
+        )
 
     def test_T14_detects_hash_corruption(self) -> None:
         with tempfile.TemporaryDirectory() as name:
@@ -252,9 +263,9 @@ class Gate1Tests(unittest.TestCase):
             expected_value = b"@"
 
             def __init__(self) -> None:
-                self.rows = []
+                self.rows: list[Json] = []
 
-            def transport(self, **row) -> None:
+            def transport(self, **row: Json) -> None:
                 self.rows.append(
                     {
                         "transaction_index": self.current_transaction,
@@ -271,17 +282,17 @@ class Gate1Tests(unittest.TestCase):
             write_timeout = None
 
             def __init__(self) -> None:
-                self.reads = [b"", b"@"]
-                self.writes = []
+                self.reads: list[bytes] = [b"", b"@"]
+                self.writes: list[bytes] = []
 
-            def read(self, n):
+            def read(self, n: int) -> bytes:
                 return self.reads.pop(0)
 
-            def write(self, data):
+            def write(self, data: bytes) -> int:
                 self.writes.append(bytes(data))
                 return len(data)
 
-        sink = Sink()
+        sink: Any = Sink()
         raw = Port()
         traced = TracePort(raw, sink)
         self.assertEqual(traced.read(1), b"")
@@ -299,9 +310,9 @@ class Gate1Tests(unittest.TestCase):
             expected_value = None
 
             def __init__(self) -> None:
-                self.rows = []
+                self.rows: list[Json] = []
 
-            def transport(self, **row) -> None:
+            def transport(self, **row: Json) -> None:
                 self.rows.append(
                     {
                         "transaction_index": self.current_transaction,
@@ -317,10 +328,10 @@ class Gate1Tests(unittest.TestCase):
             timeout = 1
             write_timeout = None
 
-            def write(self, data):
+            def write(self, data: bytes) -> int:
                 return len(data)
 
-        sink = Sink()
+        sink: Any = Sink()
         traced = TracePort(Port(), sink)
         self.assertEqual(traced.write(b"\x55\x85"), 2)
         row = sink.rows[0]
@@ -332,13 +343,13 @@ class Gate1Tests(unittest.TestCase):
     def test_T22_read_only_extended_LDS_uses_verified_sigrow_address(self) -> None:
         class Link:
             def __init__(self) -> None:
-                self.frames = []
-                self.lengths = []
+                self.frames: list[Json] = []
+                self.lengths: list[int] = []
 
-            def instr(self, frame) -> None:
+            def instr(self, frame: Json) -> None:
                 self.frames.append(frame)
 
-            def recv(self, length) -> bytes:
+            def recv(self, length: int) -> bytes:
                 self.lengths.append(length)
                 return b"\x1e"
 
@@ -353,6 +364,7 @@ class Gate1Tests(unittest.TestCase):
             capture_output=True,
             text=True,
             timeout=5,
+        check=False,
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("--execute-gate1", proc.stdout)
@@ -377,6 +389,8 @@ class Gate1Tests(unittest.TestCase):
                 "STATUS_RESPONSE_WAIT",
                 failure_layer="STATUS_RESPONSE",
             )
+            if audit.first_failure is None:
+                self.fail("first failure was not recorded")
             self.assertEqual(audit.first_failure["failure_boundary"], "STATUS_MONITOR_OUTPUT")
             self.assertEqual(audit.first_failure["actual_monitor_stdout_hex"], "")
             self.assertEqual(audit.first_failure["actual_monitor_stdout_length"], 0)
@@ -385,21 +399,21 @@ class Gate1Tests(unittest.TestCase):
     def test_T26_mailbox_snapshot_reads_flags_fifo_reset_and_ocd_without_writes(self) -> None:
         class Link:
             def __init__(self) -> None:
-                self.addresses = []
-                self.cs = []
+                self.addresses: list[Any] = []
+                self.cs: list[int] = []
 
-            def lds8(self, address):
+            def lds8(self, address: Any) -> Any:
                 self.addresses.append(address)
                 return {0x1E: 1, 0x1F: 0x0A, 0x1C: 4, 0x40: 2}[address]
 
-            def ldcs(self, address) -> int:
+            def ldcs(self, address: Any) -> int:
                 self.cs.append(address)
                 return 0x10
 
-            def instr(self, frame) -> None:
+            def instr(self, frame: Any) -> None:
                 self.addresses.append(tuple(frame))
 
-            def recv(self, n) -> bytes:
+            def recv(self, n: Any) -> bytes:
                 return b"\x00"
 
         link = Link()
@@ -439,13 +453,13 @@ class Gate1Tests(unittest.TestCase):
         class Link:
             def __init__(self) -> None:
                 self.flags = 2
-                self.writes = []
+                self.writes: list[tuple[int, int]] = []
 
-            def lds8(self, address):
+            def lds8(self, address: Any) -> Any:
                 self.assert_flags_address = address
                 return self.flags
 
-            def sts8(self, address, value) -> None:
+            def sts8(self, address: Any, value: Any) -> None:
                 self.writes.append((address, value))
                 self.flags = value
 
@@ -477,27 +491,27 @@ class Gate1Tests(unittest.TestCase):
         class Link:
             def __init__(self) -> None:
                 self.value = 0x12
-                self.writes = []
+                self.writes: list[tuple[int, int]] = []
                 self.read_pending = False
 
-            def lds8(self, address):
+            def lds8(self, address: Any) -> Any:
                 self.address = address
                 return self.value
 
-            def sts8(self, address, value) -> None:
+            def sts8(self, address: Any, value: Any) -> None:
                 self.writes.append((address, value))
                 self.value = value
 
-            def instr(self, frame) -> None:
+            def instr(self, frame: Any) -> None:
                 self.read_pending = True
 
-            def recv(self, n, expected=None):
+            def recv(self, n: Any, expected: Any=None) -> Any:
                 if expected is not None:
                     return expected
                 self.read_pending = False
                 return bytes([self.value])
 
-            def send(self, data) -> None:
+            def send(self, data: Any) -> None:
                 self.value = data[0]
 
         link = Link()
@@ -518,9 +532,9 @@ class Gate1Tests(unittest.TestCase):
     def test_T31_pesig_is_read_once_from_statusb(self) -> None:
         class Link:
             def __init__(self) -> None:
-                self.addresses = []
+                self.addresses: list[Any] = []
 
-            def ldcs(self, address) -> int:
+            def ldcs(self, address: Any) -> int:
                 self.addresses.append(address)
                 return 6
 
@@ -533,28 +547,28 @@ class Gate1Tests(unittest.TestCase):
             def __init__(self) -> None:
                 self.status = 0
                 self.gpr = 0x12
-                self.controls = []
+                self.controls: list[tuple[int, int]] = []
 
-            def ldcs(self, address):
+            def ldcs(self, address: Any) -> Any:
                 return self.status
 
-            def stcs(self, address, value) -> None:
+            def stcs(self, address: Any, value: Any) -> None:
                 self.controls.append((address, value))
                 self.status = 1 if value == 1 else 0
 
-            def lds8(self, address):
+            def lds8(self, address: Any) -> Any:
                 return self.gpr
 
-            def sts8(self, address, value) -> None:
+            def sts8(self, address: Any, value: Any) -> None:
                 self.gpr = value
 
-            def instr(self, frame) -> None:
+            def instr(self, frame: Any) -> None:
                 pass
 
-            def recv(self, n, expected=None):
+            def recv(self, n: Any, expected: Any=None) -> Any:
                 return expected if expected is not None else bytes([self.gpr])
 
-            def send(self, data) -> None:
+            def send(self, data: Any) -> None:
                 self.gpr = data[0]
 
         link = Link()
@@ -567,18 +581,18 @@ class Gate1Tests(unittest.TestCase):
     def test_T33_store_data_space_byte_uses_16_bit_address_and_strict_acks(self) -> None:
         class Link:
             def __init__(self) -> None:
-                self.frames = []
-                self.sent = []
-                self.expected = []
+                self.frames: list[Any] = []
+                self.sent: list[Any] = []
+                self.expected: list[bytes | None] = []
 
-            def instr(self, frame) -> None:
+            def instr(self, frame: Any) -> None:
                 self.frames.append(frame)
 
-            def recv(self, n, expected=None):
+            def recv(self, n: Any, expected: Any=None) -> Any:
                 self.expected.append(expected)
                 return expected
 
-            def send(self, data) -> None:
+            def send(self, data: Any) -> None:
                 self.sent.append(data)
 
         link = Link()
@@ -593,22 +607,22 @@ class Gate1Tests(unittest.TestCase):
                 self.value = 0x12
                 self.read_data = False
 
-            def lds8(self, address):
+            def lds8(self, address: Any) -> Any:
                 return self.value
 
-            def instr(self, frame) -> None:
+            def instr(self, frame: Any) -> None:
                 if frame[0] == 0x04:
                     self.read_data = True
                 elif frame[0] == 0x44:
                     self.address = frame[1] | (frame[2] << 8)
 
-            def recv(self, n, expected=None):
+            def recv(self, n: Any, expected: Any=None) -> Any:
                 if expected is not None:
                     return expected
                 self.read_data = False
                 return bytes([self.value])
 
-            def send(self, data) -> None:
+            def send(self, data: Any) -> None:
                 self.value = data[0]
 
         result = roundtrip_gpr_16(Link(), 0x001D)
@@ -633,22 +647,22 @@ class Gate1Tests(unittest.TestCase):
     def test_T36_wide_gpr_counterfactual_uses_16_bit_sts_only_for_gprs(self) -> None:
         class Link:
             def __init__(self) -> None:
-                self.frames = []
-                self.sent = []
-                self.other_writes = []
+                self.frames: list[Any] = []
+                self.sent: list[Any] = []
+                self.other_writes: list[tuple[int, int]] = []
 
-            def instr(self, frame) -> None:
+            def instr(self, frame: Any) -> None:
                 self.frames.append(frame)
 
-            def recv(self, n, expected=None):
+            def recv(self, n: Any, expected: Any=None) -> Any:
                 return expected
 
-            def send(self, data) -> None:
+            def send(self, data: Any) -> None:
                 self.sent.append(data)
 
         link = Link()
 
-        def base(updi, address, value) -> None:
+        def base(updi: Any, address: Any, value: Any) -> None:
             updi.other_writes.append((address, value))
 
         sts8_with_wide_gpr_address(link, 0x1E, 1, base)
@@ -689,7 +703,7 @@ class Gate1Tests(unittest.TestCase):
             terminal = type("Terminal", (), {"failure": None})()
             output = (root / "monitor.stdout.log").open("wb")
             try:
-                lines, events, raw = _read_block(
+                lines, events, _raw = _read_block(
                     console,
                     audit,
                     terminal,
@@ -711,12 +725,12 @@ class Gate1Tests(unittest.TestCase):
     def test_T40_controlled_cpu_reset_is_one_reset_followed_by_ocd_rekey(self) -> None:
         class Link:
             def __init__(self) -> None:
-                self.actions = []
+                self.actions: list[Any] = []
 
             def reset(self) -> None:
                 self.actions.append("reset")
 
-            def key(self, value) -> None:
+            def key(self, value: Any) -> None:
                 self.actions.append(("key", value))
 
         link = Link()
@@ -725,14 +739,14 @@ class Gate1Tests(unittest.TestCase):
 
     def test_T41_resume_helper_only_runs_a_confirmed_stopped_cpu(self) -> None:
         class Link:
-            def __init__(self, statuses) -> None:
+            def __init__(self, statuses: Any) -> None:
                 self.statuses = list(statuses)
-                self.controls = []
+                self.controls: list[tuple[int, int]] = []
 
-            def ldcs(self, address):
+            def ldcs(self, address: Any) -> Any:
                 return self.statuses.pop(0)
 
-            def stcs(self, address, value) -> None:
+            def stcs(self, address: Any, value: Any) -> None:
                 self.controls.append((address, value))
 
         stopped = Link([1, 0])
