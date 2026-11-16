@@ -4,7 +4,9 @@
 #include <stdio.h>
 #include <vector>
 #include <utility>
+#define RADIO_STUB_EXTERNAL_MILLIS
 #include "../radio_stub/Arduino.h"
+#undef RADIO_STUB_EXTERNAL_MILLIS
 #define PIN_PD5 25
 #define PIN_PD6 26
 #define PIN_PA6 36

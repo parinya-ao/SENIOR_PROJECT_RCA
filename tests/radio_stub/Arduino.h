@@ -1,7 +1,9 @@
 #pragma once
 #include <stdint.h>
 extern uint32_t host_ms;
+#ifndef RADIO_STUB_EXTERNAL_MILLIS
 inline uint32_t millis() { return host_ms; }
+#endif
 
 #define PIN_PC0 10
 #define PIN_PC1 11

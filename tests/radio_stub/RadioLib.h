@@ -7,7 +7,9 @@
 
 #define RADIOLIB_ERR_NONE 0
 #define RADIOLIB_ERR_UNKNOWN -1
-#define RADIOLIB_ERR_PACKET_TOO_LONG -2
+#define RADIOLIB_ERR_PACKET_TOO_LONG -4
+#define RADIOLIB_ERR_RX_TIMEOUT -6
+#define RADIOLIB_ERR_NULL_POINTER -28
 #define RADIOLIB_ERR_CRC_MISMATCH -7
 #define RADIOLIB_ERR_WRONG_MODEM -20
 
@@ -19,6 +21,7 @@ struct State {
     int16_t start_transmit_status;
     int16_t finish_transmit_status;
     int16_t read_data_status;
+    int16_t sleep_status;
     uint32_t irq_flags;
     uint8_t op_mode;
     int16_t standby_status;
@@ -50,6 +53,7 @@ struct State {
     int16_t output_power_set_calls;
     int16_t receive_starts;
     int16_t finish_transmits;
+    int16_t sleep_calls;
     int16_t transmit_starts;
     int16_t begin_calls;
     int16_t node_address_calls;
@@ -186,7 +190,10 @@ public:
         fake_radio::state.airtime_length = len;
         return fake_radio::state.airtime_us;
     }
-    int16_t sleep() { return RADIOLIB_ERR_NONE; }
+    int16_t sleep() {
+        ++fake_radio::state.sleep_calls;
+        return fake_radio::state.sleep_status;
+    }
     int16_t standby() { fake_radio::state.op_mode=0x81;return fake_radio::state.standby_status; }
     uint32_t getIrqFlags() { return fake_radio::state.irq_flags; }
     int16_t clearIrqFlags(uint32_t flags) {

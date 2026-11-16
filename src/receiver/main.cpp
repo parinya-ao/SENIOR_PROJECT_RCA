@@ -49,7 +49,7 @@ static bool init_radio() {
         spi_selected=true;
     }
     return lora.init(kReceiverAddress,HELLO_RF_FREQUENCY_MHZ,
-                     HELLO_RF_TX_POWER_DBM,HELLO_RF_LONG_RANGE);
+                     HELLO_RF_TX_POWER_DBM,HELLO_RF_LONG_RANGE)==0;
 }
 
 void loop() {
@@ -64,10 +64,9 @@ void loop() {
 
     Address source=0,destination=0;
     uint8_t packet[256]={},size=0;
-    lora.recv(&source,&destination,packet,&size);
-    // The stable API rearms RX through init(); no legacy start_receive() exists.
-    radio_ready=init_radio();
-    if(!radio_ready) { updi_role_log("RECEIVER","RADIO_INIT_FAILED");return; }
+    if(lora.recv(&source,&destination,packet,sizeof packet,&size)<0) {
+        updi_role_log("RECEIVER","RX_DISCARD");return;
+    }
     if(size>251 || source!=kSenderAddress || destination!=kReceiverAddress || size<2) {
         updi_role_log("RECEIVER","RX_DISCARD");
         return;
@@ -101,10 +100,13 @@ void loop() {
         ? ssot_encode_ack_payload(sequence,reply,sizeof reply,&reply_size)
         : ssot_encode_nack_payload(sequence,reply,sizeof reply,&reply_size);
     if(!encoded) return;
-    lora.send(source,reply,static_cast<uint8_t>(reply_size));
+    if(lora.send(source,reply,static_cast<uint8_t>(reply_size))<0) {
+        updi_role_log("RECEIVER","ACK_TX_FAILED");return;
+    }
     const uint32_t started=millis();
-    while(!lora.send_done() && millis()-started<LORA_TX_TIMEOUT_MS) delay(1);
-    if(lora.send_done()) updi_role_log("RECEIVER",valid?"ACK_TX":"NACK_TX");
+    int16_t status=0;
+    while((status=lora.send_done())==0 && millis()-started<LORA_TX_TIMEOUT_MS) delay(1);
+    if(status==1) updi_role_log("RECEIVER",valid?"ACK_TX":"NACK_TX");
     else { radio_ready=false;updi_role_log("RECEIVER","ACK_TX_TIMEOUT"); }
 #endif
 }

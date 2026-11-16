@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <RadioLib.h>
 #include "ssot.h"
 
 template<class Radio> class ReliableTransport {
@@ -28,6 +29,7 @@ public:
     int16_t radio_error() const { return error_; }
     uint8_t attempts() const { return attempts_; }
     uint32_t duplicates() const { return duplicates_; }
+    void suppress_next_response() { suppress_response_=true; }
 
     int16_t stop() {
         paused_=true;armed_=false;state_=State::RxWait;
@@ -37,9 +39,11 @@ public:
     bool arm(uint8_t local,uint8_t peer,Accept accept,void* context) {
         if(active() || local==peer || local==255 || peer==255 || !accept) return false;
         local_=local;peer_=peer;accept_=accept;context_=context;
-        armed_=radio_.init(local_,frequency_,tx_power_,long_range_);
+        error_=radio_.init(local_,frequency_,tx_power_,long_range_);
+        armed_=error_==0;
         paused_=false;next_rx_=1;pending_identity_=false;
-        have_accepted_=false;duplicates_=0;error_=armed_?0:-1;
+        have_accepted_=false;duplicates_=0;
+        suppress_response_=false;
         state_=armed_?State::RxWait:State::Failed;
         result_=armed_?Result::Pending:Result::RadioError;
         return armed_;
@@ -61,7 +65,9 @@ public:
     void poll(uint32_t now) {
         if(!armed_ || paused_) return;
         if(state_==State::TxData || state_==State::TxResponse) {
-            if(radio_.send_done()) {
+            const int16_t status=radio_.send_done();
+            if(status<0) { fail(Result::RadioError,SSOT_DATA_TYPE,sequence_,status);return; }
+            if(status==1) {
                 if(state_==State::TxData) {
                     state_=State::WaitResponse;started_=now;
                     emit("DATA_TX_DONE",SSOT_DATA_TYPE,sequence_);
@@ -95,13 +101,16 @@ private:
         if(event_) event_(event_context_,event,type,sequence,error);
     }
 
-    void fail(Result result,uint8_t type,uint8_t sequence) {
-        state_=State::Failed;result_=result;error_=-1;armed_=false;
+    void fail(Result result,uint8_t type,uint8_t sequence,int16_t error=-1) {
+        const int16_t stopped=radio_.sleep();
+        state_=State::Failed;result_=result;error_=error;armed_=false;
+        if(stopped<0 && error==-1) error_=stopped;
         emit("TRANSACTION_FAILED",type,sequence,error_);
     }
 
     bool transmit_data(uint32_t now) {
-        radio_.send(peer_,wire_,wire_size_);
+        const int16_t error=radio_.send(peer_,wire_,wire_size_);
+        if(error<0) { fail(Result::RadioError,SSOT_DATA_TYPE,sequence_,error);return false; }
         ++attempts_;started_=now;state_=State::TxData;
         emit("DATA_TX_BEGIN",SSOT_DATA_TYPE,sequence_);
         return true;
@@ -109,10 +118,12 @@ private:
 
     void receive(uint32_t now) {
         uint8_t source=0,destination=0,size=0;
-        radio_.recv(&source,&destination,rx_,&size);
-        // The stable API has no start_receive(); init() is its available RX rearm.
-        if(!radio_.init(local_,frequency_,tx_power_,long_range_)) {
-            fail(Result::RadioError,0,0);return;
+        const int16_t error=radio_.recv(&source,&destination,rx_,sizeof rx_,&size);
+        if(error<0) {
+            if(error==RADIOLIB_ERR_CRC_MISMATCH || error==RADIOLIB_ERR_PACKET_TOO_LONG)
+                emit("RX_DISCARD",0,0,error);
+            else fail(Result::RadioError,0,0,error);
+            return;
         }
         if(source!=peer_ || destination!=local_ || size<2 || size>251) {
             emit("RX_DISCARD",0,0);return;
@@ -154,7 +165,12 @@ private:
             }
         }
         reply_[0]=accepted?SSOT_ACK_TYPE:SSOT_NACK_TYPE;reply_[1]=sequence;
-        radio_.send(peer_,reply_,sizeof(reply_));
+        if(suppress_response_) {
+            suppress_response_=false;state_=State::RxWait;
+            emit("RESPONSE_DROPPED",reply_[0],sequence);return;
+        }
+        const int16_t sent=radio_.send(peer_,reply_,sizeof(reply_));
+        if(sent<0) { fail(Result::RadioError,reply_[0],sequence,sent);return; }
         state_=State::TxResponse;started_=now;
         emit(accepted?"ACK_TX_BEGIN":"NACK_TX_BEGIN",reply_[0],sequence);
     }
@@ -171,6 +187,7 @@ private:
     Result result_=Result::Pending;
     int16_t error_=0;
     bool armed_=false,paused_=false,have_accepted_=false,pending_identity_=false;
+    bool suppress_response_=false;
     uint8_t local_=0,peer_=0,sequence_=1,attempts_=0,next_rx_=1;
     uint8_t last_sequence_=0,last_size_=0,wire_size_=0;
     uint32_t started_=0,duplicates_=0;

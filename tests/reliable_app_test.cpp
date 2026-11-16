@@ -8,6 +8,7 @@ namespace fake_radio { State state; }
 namespace fake_spi { State state; }
 SPIClass SPI;
 uint32_t host_ms;
+void delay(uint32_t ms) { host_ms += ms; }
 
 static const char* input="";
 static char logs[12000];
@@ -68,7 +69,7 @@ int main() {
     command("S");assert(fake_radio::state.transmit_starts==1);
     complete_tx();
     const uint8_t ack[]={SSOT_ACK_TYPE,SSOT_SEQUENCE};
-    deliver(local_address,peer_address,ack,sizeof ack);loop();
+    deliver(peer_address,local_address,ack,sizeof ack);loop();
     assert(transport.result()==decltype(transport)::Result::Accepted);
     mailbox_ready=true;
     for(unsigned i=0;i<30;++i) loop();
@@ -90,13 +91,20 @@ int main() {
     deliver(LORA_SENDER_ADDRESS,LORA_RECEIVER_ADDRESS,data,sizeof data);loop();
     assert(fake_radio::state.tx_copy[4]==SSOT_NACK_TYPE);
     complete_tx();
-    command("A");
+    // N rejects exactly one DATA; the retransmission must be accepted.
     deliver(LORA_SENDER_ADDRESS,LORA_RECEIVER_ADDRESS,data,sizeof data);loop();
     assert(fake_radio::state.tx_copy[4]==SSOT_ACK_TYPE);
     complete_tx();
+    uint8_t next_data[sizeof data];memcpy(next_data,data,sizeof data);next_data[1]=2;
+    command("D");const int before=fake_radio::state.transmit_starts;
+    deliver(LORA_SENDER_ADDRESS,LORA_RECEIVER_ADDRESS,next_data,sizeof next_data);loop();
+    assert(fake_radio::state.transmit_starts==before);
+    deliver(LORA_SENDER_ADDRESS,LORA_RECEIVER_ADDRESS,next_data,sizeof next_data);loop();
+    assert(fake_radio::state.transmit_starts==before+1 && fake_radio::state.tx_copy[4]==SSOT_ACK_TYPE);
+    complete_tx();
     command("P");assert(!radio_ready);
     command("R");assert(radio_ready);
-    puts("PASS receiver validates DATA and transmits ACK/NACK with rearm");
+    puts("PASS receiver validates DATA and transmits ACK/NACK with rearm and one dropped response");
 #else
     assert(radio_ready);
     command("S");assert(fake_radio::state.transmit_starts==1);
@@ -106,12 +114,13 @@ int main() {
     assert(!memcmp(data,fake_radio::state.tx_copy,sizeof data));
     complete_tx();
     const uint8_t nack[]={SSOT_NACK_TYPE,SSOT_SEQUENCE};
-    deliver(LORA_RECEIVER_ADDRESS,LORA_SENDER_ADDRESS,nack,sizeof nack);loop();
+    deliver(LORA_RECEIVER_ADDRESS,LORA_SENDER_ADDRESS,nack,sizeof nack);loop();loop();
     assert(fake_radio::state.transmit_starts==2);
     complete_tx();
     const uint8_t ack[]={SSOT_ACK_TYPE,SSOT_SEQUENCE};
     deliver(LORA_RECEIVER_ADDRESS,LORA_SENDER_ADDRESS,ack,sizeof ack);loop();
     assert(transport.result()==decltype(transport)::Result::Accepted);
+    command(""); // Drain deferred event logging after RF completes.
     assert(strstr(logs,"ACK_ACCEPTED"));
     command("P");assert(!radio_ready);
     command("R");assert(radio_ready);

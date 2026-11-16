@@ -31,6 +31,20 @@ class ConfigurationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(changed)
 
+    def test_firmware_identity_includes_stable_driver(self) -> None:
+        import tools.config.generate_lora_config as generator
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "platformio.ini").write_text("[platformio]\n")
+            source = root / "stable_lib/lora/lora.cpp"
+            source.parent.mkdir(parents=True)
+            source.write_text("int driver_version = 1;\n")
+            with patch.object(generator, "ROOT", root):
+                before = generator.source_fingerprint()
+                source.write_text("int driver_version = 2;\n")
+                self.assertNotEqual(before, generator.source_fingerprint())
+
     def test_duplicate_keys(self) -> None:
         from tools.config.validate_lora_ssot import unique_object
 

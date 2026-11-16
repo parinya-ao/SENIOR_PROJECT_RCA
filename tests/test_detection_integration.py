@@ -182,7 +182,7 @@ class DetectionIntegrationTests(unittest.TestCase):
         class Process:
             returncode = 0
 
-            def communicate(self, _timeout: float | None = None) -> tuple[str, str]:
+            def communicate(self, timeout: float | None = None) -> tuple[str, str]:
                 return "AVR128DA28 SIB", ""
 
         def pio(argv: list[str], **_kwargs: Json) -> Json:
@@ -207,7 +207,7 @@ class DetectionIntegrationTests(unittest.TestCase):
         class Process:
             returncode = 0
 
-            def communicate(self, _timeout: float | None = None) -> tuple[str, str]:
+            def communicate(self, timeout: float | None = None) -> tuple[str, str]:
                 return "", ""
 
         def pio(argv: list[str], **_kwargs: Json) -> Json:

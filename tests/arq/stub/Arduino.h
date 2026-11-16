@@ -2,7 +2,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
+#define RADIO_STUB_EXTERNAL_MILLIS
 #include "../../radio_stub/Arduino.h"
+#undef RADIO_STUB_EXTERNAL_MILLIS
 #define HIGH 1
 #define LOW 0
 #define INPUT 0

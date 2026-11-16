@@ -1055,11 +1055,11 @@ def host_tests(proof: ProofRun, effective_config: str) -> int:
                 "-Wextra",
                 "-Werror",
                 "-Itests/radio_stub",
-                "-Ilib/lora/src",
+                "-Istable_lib/lora",
                 "-Isrc/shared",
                 *profile_flags,
                 "tests/lora_wrapper_test.cpp",
-                "lib/lora/src/lora.cpp",
+                "stable_lib/lora/lora.cpp",
                 "-o",
                 wrapper_binary,
             ],
@@ -1081,12 +1081,12 @@ def host_tests(proof: ProofRun, effective_config: str) -> int:
                 "-Wextra",
                 "-Werror",
                 "-Itests/radio_stub",
-                "-Ilib/lora/src",
+                "-Istable_lib/lora",
                 "-Isrc/shared",
                 *profile_flags,
                 "-DHELLO_RF_DIAGNOSTIC_ONLY=1",
                 "tests/radio_diagnostic_test.cpp",
-                "lib/lora/src/lora.cpp",
+                "stable_lib/lora/lora.cpp",
                 "-o",
                 diagnostic_binary,
             ],
@@ -1623,7 +1623,7 @@ def start_rf_monitor(
     port: str,
     output_queue: queue.Queue[tuple[str, str, bytes | None]],
 ) -> dict[str, Any]:
-    argv = ["uv", "run", "python", "-u", "third_party/upditerm/upditerm.py", port, "38400"]
+    argv = ["uv", "run", "--no-sync", "python", "-u", "third_party/upditerm/upditerm.py", port, "38400"]
     (proof.run_dir / f"rf-monitor-{role}.command.log").write_text(" ".join(argv) + "\n")
     environment = os.environ.copy()
     environment["PYTHONUNBUFFERED"] = "1"
@@ -2154,6 +2154,241 @@ def validate_live_proof(
     }
 
 
+def validate_stable_transport(
+    journal: Sequence[Json],
+    images: Mapping[str, Json],
+    run_id: str,
+    diagnostic_test: str,
+) -> dict[str, Json]:
+    """Validate the current stable-library DATA/ACK or bounded DATA/NACK logs."""
+    issues: list[str] = []
+    if diagnostic_test not in ("T01", "T02"):
+        return {"valid": False, "issues": ["stable transport supports T01/T02 only"]}
+
+    config = json.loads((ROOT / "config/lora_system.json").read_text())
+    protocol = config["protocol"]
+    payload = protocol["payload"].encode("ascii")
+    max_attempts = int(config["retries"]["max_retries"]) + 1
+    roles = {"GATEWAY": "sender_hello", "RECEIVER": "receiver"}
+    logs = {
+        role: [
+            (index, item["line"])
+            for index, item in enumerate(journal)
+            if item["role"] == role
+        ]
+        for role in roles
+    }
+
+    for role in roles:
+        image = images.get(role, {})
+        if (
+            image.get("origin") != "PHYSICAL_UPDI"
+            or image.get("run_id") != run_id
+            or image.get("signature") != "1e970a"
+            or image.get("port") != PORTS[role.lower()]
+            or not image.get("verified")
+            or not image.get("firmware_sha256")
+            or not image.get("build_id")
+        ):
+            issues.append(f"{role}: missing fresh verified image identity")
+        if any("LOG_OVERFLOW" in line for _, line in logs[role]):
+            issues.append(f"{role}: firmware log overflow")
+        if any(
+            marker in line
+            for _, line in logs[role]
+            for marker in ("RADIO_INIT_FAILED", "TX_TIMEOUT")
+        ):
+            issues.append(f"{role}: radio initialization or TX failure")
+
+    host_commands = [
+        (index, item["role"], item["line"])
+        for index, item in enumerate(journal)
+        if item["role"] in ("HOST_RECEIVER", "HOST_GATEWAY")
+    ]
+    expected_commands = [
+        ("HOST_RECEIVER", "?"),
+        *(([("HOST_RECEIVER", "N")] if diagnostic_test == "T02" else [])),
+        ("HOST_RECEIVER", "R"),
+        *([("HOST_RECEIVER", "D")] if any(role == "HOST_RECEIVER" and text == "D" for _, role, text in host_commands) else []),
+        ("HOST_GATEWAY", "R"),
+        ("HOST_GATEWAY", "?"),
+        ("HOST_GATEWAY", "S"),
+        ("HOST_RECEIVER", "P"),
+        ("HOST_GATEWAY", "P"),
+    ]
+    if [(role, command) for _, role, command in host_commands] != expected_commands:
+        issues.append("incorrect, repeated or out-of-order stable control commands")
+
+    if sum(role == "HOST_RECEIVER" and command == "P" for _, role, command in host_commands) != 1 or sum(
+        role == "HOST_GATEWAY" and command == "P" for _, role, command in host_commands
+    ) != 1:
+        issues.append("both radios were not explicitly parked")
+
+    receiver_ready = [
+        index for index, line in logs["RECEIVER"] if line == "[RECEIVER] RX_READY"
+    ]
+    sender_ready = [
+        index for index, line in logs["GATEWAY"] if line == "[GATEWAY] RADIO_READY"
+    ]
+    receiver_rearm = next(
+        (index for index, role, command in host_commands if role == "HOST_RECEIVER" and command == "R"),
+        -1,
+    )
+    gateway_rearm = next(
+        (index for index, role, command in host_commands if role == "HOST_GATEWAY" and command == "R"),
+        -1,
+    )
+    gateway_status = next(
+        (index for index, role, command in host_commands if role == "HOST_GATEWAY" and command == "?"),
+        -1,
+    )
+    command_s = next(
+        (index for index, role, command in host_commands if role == "HOST_GATEWAY" and command == "S"),
+        -1,
+    )
+    if not any(index > receiver_rearm and index < command_s for index in receiver_ready):
+        issues.append("DATA requested before a fresh receiver RX_READY")
+    if not receiver_rearm < gateway_rearm < gateway_status < command_s:
+        issues.append("sender was not rearmed and checked before DATA request")
+    if not any(index > gateway_status and index < command_s for index in sender_ready):
+        issues.append("sender did not report RADIO_READY before DATA request")
+    for role in roles:
+        boots = [index for index, line in logs[role] if line.startswith(f"[{role}] BOOT ")]
+        if len(boots) > 1 or any(index > command_s for index in boots):
+            issues.append(f"{role}: unexpected reset during physical transaction")
+        if any(line.startswith(f"[{role}] BUILD_ID=") and line != f"[{role}] BUILD_ID={images.get(role, {}).get('build_id')}"
+               for _, line in logs[role]):
+            issues.append(f"{role}: running firmware identity differs from verified image")
+    requested = [
+        index
+        for index, line in logs["GATEWAY"]
+        if line == "[GATEWAY] DATA_TX_REQUESTED" or line.startswith("[GATEWAY] DATA_TX_REQUESTED T=")
+    ]
+    if len(requested) != 1 or (requested and requested[0] <= command_s):
+        issues.append("sender did not report exactly one accepted DATA request")
+    for role in roles:
+        if not any(line == f"[{role}] PARKED E=0" for _, line in logs[role]):
+            issues.append(f"{role}: radio did not park cleanly")
+
+    pattern = re.compile(
+        r"^\[(GATEWAY|RECEIVER)\] ([A-Z_]+) T=(\d+) TYPE=(\d+) Q=(\d+) E=(-?\d+)$"
+    )
+    events: dict[str, list[tuple[int, str, int, int, int, int]]] = {
+        role: [] for role in roles
+    }
+    for index, item in enumerate(journal):
+        line = item["line"]
+        match = pattern.fullmatch(line)
+        if match:
+            role, name, timestamp, type_, sequence, error = match.groups()
+            events[role].append(
+                (index, name, int(timestamp), int(type_), int(sequence), int(error))
+            )
+        elif any(
+            line.startswith(f"[{role}] {name} ")
+            for role in roles
+            for name in ("DATA_TX_BEGIN", "DATA_TX_DONE", "DATA_VALIDATED", "ACK_TX_", "NACK_TX_", "ACK_ACCEPTED", "NACK_RX", "TRANSACTION_FAILED")
+        ):
+            issues.append("malformed stable transport event")
+
+    def selected(role: str, name: str) -> list[tuple[int, str, int, int, int, int]]:
+        return [event for event in events[role] if event[1] == name]
+
+    data_tx = selected("GATEWAY", "DATA_TX_BEGIN")
+    data_done = selected("GATEWAY", "DATA_TX_DONE")
+    ack_begin = selected("RECEIVER", "ACK_TX_BEGIN")
+    ack_done = selected("RECEIVER", "ACK_TX_DONE")
+    nack_begin = selected("RECEIVER", "NACK_TX_BEGIN")
+    nack_done = selected("RECEIVER", "NACK_TX_DONE")
+    attempts = len(data_tx)
+    if not 1 <= attempts <= max_attempts:
+        issues.append("DATA attempts were absent or exceeded the retry bound")
+    if len(data_done) != attempts:
+        issues.append("DATA TX completion count does not match attempts")
+
+    for role_events in events.values():
+        for event in role_events:
+            expected_type = (
+                protocol["ack_type"] if event[1].startswith("ACK_") else
+                protocol["nack_type"] if event[1].startswith("NACK_") else
+                protocol["data_type"] if event[1].startswith("DATA_") or event[1] == "RETRY_SCHEDULED" else
+                None
+            )
+            if expected_type is not None and event[3] != expected_type:
+                issues.append("event name did not match its on-wire packet type")
+        if any(
+            (event[3], event[4], event[5])
+            not in (
+                (protocol["data_type"], protocol["sequence"], 0),
+                (protocol["ack_type"], protocol["sequence"], 0),
+                (protocol["nack_type"], protocol["sequence"], 0),
+                (protocol["nack_type"], protocol["sequence"], -1),
+            )
+            for event in role_events
+        ):
+            issues.append("event type, sequence or result did not match the configured protocol")
+
+    validated = selected("RECEIVER", "DATA_VALIDATED")
+    accepted = selected("GATEWAY", "ACK_ACCEPTED")
+    nack_rx = selected("GATEWAY", "NACK_RX")
+    retries = selected("GATEWAY", "RETRY_SCHEDULED")
+    if len(validated) != 1 or len(accepted) != 1:
+        issues.append("DATA validation or ACK acceptance was missing or repeated")
+    if not 1 <= len(ack_begin) == len(ack_done) <= attempts:
+        issues.append("receiver ACK TX count did not match received DATA attempts")
+    if selected("GATEWAY", "TRANSACTION_FAILED"):
+        issues.append("sender reported transaction failure")
+    if diagnostic_test == "T01" and (nack_rx or nack_begin or nack_done):
+        issues.append("unexpected NACK in ACK proof")
+    if diagnostic_test == "T02" and not (1 <= len(nack_begin) == len(nack_done) == len(nack_rx) < attempts):
+        issues.append("controlled NACK must be received and followed by retry then ACK")
+    retry_events = sorted(retries + nack_rx, key=lambda event: event[2])
+    if len(retry_events) != attempts - 1:
+        issues.append("sender retry count did not match DATA attempts")
+    # UART logs are deferred during TX; compare timestamps within each MCU only.
+    if len(data_done) == attempts and len(retry_events) == attempts - 1:
+        if any(data_tx[i][2] > data_done[i][2] for i in range(attempts)) or any(
+            not data_done[i][2] <= retry_events[i][2] <= data_tx[i + 1][2]
+            for i in range(attempts - 1)
+        ):
+            issues.append("sender DATA retry events were out of order")
+    payload_line = (
+        f"[RECEIVER] PAYLOAD_BYTES C=0000 S={protocol['sequence']:02X} LEN={len(payload)} "
+        f"HEX={payload.hex().upper()} ASCII={payload.decode('ascii')}"
+    )
+    if sum(line == payload_line for _, line in logs["RECEIVER"]) != 1:
+        issues.append("receiver did not log the exact application payload once")
+    dropped = selected("RECEIVER", "RESPONSE_DROPPED")
+    drop_requested = any(role == "HOST_RECEIVER" and text == "D" for _, role, text in host_commands)
+    if len(dropped) != int(drop_requested):
+        issues.append("controlled response suppression did not match the command")
+    if len(selected("RECEIVER", "DATA_DUP")) != len(ack_begin) + len(dropped) - 1:
+        issues.append("receiver duplicate suppression evidence did not match ACK replies")
+    if validated and accepted and ack_begin and ack_done and data_tx and data_done:
+        if not validated[0][2] <= ack_begin[0][2] <= ack_done[0][2]:
+            issues.append("receiver DATA/ACK events were out of order")
+        if data_done[-1][2] > accepted[0][2]:
+            issues.append("ACK accepted before DATA TX completion")
+    retries_count = len(retry_events)
+    nack_count = len(nack_begin)
+    ack_count = len(ack_begin)
+
+    return {
+        "valid": not issues,
+        "issues": sorted(set(issues)),
+        "run_id": run_id,
+        "diagnostic_test": diagnostic_test,
+        "attempts": attempts,
+        "retries": retries_count,
+        "timeouts": len(retries),
+        "rtt_ms": accepted[0][2] - data_tx[0][2] if accepted and data_tx else None,
+        "ack_tx": ack_count,
+        "nack_tx": nack_count,
+        "payload_bytes": len(payload),
+        "origin": "STRUCTURAL_LOG_VALIDATION",
+    }
+
+
 def verify_installed_images(
     proof: ProofRun, effective_config: str, manifest: Json, run_id: str
 ) -> dict[str, Json] | None:
@@ -2277,10 +2512,194 @@ def reserve_session(proof: ProofRun, run_id: str) -> int:
     raise ValueError(msg)
 
 
+def run_stable_ack_rf_test(
+    proof: ProofRun,
+    args: argparse.Namespace,
+    run_id: str,
+    images: Mapping[str, Json],
+) -> int:
+    """Run one current-API DATA/ACK or controlled DATA/NACK exchange."""
+    diagnostic_test = getattr(args, "transport_test", None) or "T01"
+    nack = diagnostic_test == "T02"
+    output_queue: queue.Queue[tuple[str, str, bytes | None]] = queue.Queue()
+    journal: list[dict[str, Json]] = []
+    monitors: dict[str, dict[str, Any]] = {}
+    capture_error = False
+    stop_reason = ""
+    started = False
+    rearmed = False
+    terminal_at: float | None = None
+    deadline = time.monotonic() + RF_SINGLE_PACKET_TIMEOUT_SECONDS
+
+    def record(role: str, line: str) -> None:
+        journal.append({"role": role, "line": line, "observed_monotonic_ns": time.monotonic_ns()})
+
+    def command(key: str, value: str) -> None:
+        process = monitors[key]["process"]
+        if process.poll() is not None or process.stdin is None:
+            raise OSError("serial monitor disconnected before command")
+        data = value.encode("ascii")
+        if process.stdin.write(data) != len(data):
+            raise OSError("incomplete serial control-command write")
+        process.stdin.flush()
+        record(f"HOST_{key.upper()}", value)
+
+    try:
+        monitors["receiver"] = start_rf_monitor(
+            proof, "receiver", PORTS["receiver"], output_queue
+        )
+        command("receiver", "?")
+        while time.monotonic() < deadline:
+            try:
+                key, stream, raw = output_queue.get(timeout=0.1)
+            except queue.Empty:
+                if terminal_at is not None and time.monotonic() - terminal_at >= RF_COMPLETION_LOG_SETTLE_SECONDS:
+                    stop_reason = "single-packet capture settled"
+                    break
+                if any(monitor["process"].poll() is not None for monitor in monitors.values()):
+                    stop_reason = "serial monitor disconnected"
+                    capture_error = True
+                    break
+                continue
+            if stream != "stdout" or raw is None:
+                continue
+            role = "GATEWAY" if key == "gateway" else "RECEIVER"
+            line = raw.decode("ascii", errors="replace").rstrip("\r\n")
+            if not line.startswith(f"[{role}] "):
+                continue
+            record(role, line)
+
+            if "LOG_OVERFLOW" in line or (line.endswith("RADIO_NOT_READY") and not (key == "receiver" and not rearmed)):
+                stop_reason = line
+                break
+            if key == "receiver" and line in ("[RECEIVER] RADIO_READY", "[RECEIVER] RADIO_NOT_READY") and not rearmed:
+                if nack:
+                    command("receiver", "N")
+                command("receiver", "R")
+                rearmed = True
+            elif key == "receiver" and rearmed and line == "[RECEIVER] RX_READY" and "gateway" not in monitors:
+                if getattr(args, "drop_response_once", False):
+                    command("receiver", "D")
+                monitors["gateway"] = start_rf_monitor(
+                    proof, "gateway", PORTS["gateway"], output_queue
+                )
+                command("gateway", "R")
+                command("gateway", "?")
+            elif key == "gateway" and line == "[GATEWAY] RADIO_READY" and not started:
+                command("gateway", "S")
+                started = True
+
+            if line.startswith("[GATEWAY] ACK_ACCEPTED "):
+                if terminal_at is None:
+                    terminal_at = time.monotonic()
+            elif "TRANSACTION_FAILED" in line or "TX_TIMEOUT" in line:
+                stop_reason = line
+                break
+        else:
+            stop_reason = "timed out waiting for bounded stable transport proof"
+    except (OSError, ValueError) as error:
+        stop_reason = str(error)
+        capture_error = True
+    finally:
+        for key in ("receiver", "gateway"):
+            monitor = monitors.get(key)
+            if monitor is not None and monitor["process"].poll() is None:
+                try:
+                    command(key, "P")
+                except OSError:
+                    capture_error = True
+        park_deadline = time.monotonic() + 5
+        while time.monotonic() < park_deadline and monitors:
+            parked = [
+                any(item["line"] == f"[{role}] PARKED E=0" for item in journal)
+                for role in ("RECEIVER", "GATEWAY")
+            ]
+            if all(parked):
+                break
+            try:
+                key, stream, raw = output_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
+            if stream == "stdout" and raw:
+                role = "GATEWAY" if key == "gateway" else "RECEIVER"
+                line = raw.decode("ascii", errors="replace").rstrip("\r\n")
+                if line.startswith(f"[{role}] "):
+                    record(role, line)
+        else:
+            if monitors:
+                capture_error = True
+        codes = {key: stop_rf_monitor(monitor) for key, monitor in monitors.items()}
+
+    unavailable = check_port_owners(proof, "rf-postflight")
+    result = validate_stable_transport(journal, images, run_id, diagnostic_test)
+    if stop_reason and terminal_at is None:
+        result["issues"] = sorted(set([*result["issues"], stop_reason]))
+    if unavailable or capture_error or any(code != 0 for code in codes.values()):
+        result["issues"] = sorted(
+            set([*result["issues"], "serial monitor or postflight check failed"])
+        )
+    passed = bool(result["valid"] and terminal_at is not None and not result["issues"])
+    result.update(
+        passed=passed,
+        origin="PHYSICAL_RADIO" if passed else "UNPROVEN",
+        single_packet_mode=True,
+        continue_command_sent=False,
+        timeout_seconds=RF_SINGLE_PACKET_TIMEOUT_SECONDS,
+        stop_reason=stop_reason,
+        monitor_exit_codes=codes,
+    )
+    proof.note("rf-test-events.json", json.dumps(journal, indent=2) + "\n")
+    proof.note("rf-test.json", json.dumps(result, indent=2) + "\n")
+    proof.note(
+        "rf-test.log",
+        ("PASS" if passed else "FAIL") + ": " + "; ".join(result["issues"]) + "\n",
+    )
+    return 0 if passed else 1
+
+
+def run_stable_campaign(proof: ProofRun, args: argparse.Namespace,
+                        run_id: str, images: Mapping[str, Json]) -> int:
+    """Gate physical NACK, lost-ACK and 10/100/1000 cases on each preceding result."""
+    cases = [("T01", "T01", False), ("T02", "T02", False), ("lost-ACK", "T01", True)]
+    cases += [(f"normal-{count}-{i + 1:04}", "T01", False)
+              for count in (10, 100, 1000) for i in range(count)]
+    results = []
+    status = 0
+    for name, test, drop in cases:
+        options = argparse.Namespace(**vars(args))
+        options.transport_test = test
+        options.drop_response_once = drop
+        child = ProofRun(proof.run_dir / name)
+        status = run_stable_ack_rf_test(child, options, run_id, images)
+        row = {"name": name, "exit_code": status, "evidence": str(child.run_dir)}
+        path = child.run_dir / "rf-test.json"
+        if path.exists():
+            row["result"] = json.loads(path.read_text())
+        results.append(row)
+        with (proof.run_dir / "campaign-events.jsonl").open("a") as output:
+            output.write(json.dumps(row) + "\n")
+        if status:
+            break
+    summary = {"passed": status == 0 and len(results) == len(cases),
+               "planned": len(cases), "executed": len(results), "cases": results}
+    summary["successful"] = sum(row["exit_code"] == 0 for row in results)
+    for field, source in (("data_tx", "attempts"), ("ack_tx", "ack_tx"),
+                          ("nack_tx", "nack_tx"), ("retries", "retries"),
+                          ("timeouts", "timeouts")):
+        summary[field] = sum(row.get("result", {}).get(source, 0) for row in results)
+    rtts = sorted(row["result"]["rtt_ms"] for row in results
+                  if row["exit_code"] == 0 and row.get("result", {}).get("rtt_ms") is not None)
+    summary["average_rtt_ms"] = sum(rtts) / len(rtts) if rtts else None
+    for percentile in (95, 99):
+        summary[f"p{percentile}_rtt_ms"] = rtts[(len(rtts) * percentile + 99) // 100 - 1] if rtts else None
+    (proof.run_dir / "campaign.json").write_text(json.dumps(summary, indent=2) + "\n")
+    return status
+
+
 def rf_test(
     proof: ProofRun, args: argparse.Namespace, profile_ok: bool, effective_config: str
 ) -> int:
-    # This runner is deliberately single-packet; the generic protocol keeps legacy mode.
+    # Current stable transport has no campaign/session field; T01/T02 use its byte commands.
     if (
         not profile_ok
         or not application_layout_verified(("sender_hello", "receiver"), effective_config)
@@ -2326,6 +2745,20 @@ def rf_test(
     import secrets
 
     run_id = secrets.token_hex(16)
+    diagnostic_test = getattr(args, "transport_test", None) or "T01"
+    if getattr(args, "stable_transport", False) or getattr(args, "stable_campaign", False):
+        if diagnostic_test not in ("T01", "T02"):
+            proof.note("rf-test.log", "BLOCKED: stable transport supports T01/T02 only.\n")
+            return 2
+        images = verify_installed_images(proof, effective_config, manifest, run_id)
+        if images is None:
+            proof.note(
+                "rf-test.log", "BLOCKED: installed images/signatures do not match current firmware.\n"
+            )
+            return 2
+        if getattr(args, "stable_campaign", False):
+            return run_stable_campaign(proof, args, run_id, images)
+        return run_stable_ack_rf_test(proof, args, run_id, images)
     try:
         session = reserve_session(proof, run_id)
     except ValueError as error:
@@ -2337,7 +2770,6 @@ def rf_test(
             "rf-test.log", "BLOCKED: installed images/signatures do not match current firmware.\n"
         )
         return 2
-    diagnostic_test = getattr(args, "transport_test", None) or "T01"
     reverse = diagnostic_test in ("T03", "T04")
     nack = diagnostic_test in ("T02", "T04")
     receiver_key, sender_key = ("gateway", "receiver") if reverse else ("receiver", "gateway")
@@ -2592,9 +3024,18 @@ def main() -> int:
     parser.add_argument("--page-end", type=lambda value: int(value, 0))
     parser.add_argument("--authorize-rf-test", action="store_true")
     parser.add_argument(
+        "--stable-transport",
+        action="store_true",
+        help="use current R/S/N/P stable-library firmware controls and logs",
+    )
+    parser.add_argument("--stable-campaign", action="store_true",
+                        help="gate T01, T02, lost ACK and 10/100/1000 physical exchanges")
+    parser.add_argument("--drop-response-once", action="store_true",
+                        help="suppress one Receiver response for a stable transport timeout test")
+    parser.add_argument(
         "--transport-test",
         choices=("T01", "T02", "T03", "T04"),
-        help="symmetric SSOT DATA/ACK or controlled NACK, forward/reverse",
+        help="T01 DATA/ACK, T02 controlled NACK, T03/T04 reverse; add --stable-transport for current R/S/N/P firmware",
     )
     parser.add_argument(
         "--single-packet",

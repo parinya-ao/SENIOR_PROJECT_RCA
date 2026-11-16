@@ -449,9 +449,17 @@ class HardwareGateTests(unittest.TestCase):
                     return 1, b"", f"missing source: {missing[0]}".encode()
                 return 0, b"PASS 1 checks", b"Ran 1 tests"
 
+            def note(self, name: str, content: str) -> None:
+                (self.run_dir / name).write_text(content)
+
         with tempfile.TemporaryDirectory() as directory:
             proof: Any = RecordingProof(Path(directory))
             with (
+                patch.object(
+                    rf_proof,
+                    "radio_profile_compile_flags",
+                    return_value=["-DLORA_ROLE_SENDER=1"],
+                ),
                 patch.object(rf_proof, "parse_test_counts", return_value=(None, 1)),
                 patch.object(rf_proof, "parse_role_log_count", return_value=1),
                 patch.object(rf_proof, "parse_wrapper_check_count", return_value=1),
@@ -464,6 +472,12 @@ class HardwareGateTests(unittest.TestCase):
                 argv for name, argv in proof.commands if name == "diagnostic-protection-compile"
             )
             self.assertIn("-DLORA_ROLE_SENDER=1", diagnostic_argv)
+            source_args = [
+                arg for _, argv in proof.commands for arg in argv
+                if arg.endswith((".cpp", ".c"))
+            ]
+            self.assertIn("stable_lib/lora/lora.cpp", source_args)
+            self.assertNotIn("lib/lora/src/lora.cpp", source_args)
 
     def test_effective_upload_flags_and_ports_are_checked(self) -> None:
         config = effective_platformio_config()

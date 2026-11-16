@@ -17,7 +17,7 @@ int main() {
     assert(fake_radio::state.module_irq_pin == PIN_PD2);
     assert(fake_radio::state.module_reset_pin == PIN_PD0);
     assert(fake_radio::state.module_dio1_pin == PIN_PD3);
-    assert(sender.init(0, 915.0f, 2, 0));
+    assert(sender.init(0, 915.0f, 2, 0) == 0);
 
     const uint8_t data[] = {8, 1, 'h', 'i'};
     sender.send(1, data, sizeof(data));
@@ -29,7 +29,7 @@ int main() {
     assert(sender.send_done());
 
     LoRa receiver(PIN_PD0, PIN_PD3, PIN_PD1, PIN_PD2);
-    assert(receiver.init(1, 915.0f, 2, 0));
+    assert(receiver.init(1, 915.0f, 2, 0) == 0);
     const uint8_t ack[] = {1, 0, 0, 0, 3, 1};
     memcpy(fake_radio::state.rx_data, ack, sizeof(ack));
     fake_radio::state.rx_size = sizeof(ack);
@@ -37,7 +37,7 @@ int main() {
     assert(receiver.available());
     Address source = 0, destination = 0;
     uint8_t payload[256] = {}, length = 0;
-    receiver.recv(&source, &destination, payload, &length);
+    assert(receiver.recv(&source, &destination, payload, sizeof payload, &length) == 0);
     assert(source == 0 && destination == 1);
     assert(length == 2 && payload[0] == 3 && payload[1] == 1);
     assert(!receiver.available());

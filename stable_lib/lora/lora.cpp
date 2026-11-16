@@ -1,123 +1,109 @@
-#include <SPI.h>
-#include <RadioLib.h>
-
 #include "lora.h"
+#include <string.h>
 
-// The following static declarations will prevent the lib from being used by
-// multiple LoRa instances.  However, these variables cannot be member
-// variables because they cannot be accessed from ISRs.
-static volatile bool _transmitting;
-static volatile bool _received;
-static void _sent_action();
-static void _received_action();
+// RadioLib requires plain ISR callbacks; one physical radio is active per MCU.
+LoRa* LoRa::_active = nullptr;
 
-/***********************************************
- * 
- */
-LoRa::LoRa(uint32_t cs_pin, uint32_t irq_pin, uint32_t rst_pin, uint32_t dio1_pin):
-    _module(new Module(cs_pin, irq_pin, rst_pin, dio1_pin)) {
-    _transmitting = false;
-    _received = false;
-}
+LoRa::LoRa(uint32_t cs, uint32_t irq, uint32_t rst, uint32_t dio1)
+    : _hardware(cs, irq, rst, dio1), _module(&_hardware) {}
 
-/***********************************************
- * 
- */
-bool LoRa::init(Address my_addr, float freq, int8_t tx_power, uint8_t long_range) {
-    _module.reset();
-    if (_module.begin() != RADIOLIB_ERR_NONE)
-        return false;
-    _module.setFrequency(freq);
-    _module.setOutputPower(tx_power, false);
-    _module.setNodeAddress(my_addr);
-    _module.setCurrentLimit(200);
-    _module.setCRC(true);
-    _module.invertIQ(false);
-    _module.explicitHeader();
-    if (long_range) {
-        _module.setSpreadingFactor(12);
-        _module.setBandwidth(125);
-        _module.setCodingRate(8);
-    }
-    else {
-        _module.setSpreadingFactor(7);
-        _module.setBandwidth(125);
-        _module.setCodingRate(5);
-    }
-    _my_addr = my_addr;
-    _module.startReceive();
+int16_t LoRa::receive_start() {
     _module.setPacketReceivedAction(_received_action);
-    return true;
+    return _module.startReceive();
 }
 
-/***********************************************
- * 
- */
-bool LoRa::available() {
-    return _received;
-}
-
-/***********************************************
- * 
- */
-int16_t LoRa::send(Address dst, const uint8_t* pkt, uint8_t len) {
-    // Payload format follows RadioHead's header structure
-    // See https://github.com/hallard/RadioHead/blob/master/RH_RF95.cpp#L293
-    uint8_t buf[256];
-    buf[0] = dst;
-    buf[1] = _my_addr;
-    buf[2] = 0;
-    buf[3] = 0;
-    memcpy(buf+4, pkt, len);
-    _module.setPacketSentAction(_sent_action);
-    _module.startTransmit(buf, len+4);
-    _transmitting = true;
-}
-
-/***********************************************
- * 
- */
-void LoRa::recv(Address *src, Address *dst, uint8_t* pkt, uint8_t* len) {
-    if (!_received) return;
-
-    uint8_t buf[256];
-    uint8_t tmplen;
-    tmplen = _module.getPacketLength();
-    _module.readData(buf, tmplen);
-    *dst = buf[0];
-    *src = buf[1];
-    *len = tmplen - 4;
-    _last_rssi = (int16_t) _module.getRSSI();
-    memcpy(pkt, buf+4, *len);
-    _received = false;
-}
-
-/***********************************************
- * 
- */
-static void _sent_action() {
+int16_t LoRa::init(Address address, float frequency, int8_t power, uint8_t long_range) {
+    _initialized = false;
     _transmitting = false;
+    _tx_pending = false;
+    _received = false;
+    _active = this;
+    _module.reset();
+    int16_t error = _module.begin(frequency, 125.0f, long_range ? 12 : 7,
+                                  long_range ? 8 : 5, 0x12, power, 8, 0);
+    if (error != RADIOLIB_ERR_NONE) return error;
+    if ((error = _module.setCurrentLimit(200)) != RADIOLIB_ERR_NONE) return error;
+    if ((error = _module.setCRC(true)) != RADIOLIB_ERR_NONE) return error;
+    if ((error = _module.invertIQ(false)) != RADIOLIB_ERR_NONE) return error;
+    if ((error = _module.explicitHeader()) != RADIOLIB_ERR_NONE) return error;
+    _my_addr = address;
+    error = receive_start();
+    _initialized = error == RADIOLIB_ERR_NONE;
+    return error;
 }
 
-/***********************************************
- * this method must be called and return true at least once after each send to
- * ensure proper cleanup.
- */
-bool LoRa::send_done() {
-    if (_transmitting) {
-        return false;
+bool LoRa::available() { return _initialized && _received; }
+
+int16_t LoRa::send(Address destination, const uint8_t* packet, uint8_t length) {
+    if (!packet && length) return RADIOLIB_ERR_NULL_POINTER;
+    if (length > 251) return RADIOLIB_ERR_PACKET_TOO_LONG;
+    if (!_initialized || _tx_pending) return RADIOLIB_ERR_WRONG_MODEM;
+    uint8_t buffer[255] = {destination, _my_addr, 0, 0};
+    if (length) memcpy(buffer + 4, packet, length);
+    _received = false;
+    _transmitting = true;
+    _tx_pending = true;
+    _module.setPacketSentAction(_sent_action);
+    const int16_t error = _module.startTransmit(buffer, static_cast<size_t>(length) + 4);
+    if (error != RADIOLIB_ERR_NONE) {
+        _transmitting = false;
+        _tx_pending = false;
+        _initialized = receive_start() == RADIOLIB_ERR_NONE;
     }
-    else {
-        _module.finishTransmit();
-        _module.setPacketReceivedAction(_received_action);
-        _module.startReceive();
-        return true;
-    }
+    return error;
 }
 
-/***********************************************
- * 
- */
-static void _received_action() {
-    _received = true;
+int16_t LoRa::send_done() {
+    if (!_initialized) return RADIOLIB_ERR_WRONG_MODEM;
+    if (_transmitting) return 0;
+    if (!_tx_pending) return 1;
+    _tx_pending = false;
+    const int16_t error = _module.finishTransmit();
+    const int16_t rearm = receive_start();
+    _initialized = rearm == RADIOLIB_ERR_NONE;
+    if (error != RADIOLIB_ERR_NONE) return error;
+    return rearm == RADIOLIB_ERR_NONE ? 1 : rearm;
 }
+
+int16_t LoRa::recv(Address* source, Address* destination, uint8_t* packet,
+                    size_t capacity, uint8_t* length) {
+    if (!source || !destination || !length || (!packet && capacity))
+        return RADIOLIB_ERR_NULL_POINTER;
+    *length = 0;
+    if (!available()) return RADIOLIB_ERR_RX_TIMEOUT;
+    _received = false;
+    const size_t frame_length = _module.getPacketLength();
+    uint8_t buffer[255];
+    int16_t error = RADIOLIB_ERR_NONE;
+    if (frame_length < 4 || frame_length > sizeof(buffer)) {
+        error = RADIOLIB_ERR_PACKET_TOO_LONG;
+    } else {
+        error = _module.readData(buffer, frame_length);
+        if (error == RADIOLIB_ERR_NONE && frame_length - 4 > capacity)
+            error = RADIOLIB_ERR_PACKET_TOO_LONG;
+    }
+    if (error == RADIOLIB_ERR_NONE) {
+        *source = buffer[1];
+        *destination = buffer[0];
+        *length = static_cast<uint8_t>(frame_length - 4);
+        if (*length) memcpy(packet, buffer + 4, *length);
+        _last_rssi = static_cast<int16_t>(_module.getRSSI());
+    }
+    const int16_t rearm = receive_start();
+    _initialized = rearm == RADIOLIB_ERR_NONE;
+    return rearm != RADIOLIB_ERR_NONE ? rearm : error;
+}
+
+int16_t LoRa::sleep() {
+    const int16_t error = _module.sleep();
+    if (error == RADIOLIB_ERR_NONE) {
+        _initialized = false;
+        _transmitting = false;
+        _tx_pending = false;
+        _received = false;
+    }
+    return error;
+}
+
+void LoRa::_sent_action() { if (_active) _active->_transmitting = false; }
+void LoRa::_received_action() { if (_active) _active->_received = true; }

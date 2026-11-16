@@ -120,7 +120,7 @@ def source_fingerprint() -> str:
     """Hash the source inputs that determine generated firmware artifacts."""
     paths = list((ROOT / "src").rglob("*")) + list((ROOT / "tools/config").glob("*.py"))
     paths += [ROOT / "platformio.ini"]
-    for directory in ("lib", "include", "third_party"):
+    for directory in ("lib", "stable_lib", "include", "third_party"):
         paths += list((ROOT / directory).rglob("*"))
     return digest(
         {

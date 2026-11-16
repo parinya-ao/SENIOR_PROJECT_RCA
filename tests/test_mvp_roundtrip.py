@@ -1,6 +1,7 @@
 """HOST SIMULATION: actual firmware roles; only MCU/radio I/O is replaced."""
 
 import json
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -90,6 +91,9 @@ class MvpRoundtripTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.directory = tempfile.TemporaryDirectory(prefix="lora-mvp-host-")
         cls.binaries = {}
+        compiler = shutil.which("g++") or shutil.which("clang++")
+        if compiler is None:
+            raise RuntimeError("C++ host compiler required for firmware role simulation")
         for role in ("sender", "receiver"):
             binary = Path(cls.directory.name) / role
             ssot_object = Path(cls.directory.name) / (role + "_ssot.o")
@@ -125,8 +129,7 @@ class MvpRoundtripTests(unittest.TestCase):
             if c_result.returncode:
                 raise AssertionError(c_result.stdout + c_result.stderr)
             command = [
-                "clang",
-                "--driver-mode=g++",
+                compiler,
                 "-std=c++17",
                 "-Wall",
                 "-Wextra",

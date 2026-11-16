@@ -70,7 +70,8 @@ static void flush_event() {
 #if !HELLO_RF_DIAGNOSTIC_ONLY
 static bool accept_data(void*,uint8_t sequence,const uint8_t* data,uint8_t length) {
     static_cast<void>(sequence);
-    if(reject_data || length!=SSOT_HELLO_PAYLOAD_SIZE || !data ||
+    if(reject_data) { reject_data=false;return false; }
+    if(length!=SSOT_HELLO_PAYLOAD_SIZE || !data ||
        memcmp(data,LORA_HELLO_PAYLOAD,length)) return false;
     memcpy(accepted_payload,data,length);return true;
 }
@@ -131,7 +132,7 @@ static void status() {
 
 void loop() {
 #if defined(LORA_NONBLOCKING_LOG) && LORA_NONBLOCKING_LOG
-    updi_role_log_service();
+    if(!transport.active()) updi_role_log_service();
 #endif
     if(!boot_logged && updi_uart_enabled()) {
         updi_role_log_identity(role,firmware,__DATE__,__TIME__);
@@ -178,6 +179,7 @@ void loop() {
         }
         if(command=='N') { reject_data=true;continue; }
         if(command=='A') { reject_data=false;continue; }
+        if(command=='D') { transport.suppress_next_response();continue; }
         if(command=='R') {
             radio_ready=arm_radio();completion_reported=false;tx_sequence=SSOT_SEQUENCE;
             if(radio_ready) updi_role_log(role,"RX_READY");
@@ -191,7 +193,7 @@ void loop() {
             if(transport.send_reliable_data(tx_sequence,
                     reinterpret_cast<const uint8_t*>(LORA_HELLO_PAYLOAD),
                     SSOT_HELLO_PAYLOAD_SIZE,millis()))
-                updi_role_log(role,"DATA_TX_REQUESTED");
+                record(nullptr,"DATA_TX_REQUESTED",SSOT_DATA_TYPE,tx_sequence,0);
         }
 #endif
 #endif

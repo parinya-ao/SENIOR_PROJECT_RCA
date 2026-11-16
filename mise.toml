@@ -6,6 +6,9 @@ uv = "latest"
 
 [tasks.hello]
 run = "echo hello"
+[tasks.debug_protocol_ACK_NACK]
+description = "Interactive real LoRa DATA/ACK/NACK debugger (no firmware upload)"
+run = "uv run --no-sync python -m tools.debug_protocol_ack_nack"
 
 [tasks."monitor_reciver"]
 run = "uv run third_party/upditerm/upditerm.py /dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0 38400"

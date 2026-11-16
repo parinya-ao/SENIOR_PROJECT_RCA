@@ -5,7 +5,7 @@
 #include "src/sender/lib/lora_config.h"
 
 int main() {
-    uint8_t frame[9] = {4, 7, 0x00, 0xc0, 0x64, 0x44, 10, 0, 0};
+    uint8_t frame[9] = {4, 7, 0x00, 0xc0, 0x64, 0x44, 2, 0, 0};
     LoraConfig config{};
     if (!DecodeLoraConfig(frame, 8, &config) || config.addr != 7) return 1;
     if (DecodeLoraConfig(frame, 7, &config) ||
@@ -23,7 +23,7 @@ int main() {
     frame[2] = 0x00; frame[3] = 0xc0; frame[4] = 0x64; frame[5] = 0x44;
     frame[6] = 14;
     if (DecodeLoraConfig(frame, 8, &config)) return 4;
-    frame[6] = 10;
+    frame[6] = 2;
     frame[7] = 1;
     if (DecodeLoraConfig(frame, 8, &config)) return 5;
     std::puts("PASS I2C radio profile checks");
