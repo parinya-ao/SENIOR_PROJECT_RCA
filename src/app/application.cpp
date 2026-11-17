@@ -1,9 +1,11 @@
-#include "firmware_app.h"
+// Selects one role implementation at compile time and forwards its lifecycle.
+
+#include "application.h"
 
 #include <Arduino.h>
 
-#if (defined(LORA_APP_GATEWAY) + defined(LORA_APP_RELIABLE) + \
-     defined(LORA_APP_ARQ) + defined(LORA_APP_MVP) + \
+#if (defined(LORA_APP_GATEWAY) + defined(LORA_APP_RELIABLE) +          \
+     defined(LORA_APP_ARQ) + defined(LORA_APP_MVP) +                   \
      defined(LORA_APP_REVERSE_RAW) + defined(LORA_APP_LEGACY_SENDER) + \
      defined(LORA_APP_LEGACY_RECEIVER)) != 1
 #error "Select exactly one firmware application"

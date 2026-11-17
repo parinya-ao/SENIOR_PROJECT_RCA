@@ -1,5 +1,4 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
+// Implements caller-owned campaign progress and per-session duplicate tracking.
 #include "session.h"
 
 #include <string.h>

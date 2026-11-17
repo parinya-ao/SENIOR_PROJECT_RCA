@@ -1,4 +1,5 @@
-#include "reliable_transport.h"
+// Tests reliable DATA/ACK/NACK transitions, bounded retries, and duplicates.
+#include "features/reliable_transfer/reliable_transport.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -6,6 +7,7 @@
 
 struct FakeRadio {
   uint8_t local = 0, source = 0, destination = 0, length = 0, bytes[256] = {};
+  uint16_t campaign_id = 0, incoming_campaign_id = 0;
   bool incoming = false, done = false, init_ok = true;
   unsigned starts = 0, inits = 0, sleeps = 0;
   int16_t send_error = 0, completion_error = 0, receive_error = 0;
@@ -18,9 +20,14 @@ struct FakeRadio {
     return init_ok ? 0 : -1;
   }
   int16_t send(uint8_t dst, const uint8_t* payload, uint8_t size) {
+    return send(dst, 0, payload, size);
+  }
+  int16_t send(uint8_t dst, uint16_t campaign, const uint8_t* payload,
+               uint8_t size) {
     ++starts;
     done = false;
     destination = dst;
+    campaign_id = campaign;
     length = size;
     memcpy(bytes, payload, size);
     return send_error;
@@ -31,9 +38,14 @@ struct FakeRadio {
   bool available() { return incoming; }
   int16_t recv(uint8_t* src, uint8_t* dst, uint8_t* payload, size_t capacity,
                uint8_t* size) {
+    return recv(src, dst, nullptr, payload, capacity, size);
+  }
+  int16_t recv(uint8_t* src, uint8_t* dst, uint16_t* campaign, uint8_t* payload,
+               size_t capacity, uint8_t* size) {
     incoming = false;
     *src = source;
     *dst = destination;
+    if (campaign) *campaign = incoming_campaign_id;
     *size = length;
     if (receive_error) {
       *size = 0;
@@ -56,7 +68,7 @@ struct Application {
 };
 struct EventStats {
   unsigned data_tx = 0, ack_tx = 0, nack_tx = 0, ack_accepted = 0,
-           nack_received = 0;
+           nack_received = 0, destination_discards = 0;
   unsigned retries = 0, duplicates = 0, failures = 0, total = 0;
 };
 
@@ -80,6 +92,8 @@ static void count_event(void* context, const char* event, uint8_t, uint8_t,
     ++stats->duplicates;
   else if (!strcmp(event, "TRANSACTION_FAILED"))
     ++stats->failures;
+  else if (!strcmp(event, "RX_DISCARD_DEST"))
+    ++stats->destination_discards;
 }
 
 static bool accept(void* context, uint8_t sequence, const uint8_t* data,
@@ -97,10 +111,12 @@ struct Pair {
   Application aa, bb;
   EventStats events;
   Transport x, y;
+  uint16_t session_id;
   explicit Pair(uint8_t first = 0) : x(a, 915.0f, 2, 0), y(b, 915.0f, 2, 0) {
+    session_id = 0x1234;
     x.SetEventCallback(count_event, &events);
     y.SetEventCallback(count_event, &events);
-    assert(x.Arm(first, first ^ 1, accept, &aa));
+    assert(x.Arm(first, first ^ 1, accept, &aa, session_id));
     assert(y.Arm(first ^ 1, first, accept, &bb));
   }
 };
@@ -108,6 +124,7 @@ struct Pair {
 static void deliver(FakeRadio& from, FakeRadio& to) {
   to.source = from.local;
   to.destination = from.destination;
+  to.incoming_campaign_id = from.campaign_id;
   to.length = from.length;
   memcpy(to.bytes, from.bytes, from.length);
   to.incoming = true;
@@ -115,8 +132,8 @@ static void deliver(FakeRadio& from, FakeRadio& to) {
 
 static void start_data(Pair& p, uint8_t sequence = 1, uint32_t now = 0) {
   assert(p.x.SendReliableData(sequence, hello, sizeof(hello) - 1, now));
-  assert(p.a.length == 13 && p.a.bytes[0] == ssot::kDataType &&
-         p.a.bytes[1] == sequence &&
+  assert(p.a.campaign_id == p.session_id && p.a.length == 13 &&
+         p.a.bytes[0] == ssot::kDataType && p.a.bytes[1] == sequence &&
          !memcmp(p.a.bytes + 2, hello, sizeof(hello) - 1));
   p.a.done = true;
   p.x.Poll(now + 1);
@@ -131,7 +148,7 @@ static void successful_round_trip(Pair& p, uint32_t now = 0) {
   deliver(p.a, p.b);
   p.y.Poll(now + 2);
   assert(p.b.length == 2 && p.b.bytes[0] == ssot::kAckType &&
-         p.b.bytes[1] == 1);
+         p.b.bytes[1] == 1 && p.b.campaign_id == p.session_id);
   finish_reply(p.b, p.y, now + 3);
   deliver(p.b, p.a);
   p.x.Poll(now + 4);
@@ -210,8 +227,11 @@ static void stress_round_trips(unsigned transactions) {
   for (unsigned i = 0; i < transactions; ++i) {
     const uint32_t now = i * 10U;
     if (i) {
-      count_transition(p.x, transitions,
-                       [&] { assert(p.x.Arm(0, 1, accept, &p.aa)); });
+      p.session_id = static_cast<uint16_t>(i);
+      if (!p.session_id) p.session_id = 1;
+      count_transition(p.x, transitions, [&] {
+        assert(p.x.Arm(0, 1, accept, &p.aa, p.session_id));
+      });
       count_transition(p.y, transitions,
                        [&] { assert(p.y.Arm(1, 0, accept, &p.bb)); });
     }
@@ -302,6 +322,8 @@ int main() {
 
   // A lost ACK causes a retry; the receiver ACKs the duplicate without
   // reapplying it.
+  // Re-arming the same receiver object after ACK loss must retain the accepted
+  // session's duplicate record and replay its ACK without invoking the app.
   {
     Pair p;
     start_data(p);
@@ -331,6 +353,7 @@ int main() {
     assert(p.x.state() == Transport::State::kRetryPending);
     p.a.source = 1;
     p.a.destination = 0;
+    p.a.incoming_campaign_id = p.session_id;
     p.a.length = 2;
     p.a.bytes[0] = ssot::kAckType;
     p.a.bytes[1] = 1;
@@ -344,6 +367,7 @@ int main() {
     p.a.incoming = true;
     p.a.source = 1;
     p.a.destination = 0;
+    p.a.incoming_campaign_id = p.session_id;
     p.a.length = 2;
     p.a.bytes[0] = ssot::kAckType;
     p.a.bytes[1] = 1;
@@ -352,6 +376,7 @@ int main() {
     p.a.incoming = true;
     p.a.source = 1;
     p.a.destination = 0;
+    p.a.incoming_campaign_id = p.session_id;
     p.a.length = 2;
     p.a.bytes[0] = ssot::kAckType;
     p.a.bytes[1] = 1;
@@ -374,11 +399,21 @@ int main() {
     p.y.Poll(1);
     assert(p.b.inits == before && p.bb.applied == 0);
     p.b.source = 0;
+    p.b.destination = 0;
+    p.b.incoming_campaign_id = p.session_id;
+    p.b.length = 13;
+    p.b.bytes[0] = ssot::kDataType;
+    p.b.bytes[1] = 1;
+    memcpy(p.b.bytes + 2, hello, sizeof(hello) - 1);
+    p.b.incoming = true;
+    p.y.Poll(2);
+    assert(p.b.inits == before && p.bb.applied == 0 && p.b.starts == 0);
+    assert(p.events.destination_discards == 1);
     p.b.destination = 1;
     p.b.length = 252;
     p.b.incoming = true;
-    p.y.Poll(2);
-    assert(p.b.inits == before && p.bb.applied == 0);
+    p.y.Poll(3);
+    assert(p.b.inits == before && p.bb.applied == 0 && p.b.starts == 0);
   }
 
   // Invalid arguments and malformed ACK/NACK responses never accept a
@@ -398,11 +433,13 @@ int main() {
     const uint8_t frames[][3] = {{ssot::kAckType, 2, 0},
                                  {ssot::kNackType, 2, 0},
                                  {ssot::kAckType, 1, 0xAA},
-                                 {0xFE, 1, 0}};
-    const uint8_t sizes[] = {2, 2, 3, 2};
+                                 {0xFE, 1, 0},
+                                 {ssot::kAckType, 1, 0}};
+    const uint8_t sizes[] = {2, 2, 3, 2, 2};
     for (unsigned i = 0; i < sizeof(sizes); ++i) {
       p.a.source = (i == 0) ? 9 : 1;
-      p.a.destination = 0;
+      p.a.destination = (i == 1 || i == 4) ? 1 : 0;
+      p.a.incoming_campaign_id = p.session_id;
       p.a.length = sizes[i];
       memcpy(p.a.bytes, frames[i], sizes[i]);
       p.a.incoming = true;
@@ -442,6 +479,8 @@ int main() {
     assert(transport.result() == Transport::Result::kRadioError);
     radio.init_ok = true;
     assert(transport.Arm(0, 1, accept, &app));
+    assert(!transport.SendReliableData(1, hello, sizeof(hello) - 1, 0));
+    assert(radio.starts == 0);
   }
   {
     Pair p;
@@ -465,7 +504,8 @@ int main() {
     Pair p;
     start_data(p);
     successful_round_trip(p);
-    assert(p.x.Arm(0, 1, accept, &p.aa));
+    p.session_id = 0x2345;
+    assert(p.x.Arm(0, 1, accept, &p.aa, p.session_id));
     assert(p.y.Arm(1, 0, accept, &p.bb));
     start_data(p, 1, 10000);
     successful_round_trip(p, 10000);
@@ -500,30 +540,46 @@ int main() {
         p.events.data_tx, p.events.nack_tx, p.x.attempts(), ssot::kMaxAttempts);
   }
 
-  // A valid but stale ACK cannot be distinguished after a new session reuses
-  // sequence 1.
+  // A stale ACK with the same peer and sequence cannot finish a new session.
+  {
+    Pair p;
+    start_data(p);
+    assert(p.a.campaign_id == p.session_id);
+    p.a.source = 1;
+    p.a.destination = 0;
+    p.a.incoming_campaign_id = 0x4321;
+    p.a.length = 2;
+    p.a.bytes[0] = ssot::kAckType;
+    p.a.bytes[1] = 1;
+    p.a.incoming = true;
+    p.x.Poll(4);
+    assert(p.x.result() == Transport::Result::kPending);
+    assert(p.x.state() == Transport::State::kWaitResponse);
+
+    p.a.incoming_campaign_id = p.session_id;
+    p.a.incoming = true;
+    p.x.Poll(5);
+    assert(p.x.result() == Transport::Result::kAccepted);
+  }
+  // DATA for a different campaign from the expected peer is discarded before
+  // application delivery or ACK/NACK generation.
   {
     Pair p;
     start_data(p);
     deliver(p.a, p.b);
     p.y.Poll(2);
     finish_reply(p.b, p.y, 3);
-    const uint8_t old_ack[2] = {p.b.bytes[0], p.b.bytes[1]};
-    assert(old_ack[0] == ssot::kAckType);
-    deliver(p.b, p.a);
-    p.x.Poll(4);
-    assert(p.x.result() == Transport::Result::kAccepted);
-    assert(p.x.Arm(0, 1, accept, &p.aa));
-    assert(p.y.Arm(1, 0, accept, &p.bb));
-    start_data(p, 1, 100);
-    p.a.source = 1;
-    p.a.destination = 0;
-    p.a.length = 2;
-    memcpy(p.a.bytes, old_ack, sizeof(old_ack));
-    p.a.incoming = true;
-    p.x.Poll(104);
-    assert(p.x.result() == Transport::Result::kAccepted);
-    puts("LIMIT stale-session ACK accepted after sequence reuse");
+    assert(p.bb.applied == 1 && p.b.starts == 1);
+    p.b.source = 0;
+    p.b.destination = 1;
+    p.b.incoming_campaign_id = 0x4321;
+    p.b.length = 13;
+    p.b.bytes[0] = ssot::kDataType;
+    p.b.bytes[1] = 2;
+    memcpy(p.b.bytes + 2, hello, sizeof(hello) - 1);
+    p.b.incoming = true;
+    p.y.Poll(4);
+    assert(p.bb.applied == 1 && p.b.starts == 1);
   }
   {
     Pair p;
@@ -539,9 +595,12 @@ int main() {
     p.x.Poll(LORA_ACK_TIMEOUT_MS + 4);
     deliver(p.a, p.b);
     p.y.Poll(LORA_ACK_TIMEOUT_MS + 5);
-    assert(p.bb.applied == 2);
-    puts(
-        "LIMIT receiver restart clears duplicate cache; retry redelivers DATA");
+    assert(p.bb.applied == 1 && p.y.duplicates() == 1);
+    assert(p.b.bytes[0] == ssot::kAckType);
+    finish_reply(p.b, p.y, LORA_ACK_TIMEOUT_MS + 6);
+    deliver(p.b, p.a);
+    p.x.Poll(LORA_ACK_TIMEOUT_MS + 7);
+    assert(p.x.result() == Transport::Result::kAccepted);
   }
 
   {

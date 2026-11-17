@@ -3,6 +3,8 @@
 
 #include "../stable_lib/arq/src/arq/diagnostics.cpp"
 #include "../stable_lib/reverse_raw_app/reverse_raw_app.cpp"
+
+using namespace reverse_raw_app;
 const arq_board board_ssot = {3, 4, 5, 6};
 void board_ssot_init(void) {}
 static void text(const char* s) {

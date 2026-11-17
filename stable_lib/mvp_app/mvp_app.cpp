@@ -1,7 +1,7 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Runs bounded raw radio bring-up; this is independent of the ARQ wire
 // protocol.
+
+#include "mvp_app.h"
 
 #include <Arduino.h>
 #include <RadioLib.h>
@@ -13,7 +13,6 @@
 #include "generated/arq_config.h"
 #include "generated/lora_shared_config.h"
 #include "generated/radio_915_config.h"
-#include "mvp_app.h"
 #if defined(LORA_ROLE_RECEIVER)
 #include "generated/lora_receiver_board.h"
 #endif

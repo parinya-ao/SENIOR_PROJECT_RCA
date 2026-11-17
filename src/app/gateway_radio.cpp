@@ -1,19 +1,19 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Coordinates one cooperative gateway radio transaction through the stable
 // transport.
 
-#include "lora_rx.h"
+#if defined(LORA_APP_GATEWAY)
 
 #include <Arduino.h>
+#include <features/reliable_transfer/reliable_transport.h>
+#include <lora.h>
+#include <ssot/ssot.h>
 #include <string.h>
 
-#include <lora.h>
-#include "hello_config.h"
+#include "campaign_id.h"
 #include "gateway_app.h"
-#include "reliable_transport.h"
+#include "hello_config.h"
+#include "lora_rx.h"
 #include "role_log.h"
-#include <ssot/ssot.h>
 #include "task.h"
 
 #if !HELLO_RF_DIAGNOSTIC_ONLY
@@ -58,7 +58,16 @@ void InitializeRadio(Address my_addr) {
     }
     spi_selected = true;
   }
-  radio_ready = transport.Arm(local_address, kPeerAddress, AcceptData, nullptr);
+  radio_ready = transport.Arm(local_address, kPeerAddress, AcceptData, nullptr,
+                              lora_app::NextCampaignId(LORA_BUILD_ID));
+  if (radio_ready) {
+    updi_role_log_radio_version("GATEWAY", lora.version());
+    updi_role_log_radio_profile(
+        "GATEWAY", HELLO_RF_FREQUENCY_MHZ, HELLO_RF_TX_POWER_DBM,
+        HELLO_RF_SPREADING_FACTOR, HELLO_RF_BANDWIDTH_KHZ, HELLO_RF_CODING_RATE,
+        HELLO_RF_SYNC_WORD, HELLO_RF_PREAMBLE_SYMBOLS, HELLO_RF_CRC_ENABLED,
+        HELLO_RF_IQ_INVERTED);
+  }
   updi_role_log("GATEWAY", radio_ready ? "RADIO_READY" : "RADIO_INIT_FAILED");
 #endif
 }
@@ -139,3 +148,5 @@ void StartHelloTestIfEnabled() {
 }
 
 bool IsRadioTransmitting() { return transport.IsTransmitting(); }
+
+#endif  // LORA_APP_GATEWAY

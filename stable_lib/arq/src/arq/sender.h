@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Owns caller-held ARQ transaction and deadline state; foreground access only.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_ARQ_SENDER_H_

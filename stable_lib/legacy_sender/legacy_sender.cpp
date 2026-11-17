@@ -1,32 +1,32 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
-// Retains an excluded SX1262 experiment; current role targets do not compile
-// it.
+// Retains the legacy Sender entry point while RadioLib 7.1.2 lacks the old
+// ConfigLoRa_t API; the target remains excluded from production builds.
+// shortcut: the sketch's ConfigLoRa_t type is absent from pinned RadioLib
+// 7.1.2; port the call before adding a build target.
 
 #if defined(LORA_APP_LEGACY_SENDER)
+
+#include "legacy_sender.h"
 
 #include <Arduino.h>
 #include <RadioLib.h>
 
 #include "gateway_ssot.hpp"
 #include "hello_config.h"
-#include "legacy_sender.h"
 
 namespace legacy_sender {
 
 // Example pins: NSS, DIO1, RESET, BUSY
-SX1262 radio = new Module(
-    GatewaySSOT::ExcludedSx1262Experiment::NSS_PIN,
-    GatewaySSOT::ExcludedSx1262Experiment::DIO1_PIN,
-    GatewaySSOT::ExcludedSx1262Experiment::RESET_PIN,
-    GatewaySSOT::ExcludedSx1262Experiment::BUSY_PIN);
+SX1262 radio = new Module(GatewaySSOT::ExcludedSx1262Experiment::NSS_PIN,
+                          GatewaySSOT::ExcludedSx1262Experiment::DIO1_PIN,
+                          GatewaySSOT::ExcludedSx1262Experiment::RESET_PIN,
+                          GatewaySSOT::ExcludedSx1262Experiment::BUSY_PIN);
 
 constexpr uint8_t
     kPackets[GatewaySSOT::ExcludedSx1262Experiment::PACKET_COUNT]
             [GatewaySSOT::ExcludedSx1262Experiment::PACKET_BYTES] = {
-    {0x00, 0x48, 0x65, 0x6C, 0x6C},
-    {0x01, 0x6F, 0x20, 0x57, 0x6F},
-    {0x02, 0x72, 0x6C, 0x64, 0x00},
+                {0x00, 0x48, 0x65, 0x6C, 0x6C},
+                {0x01, 0x6F, 0x20, 0x57, 0x6F},
+                {0x02, 0x72, 0x6C, 0x64, 0x00},
 };
 
 void Initialize() {
@@ -52,8 +52,8 @@ void Initialize() {
 }
 
 void Poll() {
-  for (uint8_t i = 0;
-       i < GatewaySSOT::ExcludedSx1262Experiment::PACKET_COUNT; ++i) {
+  for (uint8_t i = 0; i < GatewaySSOT::ExcludedSx1262Experiment::PACKET_COUNT;
+       ++i) {
     const int state = radio.transmit(kPackets[i], sizeof(kPackets[i]));
 
     if (state != RADIOLIB_ERR_NONE) {

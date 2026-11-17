@@ -267,7 +267,22 @@ class DebugConsoleTests(unittest.TestCase):
                     commands.append((role, value))
                     self.log.record("HOST_" + role.upper(), value)
                     if value == "?":
-                        self.log.record(role.upper(), f"[{role.upper()}] RADIO_READY")
+                        identity = (
+                            " BUILD_ID=",
+                            " CONFIG_FINGERPRINT=",
+                            " PROTOCOL_VERSION=",
+                            " RADIO_INIT_OK",
+                            " RADIO_SPI_VERSION=",
+                            " RADIO_PROFILE ",
+                            " RADIO_MOD ",
+                            " RADIO_FRAME ",
+                            " RADIO_READY",
+                        )
+                        for row in journal(nack):
+                            if row["role"] == role.upper() and any(
+                                marker in row["line"] for marker in identity
+                            ):
+                                self.log.record(role.upper(), row["line"])
                     elif value == "R":
                         self.log.record(role.upper(), f"[{role.upper()}] RX_READY")
                     elif value == "S":
@@ -287,7 +302,7 @@ class DebugConsoleTests(unittest.TestCase):
                 ):
                     result = hardware.exchange(nack=nack)
                 self.assertEqual(result["status"], "PASS", result)
-                self.assertTrue(any("DATA_TX_BEGIN T=" in event for event in result["events"]))
+                self.assertTrue(any("DATA_TX_BEGIN SID=" in event for event in result["events"]))
                 self.assertEqual(commands.count(("gateway", "S")), 1)
                 self.assertEqual(commands[-2:], [("receiver", "P"), ("gateway", "P")])
 

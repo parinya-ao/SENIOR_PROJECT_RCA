@@ -14,10 +14,12 @@ class GatewayI2cTests(unittest.TestCase):
             binary = str(Path(directory) / "gateway")
             result = subprocess.run(
                 ["g++", "-std=c++17", "-Wno-return-type",
+                 "-ffunction-sections", "-Wl,--gc-sections",
                  "-Itests/gateway_stub", "-Itests/mvp_stub", "-Itests/radio_stub",
-                 "-Iinclude", "-Istable_lib/shared", "-Istable_lib/task",
+                 "-Iinclude", "-Itests/avr_stub", "-Istable_lib/shared", "-Istable_lib/task",
                  "-Istable_lib/iw_core/src", "-Istable_lib/iw_tracker_radio_protocol/src",
-                 "-Istable_lib/updi_uart/src", "-DLORA_ROLE_SENDER=1",
+                 "-Istable_lib/updi_uart/src", "-Istable_lib/lora", "-Isrc",
+                 "-Istable_lib/ssot/src", "-DLORA_ROLE_SENDER=1",
                  "tests/gateway_i2c_test.cpp", "stable_lib/task/task.cpp",
                  "stable_lib/iw_core/src/byte_codec.cpp", "-o", binary],
                 cwd=ROOT, capture_output=True, text=True,

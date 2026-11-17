@@ -1,12 +1,14 @@
 // License: No repository-wide license is declared.
 // Existing rights and third-party notices are unchanged.
+// Validates SSOT wire bytes, campaign transitions, command input, and duplicate
+// tracking.
 
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "ssot.h"
+#include "ssot/ssot.h"
 
 static_assert(sizeof(ssot::CampaignState) == sizeof(int),
               "Preserve campaign state layout");

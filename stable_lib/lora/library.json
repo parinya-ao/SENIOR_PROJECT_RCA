@@ -1,0 +1,11 @@
+{
+  "name": "lora",
+  "version": "1.0.0",
+  "dependencies": {
+    "jgromes/RadioLib": "7.1.2"
+  },
+  "build": {
+    "srcDir": ".",
+    "includeDir": "."
+  }
+}

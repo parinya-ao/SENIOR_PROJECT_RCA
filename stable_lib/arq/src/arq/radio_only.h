@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Isolates tracker peripherals only during radio-only diagnostic startup.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_ARQ_RADIO_ONLY_H_

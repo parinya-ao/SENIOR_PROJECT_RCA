@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import tools.receiver_boot as boot
+import receiver_boot as receiver_boot_module
 from tools.device_detection.firmware_identity import normalize_ihex_region
 
 
@@ -410,6 +411,32 @@ class ApplicationPageWriteTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "usersig"):
             boot.require_preserved(before, dict(before, usersig=b"b"), 0, 512)
 
+    def test_application_writer_refuses_unbound_image_before_updi(self) -> None:
+        import tools.rf_proof as rf
+        from tests.test_rf_proof import effective_platformio_config
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            build = root / ".pio/build/receiver_spi"
+            build.mkdir(parents=True)
+            (build / "firmware.hex").write_text(boot.ihex(b"\x52\xc0\x00\x00", boot.APP_START))
+            commands: list[list[str]] = []
+
+            def command(_name: str, argv: list[str], *_args: Any) -> tuple[int, bytes, bytes]:
+                commands.append(argv)
+                return 0, b"avrdude version 8.1", b""
+
+            proof: Any = SimpleNamespace(run_dir=root, command=command, note=lambda *_: None)
+            with (
+                patch.object(rf, "ROOT", root),
+                patch.object(receiver_boot_module, "read_snapshot") as snapshot,
+            ):
+                self.assertNotEqual(
+                    rf.program_application(proof, "receiver_spi", effective_platformio_config()), 0
+                )
+            self.assertEqual(commands, [])
+            snapshot.assert_not_called()
+
     def test_guarded_app_writer_erases_only_its_page_with_installed_avrdude_dryrun(self) -> None:
         import tools.rf_proof as rf
         from tests.test_rf_proof import effective_platformio_config
@@ -421,7 +448,10 @@ class ApplicationPageWriteTests(unittest.TestCase):
             payload = bytes.fromhex("52c00000")
             (build / "firmware.hex").write_text(boot.ihex(payload, boot.APP_START))
             original = bytes(range(256)) * 512
-            before = dict.fromkeys(("signature", "sernum", "fuses", "eeprom", "lock"), b"unchanged")
+            approved_serial = "11" * 16
+            before = dict.fromkeys(("signature", "fuses", "eeprom", "lock"), b"unchanged")
+            before["sernum"] = bytes.fromhex(approved_serial)
+            before["usersig"] = b"unchanged-userrow"
             before["flash"] = original
             (root / "before.bin").write_bytes(original)
             commands: list[list[str]] = []
@@ -449,10 +479,18 @@ class ApplicationPageWriteTests(unittest.TestCase):
             proof: Any = SimpleNamespace(run_dir=root, command=command, note=lambda *_: None)
             with (
                 patch.object(rf, "ROOT", root),
-                patch.object(boot, "read_snapshot", side_effect=snapshot),
+                patch.object(receiver_boot_module, "read_snapshot", side_effect=snapshot),
             ):
                 self.assertEqual(
-                    rf.program_application(proof, "receiver_spi", effective_platformio_config()), 0
+                    rf.program_application(
+                        proof,
+                        "receiver_spi",
+                        effective_platformio_config(),
+                        approved_sha=hashlib.sha256((build / "firmware.hex").read_bytes()).hexdigest(),
+                        approved_serial=approved_serial,
+                        approved_pages=(boot.APP_START, boot.APP_START + 512),
+                    ),
+                    0,
                 )
             after = (root / "after.bin").read_bytes()
             self.assertEqual(after[: boot.APP_START], original[: boot.APP_START])

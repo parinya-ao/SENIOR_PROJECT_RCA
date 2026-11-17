@@ -1,13 +1,12 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Defines the existing gateway control signals; radio pins come from board
 // SSOT.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_SENDER_LIB_IO_H_
 #define SENIOR_PROJECT_RCA_SRC_SENDER_LIB_IO_H_
-#include <gateway_ssot.hpp>
 #include <generated/lora_sender_board.h>
 #include <generated/radio_915_config.h>
+
+#include <gateway_ssot.hpp>
 
 // DxCore USART0 direction; the H1 TX/RX net labels are reversed.
 #define PIN_DEBUG_RX GatewaySSOT::Pins::DEBUG_RX

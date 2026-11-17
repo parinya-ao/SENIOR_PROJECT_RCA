@@ -1,4 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
 // Exercises the real callback-to-cooperative-task command handoff.
 #include <assert.h>
 #include <inttypes.h>

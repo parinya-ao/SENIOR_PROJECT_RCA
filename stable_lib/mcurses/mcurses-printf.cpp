@@ -1,3 +1,4 @@
+// Formats bounded printf-style text into the active mcurses screen buffer.
 #include <stdarg.h>
 #include <Stream.h>
 #include "mcurses.h"

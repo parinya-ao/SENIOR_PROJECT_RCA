@@ -1,4 +1,4 @@
-// No repository-wide license is declared; existing rights are unchanged.
+// Tests accepted, rejected, and truncated ARQ serial command lines.
 #include "commands.h"
 
 #include <assert.h>

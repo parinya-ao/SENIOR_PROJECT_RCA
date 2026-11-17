@@ -1,5 +1,6 @@
 // License: No repository-wide license is declared.
 // Existing rights and third-party notices are unchanged.
+// Drives the real ARQ application through a deterministic host radio adapter.
 
 #include <assert.h>
 

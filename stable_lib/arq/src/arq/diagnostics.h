@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Provides the foreground ARQ application's bounded diagnostic queue.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_ARQ_DIAGNOSTICS_H_

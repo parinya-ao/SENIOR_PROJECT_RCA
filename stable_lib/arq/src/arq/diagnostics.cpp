@@ -1,5 +1,4 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
+// Formats and queues bounded ARQ event records for foreground UPDI logging.
 #include "diagnostics.h"
 
 // DxCore headers contain implicit conversions; keep their diagnostics separate

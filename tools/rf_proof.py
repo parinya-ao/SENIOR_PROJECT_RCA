@@ -528,7 +528,17 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
     for role, port in PORTS.items():
         sib_code, sib_out, _ = proof.command(
             f"target-{role}-sib",
-            ["uv", "run", "python", "-u", "third_party/upditerm/upditerm.py", "-i", port, "38400"],
+            [
+                "uv",
+                "run",
+                "--no-project",
+                "python",
+                "-u",
+                "third_party/upditerm/upditerm.py",
+                "-i",
+                port,
+                "38400",
+            ],
             20,
         )
         if sib_code != 0 or not sib_out.strip():
@@ -1060,9 +1070,10 @@ def host_tests(proof: ProofRun, effective_config: str) -> int:
                 "-Itests/radio_stub",
                 "-Istable_lib/lora",
                 "-Istable_lib/shared",
+                "-Isrc",
                 *profile_flags,
                 "tests/lora_wrapper_test.cpp",
-                "stable_lib/lora/lora.cpp",
+                "src/features/radio_link/radio_link.cpp",
                 "-o",
                 wrapper_binary,
             ],
@@ -1086,10 +1097,11 @@ def host_tests(proof: ProofRun, effective_config: str) -> int:
                 "-Itests/radio_stub",
                 "-Istable_lib/lora",
                 "-Istable_lib/shared",
+                "-Isrc",
                 *profile_flags,
                 "-DHELLO_RF_DIAGNOSTIC_ONLY=1",
                 "tests/radio_diagnostic_test.cpp",
-                "stable_lib/lora/lora.cpp",
+                "src/features/radio_link/radio_link.cpp",
                 "-o",
                 diagnostic_binary,
             ],
@@ -1256,7 +1268,10 @@ def capture_usb_topology(proof: ProofRun) -> None:
         ("usb-tree", ["lsusb", "-t"]),
         ("pio-device-list", ["pio", "device", "list"]),
         ("usb-port-owners", ["fuser", "-v", "/dev/ttyUSB0", "/dev/ttyUSB1"]),
-        ("usb-role-scan", ["uv", "run", "python", "tools/detect_devices.py", "--scan", "--json"]),
+        (
+            "usb-role-scan",
+            ["uv", "run", "--no-project", "python", "tools/detect_devices.py", "--scan", "--json"],
+        ),
     ]
     for name, argv in commands:
         proof.command(name, argv)
@@ -1393,6 +1408,39 @@ def program_receiver_boot(
         return 1
 
 
+def authorized_application_pages(
+    environment: str,
+    effective_config: str,
+    target_serial: str | None,
+    image_sha256: str | None,
+    page_start: int | None,
+    page_end: int | None,
+) -> tuple[int, int] | None:
+    """Return the exact authorized page span only when target, image, and bounds agree."""
+    role = "receiver" if environment.startswith("receiver") else "gateway"
+    try:
+        identity = json.loads((ROOT / "config/current_hardware.json").read_text())[role]
+        data = (ROOT / ".pio/build" / environment / "firmware.hex").read_bytes()
+        region = parse_ihex_range(data)
+        bounds = application_bounds_for_environment(effective_config, environment)
+        pages = (region["start"], (region["end_exclusive"] + 511) // 512 * 512)
+        if (
+            identity["port_path"] != PORTS[role]
+            or identity["device_serial_hex"] != target_serial
+            or not re.fullmatch(r"[0-9a-f]{64}", image_sha256 or "")
+            or hashlib.sha256(data).hexdigest() != image_sha256
+            or pages != (page_start, page_end)
+            or region["start"] % 512
+            or bounds is None
+            or not image_fits_application(region, bounds)
+            or pages[1] > bounds[1]
+        ):
+            return None
+        return pages
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
 def program_application(
     proof: ProofRun,
     environment: str,
@@ -1413,6 +1461,12 @@ def program_application(
     )
 
     role = "receiver" if environment.startswith("receiver") else "gateway"
+    if approved_sha is None or approved_serial is None or approved_pages is None:
+        proof.note(
+            environment + "-program.log",
+            "BLOCKED: exact MCU serial, image SHA-256, and page range are required; no port opened.\n",
+        )
+        return 2
     try:
         data = (ROOT / ".pio/build" / environment / "firmware.hex").read_bytes()
         region = parse_ihex_range(data)
@@ -1491,23 +1545,15 @@ def tracker_app_upload(
     proof: ProofRun, args: argparse.Namespace, effective_config: str
 ) -> int:
     try:
-        identity = json.loads((ROOT / "config/current_hardware.json").read_text())["receiver"]
-        data = (ROOT / ".pio/build/receiver/firmware.hex").read_bytes()
-        region = parse_ihex_range(data)
-        bounds = application_bounds_for_environment(effective_config, "receiver")
-        pages = (region["start"], (region["end_exclusive"] + 511) // 512 * 512)
-        if (
-            not args.authorize_upload
-            or args.target_role != "receiver"
-            or args.target_serial != identity["device_serial_hex"]
-            or identity["port_path"] != PORTS["receiver"]
-            or not re.fullmatch(r"[0-9a-f]{64}", args.image_sha256 or "")
-            or hashlib.sha256(data).hexdigest() != args.image_sha256
-            or pages != (args.page_start, args.page_end)
-            or bounds is None
-            or not image_fits_application(region, bounds)
-            or pages[1] > bounds[1]
-        ):
+        pages = authorized_application_pages(
+            "receiver",
+            effective_config,
+            getattr(args, "target_serial", None),
+            getattr(args, "image_sha256", None),
+            getattr(args, "page_start", None),
+            getattr(args, "page_end", None),
+        )
+        if not args.authorize_upload or args.target_role != "receiver" or pages is None:
             msg = "target, image, page range, or authorization mismatch"
             raise ValueError(msg)
         if (
@@ -1541,8 +1587,34 @@ def upload(
     if not args.authorize_upload:
         proof.note("upload.log", "BLOCKED: upload authorization is missing; no upload attempted.\n")
         return 2
-    # Installing the boot-parked diagnostic is a programming action; RF readiness
-    # and authorization are checked independently by rf_test().
+    applications = {
+        "receiver": (
+            getattr(args, "target_serial", None),
+            getattr(args, "image_sha256", None),
+            getattr(args, "page_start", None),
+            getattr(args, "page_end", None),
+        ),
+        "sender_hello": (
+            getattr(args, "gateway_target_serial", None),
+            getattr(args, "gateway_image_sha256", None),
+            getattr(args, "gateway_page_start", None),
+            getattr(args, "gateway_page_end", None),
+        ),
+    }
+    approved: dict[str, tuple[str, str, tuple[int, int]]] = {}
+    for environment, (serial, image_sha, page_start, page_end) in applications.items():
+        pages = authorized_application_pages(
+            environment, effective_config, serial, image_sha, page_start, page_end
+        )
+        if pages is None:
+            proof.note(
+                "upload.log",
+                f"BLOCKED: exact {environment} MCU serial, image hash, and page range are required; "
+                "no upload attempted.\n",
+            )
+            return 2
+        approved[environment] = (cast("str", image_sha), cast("str", serial), pages)
+    # Firmware writes and RF transmissions have separate explicit gates.
     evidence_errors = physical_readiness_errors(args)
     if evidence_errors:
         proof.note(
@@ -1606,7 +1678,15 @@ def upload(
     if not receiver_boot_handoff_supported(proof, args, effective_config):
         return 2
     for env in ("receiver", "sender_hello"):
-        code = program_application(proof, env, effective_config)
+        image_sha, serial, pages = approved[env]
+        code = program_application(
+            proof,
+            env,
+            effective_config,
+            approved_sha=image_sha,
+            approved_serial=serial,
+            approved_pages=pages,
+        )
         if code != 0:
             return 1
     manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
@@ -1626,7 +1706,16 @@ def start_rf_monitor(
     port: str,
     output_queue: queue.Queue[tuple[str, str, bytes | None]],
 ) -> dict[str, Any]:
-    argv = ["uv", "run", "--no-sync", "python", "-u", "third_party/upditerm/upditerm.py", port, "38400"]
+    argv = [
+        "uv",
+        "run",
+        "--no-project",
+        "python",
+        "-u",
+        "third_party/upditerm/upditerm.py",
+        port,
+        "38400",
+    ]
     (proof.run_dir / f"rf-monitor-{role}.command.log").write_text(" ".join(argv) + "\n")
     environment = os.environ.copy()
     environment["PYTHONUNBUFFERED"] = "1"
@@ -1754,6 +1843,34 @@ def radio_spi_smoke(proof: ProofRun, args: argparse.Namespace, effective_config:
             "Sender/Receiver paths; no upload attempted.\n",
         )
         return 2
+    diagnostic_images = {}
+    for environment, serial, image_sha, page_start, page_end in (
+        (
+            "receiver_spi",
+            getattr(args, "target_serial", None),
+            getattr(args, "receiver_spi_image_sha256", None),
+            getattr(args, "receiver_spi_page_start", None),
+            getattr(args, "receiver_spi_page_end", None),
+        ),
+        (
+            "sender_hello_spi",
+            getattr(args, "gateway_target_serial", None),
+            getattr(args, "gateway_spi_image_sha256", None),
+            getattr(args, "gateway_spi_page_start", None),
+            getattr(args, "gateway_spi_page_end", None),
+        ),
+    ):
+        pages = authorized_application_pages(
+            environment, effective_config, serial, image_sha, page_start, page_end
+        )
+        if pages is None:
+            proof.note(
+                "radio-spi-smoke.log",
+                f"BLOCKED: exact {environment} serial, image SHA-256, and page range are required; "
+                "no upload or serial ports opened.\n",
+            )
+            return 2
+        diagnostic_images[environment] = (cast("str", serial), cast("str", image_sha), pages)
     if not args.boot_layout_verified and not args.target_identification_attempted:
         identity_code = identify_targets(proof, args, effective_config)
         if identity_code != 0:
@@ -1804,7 +1921,15 @@ def radio_spi_smoke(proof: ProofRun, args: argparse.Namespace, effective_config:
         return 2
 
     for env in ("receiver_spi", "sender_hello_spi"):
-        code = program_application(proof, env, effective_config)
+        image_serial, image_sha, pages = diagnostic_images[env]
+        code = program_application(
+            proof,
+            env,
+            effective_config,
+            approved_sha=image_sha,
+            approved_serial=image_serial,
+            approved_pages=pages,
+        )
         if code != 0:
             proof.note(
                 "radio-spi-smoke.log",
@@ -1876,10 +2001,13 @@ def upload_evidence_matches(path: str | Path | None, manifest: Json) -> bool | N
         return False
 
 
-def radio_startup_matches(lines: Sequence[str], role: str, radio: Mapping[str, Json]) -> bool:
+def radio_startup_matches(
+    lines: Sequence[str], role: str, radio: Mapping[str, Json], *, allow_rearm: bool = False
+) -> bool:
+    ready_states = [f"[{role}] RADIO_READY"]
+    if allow_rearm:
+        ready_states.append(f"[{role}] RX_READY")
     required = [
-        f"[{role}] RADIO_INIT E=0",
-        f"[{role}] RADIO_READY",
         (
             f"[{role}] RADIO_PROFILE F100={round(radio['frequency_mhz'] * 100)} "
             f"P={radio['tx_power_dbm']}"
@@ -1887,12 +2015,36 @@ def radio_startup_matches(lines: Sequence[str], role: str, radio: Mapping[str, J
         f"[{role}] RADIO_MOD SF=7 BW=125 CR=5",
         f"[{role}] RADIO_FRAME SW=12 PRE=8 CRC=1 HDR=E IQ=0",
     ]
+    init_statuses = {
+        line
+        for line in lines
+        if line in (f"[{role}] RADIO_INIT_OK", f"[{role}] RADIO_INIT E=0")
+    }
     versions = [line for line in lines if line.startswith(f"[{role}] RADIO_SPI_VERSION=")]
     return (
-        all(lines.count(line) == 1 for line in required)
-        and len(versions) == 1
-        and versions[0]
+        all(line in lines for line in required)
+        and len(init_statuses) == 1
+        and f"[{role}] RADIO_INIT_FAILED" not in lines
+        and any(line in ready_states for line in lines)
+        and (allow_rearm or f"[{role}] RADIO_NOT_READY" not in lines)
+        and len(set(versions)) == 1
+        and next(iter(set(versions)))
         in [f"[{role}] RADIO_SPI_VERSION=0x{value:02X}" for value in (0x11, 0x12, 0x13)]
+        and all(
+            set(line for line in lines if line.startswith(prefix)) == {expected}
+            for prefix, expected in (
+                (
+                    f"[{role}] RADIO_PROFILE ",
+                    f"[{role}] RADIO_PROFILE F100={round(radio['frequency_mhz'] * 100)} "
+                    f"P={radio['tx_power_dbm']}",
+                ),
+                (f"[{role}] RADIO_MOD ", f"[{role}] RADIO_MOD SF=7 BW=125 CR=5"),
+                (
+                    f"[{role}] RADIO_FRAME ",
+                    f"[{role}] RADIO_FRAME SW=12 PRE=8 CRC=1 HDR=E IQ=0",
+                ),
+            )
+        )
     )
 
 
@@ -1993,6 +2145,9 @@ def validate_live_proof(
     ):
         issues.append("shared identity mismatch")
     for role, environment in [("GATEWAY", "sender_hello"), ("RECEIVER", "receiver")]:
+        role_lines = [item["line"] for item in journal if item["role"] == role]
+        if len(role_lines) != len(set(role_lines)):
+            issues.append(f"{role}: duplicate log line")
         image = images.get(role, {})
         expected_id = manifest["environments"][environment]["build_id"]
         if (
@@ -2181,6 +2336,7 @@ def validate_stable_transport(
         ]
         for role in roles
     }
+    manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
 
     for role in roles:
         image = images.get(role, {})
@@ -2202,6 +2358,20 @@ def validate_stable_transport(
             for marker in ("RADIO_INIT_FAILED", "TX_TIMEOUT")
         ):
             issues.append(f"{role}: radio initialization or TX failure")
+        build_ids = [line for _, line in logs[role] if line.startswith(f"[{role}] BUILD_ID=")]
+        if not build_ids or set(build_ids) != {f"[{role}] BUILD_ID={image.get('build_id')}"}:
+            issues.append(f"{role}: current firmware build ID is missing or mismatched")
+        if not radio_startup_matches(
+            [line for _, line in logs[role]], role, manifest["shared"]["radio"], allow_rearm=True
+        ):
+            issues.append(f"{role}: radio register/profile startup evidence is incomplete")
+    identity_logs = {role: "\n".join(line for _, line in logs[role]) for role in roles}
+    if not shared_identity_matches(
+        identity_logs,
+        manifest["shared_fingerprint"],
+        manifest["shared"]["protocol"]["version"],
+    ):
+        issues.append("sender and receiver shared protocol/config identity does not match")
 
     host_commands = [
         (index, item["role"], item["line"])
@@ -2274,18 +2444,27 @@ def validate_stable_transport(
             issues.append(f"{role}: radio did not park cleanly")
 
     pattern = re.compile(
-        r"^\[(GATEWAY|RECEIVER)\] ([A-Z_]+) T=(\d+) TYPE=(\d+) Q=(\d+) E=(-?\d+)$"
+        r"^\[(GATEWAY|RECEIVER)\] ([A-Z_]+) SID=([0-9A-F]{4}) T=(\d+) "
+        r"TYPE=(\d+) Q=(\d+) E=(-?\d+)$"
     )
-    events: dict[str, list[tuple[int, str, int, int, int, int]]] = {
+    events: dict[str, list[tuple[int, str, int, int, int, int, int]]] = {
         role: [] for role in roles
     }
     for index, item in enumerate(journal):
         line = item["line"]
         match = pattern.fullmatch(line)
         if match:
-            role, name, timestamp, type_, sequence, error = match.groups()
+            role, name, campaign_id, timestamp, type_, sequence, error = match.groups()
             events[role].append(
-                (index, name, int(timestamp), int(type_), int(sequence), int(error))
+                (
+                    index,
+                    name,
+                    int(timestamp),
+                    int(type_),
+                    int(sequence),
+                    int(error),
+                    int(campaign_id, 16),
+                )
             )
         elif any(
             line.startswith(f"[{role}] {name} ")
@@ -2294,7 +2473,12 @@ def validate_stable_transport(
         ):
             issues.append("malformed stable transport event")
 
-    def selected(role: str, name: str) -> list[tuple[int, str, int, int, int, int]]:
+    campaign_ids = {event[6] for role_events in events.values() for event in role_events}
+    if len(campaign_ids) != 1 or not campaign_ids or 0 in campaign_ids:
+        issues.append("missing, zero or mismatched sender/receiver campaign ID")
+    campaign_id = next(iter(campaign_ids), 0)
+
+    def selected(role: str, name: str) -> list[tuple[int, str, int, int, int, int, int]]:
         return [event for event in events[role] if event[1] == name]
 
     data_tx = selected("GATEWAY", "DATA_TX_BEGIN")
@@ -2356,7 +2540,8 @@ def validate_stable_transport(
         ):
             issues.append("sender DATA retry events were out of order")
     payload_line = (
-        f"[RECEIVER] PAYLOAD_BYTES C=0000 S={protocol['sequence']:02X} LEN={len(payload)} "
+        f"[RECEIVER] PAYLOAD_BYTES C={campaign_id:04X} "
+        f"S={protocol['sequence']:02X} LEN={len(payload)} "
         f"HEX={payload.hex().upper()} ASCII={payload.decode('ascii')}"
     )
     if sum(line == payload_line for _, line in logs["RECEIVER"]) != 1:
@@ -2381,6 +2566,7 @@ def validate_stable_transport(
         "issues": sorted(set(issues)),
         "run_id": run_id,
         "diagnostic_test": diagnostic_test,
+        "campaign_id": f"{campaign_id:04X}",
         "attempts": attempts,
         "retries": retries_count,
         "timeouts": len(retries),
@@ -2388,6 +2574,156 @@ def validate_stable_transport(
         "ack_tx": ack_count,
         "nack_tx": nack_count,
         "payload_bytes": len(payload),
+        "origin": "STRUCTURAL_LOG_VALIDATION",
+    }
+
+
+def validate_wrong_destination_trials(
+    journal: Sequence[Json], images: Mapping[str, Json], run_id: str
+) -> dict[str, Json]:
+    """Require ten physical wrong-destination DATA frames to be filtered without reply."""
+    trials = 10
+    issues: list[str] = []
+    roles = {"GATEWAY": "sender_hello", "RECEIVER": "receiver"}
+    logs = {
+        role: [
+            (index, item["line"])
+            for index, item in enumerate(journal)
+            if item["role"] == role
+        ]
+        for role in roles
+    }
+    manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
+    for role, environment in roles.items():
+        image = images.get(role, {})
+        if (
+            image.get("origin") != "PHYSICAL_UPDI"
+            or image.get("run_id") != run_id
+            or image.get("signature") != "1e970a"
+            or image.get("port") != PORTS[role.lower()]
+            or not image.get("verified")
+            or not image.get("firmware_sha256")
+            or not image.get("build_id")
+        ):
+            issues.append(f"{role}: missing fresh verified image identity")
+        if not radio_startup_matches(
+            [line for _, line in logs[role]], role, manifest["shared"]["radio"], allow_rearm=True
+        ):
+            issues.append(f"{role}: radio startup/profile/register identity mismatch")
+        build_lines = [line for _, line in logs[role] if line.startswith(f"[{role}] BUILD_ID=")]
+        if not build_lines or set(build_lines) != {f"[{role}] BUILD_ID={image.get('build_id')}"}:
+            issues.append(f"{role}: running firmware identity differs from verified image")
+        if any("LOG_OVERFLOW" in line for _, line in logs[role]):
+            issues.append(f"{role}: firmware log overflow")
+    identity_logs = {role: "\n".join(line for _, line in logs[role]) for role in roles}
+    if not shared_identity_matches(
+        identity_logs,
+        manifest["shared_fingerprint"],
+        manifest["shared"]["protocol"]["version"],
+    ):
+        issues.append("sender and receiver shared protocol/config identity does not match")
+
+    commands = [
+        (index, item["role"], item["line"])
+        for index, item in enumerate(journal)
+        if item["role"] in ("HOST_RECEIVER", "HOST_GATEWAY")
+    ]
+    expected_commands = [
+        ("HOST_RECEIVER", "?"),
+        ("HOST_RECEIVER", "R"),
+        ("HOST_GATEWAY", "R"),
+        ("HOST_GATEWAY", "?"),
+        *([("HOST_GATEWAY", "W")] * trials),
+        ("HOST_RECEIVER", "P"),
+        ("HOST_GATEWAY", "P"),
+    ]
+    if [(role, command) for _, role, command in commands] != expected_commands:
+        issues.append("wrong-destination controls were repeated, missing or out of order")
+
+    receiver_ready = [index for index, line in logs["RECEIVER"] if line == "[RECEIVER] RX_READY"]
+    gateway_ready = [index for index, line in logs["GATEWAY"] if line == "[GATEWAY] RADIO_READY"]
+    receiver_rearm = next(
+        (index for index, role, command in commands if role == "HOST_RECEIVER" and command == "R"),
+        -1,
+    )
+    gateway_rearm = next(
+        (index for index, role, command in commands if role == "HOST_GATEWAY" and command == "R"),
+        -1,
+    )
+    gateway_status = next(
+        (index for index, role, command in commands if role == "HOST_GATEWAY" and command == "?"),
+        -1,
+    )
+    wrong_starts = [
+        index
+        for index, line in logs["GATEWAY"]
+        if line == "[GATEWAY] WRONG_DEST_TX_BEGIN DST=2 TYPE=08 Q=1 APP=11"
+    ]
+    wrong_done = [
+        index for index, line in logs["GATEWAY"] if line == "[GATEWAY] WRONG_DEST_TX_DONE"
+    ]
+    discard_pattern = re.compile(
+        r"^\[RECEIVER\] RX_DISCARD_DEST SID=0000 T=\d+ TYPE=0 Q=0 E=0$"
+    )
+    destination_discards = [
+        index for index, line in logs["RECEIVER"] if discard_pattern.fullmatch(line)
+    ]
+    if len(wrong_starts) != trials or len(wrong_done) != trials:
+        issues.append("Gateway did not complete exactly ten wrong-destination transmissions")
+    if len(destination_discards) != trials:
+        issues.append("Receiver did not log ten destination-filter discards")
+
+    wrong_commands = [index for index, role, command in commands if role == "HOST_GATEWAY" and command == "W"]
+    boundaries = [*wrong_commands[1:], len(journal)]
+    for index, start in enumerate(wrong_commands[:trials]):
+        end = boundaries[index]
+        starts = [value for value in wrong_starts if start < value < end]
+        done = [value for value in wrong_done if start < value < end]
+        discards = [value for value in destination_discards if start < value < end]
+        if not (len(starts) == len(done) == len(discards) == 1 and starts[0] < done[0]):
+            issues.append(f"wrong-destination trial {index + 1} lacks one TX and one address discard")
+
+    if not any(index > receiver_rearm and index < (wrong_commands[0] if wrong_commands else -1)
+               for index in receiver_ready):
+        issues.append("Receiver did not report fresh RX_READY before wrong-destination trials")
+    if not gateway_rearm < gateway_status < (wrong_commands[0] if wrong_commands else -1):
+        issues.append("Gateway was not rearmed and checked before wrong-destination trials")
+    if not any(
+        index > gateway_status and index < (wrong_commands[0] if wrong_commands else -1)
+        for index in gateway_ready
+    ):
+        issues.append("Gateway did not report RADIO_READY before wrong-destination trials")
+    for role in roles:
+        forbidden = (
+            "DATA_VALIDATED",
+            "ACK_TX_BEGIN",
+            "ACK_TX_DONE",
+            "NACK_TX_BEGIN",
+            "NACK_TX_DONE",
+            "ACK_ACCEPTED",
+            "NACK_RX",
+        )
+        if any(any(f"[{role}] {name} " in line for name in forbidden) for _, line in logs[role]):
+            issues.append(f"{role}: wrong-destination packet reached delivery or response path")
+        if sum(line == f"[{role}] PARKED E=0" for _, line in logs[role]) != 1:
+            issues.append(f"{role}: radio did not park cleanly")
+
+    return {
+        "valid": not issues,
+        "issues": sorted(set(issues)),
+        "run_id": run_id,
+        "trials": trials,
+        "transmitted": len(wrong_done),
+        "destination_discards": len(destination_discards),
+        "deliveries": sum(
+            line.startswith("[RECEIVER] DATA_VALIDATED ") for _, line in logs["RECEIVER"]
+        ),
+        "responses": sum(
+            1
+            for role in roles
+            for _, line in logs[role]
+            if any(f"[{role}] {name} " in line for name in ("ACK_TX_BEGIN", "NACK_TX_BEGIN"))
+        ),
         "origin": "STRUCTURAL_LOG_VALIDATION",
     }
 
@@ -2485,9 +2821,9 @@ def shared_identity_matches(
         lines = logs.get(role, "").splitlines()
         hashes = [line for line in lines if line.startswith(f"[{role}] CONFIG_FINGERPRINT=")]
         versions = [line for line in lines if line.startswith(f"[{role}] PROTOCOL_VERSION=")]
-        if hashes != [f"[{role}] CONFIG_FINGERPRINT={fingerprint}"] or versions != [
-            f"[{role}] PROTOCOL_VERSION={protocol_version}"
-        ]:
+        if hashes != [f"[{role}] CONFIG_FINGERPRINT={fingerprint}"]:
+            return False
+        if versions != [f"[{role}] PROTOCOL_VERSION={protocol_version}"]:
             return False
     return True
 
@@ -2660,6 +2996,236 @@ def run_stable_ack_rf_test(
     return 0 if passed else 1
 
 
+def run_wrong_destination_rf_test(
+    proof: ProofRun, run_id: str, images: Mapping[str, Json]
+) -> int:
+    """Transmit ten test DATA frames to a nonlocal address and require RX discard only."""
+    output_queue: queue.Queue[tuple[str, str, bytes | None]] = queue.Queue()
+    journal: list[dict[str, Json]] = []
+    monitors: dict[str, dict[str, Any]] = {}
+    capture_error = False
+    stop_reason = ""
+
+    def record(role: str, line: str) -> None:
+        journal.append({"role": role, "line": line, "observed_monotonic_ns": time.monotonic_ns()})
+
+    def command(key: str, value: str) -> None:
+        nonlocal capture_error
+        process = monitors[key]["process"]
+        if process.poll() is not None or process.stdin is None:
+            capture_error = True
+            raise OSError("serial monitor disconnected before control command")
+        data = value.encode("ascii")
+        if process.stdin.write(data) != len(data):
+            capture_error = True
+            raise OSError("incomplete serial control-command write")
+        process.stdin.flush()
+        record(f"HOST_{key.upper()}", value)
+
+    def pump_until(after: int, predicate: Callable[[list[Json]], bool], reason: str) -> bool:
+        nonlocal capture_error, stop_reason
+        deadline = time.monotonic() + RF_SINGLE_PACKET_TIMEOUT_SECONDS
+        while time.monotonic() < deadline:
+            if predicate(journal[after:]):
+                return True
+            if any(monitor["process"].poll() is not None for monitor in monitors.values()):
+                capture_error = True
+                stop_reason = "serial monitor disconnected"
+                return False
+            try:
+                key, stream, raw = output_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
+            if stream != "stdout" or raw is None:
+                continue
+            role = "GATEWAY" if key == "gateway" else "RECEIVER"
+            line = raw.decode("ascii", errors="replace").rstrip("\r\n")
+            if line.startswith(f"[{role}] "):
+                record(role, line)
+                if "LOG_OVERFLOW" in line:
+                    stop_reason = f"{role} firmware log overflow"
+                    return False
+        if not predicate(journal[after:]):
+            stop_reason = f"timeout waiting for {reason}"
+            return False
+        return True
+
+    try:
+        monitors["receiver"] = start_rf_monitor(
+            proof, "receiver", PORTS["receiver"], output_queue
+        )
+        status_at = len(journal)
+        command("receiver", "?")
+        if not pump_until(
+            status_at,
+            lambda rows: any(
+                row["line"] in ("[RECEIVER] RADIO_READY", "[RECEIVER] RADIO_NOT_READY")
+                for row in rows
+            ),
+            "Receiver status",
+        ):
+            raise OSError(stop_reason or "Receiver status was not observed")
+        rearm_at = len(journal)
+        command("receiver", "R")
+        if not pump_until(
+            rearm_at,
+            lambda rows: any(row["line"] == "[RECEIVER] RX_READY" for row in rows),
+            "fresh Receiver RX_READY",
+        ):
+            raise OSError(stop_reason or "fresh Receiver RX_READY was not observed")
+        monitors["gateway"] = start_rf_monitor(
+            proof, "gateway", PORTS["gateway"], output_queue
+        )
+        command("gateway", "R")
+        gateway_ready_at = len(journal)
+        command("gateway", "?")
+        if not pump_until(
+            gateway_ready_at,
+            lambda rows: any(row["line"] == "[GATEWAY] RADIO_READY" for row in rows),
+            "Gateway RADIO_READY",
+        ):
+            raise OSError(stop_reason or "Gateway RADIO_READY was not observed")
+
+        for trial in range(10):
+            after = len(journal)
+            command("gateway", "W")
+
+            def completed(rows: list[Json]) -> bool:
+                lines = [row["line"] for row in rows]
+                return (
+                    "[GATEWAY] WRONG_DEST_TX_BEGIN DST=2 TYPE=08 Q=1 APP=11" in lines
+                    and "[GATEWAY] WRONG_DEST_TX_DONE" in lines
+                    and any("RX_DISCARD_DEST SID=0000 " in line for line in lines)
+                )
+
+            if not pump_until(after, completed, f"wrong-destination trial {trial + 1}"):
+                break
+            if any(
+                any(
+                    f"[{role}] {event} " in row["line"]
+                    for role in ("GATEWAY", "RECEIVER")
+                    for event in (
+                        "DATA_VALIDATED",
+                        "ACK_TX_BEGIN",
+                        "NACK_TX_BEGIN",
+                        "ACK_ACCEPTED",
+                        "NACK_RX",
+                    )
+                )
+                for row in journal[after:]
+            ):
+                stop_reason = f"application delivery or response occurred in trial {trial + 1}"
+                break
+    except (OSError, ValueError) as error:
+        stop_reason = str(error)
+        capture_error = True
+    finally:
+        for key in ("receiver", "gateway"):
+            monitor = monitors.get(key)
+            if monitor is not None and monitor["process"].poll() is None:
+                try:
+                    command(key, "P")
+                except OSError:
+                    capture_error = True
+        park_deadline = time.monotonic() + 5
+        while time.monotonic() < park_deadline and monitors:
+            parked = [
+                any(item["line"] == f"[{role}] PARKED E=0" for item in journal)
+                for role in ("RECEIVER", "GATEWAY")
+            ]
+            if all(parked):
+                break
+            try:
+                key, stream, raw = output_queue.get(timeout=0.1)
+            except queue.Empty:
+                continue
+            if stream == "stdout" and raw:
+                role = "GATEWAY" if key == "gateway" else "RECEIVER"
+                line = raw.decode("ascii", errors="replace").rstrip("\r\n")
+                if line.startswith(f"[{role}] "):
+                    record(role, line)
+        else:
+            if monitors:
+                capture_error = True
+        codes = {key: stop_rf_monitor(monitor) for key, monitor in monitors.items()}
+
+    result = validate_wrong_destination_trials(journal, images, run_id)
+    if stop_reason:
+        result["issues"] = sorted(set([*result["issues"], stop_reason]))
+    if capture_error or any(code != 0 for code in codes.values()):
+        result["issues"] = sorted(
+            set([*result["issues"], "serial monitor or postflight check failed"])
+        )
+    unavailable = check_port_owners(proof, "wrong-destination-postflight")
+    if unavailable:
+        result["issues"] = sorted(
+            set([*result["issues"], "serial ports remain occupied after capture"])
+        )
+    passed = bool(result["valid"] and not result["issues"])
+    result.update(
+        passed=passed,
+        origin="PHYSICAL_RADIO" if passed else "UNPROVEN",
+        monitor_exit_codes=codes,
+        stop_reason=stop_reason,
+    )
+    proof.note("wrong-destination-events.json", json.dumps(journal, indent=2) + "\n")
+    proof.note("wrong-destination.json", json.dumps(result, indent=2) + "\n")
+    proof.note(
+        "wrong-destination.log",
+        ("PASS" if passed else "FAIL") + ": " + "; ".join(result["issues"]) + "\n",
+    )
+    return 0 if passed else 1
+
+
+def run_mvp_acceptance(
+    proof: ProofRun, run_id: str, images: Mapping[str, Json]
+) -> int:
+    """Require ten one-shot DATA/ACK successes followed by ten destination drops."""
+    normal = []
+    for trial in range(1, 11):
+        child = ProofRun(proof.run_dir / f"data-ack-{trial:02d}")
+        options = argparse.Namespace(transport_test="T01", drop_response_once=False)
+        code = run_stable_ack_rf_test(child, options, run_id, images)
+        try:
+            result = json.loads((child.run_dir / "rf-test.json").read_text())
+        except (OSError, ValueError):
+            result = {"valid": False, "issues": ["single-packet result is missing"]}
+        normal.append({"trial": trial, "exit_code": code, "result": result})
+        if code != 0:
+            break
+
+    wrong_destination = None
+    if len(normal) == 10 and all(row["exit_code"] == 0 for row in normal):
+        child = ProofRun(proof.run_dir / "wrong-destination")
+        code = run_wrong_destination_rf_test(child, run_id, images)
+        try:
+            wrong_destination = json.loads(
+                (child.run_dir / "wrong-destination.json").read_text()
+            )
+        except (OSError, ValueError):
+            wrong_destination = {"passed": False, "issues": ["destination result is missing"]}
+        wrong_destination["exit_code"] = code
+
+    passed = (
+        len(normal) == 10
+        and all(row["exit_code"] == 0 for row in normal)
+        and wrong_destination is not None
+        and wrong_destination.get("exit_code") == 0
+    )
+    summary = {
+        "passed": passed,
+        "origin": "PHYSICAL_RADIO" if passed else "UNPROVEN",
+        "data_ack_planned": 10,
+        "data_ack_executed": len(normal),
+        "data_ack_successes": sum(row["exit_code"] == 0 for row in normal),
+        "data_ack_trials": normal,
+        "wrong_destination": wrong_destination,
+    }
+    proof.note("mvp-acceptance.json", json.dumps(summary, indent=2) + "\n")
+    proof.note("mvp-acceptance.log", ("PASS" if passed else "FAIL") + "\n")
+    return 0 if passed else 1
+
+
 def run_stable_campaign(proof: ProofRun, args: argparse.Namespace,
                         run_id: str, images: Mapping[str, Json]) -> int:
     """Gate physical NACK, lost-ACK and 10/100/1000 cases on each preceding result."""
@@ -2702,7 +3268,7 @@ def run_stable_campaign(proof: ProofRun, args: argparse.Namespace,
 def rf_test(
     proof: ProofRun, args: argparse.Namespace, profile_ok: bool, effective_config: str
 ) -> int:
-    # Current stable transport has no campaign/session field; T01/T02 use its byte commands.
+    # T01/T02 drive the current transport's R/S/N/P controls and header campaign ID.
     if (
         not profile_ok
         or not application_layout_verified(("sender_hello", "receiver"), effective_config)
@@ -2759,6 +3325,17 @@ def rf_test(
                 "rf-test.log", "BLOCKED: installed images/signatures do not match current firmware.\n"
             )
             return 2
+        if getattr(args, "mvp_acceptance", False):
+            if (
+                not getattr(args, "stable_transport", False)
+                or getattr(args, "transport_test", None) is not None
+            ):
+                proof.note(
+                    "rf-test.log",
+                    "BLOCKED: MVP acceptance requires the stable transport with no single-test override.\n",
+                )
+                return 2
+            return run_mvp_acceptance(proof, run_id, images)
         if getattr(args, "stable_campaign", False):
             return run_stable_campaign(proof, args, run_id, images)
         return run_stable_ack_rf_test(proof, args, run_id, images)
@@ -3019,12 +3596,50 @@ def main() -> int:
             "confirmations remain required"
         ),
     )
-    parser.add_argument("--authorize-upload", action="store_true")
+    parser.add_argument(
+        "--authorize-upload",
+        action="store_true",
+        help="authorize only the explicitly identified application image and page spans",
+    )
     parser.add_argument("--target-role", choices=("receiver",))
-    parser.add_argument("--target-serial")
-    parser.add_argument("--image-sha256")
-    parser.add_argument("--page-start", type=lambda value: int(value, 0))
-    parser.add_argument("--page-end", type=lambda value: int(value, 0))
+    parser.add_argument("--target-serial", help="Tracker MCU serial to authorize")
+    parser.add_argument("--image-sha256", help="Tracker application HEX SHA-256 to authorize")
+    parser.add_argument("--page-start", type=lambda value: int(value, 0), help="Tracker app page start")
+    parser.add_argument("--page-end", type=lambda value: int(value, 0), help="Tracker app page end")
+    parser.add_argument("--gateway-target-serial", help="Gateway MCU serial to authorize")
+    parser.add_argument("--gateway-image-sha256", help="Gateway application HEX SHA-256 to authorize")
+    parser.add_argument(
+        "--gateway-page-start", type=lambda value: int(value, 0), help="Gateway app page start"
+    )
+    parser.add_argument(
+        "--gateway-page-end", type=lambda value: int(value, 0), help="Gateway app page end"
+    )
+    parser.add_argument(
+        "--receiver-spi-image-sha256", help="Receiver SPI diagnostic HEX SHA-256 to authorize"
+    )
+    parser.add_argument(
+        "--receiver-spi-page-start",
+        type=lambda value: int(value, 0),
+        help="Receiver SPI diagnostic page start",
+    )
+    parser.add_argument(
+        "--receiver-spi-page-end",
+        type=lambda value: int(value, 0),
+        help="Receiver SPI diagnostic page end",
+    )
+    parser.add_argument(
+        "--gateway-spi-image-sha256", help="Gateway SPI diagnostic HEX SHA-256 to authorize"
+    )
+    parser.add_argument(
+        "--gateway-spi-page-start",
+        type=lambda value: int(value, 0),
+        help="Gateway SPI diagnostic page start",
+    )
+    parser.add_argument(
+        "--gateway-spi-page-end",
+        type=lambda value: int(value, 0),
+        help="Gateway SPI diagnostic page end",
+    )
     parser.add_argument("--authorize-rf-test", action="store_true")
     parser.add_argument(
         "--stable-transport",
@@ -3033,6 +3648,11 @@ def main() -> int:
     )
     parser.add_argument("--stable-campaign", action="store_true",
                         help="gate T01, T02, lost ACK and 10/100/1000 physical exchanges")
+    parser.add_argument(
+        "--mvp-acceptance",
+        action="store_true",
+        help="run ten intended DATA/ACK and ten wrong-destination trials",
+    )
     parser.add_argument("--drop-response-once", action="store_true",
                         help="suppress one Receiver response for a stable transport timeout test")
     parser.add_argument(

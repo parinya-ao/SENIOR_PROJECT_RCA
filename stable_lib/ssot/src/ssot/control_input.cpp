@@ -1,5 +1,4 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
+// Implements the fixed-buffer parser for legacy command/session serial input.
 #include "control_input.h"
 
 #include "application_config.h"

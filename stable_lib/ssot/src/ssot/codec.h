@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Defines and encodes the existing RadioHead-compatible SSOT wire format.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_SSOT_CODEC_H_

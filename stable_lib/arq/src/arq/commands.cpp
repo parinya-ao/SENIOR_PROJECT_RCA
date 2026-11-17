@@ -1,5 +1,4 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
+// Parses the bounded ARQ serial command grammar into caller-owned state.
 #include "commands.h"
 
 #include <stdio.h>

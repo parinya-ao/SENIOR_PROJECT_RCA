@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Declares the gateway Wire mailbox and its fixed external command codes.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_SENDER_LIB_ESPCOMM_H_

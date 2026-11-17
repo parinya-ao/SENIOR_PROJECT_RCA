@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Initializes the existing gateway GPIO and peripheral routes in board order.
 
 #include "io.h"

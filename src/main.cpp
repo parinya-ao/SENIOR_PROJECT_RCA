@@ -1,6 +1,8 @@
+// Arduino entry point: delegate lifecycle work to the selected firmware app.
+
 #include <Arduino.h>
 
-#include <firmware_app.h>
+#include "app/application.h"
 
 #if !defined(LORA_APP_GATEWAY) && !defined(LORA_APP_LEGACY_SENDER)
 void onPreMain() { firmware_app::PreMain(); }

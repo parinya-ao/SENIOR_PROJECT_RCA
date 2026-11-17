@@ -146,6 +146,12 @@ def probe_firmware_identity(
             captured = b""
     parsed = parse_identity_stream(captured)
     combined = f"{stdout}\n{stderr}".strip()
+    if timed_out and parsed.status == "VALID" and parsed.identity is not None:
+        return ProbeEvidence(
+            firmware_identity=parsed.identity,
+            firmware_status="OK",
+            parse_status=parsed.status,
+        )
     if timed_out or code != 0:
         status = "INACCESSIBLE" if _is_access_error(combined) else "PROBE_FAILED"
         return ProbeEvidence(

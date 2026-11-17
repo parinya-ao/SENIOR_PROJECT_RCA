@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Includes SSOT wire and foreground state APIs; no hardware or buffer
 // ownership.
 

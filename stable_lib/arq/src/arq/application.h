@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Coordinates one bench radio; all calls run in the Arduino foreground context.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_ARQ_APPLICATION_H_

@@ -1,3 +1,4 @@
+// Verifies Tracker GPIO polarity, power isolation, POR order, and radio CS.
 #include <stdint.h>
 #include <stdio.h>
 

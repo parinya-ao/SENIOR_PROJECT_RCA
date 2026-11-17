@@ -1,4 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
 // Test-only inspection after diagnostics.cpp is included in the host harness.
 #ifndef SENIOR_PROJECT_RCA_TESTS_ARQ_DIAGNOSTICS_TEST_ACCESS_H_
 #define SENIOR_PROJECT_RCA_TESTS_ARQ_DIAGNOSTICS_TEST_ACCESS_H_

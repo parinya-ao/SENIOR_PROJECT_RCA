@@ -22,7 +22,7 @@ class SsotProtocolTests(unittest.TestCase):
                     "-Wconversion",
                     "-Werror",
                     *flags,
-                    "-I" + str(ROOT / "src"),
+                    "-I" + str(ROOT / "stable_lib/ssot/src"),
                     "-I" + str(ROOT / "include"),
                     str(ROOT / "tests/ssot_protocol_test.cpp"),
                     str(ROOT / "stable_lib/ssot/src/ssot/codec.cpp"),

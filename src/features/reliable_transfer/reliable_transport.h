@@ -1,14 +1,13 @@
-// No repository-wide license is declared; existing rights are unchanged.
+// Implements the foreground reliable DATA/ACK/NACK state machine over a radio.
 
-#ifndef SENIOR_PROJECT_RCA_SRC_SHARED_RELIABLE_TRANSPORT_H_
-#define SENIOR_PROJECT_RCA_SRC_SHARED_RELIABLE_TRANSPORT_H_
+#ifndef SENIOR_PROJECT_RCA_SRC_FEATURES_RELIABLE_TRANSFER_RELIABLE_TRANSPORT_H_
+#define SENIOR_PROJECT_RCA_SRC_FEATURES_RELIABLE_TRANSFER_RELIABLE_TRANSPORT_H_
 
 #include <RadioLib.h>
+#include <ssot/ssot.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-
-#include <ssot/ssot.h>
 
 namespace reliable {
 
@@ -69,6 +68,8 @@ class Transport {
   int16_t radio_error() const { return error_; }
   uint8_t attempts() const { return attempts_; }
   uint32_t duplicates() const { return duplicates_; }
+  // Returns the current sender session or the receiver's adopted DATA session.
+  uint16_t campaign_id() const { return campaign_id_; }
   // Drops one future response for explicit diagnostics, preserving duplicate
   // history.
   void SuppressNextResponse() { suppress_response_ = true; }
@@ -83,23 +84,32 @@ class Transport {
     return error_;
   }
 
-  // Initializes the existing PHY and resets receive history when no work is
-  // active. Retains accept/context; peers must differ and must not use
+  // Initializes the existing PHY when no work is active. A nonzero campaign ID
+  // binds a sender to one session; zero leaves a receiver unbound until its
+  // first DATA frame. Duplicate history is retained for the same campaign and
+  // cleared when a new campaign is observed. SendReliableData requires a
+  // nonzero ID. Retains accept/context; peers must differ and must not use
   // broadcast address 255. A null callback or active transaction fails without
   // replacing configuration.
-  bool Arm(uint8_t local, uint8_t peer, Accept accept, void* context) {
+  bool Arm(uint8_t local, uint8_t peer, Accept accept, void* context,
+           uint16_t campaign_id = 0) {
     if (IsActive() || local == peer || local == 255 || peer == 255 || !accept)
       return false;
     local_ = local;
     peer_ = peer;
     accept_ = accept;
     context_ = context;
+    campaign_id_ = campaign_id;
+    session_locked_ = campaign_id != 0;
     error_ = radio_.init(local_, frequency_, tx_power_, long_range_);
     armed_ = error_ == 0;
     paused_ = false;
-    next_rx_ = 1;
+    if (!have_accepted_ ||
+        (campaign_id != 0 && last_campaign_id_ != campaign_id)) {
+      have_accepted_ = false;
+      next_rx_ = 1;
+    }
     pending_identity_ = false;
-    have_accepted_ = false;
     duplicates_ = 0;
     suppress_response_ = false;
     state_ = armed_ ? State::kRxWait : State::kFailed;
@@ -108,13 +118,13 @@ class Transport {
   }
 
   // Copies 1..kMaxData bytes and starts one bounded reliable transaction.
-  // Requires an armed idle radio, nonzero sequence and non-null data. Pending
-  // identity prevents changing payload after a failed transaction until
-  // explicit rearming.
+  // Requires an armed idle radio, nonzero campaign ID/sequence and non-null
+  // data. Pending identity prevents changing payload after a failed transaction
+  // until explicit rearming.
   bool SendReliableData(uint8_t sequence, const uint8_t* data, size_t size,
                         uint32_t now) {
-    if (!armed_ || paused_ || IsActive() || !data || !size || size > kMaxData ||
-        !sequence)
+    if (!armed_ || paused_ || IsActive() || !campaign_id_ || !data || !size ||
+        size > kMaxData || !sequence)
       return false;
     if (pending_identity_ &&
         (wire_size_ != size + 2 || memcmp(wire_ + 2, data, size)))
@@ -195,7 +205,7 @@ class Transport {
   // Starts the immutable request and increments attempts only after driver
   // acceptance.
   bool TransmitData(uint32_t now) {
-    const int16_t error = radio_.send(peer_, wire_, wire_size_);
+    const int16_t error = radio_.send(peer_, campaign_id_, wire_, wire_size_);
     if (error < 0) {
       Fail(Result::kRadioError, ssot::kDataType, sequence_, error);
       return false;
@@ -211,8 +221,9 @@ class Transport {
   // transitions. ACK replay does not redeliver already accepted payload bytes.
   void HandleReceive(uint32_t now) {
     uint8_t source = 0, destination = 0, size = 0;
-    const int16_t error =
-        radio_.recv(&source, &destination, rx_, sizeof rx_, &size);
+    uint16_t campaign_id = 0;
+    const int16_t error = radio_.recv(&source, &destination, &campaign_id, rx_,
+                                      sizeof rx_, &size);
     if (error < 0) {
       if (error == RADIOLIB_ERR_CRC_MISMATCH ||
           error == RADIOLIB_ERR_PACKET_TOO_LONG)
@@ -221,7 +232,15 @@ class Transport {
         Fail(Result::kRadioError, 0, 0, error);
       return;
     }
-    if (source != peer_ || destination != local_ || size < 2 || size > 251) {
+    if (destination != local_) {
+      EmitEvent("RX_DISCARD_DEST", 0, 0);
+      return;
+    }
+    if (source != peer_ || size < 2 || size > 251) {
+      EmitEvent("RX_DISCARD", 0, 0);
+      return;
+    }
+    if (session_locked_ && campaign_id != campaign_id_) {
       EmitEvent("RX_DISCARD", 0, 0);
       return;
     }
@@ -249,11 +268,20 @@ class Transport {
       EmitEvent("RX_DISCARD", type, sequence);
       return;
     }
+    if (!session_locked_) {
+      if (have_accepted_ && campaign_id != last_campaign_id_) {
+        have_accepted_ = false;
+        next_rx_ = 1;
+      }
+      campaign_id_ = campaign_id;
+      session_locked_ = true;
+    }
 
     const uint8_t data_size = static_cast<uint8_t>(size - 2);
-    const bool duplicate = have_accepted_ && sequence == last_sequence_ &&
-                           data_size == last_size_ &&
-                           !memcmp(rx_ + 2, last_data_, data_size);
+    const bool duplicate =
+        have_accepted_ && campaign_id_ == last_campaign_id_ &&
+        sequence == last_sequence_ && data_size == last_size_ &&
+        !memcmp(rx_ + 2, last_data_, data_size);
     bool accepted = duplicate;
     if (!duplicate && sequence == next_rx_)
       accepted = accept_(context_, sequence, rx_ + 2, data_size);
@@ -263,6 +291,7 @@ class Transport {
         EmitEvent("DATA_DUP", type, sequence);
       } else {
         have_accepted_ = true;
+        last_campaign_id_ = campaign_id_;
         last_sequence_ = sequence;
         last_size_ = data_size;
         memcpy(last_data_, rx_ + 2, data_size);
@@ -279,7 +308,8 @@ class Transport {
       EmitEvent("RESPONSE_DROPPED", reply_[0], sequence);
       return;
     }
-    const int16_t sent = radio_.send(peer_, reply_, sizeof(reply_));
+    const int16_t sent =
+        radio_.send(peer_, campaign_id_, reply_, sizeof(reply_));
     if (sent < 0) {
       Fail(Result::kRadioError, reply_[0], sequence, sent);
       return;
@@ -305,10 +335,12 @@ class Transport {
   // These independent latches describe configuration, parking and replay
   // history.
   bool armed_ = false, paused_ = false, have_accepted_ = false,
-       pending_identity_ = false;
+       pending_identity_ = false, session_locked_ = false;
   bool suppress_response_ = false;
   uint8_t local_ = 0, peer_ = 0, sequence_ = 1, attempts_ = 0, next_rx_ = 1;
   uint8_t last_sequence_ = 0, last_size_ = 0, wire_size_ = 0;
+  uint16_t campaign_id_ = 0;
+  uint16_t last_campaign_id_ = 0;
   // Origin of the current TX/ACK timeout; unsigned subtraction tolerates
   // rollover.
   uint32_t started_ = 0, duplicates_ = 0;
@@ -319,4 +351,4 @@ class Transport {
 };
 
 }  // namespace reliable
-#endif  // SENIOR_PROJECT_RCA_SRC_SHARED_RELIABLE_TRANSPORT_H_
+#endif  // SENIOR_PROJECT_RCA_SRC_FEATURES_RELIABLE_TRANSFER_RELIABLE_TRANSPORT_H_

@@ -87,7 +87,7 @@ class RawMvpTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             for role in ("SENDER", "RECEIVER"):
                 binary = Path(directory) / role
-                subprocess.run(
+                result = subprocess.run(
                     [
                         "g++",
                         "-std=c++17",
@@ -97,13 +97,22 @@ class RawMvpTests(unittest.TestCase):
                         "-DLORA_ROLE_" + role,
                         "-Itests/raw_mvp_stub",
                         "-Iinclude",
+                        "-Istable_lib/firmware_app",
+                        "-Istable_lib/mvp_app",
+                        "-Istable_lib/reverse_raw_app",
+                        "-Istable_lib/updi_uart/src",
+                        "-DLORA_APP_MVP=1",
+                        "-Istable_lib/updi_uart/src",
                         "tests/raw_mvp_test.cpp",
                         "-o",
                         str(binary),
                     ],
                     cwd=ROOT,
-                    check=True,
+                    capture_output=True,
+                    text=True,
+                    check=False,
                 )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 subprocess.run([str(binary)], check=True)
 
 

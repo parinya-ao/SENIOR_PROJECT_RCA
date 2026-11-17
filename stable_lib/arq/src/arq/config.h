@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Selects application policy without redefining the generated board/radio SSOT.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_ARQ_CONFIG_H_

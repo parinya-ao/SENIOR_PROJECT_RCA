@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Owns the gateway scheduler, ADC sampling and Arduino application lifecycle.
 
 #include "gateway_app.h"
@@ -59,8 +57,7 @@ int16_t ReadTemperatureCelsius() {
   temp *= sigrow_slope;  // Result will overflow 16-bit variable
   temp += GatewaySSOT::AdcTemp::ROUNDING_OFFSET;
   temp >>= GatewaySSOT::AdcTemp::FIXED_POINT_SHIFT;
-  return static_cast<int16_t>(temp) -
-         GatewaySSOT::AdcTemp::KELVIN_TO_CELSIUS;
+  return static_cast<int16_t>(temp) - GatewaySSOT::AdcTemp::KELVIN_TO_CELSIUS;
 }
 
 /***********************************************
@@ -72,9 +69,7 @@ class HeartbeatTask : public virtual Task {
   uint32_t timestamp_ms_;
 
  public:
-  virtual const char* GetName() {
-    return GatewaySSOT::Tasks::HEARTBEAT_NAME;
-  }
+  virtual const char* GetName() { return GatewaySSOT::Tasks::HEARTBEAT_NAME; }
 
   virtual TASK(Run()) {
     TASK_BEGIN();
@@ -99,10 +94,8 @@ void Initialize() {
   pinMode(GatewaySSOT::Pins::ANALOG_IN_1, INPUT);
   DEBUG_TS("Start app.\r\n");
 
-  if (GatewaySSOT::Tasks::ENABLE_HEARTBEAT_TASK)
-    scheduler.Add(&heartbeat_task);
-  if (GatewaySSOT::System::ENABLE_ESPCOMM &&
-      GatewaySSOT::Comm::ENABLE_I2C_WIRE)
+  if (GatewaySSOT::Tasks::ENABLE_HEARTBEAT_TASK) scheduler.Add(&heartbeat_task);
+  if (GatewaySSOT::System::ENABLE_ESPCOMM && GatewaySSOT::Comm::ENABLE_I2C_WIRE)
     InitializeEspCommunication();
   if (GatewaySSOT::System::ENABLE_LORA_RX) RegisterRadioTask();
 #if HELLO_TEST_MODE

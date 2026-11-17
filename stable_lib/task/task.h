@@ -82,7 +82,9 @@ class Task {
   Task();
 
   // Sets or clears the absolute tracker time used by TASK_SLEEP_FOR macros.
+  // `seconds` uses the tracker wall clock, not millis().
   void SetWakeupTime(uint32_t seconds);
+  // Clears a previously configured wakeup time.
   void ResetWakeupTime();
 
   // Returns the currently configured wakeup time.
@@ -100,7 +102,9 @@ class Task {
 
   // Changes whether the scheduler invokes this task.
   void Pause();
+  // Returns whether this task is currently skipped by its scheduler.
   bool IsPaused();
+  // Allows the scheduler to invoke the task again.
   void Resume();
 
   // Restarts the protothread and clears its scheduling state.

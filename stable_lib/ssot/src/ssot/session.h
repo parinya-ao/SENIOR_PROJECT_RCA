@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Tracks campaign progress and duplicates in caller-owned foreground state.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_SSOT_SESSION_H_

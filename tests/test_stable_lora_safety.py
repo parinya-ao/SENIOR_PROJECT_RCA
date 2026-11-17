@@ -151,9 +151,10 @@ class StableLoraSafetyTests(unittest.TestCase):
             "-fno-sanitize-link-c++-runtime",
             "-D_Bool=bool",
             "-I" + str(ROOT / "tests/radio_stub"),
+            "-I" + str(ROOT / "src"),
             "-I" + str(ROOT / "stable_lib/lora"),
             str(cls.source),
-            str(ROOT / "stable_lib/lora/lora.cpp"),
+            str(ROOT / "src/features/radio_link/radio_link.cpp"),
             "-o",
             str(cls.binary),
         ]

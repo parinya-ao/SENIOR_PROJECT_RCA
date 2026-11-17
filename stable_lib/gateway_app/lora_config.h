@@ -1,16 +1,14 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Validates the legacy eight-byte I2C radio configuration against generated
 // PHY.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_SENDER_LIB_LORA_CONFIG_H_
 #define SENIOR_PROJECT_RCA_SRC_SENDER_LIB_LORA_CONFIG_H_
 
+#include <hello_config.h>
 #include <stdint.h>
 #include <string.h>
 
 #include "espcomm.h"
-#include <hello_config.h>
 
 // Holds the accepted local address; PHY values remain fixed by generated SSOT.
 struct LoraConfig {
@@ -23,8 +21,7 @@ struct LoraConfig {
 // hardware.
 static bool DecodeLoraConfig(const volatile uint8_t* input, uint8_t length,
                              LoraConfig* config) {
-  if (input == nullptr || config == nullptr ||
-      length != kI2cConfigFrameBytes)
+  if (input == nullptr || config == nullptr || length != kI2cConfigFrameBytes)
     return false;
   const uint32_t frequency_bits =
       static_cast<uint32_t>(input[kI2cConfigFrequencyOffset]) |

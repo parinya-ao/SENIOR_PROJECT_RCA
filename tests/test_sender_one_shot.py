@@ -10,11 +10,17 @@ class SenderStableTransportTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.source = (ROOT / "stable_lib/gateway_app/lora_rx.cpp").read_text()
-        cls.transport = (ROOT / "stable_lib/shared/reliable_transport.h").read_text()
+        cls.source = (ROOT / "src/app/gateway_radio.cpp").read_text()
+        cls.transport = (ROOT / "src/features/reliable_transfer/reliable_transport.h").read_text()
+
+    def test_gateway_radio_transaction_has_a_src_app_owner(self) -> None:
+        self.assertTrue(
+            (ROOT / "src/app/gateway_radio.cpp").is_file(),
+            "Gateway radio transaction must be implemented under src/app",
+        )
 
     def test_sender_constructs_stable_radio_from_role_pins(self) -> None:
-        self.assertIn("../../../stable_lib/lora/lora.h", self.source)
+        self.assertIn("#include <lora.h>", self.source)
         self.assertIn("LoRa lora(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1)",
                       self.source)
         self.assertIn("HELLO_RF_FREQUENCY_MHZ", self.source)

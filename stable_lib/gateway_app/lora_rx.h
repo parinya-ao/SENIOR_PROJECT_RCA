@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Coordinates the gateway radio task using the existing stable LoRa driver.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_SENDER_LIB_LORA_RX_H_

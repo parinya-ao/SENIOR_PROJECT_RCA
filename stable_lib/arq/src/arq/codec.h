@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Encodes and validates complete ARQ wire frames without radio access.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_ARQ_CODEC_H_

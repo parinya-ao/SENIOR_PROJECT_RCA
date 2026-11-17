@@ -32,7 +32,8 @@ struct DeviceLayout {
   static constexpr FlashAddress kAppDataStart = generated::kAppdataStart;
   static constexpr FlashAddress kMaximumApplicationImageBytes =
       generated::kApplicationCapacityBytes;
-  static constexpr FlashAddress kApplicationImageEnd = generated::kApplicationEnd;
+  static constexpr FlashAddress kApplicationImageEnd =
+      generated::kApplicationEnd;
   static constexpr FlashAddress kPageCount = generated::kPageCount;
 
   static constexpr bool IsPageAligned(FlashAddress address) noexcept {

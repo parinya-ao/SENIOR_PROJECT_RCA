@@ -1,5 +1,6 @@
 // License: No repository-wide license is declared.
 // Existing rights and third-party notices are unchanged.
+// Exercises ARQ codecs, sender/receiver state, fuzz inputs, and retry stress.
 
 #include <assert.h>
 #include <stdio.h>

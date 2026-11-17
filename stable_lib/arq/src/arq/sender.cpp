@@ -1,5 +1,4 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
+// Implements bounded sender retries, deadlines, and correlated ACK handling.
 #include "sender.h"
 
 #include <string.h>

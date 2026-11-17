@@ -435,6 +435,7 @@ $RECYCLE.BIN/
 
 *.bin
 *.json
+!stable_lib/**/library.json
 *.jsonl
 *.hex
 artifacts/

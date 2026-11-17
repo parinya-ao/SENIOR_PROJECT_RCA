@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <Stream.h>
 
+// Provides bounded printf-style Stream output and decimal integer conversion.
 #ifndef MAX_PRINTF_RESULT_LENGTH
 #define MAX_PRINTF_RESULT_LENGTH 250
 #endif

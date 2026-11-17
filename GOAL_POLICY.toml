@@ -1,0 +1,54 @@
+# Project-owned verification policy example; NOT a native Codex Goals config.
+# Codex should copy/merge this into automation/goal_policy.toml only after
+# inspecting existing automation conventions and test environment.
+
+[goal]
+name = "lora_feature_based_real_radio"
+mode = "review_repair_validate"
+single_agent = true
+spawn_subagents = false
+max_equivalent_failed_attempts = 3
+require_evidence_to_complete = true
+
+[scope]
+reference_repo = "/home/parinya/university/iwing-tracker"
+reference_read_only = true
+production_src_root = "src"
+preserve_boot = true
+preserve_fuses = true
+preserve_wire_protocol = true
+preserve_generated_ssot = true
+
+[analysis]
+codegraph_first = true
+graphify_first = true
+require_source_callsite_confirmation = true
+require_linked_binary_confirmation = true
+prefer_graphify_code_only_ast = true
+
+[testing]
+real_radio_baseline_before_edit = true
+real_radio_required_for_complete = true
+minimum_real_data_ack_trials = 10
+minimum_wrong_destination_trials = 10
+minimum_wrong_destination_acceptances = 0
+minimum_wrong_destination_acks = 0
+require_sender_and_receiver_logs = true
+require_host_regression = true
+require_platformio_build_matrix = true
+require_negative_tests = true
+
+[safety]
+require_positive_device_identity_before_flash = true
+allow_boot_update = false
+allow_fuse_update = false
+allow_unapproved_rf_transmission = false
+allow_bypass_tests = false
+allow_reference_repository_mutations = false
+
+[stop]
+on_acceptance_pass = true
+on_missing_hardware_evidence = "blocked"
+on_unknown_upload_target = "blocked"
+on_no_progress = "report"
+on_permission_required = "pause"

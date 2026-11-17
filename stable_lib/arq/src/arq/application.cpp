@@ -1,5 +1,4 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
+// Coordinates ARQ command input, radio work, deadlines, and deferred logs.
 #include "application.h"
 
 #include <Arduino.h>

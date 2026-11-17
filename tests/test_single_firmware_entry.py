@@ -36,6 +36,14 @@ class SingleFirmwareEntryTests(unittest.TestCase):
 
         self.assertEqual(sources, [])
 
+    def test_platformio_uses_one_entry_and_one_library_root(self):
+        config = (ROOT / "platformio.ini").read_text()
+
+        self.assertIn("lib_dir = stable_lib", config)
+        self.assertEqual(config.count("build_src_filter ="), 1)
+        self.assertIn("+<main.cpp>", config)
+        self.assertNotIn("lib_extra_dirs", config)
+
 
 if __name__ == "__main__":
     unittest.main()

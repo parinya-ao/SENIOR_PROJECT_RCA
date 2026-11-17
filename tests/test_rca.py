@@ -65,6 +65,7 @@ class RCATests(unittest.TestCase):
                     "-Itests/arq/stub",
                     "-Itests/raw_mvp_stub",
                     "-Iinclude",
+                    "-Istable_lib/arq/src",
                     "-DLORA_ROLE_RECEIVER",
                     '-DLORA_BUILD_ID="offline-rca"',
                     "tests/rca_send_test.cpp",

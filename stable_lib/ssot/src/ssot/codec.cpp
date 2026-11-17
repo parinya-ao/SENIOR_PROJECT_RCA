@@ -1,9 +1,9 @@
-// No repository-wide license is declared; existing rights are unchanged.
+// Implements the existing RadioHead-compatible DATA/ACK/NACK byte encoding.
+#include "ssot/codec.h"
 
 #include <string.h>
 
 #include "application_config.h"
-#include "ssot/codec.h"
 
 #ifndef HELLO_TEST_MODE
 #define HELLO_TEST_MODE 0

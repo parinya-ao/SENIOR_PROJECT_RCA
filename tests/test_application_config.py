@@ -77,10 +77,11 @@ class ApplicationConfigTests(unittest.TestCase):
             (path / "test.cpp").write_text(f'''#include <assert.h>
 #include "{ROOT}/stable_lib/arq/src/arq/diagnostics.cpp"
 #include "{ROOT}/stable_lib/reverse_raw_app/reverse_raw_app.cpp"
+using namespace reverse_raw_app;
 const arq_board board_ssot = {{3,4,5,6}};
 void board_ssot_init() {{}}
 int main() {{
-  setup();
+  Initialize();
   const char text[] = "SEND {'5A' * 32}\\n";
   for (char value : text) if (value) FeedCommandByte(value);
   assert(tx_starts == 1 && sent_length == 32);
@@ -92,6 +93,7 @@ int main() {{
                 ["clang", "--driver-mode=g++", "-std=c++17", "-DLORA_ROLE_RECEIVER=1",
                  '-DLORA_BUILD_ID="configured-host"', "-I" + directory,
                  "-Itests/arq/stub", "-Itests/raw_mvp_stub", "-Iinclude",
+                 "-Istable_lib/arq/src", "-Istable_lib/arq/src/arq",
                  str(path / "test.cpp"), "-o", binary],
                 cwd=ROOT, capture_output=True, text=True,
             )

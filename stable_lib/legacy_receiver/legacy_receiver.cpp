@@ -1,10 +1,11 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Retains the alternative receiver application used by host round-trip tests.
 
 #if defined(LORA_APP_LEGACY_RECEIVER)
 
+#include "legacy_receiver.h"
+
 #include <Arduino.h>
+#include <ssot/ssot.h>
 #include <string.h>
 
 #include "application_config.h"
@@ -12,10 +13,8 @@
 #include "hello_config.h"
 #include "lora.h"
 #include "role_log.h"
-#include <ssot/ssot.h>
 #include "status_leds.h"
 #include "tracker_config.h"
-#include "legacy_receiver.h"
 
 namespace legacy_receiver {
 
@@ -24,8 +23,7 @@ static constexpr Address kSenderAddress = LORA_SENDER_ADDRESS;
 // Static radio state is initialized only after board power sequencing in setup.
 static LoRa lora(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1);
 static status_leds::Controller led_status(
-    LORA_PIN_LED1, LORA_PIN_LED2,
-    tracker_cfg::SystemConstants::LED_ON_LEVEL,
+    LORA_PIN_LED1, LORA_PIN_LED2, tracker_cfg::SystemConstants::LED_ON_LEVEL,
     tracker_cfg::SystemConstants::LED_OFF_LEVEL,
     tracker_cfg::SystemConstants::LED1_TOGGLE_INTERVAL_MS,
     tracker_cfg::SystemConstants::LORA_TX_LED_TOGGLE_INTERVAL_MS);

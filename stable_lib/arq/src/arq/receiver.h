@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Tracks session delivery and determines ACK/NACK responses without radio I/O.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_ARQ_RECEIVER_H_

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-PROJECT_LIB = ROOT / "lib"
+PROJECT_LIB = ROOT / "stable_lib"
 
 
 class Board:
@@ -114,7 +114,7 @@ class MvpRoundtripTests(unittest.TestCase):
                     "-Wmissing-prototypes",
                     "-Werror",
                     *role_defines,
-                    "-I" + str(ROOT / "src"),
+                    "-I" + str(ROOT / "stable_lib/ssot/src"),
                     "-I" + str(ROOT / "include"),
                     "-c",
                     str(ROOT / "stable_lib/ssot/src/ssot/codec.cpp"),
@@ -139,18 +139,25 @@ class MvpRoundtripTests(unittest.TestCase):
                 "-D_Bool=bool",
                 '-DLORA_BUILD_ID="HOST_SIMULATION"',
                 "-I" + str(ROOT / "tests/mvp_stub"),
+                "-I" + str(ROOT / "tests/avr_stub"),
                 "-I" + str(ROOT / "tests/radio_stub"),
                 "-I" + str(ROOT / "stable_lib/shared"),
-                "-I" + str(ROOT / "src"),
+                "-I" + str(ROOT / "stable_lib/ssot/src"),
                 "-I" + str(ROOT / "include"),
+                "-I" + str(ROOT / "src"),
+                "-I" + str(ROOT / "stable_lib/gateway_app"),
+                "-I" + str(ROOT / "stable_lib/reliable_app"),
                 "-I" + str(ROOT / "stable_lib/lora"),
                 "-I" + str(ROOT / "stable_lib/updi_uart/src"),
-                "-I" + str(PROJECT_LIB / "task/src"),
+                "-I" + str(PROJECT_LIB / "task"),
+                "-I" + str(PROJECT_LIB / "sleep"),
+                "-I" + str(PROJECT_LIB / "time-utils"),
                 "-I" + str(PROJECT_LIB / "iw_core/src"),
                 "-I" + str(PROJECT_LIB / "iw_tracker_radio_protocol/src"),
                 *role_defines,
                 str(ROOT / "tests/mvp_board.cpp"),
-                str(ROOT / "stable_lib/lora/lora.cpp"),
+                str(ROOT / "src/features/diagnostics/radio_diagnostics.cpp"),
+                str(ROOT / "src/features/radio_link/radio_link.cpp"),
                 str(ssot_object),
                 str(ROOT / "stable_lib/ssot/src/ssot/session.cpp"),
                 str(ROOT / "stable_lib/ssot/src/ssot/control_input.cpp"),
@@ -166,7 +173,7 @@ class MvpRoundtripTests(unittest.TestCase):
                     [
                         *flags,
                         "-c",
-                        str(PROJECT_LIB / "task/src/task.cpp"),
+                        str(PROJECT_LIB / "task/task.cpp"),
                         "-o",
                         str(Path(cls.directory.name) / "task.o"),
                     ],
@@ -192,32 +199,44 @@ class MvpRoundtripTests(unittest.TestCase):
     def board(self, role: str) -> Board:
         board = Board(self.binaries[role])
         self.addCleanup(board.close)
-        self.assertIn("RADIO_READY", "\n".join(board.initial))
+        output = "\n".join(board.initial)
+        self.assertTrue("RADIO_INIT_OK" in output or "RX_READY" in output)
         return board
 
     def start(self, sender: Board) -> bytes:
         result = frames(sender.initial)
-        self.assertEqual(result, [bytes.fromhex("01000000080168656c6c6f20776f726c64")])
-        return result[0]
+        self.assertEqual(len(result), 1)
+        frame = result[0]
+        self.assertEqual(frame[:2], bytes.fromhex("0100"))
+        self.assertNotEqual(frame[2:4], b"\x00\x00")
+        self.assertEqual(frame[4:6], bytes.fromhex("0801"))
+        self.assertEqual(frame[6:], b"hello world")
+        return frame
 
     def test_sender_receiver_complete_data_ack_and_second_cycle(self) -> None:
         receiver = self.board("receiver")
         sender = self.board("sender")
         data = self.start(sender)
         result = receiver.command("RX " + data.hex())
-        self.assertIn("DATA_RX", "\n".join(result))
-        self.assertIn("ACK_TX", "\n".join(result))
+        self.assertIn("DATA_VALIDATED", "\n".join(result))
+        self.assertIn("ACK_TX_BEGIN", "\n".join(result))
         ack = frames(result)[0]
-        self.assertEqual(ack, bytes.fromhex("000100000301"))
+        expected_ack = bytes.fromhex("0001") + data[2:4] + bytes.fromhex("0301")
+        self.assertEqual(ack, expected_ack)
         result = sender.command("RX " + ack.hex())
         self.assertIn("ACK_ACCEPTED", "\n".join(result))
         self.assertEqual(sender.status()["state"], "COMPLETE")
 
-        second = frames(sender.command("START"))
-        self.assertEqual(second, [bytes.fromhex("01000000080268656c6c6f20776f726c64")])
+        second = frames(sender.command("S"))
+        self.assertEqual(len(second), 1)
+        self.assertEqual(second[0][:2], bytes.fromhex("0100"))
+        self.assertEqual(second[0][2:4], data[2:4])
+        self.assertEqual(second[0][4:6], bytes.fromhex("0802"))
+        self.assertEqual(second[0][6:], b"hello world")
         result = receiver.command("RX " + second[0].hex())
-        self.assertIn("DATA_RX", "\n".join(result))
-        self.assertEqual(frames(result), [bytes.fromhex("000100000302")])
+        self.assertIn("DATA_VALIDATED", "\n".join(result))
+        expected_ack = bytes.fromhex("0001") + data[2:4] + bytes.fromhex("0302")
+        self.assertEqual(frames(result), [expected_ack])
         result = sender.command("RX " + frames(result)[0].hex())
         self.assertIn("ACK_ACCEPTED", "\n".join(result))
         print("HOST_SIMULATION DATA_ACK=PASS CYCLES=2 PAYLOAD=11")
@@ -229,16 +248,38 @@ class MvpRoundtripTests(unittest.TestCase):
         bad = bytearray(data)
         bad[-1] ^= 1
         result = receiver.command("RX " + bad.hex())
-        self.assertIn("DATA_REJECTED", "\n".join(result))
+        self.assertIn("NACK_TX_BEGIN", "\n".join(result))
         nack = frames(result)[0]
-        self.assertEqual(nack, bytes.fromhex("000100000901"))
+        expected_nack = bytes.fromhex("0001") + data[2:4] + bytes.fromhex("0901")
+        self.assertEqual(nack, expected_nack)
         retry = frames(sender.command("RX " + nack.hex()))
         self.assertEqual(retry, [data])
 
+    def test_wrong_session_data_is_discarded_without_ack(self) -> None:
+        receiver = self.board("receiver")
+        sender = self.board("sender")
+        data = self.start(sender)
+        accepted = receiver.command("RX " + data.hex())
+        self.assertIn("DATA_VALIDATED", "\n".join(accepted))
+        self.assertEqual(len(frames(accepted)), 1)
+
+        wrong_session = bytearray(data)
+        wrong_session[2:4] = bytes.fromhex("AABB")
+        result = receiver.command("RX " + wrong_session.hex())
+        output = "\n".join(result)
+        self.assertIn("RX_DISCARD", output)
+        self.assertNotIn("DATA_VALIDATED", output)
+        self.assertNotIn("ACK_TX_BEGIN", output)
+        self.assertNotIn("NACK_TX_BEGIN", output)
+        self.assertEqual(receiver.status()["tx"], 1)
+
     def test_wrong_peer_ack_does_not_complete(self) -> None:
         sender = self.board("sender")
-        self.start(sender)
-        result = sender.command("RX " + bytes.fromhex("000900000301").hex())
+        data = self.start(sender)
+        wrong_peer_ack = (
+            bytes.fromhex("0009") + data[2:4] + bytes.fromhex("0301")
+        )
+        result = sender.command("RX " + wrong_peer_ack.hex())
         self.assertNotIn("ACK_ACCEPTED", "\n".join(result))
         self.assertNotEqual(sender.status()["state"], "COMPLETE")
 
@@ -252,9 +293,7 @@ class MvpRoundtripTests(unittest.TestCase):
         first = self.board("sender")
         self.start(first)
         rebooted = self.board("sender")
-        self.assertEqual(frames(rebooted.initial), [
-            bytes.fromhex("01000000080168656c6c6f20776f726c64")
-        ])
+        self.start(rebooted)
 
 
 class TaskRestartTests(unittest.TestCase):
@@ -272,6 +311,8 @@ class TaskRestartTests(unittest.TestCase):
                     "-Wno-implicit-fallthrough",
                     "-Itests/mvp_stub",
                     "-Istable_lib/task",
+                    "-Istable_lib/sleep",
+                    "-Istable_lib/time-utils",
                     "tests/task_restart_test.cpp",
                     "stable_lib/task/task.cpp",
                     "-o",

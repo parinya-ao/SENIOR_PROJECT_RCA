@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Collects the legacy command and four-hex-digit session without hardware
 // access.
 

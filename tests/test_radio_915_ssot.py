@@ -311,12 +311,14 @@ class Radio915ValidationTests(unittest.TestCase):
                 result = subprocess.run(
                     [
                         compiler,
-                        "-std=c++11",
+                        "-std=c++17",
                         "-fsyntax-only",
                         "-x",
                         "c++",
                         "-I",
                         str(ROOT),
+                        "-I",
+                        str(ROOT / "include"),
                         "-DLORA_ROLE_SENDER=1",
                         *flags,
                         "-",
@@ -336,16 +338,27 @@ class Radio915ValidationTests(unittest.TestCase):
         for relative in ("gateway-lora/mainboard/src", "gateway-lora_dev/mainboard/src"):
             directory = ROOT.parent / "iwing-tracker" / relative
             profile_source = (directory / "radio_915_profile.py").read_text()
-            loraboard = (directory / "loraboard.py").read_text()
-            main = (directory / "main.py").read_text()
-            config = (directory / "config.txt").read_text()
             self.assertEqual(profile_source, (ROOT / "generated/radio_915_profile.py").read_text())
-            self.assertIn('CONFIG_LORA_STRUCT_FMT = "<BfbB"', loraboard)
-            self.assertIn("def configure(self, addr):", loraboard)
-            self.assertRegex(main, r"b\.configure\(\s*loraboards_config\['address'\]\s*\)")
-            for field in ('"frequency"', '"tx_power"', '"long_range"'):
-                self.assertNotIn(field, config)
-                self.assertNotIn(field, loraboard)
+
+        # The development tree contains only its generated profile. Verify the
+        # complete I2C contract against the tracked Gateway implementation.
+        directory = ROOT.parent / "iwing-tracker/gateway-lora/mainboard/src"
+        loraboard = (directory / "loraboard.py").read_text()
+        main = (directory / "main.py").read_text()
+        config = (directory / "config.txt").read_text()
+        self.assertIn('CONFIG_LORA_STRUCT_FMT = "<BfbB"', loraboard)
+        self.assertIn(
+            "def configure(self, addr, freq, tx_power, long_range):", loraboard
+        )
+        self.assertRegex(
+            main,
+            r"b\.configure\(\s*loraboards_config\['address'\]\s*,\s*"
+            r"float\(loraboards_config\['frequency'\]\)\s*,\s*"
+            r"loraboards_config\['tx_power'\]\s*,\s*"
+            r"loraboards_config\['long_range'\]\s*\)",
+        )
+        for field in ('"frequency"', '"tx_power"', '"long_range"'):
+            self.assertIn(field, config)
 
 
 class I2cRadioConfigTests(unittest.TestCase):
@@ -360,12 +373,22 @@ class I2cRadioConfigTests(unittest.TestCase):
             result = subprocess.run(
                 [
                     compiler,
-                    "-std=c++11",
+                    "-std=c++17",
                     "-Wall",
                     "-Wextra",
                     "-Werror",
                     "-I",
                     str(ROOT),
+                    "-I",
+                    str(ROOT / "include"),
+                    "-I",
+                    str(ROOT / "tests/radio_stub"),
+                    "-I",
+                    str(ROOT / "tests/avr_stub"),
+                    "-I",
+                    str(ROOT / "stable_lib/shared"),
+                    "-I",
+                    str(ROOT / "stable_lib/gateway_app"),
                     "-DLORA_ROLE_SENDER=1",
                     str(ROOT / "tests/radio_config_test.cpp"),
                     "-o",

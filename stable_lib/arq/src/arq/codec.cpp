@@ -1,5 +1,4 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
+// Encodes and decodes the bounded ARQ wire frame without radio access.
 #include "codec.h"
 
 #include <string.h>

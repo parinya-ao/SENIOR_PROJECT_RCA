@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Parses the existing bench grammar without changing radio or protocol state.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_ARQ_COMMANDS_H_

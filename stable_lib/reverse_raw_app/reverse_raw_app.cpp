@@ -1,20 +1,19 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Runs one reverse-direction raw observation; never retries an accepted
 // command.
+
+#include "reverse_raw_app.h"
 
 #include <Arduino.h>
 #include <RadioLib.h>
 #include <SPI.h>
+#include <arq/diagnostics.h>
 #include <stdio.h>
 #include <string.h>
 #include <updi_uart.h>
 
-#include <arq/diagnostics.h>
 #include "application_config.h"
 #include "generated/arq_config.h"
 #include "generated/board_ssot.h"
-#include "reverse_raw_app.h"
 
 // Radio wiring belongs to the generated physical board, independent of DATA
 // direction.

@@ -1,4 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
 // Checks real queue behavior against the UPDI mailbox stub.
 #include "../../stable_lib/arq/src/arq/diagnostics.cpp"
 

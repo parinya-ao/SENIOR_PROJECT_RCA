@@ -1,5 +1,4 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
+// Implements receiver session validation, duplicate suppression, and replies.
 #include "receiver.h"
 
 #include <string.h>

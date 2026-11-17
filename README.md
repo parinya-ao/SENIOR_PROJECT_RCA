@@ -75,9 +75,9 @@ tests replace physical MCU/radio I/O and do not prove an RF link.
 ## Static analysis and formatting
 
 ```sh
-pio check -e sender_arq --src-filters '+<src/ssot.cpp> +<src/ssot/> +<src/arq/>' --flags 'cppcheck: --enable=warning,performance,portability --std=c++17' --fail-on-defect high
-uvx --from clang-tidy clang-tidy src/ssot.cpp src/ssot/session.cpp src/ssot/control_input.cpp src/arq/codec.cpp src/arq/sender.cpp src/arq/receiver.cpp src/arq/commands.cpp -- -std=c++17 -Isrc -Isrc/arq -Iinclude
-uvx --from clang-format clang-format --dry-run --Werror src/ssot.cpp src/ssot/*.h src/ssot/*.cpp src/arq/*.h src/arq/*.cpp
+pio check -e sender_arq --flags 'cppcheck: --enable=warning,performance,portability --std=c++17' --fail-on-defect high
+uvx --from clang-tidy clang-tidy stable_lib/ssot/src/ssot/codec.cpp stable_lib/ssot/src/ssot/session.cpp stable_lib/ssot/src/ssot/control_input.cpp stable_lib/arq/src/arq/codec.cpp stable_lib/arq/src/arq/sender.cpp stable_lib/arq/src/arq/receiver.cpp stable_lib/arq/src/arq/commands.cpp -- -std=c++17 -Istable_lib/ssot/src -Istable_lib/arq/src -Iinclude
+uvx --from clang-format clang-format --dry-run --Werror src/main.cpp stable_lib/ssot/src/ssot/*.h stable_lib/ssot/src/ssot/*.cpp stable_lib/arq/src/arq/*.h stable_lib/arq/src/arq/*.cpp
 ```
 
 The checked-in Clang configuration uses Google formatting and focused correctness

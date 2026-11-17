@@ -8,6 +8,31 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class CppInterfaceTests(unittest.TestCase):
+    def test_sd_line_reader_truncates_overlong_lines_without_losing_sync(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            binary = str(Path(directory) / "sd_utils")
+            result = subprocess.run(
+                [
+                    "clang",
+                    "--driver-mode=g++",
+                    "-std=c++17",
+                    "-fsanitize=address,undefined",
+                    "-Itests/sd_stub",
+                    "-Istable_lib/sd-utils",
+                    "tests/sd_utils_test.cpp",
+                    "stable_lib/sd-utils/sd-utils.cpp",
+                    "-o",
+                    binary,
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            subprocess.run([binary], check=True)
+
     def test_command_grammar_and_overflow_recovery(self):
         import tempfile
 
@@ -16,7 +41,7 @@ class CppInterfaceTests(unittest.TestCase):
                 binary = str(Path(directory) / role)
                 result = subprocess.run(
                     ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
-                     "-Iinclude", "-Istable_lib/arq/src/arq/src", "-DARQ_TEST_MODE=1",
+                     "-Iinclude", "-Istable_lib/arq/src", "-Istable_lib/arq/src/arq", "-DARQ_TEST_MODE=1",
                      "-DLORA_ROLE_" + role, "tests/arq/commands_test.cpp",
                      "stable_lib/arq/src/arq/commands.cpp", "-o", binary],
                     cwd=ROOT, capture_output=True, text=True,
@@ -51,7 +76,8 @@ class CppInterfaceTests(unittest.TestCase):
             with self.subTest(header=header):
                 result = subprocess.run(
                     ["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
-                     "-fsyntax-only", "-Isrc", "-Iinclude", "-x", "c++", "-"],
+                     "-fsyntax-only", "-Istable_lib/arq/src", "-Istable_lib/arq/src/arq",
+                     "-Istable_lib/ssot/src", "-Iinclude", "-x", "c++", "-"],
                     cwd=ROOT, input=f'#include "{header}"\n',
                     capture_output=True, text=True,
                 )
@@ -59,11 +85,12 @@ class CppInterfaceTests(unittest.TestCase):
 
     def test_named_states_remain_distinct_from_wire_bytes(self):
         result = subprocess.run(
-            ["g++", "-std=c++17", "-fsyntax-only", "-Isrc", "-Iinclude",
+            ["g++", "-std=c++17", "-fsyntax-only", "-Istable_lib/arq/src", "-Istable_lib/arq/src/arq",
+             "-Istable_lib/ssot/src", "-Iinclude",
              "-x", "c++", "-"],
             cwd=ROOT, capture_output=True, text=True,
-            input='''#include "arq/sender.h"
-#include "session.h"
+input='''#include "arq/sender.h"
+#include "ssot/session.h"
 static_assert(sizeof(arq::SenderState) == sizeof(int));
 static_assert(sizeof(ssot::CampaignState) == sizeof(int));
 arq::Sender sender{};

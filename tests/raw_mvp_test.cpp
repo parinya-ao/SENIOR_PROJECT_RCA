@@ -1,74 +1,86 @@
-#include <algorithm>
-
+// Runs the real MVP application through the composition root with host hardware
+// stubs.
+#define LORA_APP_MVP 1
+#include "../src/app/application.cpp"
+#include "../src/main.cpp"
 #include "../stable_lib/mvp_app/mvp_app.cpp"
+
+using namespace mvp_app;
 
 int main() {
   onPreMain();
-  mvp_app::Initialize();
+  setup();
   assert(ready && swapped && begun && !monitor);
   assert(stage_count >= 7 && reset_flags == 4);
 #if defined(LORA_ROLE_RECEIVER)
   assert(!transmitting && tx_started == 0 && tx_starts == 0);
-  auto off = std::find(gpio.begin(), gpio.end(), std::make_pair(PIN_PA7, HIGH));
-  auto sd = std::find(gpio.begin(), gpio.end(), std::make_pair(PIN_PC3, HIGH));
-  auto on = std::find(gpio.begin(), gpio.end(), std::make_pair(PIN_PA7, LOW));
+  auto off = gpio.end();
+  auto sd = gpio.end();
+  auto on = gpio.end();
+  for (auto it = gpio.begin(); it != gpio.end(); ++it) {
+    if (it->first == PIN_PA7 && it->second == HIGH && off == gpio.end())
+      off = it;
+    if (it->first == PIN_PC3 && it->second == HIGH && sd == gpio.end()) sd = it;
+    if (it->first == PIN_PA7 && it->second == LOW && on == gpio.end()) on = it;
+  }
   assert(off < on && sd < on);
-  for (size_t length : {0, 10, 11, 12, 33, 255}) {
+  const size_t lengths[] = {0, 10, 11, 12, 33, 255};
+  for (size_t length : lengths) {
     packet_length = length;
     memset(packet, 0, sizeof(packet));
     memcpy(packet, kPayload, kPayloadBytes);
     irq_flags = 0x40;
     const uint32_t old = matches;
     const int starts = rx_starts;
-    mvp_app::Poll();
+    loop();
     assert(matches == old + (length == 11));
     assert(rx_starts == starts + 1);
   }
   packet_length = 11;
   memcpy(packet, "hello world", 11);
   irq_flags = 0x40;
-  mvp_app::Poll();
+  loop();
   assert(matches == 1);
   memcpy(packet, kPayload, kPayloadBytes);
   data_status = RADIOLIB_ERR_CRC_MISMATCH;
   irq_flags = 0x60;
-  mvp_app::Poll();
+  loop();
   assert(matches == 1 && crc_errors == 1);
   data_status = -24;
   irq_flags = 0x40;
-  mvp_app::Poll();
+  loop();
   assert(matches == 1);
   data_status = 0;
   irq_flags = 0x40;
   rx_status = -1;
-  mvp_app::Poll();
+  loop();
   assert(!ready);
 #else
-  mvp_app::Poll();
+  loop();
   assert(tx_starts == 1 && sent_length == 11 &&
          memcmp(sent, "Hello World", 11) == 0);
   irq_flags = 0x08;
-  mvp_app::Poll();
+  loop();
   assert(!transmitting && cleanups == 1);
-  mvp_app::Poll();
+  loop();
   assert(tx_starts == 1);
   clock_ms += 3000;
-  mvp_app::Poll();
+  loop();
   assert(transmitting && tx_starts == 2);
   clock_ms += 3000;
-  mvp_app::Poll();
+  loop();
   assert(!transmitting && cleanups == 2);
   input_pending = true;
   input = 'X';
-  mvp_app::Poll();
+  loop();
   clock_ms += 15000;
-  mvp_app::Poll();
+  loop();
   assert(stopped && tx_starts == 2);
   stopped = false;
-  mvp_app::Poll();
+  loop();
   irq_flags = 0x08;
   cleanup_status = -1;
-  mvp_app::Poll();
+  loop();
   assert(!ready);
 #endif
   monitor = true;
@@ -79,7 +91,7 @@ int main() {
   assert(log_ok);
   registers[1] = 1;
   const uint32_t before = clock_ms;
-  mvp_app::Poll();
+  loop();
   assert(clock_ms - before < 2000);
   debug_init();
   debug_write_float(-1.25f);

@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Defines logical ARQ fields and fixed wire limits; objects are never
 // serialized raw.
 

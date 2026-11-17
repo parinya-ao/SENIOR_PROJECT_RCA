@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Defers Wire host commands to foreground tasks; callbacks only move bounded
 // bytes.
 
@@ -8,13 +6,12 @@
 #include <Wire.h>
 
 #include "debug.h"
+#include "gateway_app.h"
 #include "io.h"
 #include "iw/core/byte_codec.h"
 #include "iw/tracker/radio/packets.h"
 #include "lora_config.h"
 #include "lora_rx.h"
-#include "gateway_app.h"
-
 
 namespace {
 constexpr uint32_t kI2cResetIntervalMs =
