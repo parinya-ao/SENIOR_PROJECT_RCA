@@ -1,7 +1,8 @@
 // Parses the bounded ARQ serial command grammar into caller-owned state.
 #include "commands.h"
 
-#include <stdio.h>
+#include <ctype.h>
+#include <stdlib.h>
 #include <string.h>
 
 namespace arq {
@@ -13,6 +14,25 @@ int DecodeHexDigit(char value) {
   if (value >= 'a' && value <= 'f') return value - 'a' + 10;
   return -1;
 }
+
+#if !defined(ARQ_ROLE_SENDER) && defined(ARQ_TEST_MODE)
+/// Consumes one nonnegative decimal value bounded by the fault policy.
+/// Overflow from strtoul saturates above the policy limit, even on AVR.
+/// @param text Borrowed input cursor, advanced past the value on success.
+/// @param value Output updated only on success.
+/// @return True if a bounded value was consumed.
+bool ReadFaultValue(const char*& text, uint16_t& value) {
+  while (isspace(static_cast<unsigned char>(*text))) ++text;
+  if (*text == '-') return false;
+  char* end;
+  const unsigned long number = strtoul(text, &end, 10);
+  if (end == text || number > application_config::commands::kFaultLimit)
+    return false;
+  text = end;
+  value = static_cast<uint16_t>(number);
+  return true;
+}
+#endif
 }  // namespace
 
 bool ParseCommand(const char* text, Command* command) {
@@ -52,15 +72,15 @@ bool ParseCommand(const char* text, Command* command) {
   }
 #elif defined(ARQ_TEST_MODE)
   if (!strncmp(text, "FAULT ", 6)) {
-    unsigned stride, budget;
-    char extra;
-    if (sscanf(text + 6, "%u %u %c", &stride, &budget, &extra) != 2 ||
-        stride > application_config::commands::kFaultLimit ||
-        budget > application_config::commands::kFaultLimit ||
+    const char* values = text + 6;
+    uint16_t stride, budget;
+    if (!ReadFaultValue(values, stride) || !ReadFaultValue(values, budget) ||
         (budget && !stride))
       return false;
-    command->stride = static_cast<uint16_t>(stride);
-    command->budget = static_cast<uint16_t>(budget);
+    while (isspace(static_cast<unsigned char>(*values))) ++values;
+    if (*values) return false;
+    command->stride = stride;
+    command->budget = budget;
     command->kind = CommandKind::kFault;
     return true;
   }

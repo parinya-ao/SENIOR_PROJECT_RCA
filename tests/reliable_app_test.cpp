@@ -26,7 +26,7 @@ extern "C" uint8_t updi_uart_rx() { return *input++; }
 extern "C" void updi_uart_tx(uint8_t c) {
   assert(fake_radio::state.op_mode != 0x83);
   assert(used + 1 < sizeof logs);
-  logs[used++] = c;
+  logs[used++] = static_cast<char>(c);
   logs[used] = 0;
 }
 extern "C" bool updi_uart_try_tx(uint8_t c) {
@@ -34,7 +34,9 @@ extern "C" bool updi_uart_try_tx(uint8_t c) {
   updi_uart_tx(c);
   return true;
 }
-#include "../src/app/reliable_app.cpp"
+// Keep the app and its test doubles in one TU so tests can inspect private
+// state.
+#include "../src/app/reliable_app.cpp"  // NOLINT(bugprone-suspicious-include)
 
 using namespace reliable_app;
 
@@ -48,7 +50,7 @@ static void command(const char* text) {
 
 #if !HELLO_RF_DIAGNOSTIC_ONLY
 static void deliver(uint8_t source, uint8_t destination, const uint8_t* payload,
-                    uint8_t length, uint16_t campaign_id = 0) {
+                    uint8_t length, uint16_t campaign_id = 0x1234) {
   fake_radio::state.rx_data[0] = destination;
   fake_radio::state.rx_data[1] = source;
   fake_radio::state.rx_data[2] = static_cast<uint8_t>(campaign_id);
@@ -75,23 +77,25 @@ int main() {
   reliable_app::Poll();
   assert(strstr(logs, "WRONG_DEST_TX_BEGIN DST=2 TYPE=08 Q=1 APP=11") !=
          nullptr);
-  const uint8_t wrong_destination_frame[] = {2,
-                                             0,
-                                             0,
-                                             0,
-                                             ssot::kDataType,
-                                             ssot::kSequence,
-                                             'h',
-                                             'e',
-                                             'l',
-                                             'l',
-                                             'o',
-                                             ' ',
-                                             'w',
-                                             'o',
-                                             'r',
-                                             'l',
-                                             'd'};
+  assert(transport.campaign_id() != 0);
+  const uint8_t wrong_destination_frame[] = {
+      2,
+      0,
+      static_cast<uint8_t>(transport.campaign_id()),
+      static_cast<uint8_t>(transport.campaign_id() >> 8U),
+      ssot::kDataType,
+      ssot::kSequence,
+      'h',
+      'e',
+      'l',
+      'l',
+      'o',
+      ' ',
+      'w',
+      'o',
+      'r',
+      'l',
+      'd'};
   assert(fake_radio::state.transmit_starts == 1);
   assert(fake_radio::state.tx_size == sizeof wrong_destination_frame);
   assert(!memcmp(fake_radio::state.tx_copy, wrong_destination_frame,
@@ -172,6 +176,7 @@ int main() {
   reliable_app::Poll();
   assert(fake_radio::state.tx_copy[4] == ssot::kNackType);
   complete_tx();
+  assert(strstr(logs, "DATA_REJECTED_TEST"));
   // N rejects exactly one DATA; the retransmission must be accepted.
   deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, data, sizeof data);
   reliable_app::Poll();
@@ -253,7 +258,29 @@ int main() {
   const uint16_t next_campaign_id =
       static_cast<uint16_t>(fake_radio::state.tx_copy[2]) |
       (static_cast<uint16_t>(fake_radio::state.tx_copy[3]) << 8U);
-  assert(next_campaign_id != 0 && next_campaign_id != campaign_id);
+  assert(next_campaign_id == ssot::NextCampaignId(campaign_id));
+  complete_tx();
+  deliver(LORA_RECEIVER_ADDRESS, LORA_SENDER_ADDRESS, ack, sizeof ack,
+          next_campaign_id);
+  reliable_app::Poll();
+
+  // The transport test exercises all 255 requests; fast-forward here to check
+  // that the app actually rotates and sends sequence 1 after the final ACK.
+  tx_sequence = UINT8_MAX;
+  command("S");
+  assert(fake_radio::state.tx_copy[5] == UINT8_MAX);
+  complete_tx();
+  const uint8_t final_ack[] = {ssot::kAckType, UINT8_MAX};
+  deliver(LORA_RECEIVER_ADDRESS, LORA_SENDER_ADDRESS, final_ack,
+          sizeof final_ack, next_campaign_id);
+  reliable_app::Poll();
+  assert(tx_sequence == 0);
+  command("S");
+  const uint16_t rolled_campaign_id =
+      static_cast<uint16_t>(fake_radio::state.tx_copy[2]) |
+      (static_cast<uint16_t>(fake_radio::state.tx_copy[3]) << 8U);
+  assert(rolled_campaign_id == ssot::NextCampaignId(next_campaign_id));
+  assert(fake_radio::state.tx_copy[5] == ssot::kSequence);
   complete_tx();
   command("P");
   puts("PASS sender retransmits NACK and accepts matching ACK");

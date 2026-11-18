@@ -7,7 +7,7 @@
 #define SPI_MODE0 0
 #define SPI1_SWAP_DEFAULT 0x80
 struct SPISettings {
-  SPISettings(uint32_t speed, int order, int mode) {
+  SPISettings(uint32_t speed, int order, int mode) noexcept {
     if (speed != 1000000 || order != MSBFIRST || mode != SPI_MODE0)
       __builtin_trap();
   }

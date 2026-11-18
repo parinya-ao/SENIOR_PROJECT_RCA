@@ -4,10 +4,13 @@
 
 #include <assert.h>
 
+// Load the implementation in this fixture to observe private foreground state.
+// NOLINTBEGIN(bugprone-suspicious-include)
 #include "../../stable_lib/arq/src/arq/application.cpp"
 #include "../../stable_lib/arq/src/arq/board_ssot.c"
 #include "../../stable_lib/arq/src/arq/commands.cpp"
 #include "../../stable_lib/arq/src/arq/diagnostics.cpp"
+// NOLINTEND(bugprone-suspicious-include)
 #include "diagnostics_test_access.h"
 using namespace arq::app;
 static void send_command(const char* s) {
@@ -30,7 +33,7 @@ static void drain_status(char* out, size_t capacity,
     Poll();
     if (registers[0]) {
       assert(length + 1 < capacity);
-      out[length++] = registers[0];
+      out[length++] = static_cast<char>(registers[0]);
     }
   }
   assert(!status_next && !arq::diagnostics::PendingLineCount());

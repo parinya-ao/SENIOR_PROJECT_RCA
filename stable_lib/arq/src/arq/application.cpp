@@ -91,7 +91,7 @@ static void RecordRadioRegisters(const char* name) {
       0x01, 0x06, 0x07, 0x08, 0x09, 0x4d, 0x1d, 0x1e, 0x26, 0x39, 0x33, 0x3b,
       0x12, 0x13, 0x10, 0x1b, 0x40, 0x11, 0x18, 0x31, 0x42, 0x20, 0x21, 0x41};
   uint8_t values[sizeof addresses];
-  for (uint8_t i = 0; i < sizeof addresses; i++) {
+  for (size_t i = 0; i < sizeof addresses; i++) {
     SPI.beginTransaction(SPISettings(ARQ_SPI_HZ, MSBFIRST, SPI_MODE0));
     digitalWrite(board_ssot.cs, LOW);
     SPI.transfer(addresses[i]);
@@ -215,6 +215,8 @@ static void FlushStatus() {
       arq::diagnostics::RecordEvent(GetEventContext(), "STATUS_END", 0,
                                     arq::diagnostics::OverflowCount());
       status_next = 0;
+      break;
+    default:
       break;
   }
 }
@@ -493,7 +495,7 @@ static void HandleReceive(uint32_t now, uint16_t flags) {
 void Poll() {
   if (updi_uart_enabled() && !attached) ScheduleStatus();
   attached = updi_uart_enabled();
-  if (updi_uart_rx_poll()) FeedCommandByte(updi_uart_rx());
+  if (updi_uart_rx_poll()) FeedCommandByte(static_cast<char>(updi_uart_rx()));
   uint32_t now = millis();
   arq::SenderState old = sender.state;
   if (ready && !parked) {
@@ -505,11 +507,12 @@ void Poll() {
         radio_tx = false;
         arq::diagnostics::RecordEvent(
             GetEventContext(), done ? "TX_DONE" : "TX_TIMEOUT", rc, flags);
-        bool rx = RestoreReceive();
 #if defined(ARQ_ROLE_SENDER)
+        const bool rx = RestoreReceive();
         arq::HandleTxCompletion(&sender, millis(), done && !rc && rx);
         if (sender.state == arq::SenderState::kWaitingAck) sender.tx_done = now;
 #else
+        RestoreReceive();
         if (done && !rc) ++completed;
 #endif
         if (rc) FailAdapter(rc);
@@ -535,7 +538,11 @@ void Poll() {
       ++attempted;
       if (rc) {
         int16_t cleanup = radio.finishTransmit();
-        bool rx = RestoreReceive();
+#if defined(ARQ_ROLE_SENDER)
+        RestoreReceive();
+#else
+        const bool rx = RestoreReceive();
+#endif
         arq::diagnostics::RecordEvent(GetEventContext(), "TX_ERROR", rc,
                                       cleanup);
 #if defined(ARQ_ROLE_SENDER)

@@ -1,5 +1,0 @@
-experiment_id,purpose,mode,result,evidence
-E-SSOT,Compare schematic intent and generated board mapping,offline read-only,static maps consistent,docs/arq/investigations/rca-20261113/SSOT_REVIEW.md
-E-G1,STATUS response after Monitor/identity setup,live non-RF,FAIL one request no output in 120 s,artifacts/arq/gate1-updi/20261113T153146Z/
-E-MBOX,Read volatile mailbox/OCD state around STATUS,planned live diagnostic,no result yet,new bundle to be created
-E-RXTX,Independent Tracker TX and Gateway RX endpoint tests,planned RF,not yet run,requires instrument/hardware execution

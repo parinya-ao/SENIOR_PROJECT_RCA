@@ -2432,13 +2432,6 @@ def validate_stable_transport(
         if any(line.startswith(f"[{role}] BUILD_ID=") and line != f"[{role}] BUILD_ID={images.get(role, {}).get('build_id')}"
                for _, line in logs[role]):
             issues.append(f"{role}: running firmware identity differs from verified image")
-    requested = [
-        index
-        for index, line in logs["GATEWAY"]
-        if line == "[GATEWAY] DATA_TX_REQUESTED" or line.startswith("[GATEWAY] DATA_TX_REQUESTED T=")
-    ]
-    if len(requested) != 1 or (requested and requested[0] <= command_s):
-        issues.append("sender did not report exactly one accepted DATA request")
     for role in roles:
         if not any(line == f"[{role}] PARKED E=0" for _, line in logs[role]):
             issues.append(f"{role}: radio did not park cleanly")
@@ -2453,7 +2446,7 @@ def validate_stable_transport(
     for index, item in enumerate(journal):
         line = item["line"]
         match = pattern.fullmatch(line)
-        if match:
+        if match and match[1] == item["role"]:
             role, name, campaign_id, timestamp, type_, sequence, error = match.groups()
             events[role].append(
                 (
@@ -2466,7 +2459,7 @@ def validate_stable_transport(
                     int(campaign_id, 16),
                 )
             )
-        elif any(
+        elif "DATA_TX_REQUESTED" in line or any(
             line.startswith(f"[{role}] {name} ")
             for role in roles
             for name in ("DATA_TX_BEGIN", "DATA_TX_DONE", "DATA_VALIDATED", "ACK_TX_", "NACK_TX_", "ACK_ACCEPTED", "NACK_RX", "TRANSACTION_FAILED")
@@ -2483,6 +2476,16 @@ def validate_stable_transport(
 
     data_tx = selected("GATEWAY", "DATA_TX_BEGIN")
     data_done = selected("GATEWAY", "DATA_TX_DONE")
+    requested = selected("GATEWAY", "DATA_TX_REQUESTED")
+    if (
+        len(requested) != 1
+        or selected("RECEIVER", "DATA_TX_REQUESTED")
+        or not data_tx
+        or not data_done
+        or not command_s < data_tx[0][0] < requested[0][0] < data_done[0][0]
+        or not data_tx[0][2] <= requested[0][2] <= data_done[0][2]
+    ):
+        issues.append("sender did not report exactly one ordered DATA request")
     ack_begin = selected("RECEIVER", "ACK_TX_BEGIN")
     ack_done = selected("RECEIVER", "ACK_TX_DONE")
     nack_begin = selected("RECEIVER", "NACK_TX_BEGIN")

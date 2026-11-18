@@ -26,8 +26,7 @@ void* operator new(size_t size) { return malloc(size); }
   } while (0)
 
 static void reset_radio() {
-  memset(&fake_radio::state, 0, sizeof(fake_radio::state));
-  fake_radio::state.chip_version = 0x12;
+  fake_radio::state = {};
   SPI.reset();
 }
 

@@ -5,15 +5,15 @@
 #define SENIOR_PROJECT_RCA_SRC_SSOT_CONTROL_INPUT_H_
 #include <stdint.h>
 namespace ssot {
-// Accumulates a command plus four uppercase hex digits, then latches until
-// reinitialized.
+/// Accumulates a command plus four uppercase hex digits, then latches until
+/// reinitialized.
 struct ControlInput {
-  char command;
-  uint8_t digits;
-  uint16_t value;
-  uint32_t last_ms;
-  bool reading;
-  bool triggered;
+  char command;      ///< Command byte to start parsing.
+  uint8_t digits;    ///< Hex digits collected so far.
+  uint16_t value;    ///< Accumulated campaign value.
+  uint32_t last_ms;  ///< Time of the last accepted byte.
+  bool reading;      ///< Whether a command is in progress.
+  bool triggered;    ///< Whether this input has already emitted a command.
 };
 
 // Resets command parsing and its one-shot latch; null is ignored.

@@ -25,10 +25,14 @@ int16_t LoRa::init(Address address, float frequency, int8_t power,
   int16_t error = _module.begin(frequency, 125.0f, long_range ? 12 : 7,
                                 long_range ? 8 : 5, 0x12, power, 8, 0);
   if (error != RADIOLIB_ERR_NONE) return error;
-  if ((error = _module.setCurrentLimit(200)) != RADIOLIB_ERR_NONE) return error;
-  if ((error = _module.setCRC(true)) != RADIOLIB_ERR_NONE) return error;
-  if ((error = _module.invertIQ(false)) != RADIOLIB_ERR_NONE) return error;
-  if ((error = _module.explicitHeader()) != RADIOLIB_ERR_NONE) return error;
+  error = _module.setCurrentLimit(200);
+  if (error != RADIOLIB_ERR_NONE) return error;
+  error = _module.setCRC(true);
+  if (error != RADIOLIB_ERR_NONE) return error;
+  error = _module.invertIQ(false);
+  if (error != RADIOLIB_ERR_NONE) return error;
+  error = _module.explicitHeader();
+  if (error != RADIOLIB_ERR_NONE) return error;
   const int16_t version = _module.getChipVersion();
   if (version < RADIOLIB_ERR_NONE) return version;
   _radio_version = static_cast<uint8_t>(version);

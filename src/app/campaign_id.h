@@ -8,23 +8,18 @@
 // Creates the runtime correlation identifier carried by reliable DATA/ACK.
 namespace lora_app {
 
-// Returns a nonzero 16-bit ID for a new foreground session by mixing
-// `build_marker` (the firmware build identity) with the MCU timer in
-// microseconds. The marker is borrowed for this call; no allocation occurs.
-// Function-local history adjusts an immediate collision, so call only from
-// foreground code. This is correlation data, not authentication.
-// shortcut: 16-bit IDs can collide across resets, upgrade with retained state
-// or a wider field when reset-safe uniqueness is required.
+// Seeds the foreground campaign counter from the build identity and timer.
+// Subsequent calls advance the counter, skipping zero.
+// shortcut: 16-bit IDs can collide across resets or counter wrap, upgrade
+// with retained state or a wider field when reset-safe uniqueness is needed.
 inline uint16_t NextCampaignId(const char* build_marker) {
   static uint16_t previous = 0;
-  const uint32_t mixed = ssot::CampaignBuildId(build_marker) ^ micros();
-  uint16_t id = static_cast<uint16_t>(mixed ^ (mixed >> 16U));
-  if (id == 0 || id == previous) {
-    id = static_cast<uint16_t>(previous + 1U);
-    if (id == 0) id = 1;
+  if (previous == 0) {
+    const uint32_t mixed = ssot::CampaignBuildId(build_marker) ^ micros();
+    previous = static_cast<uint16_t>(mixed ^ (mixed >> 16U));
   }
-  previous = id;
-  return id;
+  previous = ssot::NextCampaignId(previous);
+  return previous;
 }
 
 }  // namespace lora_app

@@ -8,27 +8,28 @@ namespace ssot {
 // representation.
 enum class CampaignState { kIdle, kArmed, kRunning, kCompleted, kFailed };
 
-// Tracks one foreground-only campaign. Initialize before use; never share with
-// an ISR.
+/// Tracks one foreground-only campaign. Initialize before use; never share with
+/// an ISR.
 struct Campaign {
-  uint8_t source;
-  uint8_t destination;
-  uint16_t campaign_id;
-  uint8_t sequence;
-  uint8_t attempts;
-  CampaignState state;
-  bool single_packet;
+  uint8_t source;        ///< Peer source address.
+  uint8_t destination;   ///< Destination address.
+  uint16_t campaign_id;  ///< Session identifier.
+  uint8_t sequence;      ///< Current DATA sequence.
+  uint8_t attempts;      ///< DATA attempts for the current sequence.
+  CampaignState state;   ///< Current campaign phase.
+  bool single_packet;    ///< Whether the campaign stops after one message.
 };
 
-// Remembers all 256 byte-sized sequence values for one peer/session pair.
+/// Remembers all 256 byte-sized sequence values for one peer/session pair.
 struct DuplicateTracker {
-  uint8_t source;
-  uint16_t campaign_id;
-  bool initialized;
-  uint8_t seen[32];
+  uint8_t source;        ///< Peer source address.
+  uint16_t campaign_id;  ///< Session identifier.
+  bool initialized;      ///< Whether the source and campaign are bound.
+  uint8_t seen[32];      ///< Bitmap indexed by the eight-bit sequence.
 };
 
-// Resets caller-owned campaign state; a null campaign is ignored.
+// Resets caller-owned campaign state;  ///< Current campaign phase. a null
+// campaign is ignored.
 void CampaignInit(Campaign* campaign, uint8_t source, uint8_t destination,
                   bool single_packet);
 // Arms an idle campaign with its session; null or non-idle state fails.

@@ -1,9 +1,0 @@
-usage: arq_trial.py [-h] (--campaign | --mvp | --radio-only-bringup |
-                    --hello-lora | --prepare | --validate VALIDATE |
-                    --reverse-raw | --reverse-raw-no-tracker-reader |
-                    --reader-free-h01 | --tracker-rx-idle-control |
-                    --soak-stage {1-session,10-sessions,100-sessions,1000-sessions,1-hour,8-hours,24-hours})
-                    [--rf-path-confirmed] [--physical-mapping-verified]
-                    [--power-verified] [--rf-hardware-verified]
-                    [--authorize-rf-test]
-arq_trial.py: error: radio-only preflight incomplete: safe power, common ground, UPDI wiring and CP2102 backfeed conditions; radio/module/antenna compatibility and safe RF power; RF connector/antenna path not physically confirmed; applicable RF test authorization not confirmed

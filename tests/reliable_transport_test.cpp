@@ -33,7 +33,8 @@ struct FakeRadio {
     return send_error;
   }
   int16_t send_done() {
-    return completion_error ? completion_error : (done ? 1 : 0);
+    if (completion_error) return completion_error;
+    return done ? int16_t{1} : int16_t{0};
   }
   bool available() { return incoming; }
   int16_t recv(uint8_t* src, uint8_t* dst, uint8_t* payload, size_t capacity,
@@ -267,6 +268,125 @@ int main() {
     assert(p.bb.applied == 1);
   }
 
+  // Continuous unrelated traffic cannot keep a response window or retry open.
+  {
+    Pair p;
+    start_data(p, 1, UINT32_MAX - 100);
+    uint32_t now = UINT32_MAX - 99;
+    for (unsigned i = 1; i <= ssot::kMaxAttempts; ++i) {
+      p.a.incoming = true;
+      p.a.source = 9;
+      now += LORA_ACK_TIMEOUT_MS;
+      p.x.Poll(now);
+      if (i == ssot::kMaxAttempts) break;
+      assert(p.x.state() == Transport::State::kRetryPending);
+      p.a.incoming = true;
+      p.x.Poll(++now);
+      assert(p.x.state() == Transport::State::kTxData && p.a.starts == i + 1);
+      p.a.done = true;
+      p.x.Poll(++now);
+    }
+    assert(p.x.result() == Transport::Result::kAckTimeout);
+  }
+
+  // A delayed poll cannot extend the absolute transaction cap across wrap.
+  {
+    Pair p;
+    constexpr uint32_t start = UINT32_MAX - 500;
+    constexpr uint32_t cap =
+        ssot::kMaxAttempts * (LORA_TX_TIMEOUT_MS + LORA_ACK_TIMEOUT_MS);
+    start_data(p, 1, start);
+    p.x.Poll(start + cap);
+    assert(p.x.result() == Transport::Result::kAckTimeout && p.a.starts == 1);
+  }
+
+  // Invalid identity cannot bind an unarmed receiver to a campaign.
+  for (unsigned fault = 0; fault < 4; ++fault) {
+    Pair p;
+    start_data(p);
+    deliver(p.a, p.b);
+    switch (fault) {
+      case 0:
+        p.b.incoming_campaign_id = 0;
+        break;
+      case 1:
+        p.b.bytes[1] = 0;
+        break;
+      case 2:
+        p.b.receive_error = RADIOLIB_ERR_CRC_MISMATCH;
+        break;
+      case 3:
+        p.b.length = 2;
+        break;
+      default:
+        assert(false);
+    }
+    p.y.Poll(1);
+    assert(p.y.campaign_id() == 0 && p.bb.applied == 0 && p.b.starts == 0);
+  }
+
+  // A completed request cannot share its identity with a delayed ACK.
+  {
+    Pair p;
+    start_data(p);
+    successful_round_trip(p);
+    assert(!p.x.SendReliableData(1, hello, sizeof(hello) - 1, 5));
+    assert(p.x.Arm(0, 1, accept, &p.aa, p.session_id));
+    assert(!p.x.SendReliableData(1, hello, sizeof(hello) - 1, 6));
+    assert(p.a.starts == 1);
+    start_data(p, 2, 7);
+    p.a.source = 1;
+    p.a.destination = 0;
+    p.a.incoming_campaign_id = p.session_id;
+    p.a.length = 2;
+    p.a.bytes[0] = ssot::kAckType;
+    p.a.bytes[1] = 1;
+    p.a.incoming = true;
+    p.x.Poll(9);
+    assert(p.x.state() == Transport::State::kWaitResponse);
+  }
+
+  for (uint16_t i = 0; i < 10; ++i) {
+    Pair p;
+    p.session_id += i;
+    assert(p.x.Arm(0, 1, accept, &p.aa, p.session_id));
+    start_data(p);
+    deliver(p.a, p.b);
+    p.b.destination = 2;
+    p.y.Poll(2);
+    assert(p.events.destination_discards == 1 && p.bb.applied == 0 &&
+           p.b.starts == 0 && p.y.campaign_id() == 0);
+    successful_round_trip(p);
+  }
+
+  // Only the next 16-bit campaign can follow sequence 255 without RX rearm.
+  {
+    Pair p;
+    p.session_id = UINT16_MAX;
+    assert(p.x.Arm(0, 1, accept, &p.aa, p.session_id));
+    for (unsigned seq = 1; seq <= UINT8_MAX; ++seq) {
+      const uint32_t now = seq * 10;
+      start_data(p, static_cast<uint8_t>(seq), now);
+      deliver(p.a, p.b);
+      p.y.Poll(now + 2);
+      assert(p.b.bytes[0] == ssot::kAckType && p.b.bytes[1] == seq);
+      finish_reply(p.b, p.y, now + 3);
+      deliver(p.b, p.a);
+      p.x.Poll(now + 4);
+      assert(p.x.result() == Transport::Result::kAccepted);
+    }
+    assert(!p.x.SendReliableData(1, hello, sizeof(hello) - 1, 2600));
+    p.session_id = 1;
+    assert(p.x.Arm(0, 1, accept, &p.aa, p.session_id));
+    start_data(p, 1, 2601);
+    deliver(p.a, p.b);
+    p.b.incoming_campaign_id = UINT16_MAX - 1;
+    p.y.Poll(2602);
+    assert(p.bb.applied == 255 && p.b.starts == 255);
+    successful_round_trip(p, 2601);
+    assert(p.bb.applied == 256 && p.y.campaign_id() == 1);
+  }
+
   // A NACK requests a bounded retransmission; the next matching ACK accepts it.
   {
     Pair p;
@@ -359,9 +479,8 @@ int main() {
     p.a.bytes[1] = 1;
     p.a.incoming = true;
     p.x.Poll(LORA_ACK_TIMEOUT_MS + 3);
-    assert(p.x.state() == Transport::State::kRetryPending &&
-           p.x.result() == Transport::Result::kPending);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 4);
+    assert(p.x.state() == Transport::State::kTxData &&
+           p.x.result() == Transport::Result::kPending && p.a.starts == 2);
     p.a.done = true;
     p.x.Poll(LORA_ACK_TIMEOUT_MS + 5);
     p.a.incoming = true;
@@ -433,12 +552,13 @@ int main() {
     const uint8_t frames[][3] = {{ssot::kAckType, 2, 0},
                                  {ssot::kNackType, 2, 0},
                                  {ssot::kAckType, 1, 0xAA},
+                                 {ssot::kNackType, 1, 0xAA},
                                  {0xFE, 1, 0},
                                  {ssot::kAckType, 1, 0}};
-    const uint8_t sizes[] = {2, 2, 3, 2, 2};
+    const uint8_t sizes[] = {2, 2, 3, 3, 2, 2};
     for (unsigned i = 0; i < sizeof(sizes); ++i) {
       p.a.source = (i == 0) ? 9 : 1;
-      p.a.destination = (i == 1 || i == 4) ? 1 : 0;
+      p.a.destination = (i == 1 || i == 5) ? 1 : 0;
       p.a.incoming_campaign_id = p.session_id;
       p.a.length = sizes[i];
       memcpy(p.a.bytes, frames[i], sizes[i]);

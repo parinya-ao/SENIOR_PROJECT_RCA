@@ -39,6 +39,9 @@ int main() {
   assert(command.stride == 10 && command.budget == 2);
   assert(!arq::ParseCommand("FAULT 0 1", &command));
   assert(!arq::ParseCommand("FAULT 101 1", &command));
+  assert(!arq::ParseCommand("FAULT 4294967297 1", &command));
+  assert(!arq::ParseCommand("FAULT 65537 1", &command));
+  assert(!arq::ParseCommand("FAULT -4294967295 1", &command));
   assert(!arq::ParseCommand("FAULT 1 1 extra", &command));
   assert(!arq::ParseCommand("SEND 00", &command));
 #endif

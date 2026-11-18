@@ -74,7 +74,6 @@ def journal(nack: bool = False) -> list[dict[str, Any]]:
             ("HOST_GATEWAY", "?"),
             ("GATEWAY", "RADIO_READY"),
             ("HOST_GATEWAY", "S"),
-            ("GATEWAY", "DATA_TX_REQUESTED"),
         ]
     )
     attempts = 2 if nack else 1
@@ -82,9 +81,11 @@ def journal(nack: bool = False) -> list[dict[str, Any]]:
         rows.extend(
             [
                 ("GATEWAY", event("DATA_TX_BEGIN", attempt * 10 + 1, 8)),
-                ("GATEWAY", event("DATA_TX_DONE", attempt * 10 + 2, 8)),
             ]
         )
+        if attempt == 0:
+            rows.append(("GATEWAY", event("DATA_TX_REQUESTED", 1, 8)))
+        rows.append(("GATEWAY", event("DATA_TX_DONE", attempt * 10 + 2, 8)))
         if nack and attempt == 0:
             rows.extend(
                 [
@@ -187,6 +188,34 @@ class StableTransportProofTests(unittest.TestCase):
         self.assertTrue(result["valid"], result["issues"])
         self.assertEqual(result["attempts"], 1)
         self.assertEqual(result["ack_tx"], 1)
+
+    def test_structured_request_must_match_transaction_and_order(self) -> None:
+        request = event("DATA_TX_REQUESTED", 1, 8)
+        for invalid in (
+            request.replace("TYPE=8", "TYPE=3"),
+            request.replace("Q=1", "Q=2"),
+            request.replace(f"SID={CAMPAIGN_ID:04X}", "SID=0000"),
+            request.replace("E=0", "E=-1"),
+            "DATA_TX_REQUESTED",
+        ):
+            with self.subTest(invalid=invalid):
+                rows = journal()
+                match = next(row for row in rows if request in row["line"])
+                match["line"] = f"[GATEWAY] {invalid}"
+                result = rf_proof.validate_stable_transport(rows, image_evidence(), "run-1", "T01")
+                self.assertFalse(result["valid"])
+
+        for position in ("before start", "after TX completion", "duplicate"):
+            with self.subTest(position=position):
+                rows = journal()
+                i = next(i for i, row in enumerate(rows) if request in row["line"])
+                if position == "duplicate":
+                    rows.insert(i, rows[i].copy())
+                else:
+                    row = rows.pop(i)
+                    rows.insert(i - 2 if position == "before start" else i + 1, row)
+                result = rf_proof.validate_stable_transport(rows, image_evidence(), "run-1", "T01")
+                self.assertFalse(result["valid"])
 
     def test_controlled_nack_requires_retry_then_ack(self) -> None:
         result = rf_proof.validate_stable_transport(

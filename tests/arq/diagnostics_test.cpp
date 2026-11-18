@@ -1,5 +1,8 @@
 // Checks real queue behavior against the UPDI mailbox stub.
+// Load the implementation in this fixture to observe private foreground state.
+// NOLINTBEGIN(bugprone-suspicious-include)
 #include "../../stable_lib/arq/src/arq/diagnostics.cpp"
+// NOLINTEND(bugprone-suspicious-include)
 
 #include <assert.h>
 #include <string.h>
@@ -12,7 +15,7 @@ int main() {
   for (unsigned i = 0; i < application_config::logging::kSlotCount; ++i) {
     char* line = AcquireLine();
     assert(line);
-    strcpy(line, "AB\n");
+    memcpy(line, "AB\n", sizeof "AB\n");
   }
   assert(!AcquireLine() && OverflowCount() == 1);
   assert(PendingLineCount() == application_config::logging::kSlotCount);
@@ -28,12 +31,12 @@ int main() {
   for (char value : expected) {
     if (!value) break;
     FlushByte();
-    assert(registers[0] == value);
+    assert(registers[0] == static_cast<uint8_t>(value));
   }
   assert(PendingLineCount() == application_config::logging::kSlotCount - 1);
   char* recovered = AcquireLine();
   assert(recovered);
-  strcpy(recovered, "C\n");
+  memcpy(recovered, "C\n", sizeof "C\n");
   while (PendingLineCount()) FlushByte();
   // Long event names must not turn snprintf's required length into an index.
   char name[256];

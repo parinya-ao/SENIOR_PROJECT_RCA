@@ -444,3 +444,7 @@ artifacts/
 .automation/
 .claude/
 .continue/
+
+# Reproducible C++ quality outputs.
+/docs/generated/
+/reports/static_analysis/

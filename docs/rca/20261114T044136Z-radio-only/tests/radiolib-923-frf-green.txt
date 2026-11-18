@@ -1,7 +1,0 @@
-begin -> carrier E6C000 -> IRQ read/W1C -> TX/FIFO -> finish 833us/standby -> RX -> FIFO/CRC/clear: PASS
-begin -> carrier E6C000 -> IRQ read/W1C -> TX/FIFO -> finish 833us/standby -> RX -> FIFO/CRC/clear: PASS
-.
-----------------------------------------------------------------------
-Ran 1 test in 0.613s
-
-OK

@@ -61,6 +61,7 @@ void InitializeRadio(Address my_addr) {
   radio_ready = transport.Arm(local_address, kPeerAddress, AcceptData, nullptr,
                               lora_app::NextCampaignId(LORA_BUILD_ID));
   if (radio_ready) {
+    sequence = ssot::kSequence;
     updi_role_log_radio_version("GATEWAY", lora.version());
     updi_role_log_radio_profile(
         "GATEWAY", HELLO_RF_FREQUENCY_MHZ, HELLO_RF_TX_POWER_DBM,
@@ -72,12 +73,13 @@ void InitializeRadio(Address my_addr) {
 #endif
 }
 
-// Owns scheduler continuation state; all radio work runs outside Wire
-// callbacks.
+/// Owns scheduler continuation state outside Wire callbacks.
 class RadioTransactionTask : public virtual Task {
  public:
+  /// @return Task name shown by the scheduler.
   const char* GetName() override { return "LORA-ACK"; }
 
+  /// Advances the cooperative radio transaction.
   TASK(Run()) override {
     TASK_BEGIN();
     for (;;) {
@@ -87,7 +89,7 @@ class RadioTransactionTask : public virtual Task {
       started = false;
       continue;
 #else
-      if (!radio_ready) InitializeRadio(local_address);
+      if (!radio_ready || sequence == 0) InitializeRadio(local_address);
       if (!radio_ready ||
           !transport.SendReliableData(
               sequence, reinterpret_cast<const uint8_t*>(LORA_HELLO_PAYLOAD),
@@ -103,7 +105,7 @@ class RadioTransactionTask : public virtual Task {
       }
       if (transport.result() == reliable::Transport<LoRa>::Result::kAccepted) {
         updi_role_log("GATEWAY", "ACK_ACCEPTED");
-        if (sequence != UINT8_MAX) ++sequence;
+        ++sequence;
       } else {
         radio_ready =
             transport.state() != reliable::Transport<LoRa>::State::kFailed;
@@ -131,7 +133,7 @@ void RejectRadioConfiguration() {
 
 void StartRadioTransaction() {
   if (started) return;
-  if (!radio_ready) InitializeRadio(local_address);
+  if (!radio_ready || sequence == 0) InitializeRadio(local_address);
   started = radio_ready;
 }
 

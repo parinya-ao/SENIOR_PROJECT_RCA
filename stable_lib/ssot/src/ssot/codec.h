@@ -24,14 +24,20 @@ inline constexpr size_t kAckFrameSize = kRadioHeaderSize + kAckPayloadSize;
 inline constexpr uint8_t kMaxRetries = LORA_MAX_RETRIES;
 inline constexpr uint8_t kMaxAttempts = 1U + kMaxRetries;
 
-// Holds decoded fields only; native object bytes are never used as a wire
-// frame.
+/// @param current Current wire campaign ID.
+/// @return Successor campaign ID, skipping the unbound value zero.
+inline constexpr uint16_t NextCampaignId(uint16_t current) {
+  return current == UINT16_MAX ? 1 : static_cast<uint16_t>(current + 1U);
+}
+
+/// Holds decoded fields only; native object bytes are never used as a wire
+/// frame.
 struct Frame {
-  uint8_t destination;
-  uint8_t source;
-  uint16_t campaign_id;
-  uint8_t type;
-  uint8_t sequence;
+  uint8_t destination;   ///< Destination address.
+  uint8_t source;        ///< Source address.
+  uint16_t campaign_id;  ///< Transaction campaign identifier.
+  uint8_t type;          ///< Wire packet type.
+  uint8_t sequence;      ///< Wire sequence within the campaign.
 };
 
 // Encodes the existing DATA frame, including its four-byte header.

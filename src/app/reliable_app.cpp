@@ -105,14 +105,18 @@ static void FlushTransportEvent() {
 // NACK.
 static bool AcceptData(void*, uint8_t sequence, const uint8_t* data,
                        uint8_t length) {
-  static_cast<void>(sequence);
   if (reject_data) {
     reject_data = false;
+    RecordTransportEvent(nullptr, "DATA_REJECTED_TEST", ssot::kDataType,
+                         sequence, 0);
     return false;
   }
   if (length != ssot::kHelloPayloadSize || !data ||
-      memcmp(data, LORA_HELLO_PAYLOAD, length))
+      memcmp(data, LORA_HELLO_PAYLOAD, length) != 0) {
+    RecordTransportEvent(nullptr, "DATA_REJECTED_PAYLOAD", ssot::kDataType,
+                         sequence, 0);
     return false;
+  }
   memcpy(accepted_payload, data, length);
   return true;
 }
@@ -197,75 +201,173 @@ static void ReportStatus() {
   }
 }
 
-// Services transport before host commands, then drains diagnostics while idle.
-void Poll() {
-#if defined(LORA_NONBLOCKING_LOG) && LORA_NONBLOCKING_LOG
-  if (!transport.IsActive()) updi_role_log_service();
-#endif
-  if (!boot_logged && updi_uart_enabled()) {
-    updi_role_log_identity(kRole, kFirmware, __DATE__, __TIME__);
-    updi_role_log_boot(kRole, kFirmware, __DATE__, __TIME__);
-    updi_role_log(kRole, "BUILD_ID=" LORA_BUILD_ID);
-    updi_role_log(kRole, "CONFIG_FINGERPRINT=" LORA_CONFIG_FINGERPRINT);
-    updi_role_log(kRole, "PROTOCOL_VERSION=" LORA_PROTOCOL_VERSION_TEXT);
+// Emits startup identity when a monitor first attaches. Subsequent status
+// queries use ReportStatus and leave this one-time marker alone.
+static void ReportBoot() {
+  if (boot_logged || !updi_uart_enabled()) return;
+  updi_role_log_identity(kRole, kFirmware, __DATE__, __TIME__);
+  updi_role_log_boot(kRole, kFirmware, __DATE__, __TIME__);
+  updi_role_log(kRole, "BUILD_ID=" LORA_BUILD_ID);
+  updi_role_log(kRole, "CONFIG_FINGERPRINT=" LORA_CONFIG_FINGERPRINT);
+  updi_role_log(kRole, "PROTOCOL_VERSION=" LORA_PROTOCOL_VERSION_TEXT);
 #if HELLO_RF_DIAGNOSTIC_ONLY
-    updi_role_log(kRole, "RF_TX_DISABLED_DIAGNOSTIC");
+  updi_role_log(kRole, "RF_TX_DISABLED_DIAGNOSTIC");
 #else
-    updi_role_log(kRole, radio_ready ? "RADIO_INIT_OK" : "RADIO_INIT_FAILED");
-    if (radio_ready) {
-      updi_role_log_radio_version(kRole, lora.version());
-      updi_role_log_radio_profile(
-          kRole, HELLO_RF_FREQUENCY_MHZ, HELLO_RF_TX_POWER_DBM,
-          HELLO_RF_SPREADING_FACTOR, HELLO_RF_BANDWIDTH_KHZ,
-          HELLO_RF_CODING_RATE, HELLO_RF_SYNC_WORD, HELLO_RF_PREAMBLE_SYMBOLS,
-          HELLO_RF_CRC_ENABLED, HELLO_RF_IQ_INVERTED);
+  updi_role_log(kRole, radio_ready ? "RADIO_INIT_OK" : "RADIO_INIT_FAILED");
+  if (radio_ready) {
+    updi_role_log_radio_version(kRole, lora.version());
+    updi_role_log_radio_profile(
+        kRole, HELLO_RF_FREQUENCY_MHZ, HELLO_RF_TX_POWER_DBM,
+        HELLO_RF_SPREADING_FACTOR, HELLO_RF_BANDWIDTH_KHZ, HELLO_RF_CODING_RATE,
+        HELLO_RF_SYNC_WORD, HELLO_RF_PREAMBLE_SYMBOLS, HELLO_RF_CRC_ENABLED,
+        HELLO_RF_IQ_INVERTED);
 #if defined(LORA_ROLE_RECEIVER)
-      updi_role_log(kRole, "RX_READY");
+    updi_role_log(kRole, "RX_READY");
 #else
-      updi_role_log(kRole, "WAIT_START");
+    updi_role_log(kRole, "WAIT_START");
 #endif
-    }
-#endif
-    boot_logged = true;
   }
+#endif
+  boot_logged = true;
+}
 
 #if !HELLO_RF_DIAGNOSTIC_ONLY
-  const uint32_t now = millis();
 #if !defined(LORA_ROLE_RECEIVER) && HELLO_TEST_MODE
-  if (wrong_destination_tx_pending) {
-    const int16_t status = lora.send_done();
-    if (status == 1) {
-      wrong_destination_tx_pending = false;
-      updi_role_log(kRole, "WRONG_DEST_TX_DONE");
-    } else if (status < 0) {
-      wrong_destination_tx_pending = false;
-      radio_ready = false;
-      updi_role_log_status(kRole, "WRONG_DEST_TX_FAILED", status);
-    } else if (now - wrong_destination_started_at >= LORA_TX_TIMEOUT_MS) {
-      wrong_destination_tx_pending = false;
-      radio_ready = false;
-      const int16_t stopped = lora.sleep();
-      updi_role_log(kRole, "WRONG_DEST_TX_TIMEOUT");
-      updi_role_log_status(kRole, "WRONG_DEST_SLEEP", stopped);
-    }
-  } else {
-    transport.Poll(now);
+// Completes or parks the diagnostic TX using the regular unsigned TX budget.
+static void PollWrongDestination(uint32_t now) {
+  const int16_t status = lora.send_done();
+  if (status == 1) {
+    wrong_destination_tx_pending = false;
+    updi_role_log(kRole, "WRONG_DEST_TX_DONE");
+  } else if (status < 0) {
+    wrong_destination_tx_pending = false;
+    radio_ready = false;
+    updi_role_log_status(kRole, "WRONG_DEST_TX_FAILED", status);
+  } else if (now - wrong_destination_started_at >= LORA_TX_TIMEOUT_MS) {
+    wrong_destination_tx_pending = false;
+    radio_ready = false;
+    const int16_t stopped = lora.sleep();
+    updi_role_log(kRole, "WRONG_DEST_TX_TIMEOUT");
+    updi_role_log_status(kRole, "WRONG_DEST_SLEEP", stopped);
   }
-#else
-  transport.Poll(now);
+}
+
+// Uses the real PHY and frame shape while deliberately selecting a different
+// destination. The diagnostic does not open an ACK window or schedule retries.
+static void SendWrongDestination() {
+  if (!radio_ready || transport.IsActive()) return;
+  uint8_t packet[2 + ssot::kHelloPayloadSize] = {ssot::kDataType,
+                                                 ssot::kSequence};
+  memcpy(packet + 2, LORA_HELLO_PAYLOAD, ssot::kHelloPayloadSize);
+  char line[64];
+  snprintf(line, sizeof line,
+           "WRONG_DEST_TX_BEGIN DST=%u TYPE=%02X Q=%u APP=%u",
+           kWrongDestinationAddress, ssot::kDataType, ssot::kSequence,
+           static_cast<unsigned>(ssot::kHelloPayloadSize));
+  updi_role_log(kRole, line);
+  const int16_t status =
+      lora.send(kWrongDestinationAddress, transport.campaign_id(), packet,
+                static_cast<uint8_t>(sizeof packet));
+  if (status < 0) {
+    radio_ready = false;
+    updi_role_log_status(kRole, "WRONG_DEST_TX_FAILED", status);
+    return;
+  }
+  wrong_destination_started_at = millis();
+  wrong_destination_tx_pending = true;
+}
 #endif
+
+// Gives the pending diagnostic exclusive use of the radio. Advance the normal
+// DATA sequence once, after the transport reports a matching ACK.
+static void PollRadio(uint32_t now) {
+#if !defined(LORA_ROLE_RECEIVER) && HELLO_TEST_MODE
+  if (wrong_destination_tx_pending)
+    PollWrongDestination(now);
+  else
+#endif
+    transport.Poll(now);
   if (transport.state() == decltype(transport)::State::kFailed)
     radio_ready = false;
   if (transport.result() == decltype(transport)::Result::kAccepted &&
       !completion_reported) {
     completion_reported = true;
-    if (tx_sequence != UINT8_MAX) ++tx_sequence;
+    ++tx_sequence;
   }
   led_status.Poll(now, transport.IsTransmitting());
-#else
-  led_status.Poll(millis(), false);
+}
+
+#if !defined(LORA_ROLE_RECEIVER)
+// Starts one bounded DATA transaction. Rearm into a new campaign before
+// starting another sequence cycle, because zero is reserved on the wire.
+static void RequestData() {
+  if (!radio_ready || transport.IsActive()) return;
+  if (tx_sequence == 0) {
+    radio_ready = ArmRadio();
+    if (!radio_ready) return;
+    tx_sequence = ssot::kSequence;
+  }
+  completion_reported = false;
+  if (transport.SendReliableData(
+          tx_sequence, reinterpret_cast<const uint8_t*>(LORA_HELLO_PAYLOAD),
+          ssot::kHelloPayloadSize, millis()))
+    RecordTransportEvent(nullptr, "DATA_TX_REQUESTED", ssot::kDataType,
+                         tx_sequence, 0);
+}
 #endif
 
+// Handles one foreground command. Drop and reject controls modify only the
+// next response or payload decision for the physical fault tests.
+static void HandleRadioCommand(char command) {
+  switch (command) {
+    case 'P': {
+      const int16_t error = transport.Stop();
+      radio_ready = false;
+      updi_role_log_status(kRole, "PARKED", error);
+      break;
+    }
+    case 'N':
+      reject_data = true;
+      break;
+    case 'A':
+      reject_data = false;
+      break;
+    case 'D':
+      transport.SuppressNextResponse();
+      break;
+    case 'R':
+      radio_ready = ArmRadio();
+      completion_reported = false;
+      tx_sequence = ssot::kSequence;
+      updi_role_log(kRole, radio_ready ? "RX_READY" : "RADIO_INIT_FAILED");
+      break;
+#if !defined(LORA_ROLE_RECEIVER)
+    case 'S':
+      RequestData();
+      break;
+#if HELLO_TEST_MODE
+    case 'W':
+      SendWrongDestination();
+      break;
+#endif
+#endif
+    default:
+      break;
+  }
+}
+#endif
+
+// Services transport before host commands, then drains diagnostics while idle.
+void Poll() {
+#if defined(LORA_NONBLOCKING_LOG) && LORA_NONBLOCKING_LOG
+  if (!transport.IsActive()) updi_role_log_service();
+#endif
+  ReportBoot();
+#if HELLO_RF_DIAGNOSTIC_ONLY
+  led_status.Poll(millis(), false);
+#else
+  PollRadio(millis());
+#endif
   while (updi_uart_rx_poll()) {
     const char command = static_cast<char>(updi_uart_rx());
 #if !HELLO_RF_DIAGNOSTIC_ONLY && !defined(LORA_ROLE_RECEIVER) && HELLO_TEST_MODE
@@ -275,73 +377,8 @@ void Poll() {
       ReportStatus();
       continue;
     }
-#if HELLO_RF_DIAGNOSTIC_ONLY
-    continue;
-#else
-    if (command == 'P') {
-      const int16_t error = transport.Stop();
-      radio_ready = false;
-      updi_role_log_status(kRole, "PARKED", error);
-      continue;
-    }
-    if (command == 'N') {
-      reject_data = true;
-      continue;
-    }
-    if (command == 'A') {
-      reject_data = false;
-      continue;
-    }
-    if (command == 'D') {
-      transport.SuppressNextResponse();
-      continue;
-    }
-    if (command == 'R') {
-      radio_ready = ArmRadio();
-      completion_reported = false;
-      tx_sequence = ssot::kSequence;
-      if (radio_ready)
-        updi_role_log(kRole, "RX_READY");
-      else
-        updi_role_log(kRole, "RADIO_INIT_FAILED");
-      continue;
-    }
-#if !defined(LORA_ROLE_RECEIVER)
-#if HELLO_TEST_MODE
-    if (command == 'W') {
-      if (!radio_ready || transport.IsActive() || wrong_destination_tx_pending)
-        continue;
-      uint8_t packet[2 + ssot::kHelloPayloadSize] = {ssot::kDataType,
-                                                     ssot::kSequence};
-      memcpy(packet + 2, LORA_HELLO_PAYLOAD, ssot::kHelloPayloadSize);
-      char line[64];
-      snprintf(line, sizeof line,
-               "WRONG_DEST_TX_BEGIN DST=%u TYPE=%02X Q=%u APP=%u",
-               kWrongDestinationAddress, ssot::kDataType, ssot::kSequence,
-               static_cast<unsigned>(ssot::kHelloPayloadSize));
-      updi_role_log(kRole, line);
-      const int16_t status = lora.send(kWrongDestinationAddress, packet,
-                                       static_cast<uint8_t>(sizeof packet));
-      if (status < 0) {
-        radio_ready = false;
-        updi_role_log_status(kRole, "WRONG_DEST_TX_FAILED", status);
-        continue;
-      }
-      wrong_destination_started_at = millis();
-      wrong_destination_tx_pending = true;
-      continue;
-    }
-#endif
-    if (command == 'S') {
-      if (!radio_ready || transport.IsActive()) continue;
-      completion_reported = false;
-      if (transport.SendReliableData(
-              tx_sequence, reinterpret_cast<const uint8_t*>(LORA_HELLO_PAYLOAD),
-              ssot::kHelloPayloadSize, millis()))
-        RecordTransportEvent(nullptr, "DATA_TX_REQUESTED", ssot::kDataType,
-                             tx_sequence, 0);
-    }
-#endif
+#if !HELLO_RF_DIAGNOSTIC_ONLY
+    HandleRadioCommand(command);
 #endif
   }
   if (!transport.IsActive()) FlushTransportEvent();
