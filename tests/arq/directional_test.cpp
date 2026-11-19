@@ -8,7 +8,8 @@
 
 // Load the implementation in this fixture to observe private foreground state.
 // NOLINTBEGIN(bugprone-suspicious-include)
-#include "../../stable_lib/arq/application.cpp"
+#include "../../src/app/arq/application.cpp"
+#include "../../src/app/arq/radio.cpp"
 #include "../../stable_lib/arq/board_ssot.c"
 #include "../../stable_lib/arq/commands.cpp"
 #include "../../stable_lib/arq/diagnostics.cpp"
@@ -42,6 +43,21 @@ int main(int argc, char** argv) {
   cmd(text);
   Poll();
   assert(tx_starts == 1 && raw_regs[1] == 0x83);
+  const uint8_t expected_header[] = {1,
+                                     1,
+                                     arq::config::kSenderId,
+                                     arq::config::kReceiverId,
+                                     0x78,
+                                     0x56,
+                                     0x34,
+                                     0x12,
+                                     0,
+                                     0,
+                                     static_cast<uint8_t>(strlen(payload)),
+                                     0};
+  assert(sent_length == sizeof expected_header + strlen(payload));
+  assert(!memcmp(sent, expected_header, sizeof expected_header));
+  assert(!memcmp(sent + sizeof expected_header, payload, strlen(payload)));
   arq::Frame data;
   assert(arq::DecodeFrame(&data, sent, sent_length));
   assert(data.src == arq::config::kSenderId &&
@@ -115,6 +131,20 @@ int main(int argc, char** argv) {
   clear_log();
   Poll();
   assert(tx_starts == 1 && raw_regs[1] == 0x83);
+  const uint8_t expected_reply[] = {1,
+                                    static_cast<uint8_t>(nack ? 3 : 2),
+                                    arq::config::kReceiverId,
+                                    arq::config::kSenderId,
+                                    0x78,
+                                    0x56,
+                                    0x34,
+                                    0x12,
+                                    0,
+                                    0,
+                                    0,
+                                    static_cast<uint8_t>(nack ? 2 : 0)};
+  assert(sent_length == sizeof expected_reply);
+  assert(!memcmp(sent, expected_reply, sizeof expected_reply));
   arq::Frame response;
   assert(arq::DecodeFrame(&response, sent, sent_length));
   assert(response.type == (nack ? arq::kNack : arq::kAck));
@@ -132,6 +162,26 @@ int main(int argc, char** argv) {
   Poll();
   assert(completed == 1 && tx_starts == 1);  // stale TX IRQ
 #endif
+  clear_log();
+  status_next = 4;
+  FlushStatus();
+  assert(logged(
+#if defined(ARQ_ROLE_SENDER)
+      "app=0 dup=0 gen=0 sup=0 att=1 done=0"
+#else
+      nack ? "app=0 dup=0 gen=1 sup=0 att=1 done=1"
+           : "app=1 dup=0 gen=1 sup=0 att=1 done=1"
+#endif
+      ));
+#if !defined(ARQ_ROLE_SENDER)
+  clear_log();
+  FlushStatus();
+  assert(logged("e=RESULT s=12345678 q=0 a=0 rc=0 v=0"));
+  clear_log();
+  FlushStatus();
+  assert(logged("e=RTT_LAST s=12345678 q=0 a=0 rc=0 v=0"));
+#endif
+  status_next = 0;
   cmd("X");
   Poll();
   assert(parked && raw_regs[1] == 0x81);

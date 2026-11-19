@@ -64,8 +64,7 @@ run_support() {
 # Include active first-party support libraries omitted by the existing Python
 # runner. Vendor protothread headers and generated layout are not analyzed.
 mapfile -t support_sources < <(
-  rtk proxy rg --files stable_lib/gateway_app stable_lib/reliable_app \
-    stable_lib/shared stable_lib/task stable_lib/time-utils stable_lib/sleep \
+  rtk proxy rg --files stable_lib/shared stable_lib/task stable_lib/time-utils stable_lib/sleep \
     stable_lib/iw_core stable_lib/iw_avr128da28 \
     stable_lib/iw_tracker_radio_protocol stable_lib/lora stable_lib/updi_uart |
     rtk proxy rg '\.(cpp|h)$' |
@@ -100,7 +99,7 @@ support_flags=(
   -Istable_lib/shared
   -Istable_lib/task
   -Istable_lib/sleep
-  -Istable_lib/gateway_app
+  -Isrc/sender/appcode/gateway
   -Iinclude -Isrc
   -Itests/arq/stub -Itests/mvp_stub -Itests/gateway_stub
   -I.pio/libdeps/sender/Time

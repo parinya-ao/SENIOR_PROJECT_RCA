@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / "tools/config"))
 
 class ArqTests(unittest.TestCase):
     def test_adapter(self) -> None:
-        self.assertTrue((ROOT / "stable_lib/arq/application.cpp").exists(), "ARQ adapter missing")
+        self.assertTrue((ROOT / "src/app/arq/application.cpp").exists(), "ARQ adapter missing")
         with tempfile.TemporaryDirectory() as directory:
             objects = []
             for source in ("codec", "sender", "receiver"):

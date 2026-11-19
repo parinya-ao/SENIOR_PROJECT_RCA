@@ -23,20 +23,6 @@ constexpr char kHelloPayload[] = LORA_HELLO_PAYLOAD;
 static_assert(sizeof(kHelloPayload) - 1U == ssot::kHelloPayloadSize,
               "generated hello payload size mismatch");
 
-namespace {
-
-// Writes the four-byte RadioHead-compatible header into an already sized frame.
-void EncodeHeader(uint8_t destination, uint8_t source, uint16_t campaign_id,
-                  uint8_t* output) {
-  output[0] = destination;
-  output[1] = source;
-  // Campaign IDs stay little-endian to preserve the existing wire format.
-  output[2] = static_cast<uint8_t>(campaign_id & 0xffU);
-  output[3] = static_cast<uint8_t>(campaign_id >> 8U);
-}
-
-}  // namespace
-
 bool ssot::EncodeDataPayload(uint8_t sequence, uint8_t* output, size_t capacity,
                              size_t* output_size) {
   if (output_size == nullptr) {
@@ -99,7 +85,7 @@ bool ssot::EncodeDataFrame(uint8_t destination, uint8_t source,
     return false;
   }
 
-  EncodeHeader(destination, source, campaign_id, output);
+  EncodeRadioHeader({destination, source, campaign_id}, output);
   size_t payload_size = 0U;
   if (!ssot::EncodeDataPayload(sequence, output + ssot::kRadioHeaderSize,
                                capacity - ssot::kRadioHeaderSize,
@@ -122,7 +108,7 @@ bool ssot::EncodeAckFrame(uint8_t destination, uint8_t source,
     return false;
   }
 
-  EncodeHeader(destination, source, campaign_id, output);
+  EncodeRadioHeader({destination, source, campaign_id}, output);
   size_t payload_size = 0U;
   if (!ssot::EncodeAckPayload(sequence, output + ssot::kRadioHeaderSize,
                               capacity - ssot::kRadioHeaderSize,
@@ -136,16 +122,15 @@ bool ssot::EncodeAckFrame(uint8_t destination, uint8_t source,
 namespace {
 
 // Validates the full payload before publishing any fields to the caller.
-bool DecodePayloadFields(uint8_t destination, uint8_t source, uint8_t id,
-                         uint8_t flags, const uint8_t* payload,
-                         size_t payload_size, ssot::Frame* frame) {
+bool DecodePayloadFields(const ssot::RadioHeader& header,
+                         const uint8_t* payload, size_t payload_size,
+                         ssot::Frame* frame) {
   if (payload == nullptr || frame == nullptr || payload_size < 1U) {
     return false;
   }
 
   if (payload[0] == ssot::kDataType) {
-    if (payload_size != ssot::kDataPayloadSize ||
-        memcmp(payload + 2U, kHelloPayload, ssot::kHelloPayloadSize) != 0) {
+    if (payload_size != ssot::kDataPayloadSize) {
       return false;
     }
   } else if (payload[0] == ssot::kAckType || payload[0] == ssot::kNackType) {
@@ -156,10 +141,9 @@ bool DecodePayloadFields(uint8_t destination, uint8_t source, uint8_t id,
     return false;
   }
 
-  frame->destination = destination;
-  frame->source = source;
-  frame->campaign_id =
-      static_cast<uint16_t>(id | (static_cast<uint32_t>(flags) << 8U));
+  frame->destination = header.destination;
+  frame->source = header.source;
+  frame->campaign_id = header.campaign_id;
   frame->type = payload[0];
   frame->sequence = payload[1];
   return true;
@@ -170,8 +154,9 @@ bool DecodePayloadFields(uint8_t destination, uint8_t source, uint8_t id,
 bool ssot::DecodePayload(uint8_t destination, uint8_t source, uint8_t id,
                          uint8_t flags, const uint8_t* payload,
                          size_t payload_size, ssot::Frame* frame) {
-  return DecodePayloadFields(destination, source, id, flags, payload,
-                             payload_size, frame);
+  const uint8_t header[] = {destination, source, id, flags};
+  return DecodePayloadFields(DecodeRadioHeader(header), payload, payload_size,
+                             frame);
 }
 
 bool ssot::DecodeFrame(const uint8_t* input, size_t input_size,
@@ -180,31 +165,9 @@ bool ssot::DecodeFrame(const uint8_t* input, size_t input_size,
       input_size < ssot::kRadioHeaderSize + 1U) {
     return false;
   }
-  return DecodePayloadFields(input[0], input[1], input[2], input[3],
+  return DecodePayloadFields(DecodeRadioHeader(input),
                              input + ssot::kRadioHeaderSize,
                              input_size - ssot::kRadioHeaderSize, frame);
-}
-
-uint8_t ssot::ReplyForData(uint8_t destination, uint8_t source, uint8_t id,
-                           uint8_t flags, const uint8_t* payload,
-                           size_t payload_size, uint16_t session,
-                           ssot::Frame* frame) {
-  const uint16_t received =
-      static_cast<uint16_t>(id | (static_cast<uint32_t>(flags) << 8U));
-  if (session == 0U || received != session || source != ssot::kSenderAddress ||
-      destination != ssot::kReceiverAddress || payload == nullptr ||
-      payload_size < 2U || payload[0] != ssot::kDataType ||
-      payload[1] != ssot::kSequence || frame == nullptr) {
-    return 0U;
-  }
-
-  *frame = ssot::Frame{destination, source, session,
-                       static_cast<uint8_t>(ssot::kDataType),
-                       static_cast<uint8_t>(ssot::kSequence)};
-  return DecodePayloadFields(destination, source, id, flags, payload,
-                             payload_size, frame)
-             ? static_cast<uint8_t>(ssot::kAckType)
-             : static_cast<uint8_t>(ssot::kNackType);
 }
 
 bool ssot::AckMatches(const ssot::Frame* frame, uint8_t source,

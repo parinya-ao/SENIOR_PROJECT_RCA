@@ -97,7 +97,6 @@ class RawMvpTests(unittest.TestCase):
                         "-DLORA_ROLE_" + role,
                         "-Itests/raw_mvp_stub",
                         "-Iinclude",
-                        "-Istable_lib/firmware_app",
                         "-Istable_lib/mvp_app",
                         "-Istable_lib/reverse_raw_app",
                         "-Istable_lib/updi_uart",

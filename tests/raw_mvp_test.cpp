@@ -1,8 +1,11 @@
 // Runs the real MVP application through the composition root with host hardware
 // stubs.
 #define LORA_APP_MVP 1
-#include "../src/app/application.cpp"
-#include "../src/main.cpp"
+#if defined(LORA_ROLE_RECEIVER)
+#include "../src/receiver/appcode/main.cpp"
+#else
+#include "../src/sender/appcode/main.cpp"
+#endif
 #include "../stable_lib/mvp_app/mvp_app.cpp"
 
 using namespace mvp_app;

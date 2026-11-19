@@ -42,7 +42,6 @@ class ReliableTransportTests(unittest.TestCase):
                 "-Istable_lib/ssot",
                 "-Iinclude",
                 "-Istable_lib/lora",
-                "-Istable_lib/reliable_app",
                 "-Istable_lib/updi_uart",
                 source,
                 *extra,

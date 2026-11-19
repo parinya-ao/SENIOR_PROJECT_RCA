@@ -1,7 +1,5 @@
 // Coordinates ARQ command input, radio work, deadlines, and deferred logs.
 #include <Arduino.h>
-#include <RadioLib.h>
-#include <SPI.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,42 +10,41 @@
 #include "arq_application.h"
 #include "arq_commands.h"
 #include "arq_diagnostics.h"
-#include "arq_radio_only.h"
-#include "generated/board_ssot.h"
+#include "radio.h"
 
 namespace arq {
 namespace app {
-// Radio objects have static lifetime; hardware initialization happens only in
-// setup.
-static Module module(board_ssot.cs, board_ssot.irq, board_ssot.rst,
-                     board_ssot.dio1, SPI,
-                     SPISettings(ARQ_SPI_HZ, MSBFIRST, SPI_MODE0));
-static SX1276 radio(&module);
 // Foreground state machines; radio IRQ flags are consumed by loop, never
 // mutated in ISRs.
+#if defined(ARQ_ROLE_SENDER)
 static arq::Sender sender;
+static uint32_t control_rejects;
+#else
 static arq::Receiver receiver;
+static bool response_wait;
+static uint32_t response_at, generated, suppressed, completed;
+#if defined(ARQ_TEST_MODE)
+static uint16_t fault_stride, fault_budget;
+#endif
+#endif
 // Adapter latches coordinate startup, TX ownership, deferred replies and safe
 // parking.
-static bool ready, radio_tx, response_wait, attached, parked;
+static bool ready, radio_tx, attached, parked;
 // Shared foreground TX/RX storage; wire_length always bounds the valid frame
 // bytes.
 static uint8_t wire[arq::kMaxFrameBytes], wire_length, reset_flags;
 // Millisecond deadlines use unsigned elapsed arithmetic to tolerate clock
 // rollover.
-static uint32_t tx_started, response_at;
+static uint32_t tx_started;
 // Cumulative response/TX counters are diagnostic only and do not drive protocol
 // decisions.
-static uint32_t generated, suppressed, attempted, completed, crc_errors;
+static uint32_t attempted, crc_errors;
 // Reception counters distinguish PHY completion from successful protocol
 // decoding.
-static uint32_t rx_done, decode_errors, control_rejects;
+static uint32_t rx_done, decode_errors;
 // Last observed receive IRQ bits are retained until captured in the event
 // stream.
 static uint16_t last_rx_flags;
-// Explicit test commands control bounded response suppression; zero disables
-// injection.
-static uint16_t fault_stride, fault_budget;
 // Foreground command accumulator owns its bounded input buffer.
 static arq::CommandInput command_input;
 // Retains the first startup status for incremental STATUS reporting.
@@ -78,8 +75,9 @@ static const arq::diagnostics::EventContext& GetEventContext() {
   static constexpr arq::diagnostics::EventContext kContext{
       sender.session, sender.frame.sequence, sender.attempts};
 #else
+  static constexpr uint8_t kNoDataAttempts = 0;
   static constexpr arq::diagnostics::EventContext kContext{
-      receiver.session, receiver.last_sequence, sender.attempts};
+      receiver.session, receiver.last_sequence, kNoDataAttempts};
 #endif
   return kContext;
 }
@@ -90,14 +88,8 @@ static void RecordRadioRegisters(const char* name) {
       0x01, 0x06, 0x07, 0x08, 0x09, 0x4d, 0x1d, 0x1e, 0x26, 0x39, 0x33, 0x3b,
       0x12, 0x13, 0x10, 0x1b, 0x40, 0x11, 0x18, 0x31, 0x42, 0x20, 0x21, 0x41};
   uint8_t values[sizeof addresses];
-  for (size_t i = 0; i < sizeof addresses; i++) {
-    SPI.beginTransaction(SPISettings(ARQ_SPI_HZ, MSBFIRST, SPI_MODE0));
-    digitalWrite(board_ssot.cs, LOW);
-    SPI.transfer(addresses[i]);
-    values[i] = SPI.transfer(0);
-    digitalWrite(board_ssot.cs, HIGH);
-    SPI.endTransaction();
-  }
+  for (size_t i = 0; i < sizeof addresses; ++i)
+    values[i] = ReadRadioRegister(addresses[i]);
   arq::diagnostics::RecordFrame(GetEventContext(), name, values, sizeof values,
                                 0, 0);
 }
@@ -110,14 +102,7 @@ static void RecordReceiveDiagnostics(const char* name, uint16_t flags) {
                        0,
                        0,
                        0};
-  for (uint8_t i = 0; i < 4; i++) {
-    SPI.beginTransaction(SPISettings(ARQ_SPI_HZ, MSBFIRST, SPI_MODE0));
-    digitalWrite(board_ssot.cs, LOW);
-    SPI.transfer(0x14 + i);
-    values[2 + i] = SPI.transfer(0);
-    digitalWrite(board_ssot.cs, HIGH);
-    SPI.endTransaction();
-  }
+  for (uint8_t i = 0; i < 4; ++i) values[2 + i] = ReadRadioRegister(0x14 + i);
   arq::diagnostics::RecordFrame(GetEventContext(), name, values, sizeof values,
                                 0, 0);
 }
@@ -126,13 +111,67 @@ static void RecordReceiveDiagnostics(const char* name, uint16_t flags) {
 static void ScheduleStatus() {
   if (!status_next) status_next = 1;
 }
+// Preserve the sender-only STATUS fields as zeros on the responder.
+static void RecordStatusTiming(uint8_t step) {
+  if (step == 5) {
+#if defined(ARQ_ROLE_SENDER)
+    const arq::Result result = sender.result;
+    const arq::SenderState state = sender.state;
+#else
+    constexpr arq::Result result = arq::Result::kPending;
+    constexpr arq::SenderState state = arq::SenderState::kIdle;
+#endif
+    arq::diagnostics::RecordEvent(GetEventContext(), "RESULT",
+                                  static_cast<int16_t>(result),
+                                  static_cast<uint32_t>(state));
+    return;
+  }
+  static const char* const fields[] = {"RTT_LAST", "RTT_MIN", "RTT_MAX",
+                                       "RTT_COUNT"};
+  const uint8_t index = step - 6;
+#if defined(ARQ_ROLE_SENDER)
+  const uint32_t values[] = {sender.rtt_last, sender.rtt_min, sender.rtt_max,
+                             sender.rtt_count};
+  const uint32_t value = values[index];
+#else
+  constexpr uint32_t value = 0;
+#endif
+  arq::diagnostics::RecordEvent(GetEventContext(), fields[index], 0, value);
+}
+// The initiator keeps the responder-only counters as zeros in STATUS.
+static void RecordStatusCounters() {
+#if defined(ARQ_ROLE_SENDER)
+  constexpr uint32_t deliveries = 0, duplicates = 0, generated = 0,
+                     suppressed = 0, completed = 0;
+#else
+  const uint32_t deliveries = receiver.deliveries;
+  const uint32_t duplicates = receiver.duplicates;
+#endif
+  char* out = arq::diagnostics::AcquireLine();
+  if (out)
+    snprintf(out, arq::diagnostics::kLineCapacity,
+             "A t=%lu e=STATUS s=%08lX app=%lu dup=%lu gen=%lu sup=%lu "
+             "att=%lu done=%lu crc=%lu overflow=%lu ready=%u\n",
+             static_cast<unsigned long>(millis()),
+             static_cast<unsigned long>(CurrentSession()),
+             static_cast<unsigned long>(deliveries),
+             static_cast<unsigned long>(duplicates),
+             static_cast<unsigned long>(generated),
+             static_cast<unsigned long>(suppressed),
+             static_cast<unsigned long>(attempted),
+             static_cast<unsigned long>(completed),
+             static_cast<unsigned long>(crc_errors),
+             static_cast<unsigned long>(arq::diagnostics::OverflowCount()),
+             ready);
+}
 // Emits at most one pending status item per call so logging cannot monopolize
 // loop.
 static void FlushStatus() {
   // Yield between status lines so an RX/response burst retains the bounded
   // logger.
   if (!status_next || arq::diagnostics::PendingLineCount()) return;
-  switch (status_next++) {
+  const uint8_t step = status_next++;
+  switch (step) {
     case 1:
       arq::diagnostics::RecordEvent(GetEventContext(), "BOOT", startup_status,
                                     reset_flags);
@@ -153,45 +192,15 @@ static void FlushStatus() {
                  ARQ_CONFIG_HASH);
       break;
     }
-    case 4: {
-      char* out = arq::diagnostics::AcquireLine();
-      if (out)
-        snprintf(out, arq::diagnostics::kLineCapacity,
-                 "A t=%lu e=STATUS s=%08lX app=%lu dup=%lu gen=%lu sup=%lu "
-                 "att=%lu done=%lu crc=%lu overflow=%lu ready=%u\n",
-                 static_cast<unsigned long>(millis()),
-                 static_cast<unsigned long>(CurrentSession()),
-                 static_cast<unsigned long>(receiver.deliveries),
-                 static_cast<unsigned long>(receiver.duplicates),
-                 static_cast<unsigned long>(generated),
-                 static_cast<unsigned long>(suppressed),
-                 static_cast<unsigned long>(attempted),
-                 static_cast<unsigned long>(completed),
-                 static_cast<unsigned long>(crc_errors),
-                 static_cast<unsigned long>(arq::diagnostics::OverflowCount()),
-                 ready);
+    case 4:
+      RecordStatusCounters();
       break;
-    }
     case 5:
-      arq::diagnostics::RecordEvent(GetEventContext(), "RESULT",
-                                    static_cast<int16_t>(sender.result),
-                                    static_cast<uint32_t>(sender.state));
-      break;
     case 6:
-      arq::diagnostics::RecordEvent(GetEventContext(), "RTT_LAST", 0,
-                                    sender.rtt_last);
-      break;
     case 7:
-      arq::diagnostics::RecordEvent(GetEventContext(), "RTT_MIN", 0,
-                                    sender.rtt_min);
-      break;
     case 8:
-      arq::diagnostics::RecordEvent(GetEventContext(), "RTT_MAX", 0,
-                                    sender.rtt_max);
-      break;
     case 9:
-      arq::diagnostics::RecordEvent(GetEventContext(), "RTT_COUNT", 0,
-                                    sender.rtt_count);
+      RecordStatusTiming(step);
       break;
     case 10:
       arq::diagnostics::RecordEvent(GetEventContext(), "RX_DONE_COUNT", 0,
@@ -201,10 +210,14 @@ static void FlushStatus() {
       arq::diagnostics::RecordEvent(GetEventContext(), "DECODE_ERRORS", 0,
                                     decode_errors);
       break;
-    case 12:
+    case 12: {
+#if !defined(ARQ_ROLE_SENDER)
+      constexpr uint32_t control_rejects = 0;
+#endif
       arq::diagnostics::RecordEvent(GetEventContext(), "CONTROL_REJECTS", 0,
                                     control_rejects);
       break;
+    }
     case 13:
       // Read-only register evidence separates RX mode/configuration from RF
       // path failure.
@@ -222,16 +235,17 @@ static void FlushStatus() {
 // Restores continuous receive; reports failure before the sender starts its ACK
 // timer.
 static bool RestoreReceive() {
-  receiver.state =
-      arq::ReceiverState::kReturningToRx;  // RX restoration is checked after
-                                           // every response/error.
+#if !defined(ARQ_ROLE_SENDER)
+  receiver.state = arq::ReceiverState::kReturningToRx;
+#endif
   RecordReceiveDiagnostics("RX_RESTART", radio.getIRQFlags());
   int16_t rc = radio.startReceive();
   arq::diagnostics::RecordEvent(GetEventContext(), "RX_READY", rc, 0);
 #if defined(ARQ_ROLE_SENDER)
   if (!rc) RecordRadioRegisters("RX_STATE");
-#endif
+#else
   receiver.state = arq::ReceiverState::kListening;
+#endif
   if (rc) {
     ready = false;
     arq::diagnostics::RecordEvent(GetEventContext(), "RX_ERROR", rc, 0);
@@ -244,12 +258,45 @@ static bool RestoreReceive() {
 static void FailAdapter(int16_t rc) {
   ready = false;
   arq::diagnostics::RecordEvent(GetEventContext(), "ADAPTER_ERROR", rc, 0);
+#if defined(ARQ_ROLE_SENDER)
   if (arq::IsSenderActive(&sender)) {
     // Fatal adapter errors terminate even if the sender was waiting in RX.
     sender.state = arq::SenderState::kFailed;
     sender.result = arq::Result::kRadioError;
     sender.used_up = true;
   }
+#endif
+}
+static void ResetStatistics() {
+  attempted = crc_errors = rx_done = decode_errors = 0;
+  last_rx_flags = 0;
+#if defined(ARQ_ROLE_SENDER)
+  control_rejects = 0;
+#else
+  generated = suppressed = completed = 0;
+#if defined(ARQ_TEST_MODE)
+  fault_stride = fault_budget = 0;
+#endif
+#endif
+}
+// Arms the selected protocol direction and resets counters for a new session.
+static void ArmSession(uint32_t value) {
+  bool ok = false;
+  uint32_t previous = CurrentSession();
+#if defined(ARQ_ROLE_SENDER)
+  ok = arq::ArmSender(&sender, value);
+  const bool stopped = sender.stopped;
+#else
+  if (receiver.armed && receiver.session == value)
+    ok = true;
+  else if (!radio_tx && !response_wait)
+    ok = arq::ArmReceiver(&receiver, value);
+  const bool stopped = receiver.stopped;
+#endif
+  if (ok && previous != value) ResetStatistics();
+  if (ok && ready && parked && !stopped) ok = RestoreReceive();
+  arq::diagnostics::RecordEvent(GetEventContext(), ok ? "ARM" : "ARM_REJECT",
+                                ready ? 0 : -1, value);
 }
 // Executes one complete null-terminated bench command from the foreground
 // buffer.
@@ -264,38 +311,16 @@ static void ExecuteCommand(const char* text) {
     return;
   }
   if (action.kind == arq::CommandKind::kStop) {
+#if defined(ARQ_ROLE_SENDER)
     arq::StopSender(&sender);
+#else
     receiver.stopped = true;
+#endif
     arq::diagnostics::RecordEvent(GetEventContext(), "STOP", 0, 0);
     return;
   }
   if (action.kind == arq::CommandKind::kArm) {
-    const uint32_t value = action.session;
-    bool ok = false;
-    uint32_t previous = CurrentSession();
-#if defined(ARQ_ROLE_SENDER)
-    ok = arq::ArmSender(&sender, value);
-#else
-    if (receiver.armed && receiver.session == value)
-      ok = true;
-    else if (!radio_tx && !response_wait)
-      ok = arq::ArmReceiver(&receiver, value);
-#endif
-    if (ok && previous != value) {
-      generated = suppressed = attempted = completed = crc_errors = 0;
-      rx_done = decode_errors = control_rejects = 0;
-      last_rx_flags = 0;
-      fault_stride = fault_budget = 0;
-    }
-    if (ok && ready && parked) {
-#if defined(ARQ_ROLE_SENDER)
-      if (!sender.stopped) ok = RestoreReceive();
-#else
-      if (!receiver.stopped) ok = RestoreReceive();
-#endif
-    }
-    arq::diagnostics::RecordEvent(GetEventContext(), ok ? "ARM" : "ARM_REJECT",
-                                  ready ? 0 : -1, value);
+    ArmSession(action.session);
     return;
   }
 #if defined(ARQ_ROLE_SENDER)
@@ -337,56 +362,19 @@ static void FeedCommandByte(char value) {
 // Initializes logging, role-specific power isolation, SPI and the existing
 // radio profile.
 void Initialize() {
+#if defined(ARQ_ROLE_SENDER)
   arq::InitSender(&sender);
+#else
   arq::InitReceiver(&receiver);
-  reset_flags = GPR_GPR0;
-#if defined(ARQ_RADIO_ONLY_DIAGNOSTIC) && defined(LORA_ROLE_RECEIVER)
-  if (!PrepareTrackerForRadioOnly()) {
-    startup_status = -1;
-    arq::diagnostics::RecordEvent(GetEventContext(), "SD_PRESENT_BLOCKED",
-                                  startup_status, 0);
-    return;
-  }
 #endif
-  // Tracker board init keeps EN-LORA low through DATA/ACK; omit the diagnostic
-  // flag to restore normal setup.
-  board_ssot_init();
-  delay(application_config::startup::kRadioSettleMs);
-  if (!SPI.swap(ARQ_SPI_ROUTE)) {
-    startup_status = -1;
-    return;
-  }
-  SPI.begin();
-  radio.reset();
-  bool supported = false;
-  for (uint8_t i = 0; i < application_config::startup::kVersionProbeAttempts;
-       i++) {
-    SPI.beginTransaction(SPISettings(ARQ_SPI_HZ, MSBFIRST, SPI_MODE0));
-    digitalWrite(board_ssot.cs, LOW);
-    SPI.transfer(0x42);
-    uint8_t version = SPI.transfer(0);
-    digitalWrite(board_ssot.cs, HIGH);
-    SPI.endTransaction();
-    supported = version == RADIOLIB_SX1278_CHIP_VERSION ||
-                version == RADIOLIB_SX1278_CHIP_VERSION_ALT ||
-                version == RADIOLIB_SX1278_CHIP_VERSION_RFM9X;
-    if (supported) break;
-    delay(application_config::startup::kRadioSettleMs);
-  }
-  int16_t rc = supported ? 0 : RADIOLIB_ERR_CHIP_NOT_FOUND;
-  if (!rc)
-    rc = radio.begin(ARQ_FREQUENCY_HZ / 1000000.0f, ARQ_BANDWIDTH_KHZ,
-                     ARQ_SPREADING_FACTOR, ARQ_CODING_RATE, ARQ_SYNC_WORD,
-                     ARQ_TX_POWER_DBM, ARQ_PREAMBLE_SYMBOLS, 0);
-  // The 915 MHz profile uses the HF bank; clear only bit 3 and preserve mode
-  // bits.
-  if (!rc) rc = module.SPIsetRegValue(RADIOLIB_SX127X_REG_OP_MODE, 0, 3, 3);
-  if (!rc) rc = radio.setOutputPower(ARQ_TX_POWER_DBM, false);
-  if (!rc) rc = radio.explicitHeader();
-  if (!rc) rc = radio.setCRC(ARQ_CRC_ENABLED);
-  if (!rc) rc = radio.invertIQ(ARQ_IQ_INVERTED);
-  if (!rc) rc = radio.standby();
+  reset_flags = GPR_GPR0;
+  bool sd_blocked = false, spi_selected = false;
+  const int16_t rc = InitializeRadio(&sd_blocked, &spi_selected);
   startup_status = rc;
+  if (sd_blocked)
+    arq::diagnostics::RecordEvent(GetEventContext(), "SD_PRESENT_BLOCKED", rc,
+                                  0);
+  if (!spi_selected) return;
   ready = !rc;
   parked = !rc;
   randomSeed(micros());
@@ -489,6 +477,25 @@ static void HandleReceive(uint32_t now, uint16_t flags) {
       arq::ReceiverState::kSendingResponse;  // Response guard precedes RF TX.
 #endif
 }
+// Handles TxDone and timeout for the current direction before processing RX.
+static void PollTransmit(uint32_t now, uint16_t flags) {
+  bool done = flags & RADIOLIB_SX127X_CLEAR_IRQ_FLAG_TX_DONE;
+  if (done || now - tx_started >= ARQ_TX_MS) {
+    int16_t rc = radio.finishTransmit();
+    radio_tx = false;
+    arq::diagnostics::RecordEvent(GetEventContext(),
+                                  done ? "TX_DONE" : "TX_TIMEOUT", rc, flags);
+#if defined(ARQ_ROLE_SENDER)
+    const bool rx = RestoreReceive();
+    arq::HandleTxCompletion(&sender, millis(), done && !rc && rx);
+    if (sender.state == arq::SenderState::kWaitingAck) sender.tx_done = now;
+#else
+    RestoreReceive();
+    if (done && !rc) ++completed;
+#endif
+    if (rc) FailAdapter(rc);
+  }
+}
 // Services commands, logging and bounded radio state transitions without heap
 // allocation.
 void Poll() {
@@ -496,42 +503,32 @@ void Poll() {
   attached = updi_uart_enabled();
   if (updi_uart_rx_poll()) FeedCommandByte(static_cast<char>(updi_uart_rx()));
   uint32_t now = millis();
-  arq::SenderState old = sender.state;
+#if defined(ARQ_ROLE_SENDER)
+  const arq::SenderState old = sender.state;
+  constexpr bool response_wait = false;
+#endif
   if (ready && !parked) {
     uint16_t flags = radio.getIRQFlags();
     if (radio_tx) {
-      bool done = flags & RADIOLIB_SX127X_CLEAR_IRQ_FLAG_TX_DONE;
-      if (done || now - tx_started >= ARQ_TX_MS) {
-        int16_t rc = radio.finishTransmit();
-        radio_tx = false;
-        arq::diagnostics::RecordEvent(
-            GetEventContext(), done ? "TX_DONE" : "TX_TIMEOUT", rc, flags);
-#if defined(ARQ_ROLE_SENDER)
-        const bool rx = RestoreReceive();
-        arq::HandleTxCompletion(&sender, millis(), done && !rc && rx);
-        if (sender.state == arq::SenderState::kWaitingAck) sender.tx_done = now;
-#else
-        RestoreReceive();
-        if (done && !rc) ++completed;
-#endif
-        if (rc) FailAdapter(rc);
-      }
+      PollTransmit(now, flags);
     } else if (!response_wait &&
                (flags & RADIOLIB_SX127X_CLEAR_IRQ_FLAG_RX_DONE))
       HandleReceive(now, flags);
+#if defined(ARQ_ROLE_SENDER)
     // Read matching controls before evaluating deadlines or initiating a retry.
     if (sender.state == arq::SenderState::kWaitingAck &&
         arq::IsDeadlineDue(now, sender.retry_at))
       RecordReceiveDiagnostics("RX_TIMEOUT", radio.getIRQFlags());
     arq::PollSender(&sender, now);
-#if defined(ARQ_ROLE_SENDER)
     bool start = sender.state == arq::SenderState::kTransmitting && !radio_tx;
     if (start) wire_length = arq::EncodeFrame(&sender.frame, wire, sizeof wire);
 #else
     bool start = response_wait && arq::IsDeadlineDue(now, response_at);
 #endif
     if (start && ready) {
+#if !defined(ARQ_ROLE_SENDER)
       response_wait = false;
+#endif
       int16_t rc = radio.standby();
       if (!rc) rc = radio.startTransmit(wire, wire_length);
       ++attempted;
@@ -558,6 +555,7 @@ void Poll() {
       }
     }
   }
+#if defined(ARQ_ROLE_SENDER)
   if (old != sender.state && (sender.state == arq::SenderState::kDelivered ||
                               sender.state == arq::SenderState::kFailed)) {
     static const char* const names[] = {"PENDING",           "DELIVERED",
@@ -570,13 +568,11 @@ void Poll() {
       arq::diagnostics::RecordEvent(GetEventContext(), "RTT", 0,
                                     sender.rtt_last);
   }
-#if defined(ARQ_ROLE_SENDER)
-  bool stopped = sender.stopped;
+  const bool idle = sender.stopped && !arq::IsSenderActive(&sender);
 #else
-  bool stopped = receiver.stopped;
+  const bool idle = receiver.stopped && !response_wait;
 #endif
-  if (ready && !parked && stopped && !radio_tx && !response_wait &&
-      !arq::IsSenderActive(&sender)) {
+  if (ready && !parked && idle && !radio_tx) {
     // X parks only after the outstanding exchange terminates.
     int16_t rc = radio.standby();
     if (rc)

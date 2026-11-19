@@ -630,3 +630,7 @@ artifacts/**
 .python-version
 .repomixignore
 *.js
+*.md
+**/LICENSE
+*.css
+*.py

@@ -6,10 +6,10 @@
 #include <stdint.h>
 
 #include "generated/lora_shared_config.h"
+#include "ssot_radio_header.h"
 namespace ssot {
 // Generated wire constants remain separate from native state
 // representation.
-inline constexpr size_t kRadioHeaderSize = 4U;
 inline constexpr uint8_t kDataType = LORA_DATA_TYPE;
 inline constexpr uint8_t kAckType = LORA_ACK_TYPE;
 inline constexpr uint8_t kNackType = LORA_NACK_TYPE;
@@ -91,7 +91,8 @@ bool EncodeNackPayload(uint8_t sequence, uint8_t* output, size_t capacity,
 bool EncodeAckFrame(uint8_t destination, uint8_t source, uint16_t campaign_id,
                     uint8_t sequence, uint8_t* output, size_t capacity,
                     size_t* output_size);
-/// @brief Validates and decodes the complete radio frame.
+/// @brief Validates and decodes the wire structure. DATA acceptance is
+/// application policy.
 /// @param input Readable wire-frame bytes.
 /// @param input_size Number of readable bytes in `input`.
 /// @param frame Receives decoded fields only after full validation.
@@ -110,20 +111,6 @@ bool DecodeFrame(const uint8_t* input, size_t input_size, Frame* frame);
 bool DecodePayload(uint8_t destination, uint8_t source, uint8_t id,
                    uint8_t flags, const uint8_t* payload, size_t payload_size,
                    Frame* frame);
-/// @brief Validates a DATA context and selects its ACK or NACK response.
-/// @param destination Destination address from the radio HAL.
-/// @param source Source address from the radio HAL.
-/// @param id Existing radio-header ID byte.
-/// @param flags Existing radio-header flags byte.
-/// @param payload Readable DATA payload bytes.
-/// @param payload_size Exact payload length.
-/// @param session Expected nonzero campaign identifier.
-/// @param frame Receives the decoded frame for a matching DATA context.
-/// @return ACK or NACK type for a matching session, or zero for unrelated or
-///   invalid context. A matching malformed application payload selects NACK.
-uint8_t ReplyForData(uint8_t destination, uint8_t source, uint8_t id,
-                     uint8_t flags, const uint8_t* payload, size_t payload_size,
-                     uint16_t session, Frame* frame);
 /// @brief Checks whether an ACK completes the specified DATA transaction.
 /// @param frame Decoded control frame, or null.
 /// @param source Expected ACK sender.

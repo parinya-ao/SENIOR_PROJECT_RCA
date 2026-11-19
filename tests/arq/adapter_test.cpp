@@ -6,7 +6,8 @@
 
 // Load the implementation in this fixture to observe private foreground state.
 // NOLINTBEGIN(bugprone-suspicious-include)
-#include "../../stable_lib/arq/application.cpp"
+#include "../../src/app/arq/application.cpp"
+#include "../../src/app/arq/radio.cpp"
 #include "../../stable_lib/arq/board_ssot.c"
 #include "../../stable_lib/arq/commands.cpp"
 #include "../../stable_lib/arq/diagnostics.cpp"
@@ -157,7 +158,12 @@ int main(int argc, char** argv) {
     return 0;
   }
   Initialize();
-  assert(ready && !sender.armed && !receiver.armed);
+  assert(ready);
+#if defined(ARQ_ROLE_SENDER)
+  assert(!sender.armed);
+#else
+  assert(!receiver.armed);
+#endif
   assert(raw_regs[1] == 0x81);  // Standby keeps the mode bits while clearing
                                 // only the HF/LF selector.
 #if defined(ARQ_RADIO_ONLY_DIAGNOSTIC) && defined(LORA_ROLE_RECEIVER)
@@ -186,7 +192,11 @@ int main(int argc, char** argv) {
   send_command("SEND 48656C6C6F20576F726C64");
   assert(!tx_starts);
   send_command("ARM 12345678");
-  assert(sender.armed || receiver.armed);
+#if defined(ARQ_ROLE_SENDER)
+  assert(sender.armed);
+#else
+  assert(receiver.armed);
+#endif
   assert(!parked && rx_starts == 1);
   assert(raw_regs[1] ==
          0x85);  // LoRa RX continuous, HF band, no LF register bank.

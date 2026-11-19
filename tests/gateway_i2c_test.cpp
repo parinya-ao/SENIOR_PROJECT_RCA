@@ -3,7 +3,7 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include "../stable_lib/gateway_app/espcomm.cpp"
+#include "../src/sender/appcode/gateway/espcomm.cpp"
 
 uint32_t host_ms = 0;
 namespace fake_spi {

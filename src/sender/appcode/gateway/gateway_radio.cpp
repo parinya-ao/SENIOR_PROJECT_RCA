@@ -9,7 +9,7 @@
 #include <ssot.h>
 #include <string.h>
 
-#include "campaign_id.h"
+#include "app/campaign_id.h"
 #include "gateway_app.h"
 #include "hello_config.h"
 #include "lora_rx.h"

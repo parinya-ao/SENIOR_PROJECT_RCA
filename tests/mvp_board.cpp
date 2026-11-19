@@ -44,6 +44,11 @@ void delay(unsigned ms) {
 
 #define LORA_APP_RELIABLE 1
 #include "../src/app/reliable_app.cpp"
+#if defined(LORA_ROLE_RECEIVER)
+#include "../src/receiver/appcode/reliable.cpp"
+#else
+#include "../src/sender/appcode/reliable.cpp"
+#endif
 using namespace reliable_app;
 static void step() { reliable_app::Poll(); }
 static const char* state_name() {

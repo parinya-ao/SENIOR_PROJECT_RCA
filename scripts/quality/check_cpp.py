@@ -34,12 +34,12 @@ RESULTS = []
 # Keep the existing ARQ adapter's coordinated IRQ and timing decisions intact.
 # A new function over 15, or growth in an existing exception, fails the gate.
 COMPLEXITY_LIMITS = {
-    ("stable_lib/arq/application.cpp", "arq::app::FlushStatus"): 21,
-    ("stable_lib/arq/application.cpp", "arq::app::ExecuteCommand"): 28,
-    ("stable_lib/arq/application.cpp", "arq::app::Initialize"): 16,
-    ("stable_lib/arq/application.cpp", "arq::app::HandleReceive"): 30,
+    ("src/app/arq/application.cpp", "arq::app::FlushStatus"): 21,
+    ("src/app/arq/application.cpp", "arq::app::ExecuteCommand"): 28,
+    ("src/app/arq/radio.cpp", "arq::app::InitializeRadio"): 16,
+    ("src/app/arq/application.cpp", "arq::app::HandleReceive"): 30,
     # Lizard counts both role branches. Each still calls RestoreReceive once.
-    ("stable_lib/arq/application.cpp", "arq::app::Poll"): 49,
+    ("src/app/arq/application.cpp", "arq::app::Poll"): 49,
     # The checked FAULT parser also rejects trailing non-whitespace input.
     ("stable_lib/arq/commands.cpp", "arq::ParseCommand"): 22,
     ("stable_lib/arq/receiver.cpp", "arq::HandleDataFrame"): 17,
@@ -170,7 +170,7 @@ def run_host_analysis(groups):
         db.mkdir(parents=True, exist_ok=True)
         (db / "compile_commands.json").write_text(json.dumps(entries, indent=2) + "\n")
         units = [entry["file"] for entry in entries]
-        tidy = ["clang-tidy", "-p", db, "--header-filter=(src/(app|features)/|stable_lib/(ssot|arq)/)", *units]
+        tidy = ["clang-tidy", "-p", db, "--header-filter=(src/|stable_lib/(ssot|arq)/)", *units]
         api = DOCS / "clang-doc" / variant
         clang_doc = ["clang-doc", "-p", db, "--format=yaml", f"--output={api}", *units]
         for command, log in ((tidy, logs[0]), (clang_doc, logs[3])):

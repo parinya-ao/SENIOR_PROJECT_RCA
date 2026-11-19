@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include "ssot_radio_header.h"
+
 // RadioLib requires plain ISR callbacks; one physical radio is active per MCU.
 LoRa* LoRa::_active = nullptr;
 
@@ -51,18 +53,18 @@ int16_t LoRa::send(Address destination, const uint8_t* packet, uint8_t length) {
 int16_t LoRa::send(Address destination, uint16_t campaign_id,
                    const uint8_t* packet, uint8_t length) {
   if (!packet && length) return RADIOLIB_ERR_NULL_POINTER;
-  if (length > 251) return RADIOLIB_ERR_PACKET_TOO_LONG;
+  if (length > 255U - ssot::kRadioHeaderSize)
+    return RADIOLIB_ERR_PACKET_TOO_LONG;
   if (!_initialized || _tx_pending) return RADIOLIB_ERR_WRONG_MODEM;
-  uint8_t buffer[255] = {destination, _my_addr,
-                         static_cast<uint8_t>(campaign_id & 0xffU),
-                         static_cast<uint8_t>(campaign_id >> 8U)};
-  if (length) memcpy(buffer + 4, packet, length);
+  uint8_t buffer[255];
+  ssot::EncodeRadioHeader({destination, _my_addr, campaign_id}, buffer);
+  if (length) memcpy(buffer + ssot::kRadioHeaderSize, packet, length);
   _received = false;
   _transmitting = true;
   _tx_pending = true;
   _module.setPacketSentAction(_sent_action);
-  const int16_t error =
-      _module.startTransmit(buffer, static_cast<size_t>(length) + 4);
+  const int16_t error = _module.startTransmit(
+      buffer, static_cast<size_t>(length) + ssot::kRadioHeaderSize);
   if (error != RADIOLIB_ERR_NONE) {
     _transmitting = false;
     _tx_pending = false;
@@ -98,21 +100,21 @@ int16_t LoRa::recv(Address* source, Address* destination, uint16_t* campaign_id,
   const size_t frame_length = _module.getPacketLength();
   uint8_t buffer[255];
   int16_t error = RADIOLIB_ERR_NONE;
-  if (frame_length < 4 || frame_length > sizeof(buffer)) {
+  if (frame_length < ssot::kRadioHeaderSize || frame_length > sizeof(buffer)) {
     error = RADIOLIB_ERR_PACKET_TOO_LONG;
   } else {
     error = _module.readData(buffer, frame_length);
-    if (error == RADIOLIB_ERR_NONE && frame_length - 4 > capacity)
+    if (error == RADIOLIB_ERR_NONE &&
+        frame_length - ssot::kRadioHeaderSize > capacity)
       error = RADIOLIB_ERR_PACKET_TOO_LONG;
   }
   if (error == RADIOLIB_ERR_NONE) {
-    *source = buffer[1];
-    *destination = buffer[0];
-    if (campaign_id)
-      *campaign_id = static_cast<uint16_t>(buffer[2]) |
-                     (static_cast<uint16_t>(buffer[3]) << 8U);
-    *length = static_cast<uint8_t>(frame_length - 4);
-    if (*length) memcpy(packet, buffer + 4, *length);
+    const ssot::RadioHeader header = ssot::DecodeRadioHeader(buffer);
+    *source = header.source;
+    *destination = header.destination;
+    if (campaign_id) *campaign_id = header.campaign_id;
+    *length = static_cast<uint8_t>(frame_length - ssot::kRadioHeaderSize);
+    if (*length) memcpy(packet, buffer + ssot::kRadioHeaderSize, *length);
     _last_rssi = static_cast<int16_t>(_module.getRSSI());
   }
   const int16_t rearm = receive_start();

@@ -373,6 +373,14 @@ class Gate1Tests(unittest.TestCase):
         self.assertIn("--wide-gpr-access", proc.stdout)
         self.assertIn("--controlled-cpu-reset", proc.stdout)
 
+    def test_gate1_provenance_covers_migrated_arq_sources(self) -> None:
+        from tools.rca import gate1_live
+
+        for name in ("src/app/arq/application.cpp", "src/app/arq/radio.cpp"):
+            with self.subTest(source=name):
+                self.assertIn(name, gate1_live.SOURCE_HASH_PATHS)
+                self.assertTrue((gate1_live.ROOT / name).is_file())
+
     def test_T24_part_identity_comes_from_read_signature_not_SIB_label(self) -> None:
         self.assertEqual(part_from_signature(bytes.fromhex("1e970a")), "AVR128DA28")
         self.assertIsNone(part_from_signature(bytes.fromhex("1e9709")))

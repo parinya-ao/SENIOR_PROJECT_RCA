@@ -69,7 +69,7 @@ for flag in flags:
 defines = [(f"LORA_ROLE_{role.upper()}", 1)]
 if role == "receiver":
     defines.append(("LORA_RECEIVER_BOARD", 1))
-env.Append(CPPDEFINES=defines)
+env.Append(CPPDEFINES=defines, LINKFLAGS=["-Wl,-Map,$BUILD_DIR/firmware.map"])
 if env.GetProjectOption("build_type") == "release":
     env.Append(LINKFLAGS=["-Wl,--strip-debug"])
 manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())

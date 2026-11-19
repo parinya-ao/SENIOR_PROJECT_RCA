@@ -1,6 +1,6 @@
 PROJECT_NAME = "LoRa Gateway Tracker"
 INPUT = src stable_lib/ssot stable_lib/arq
-INPUT += stable_lib/gateway_app stable_lib/reliable_app stable_lib/shared
+INPUT += stable_lib/shared
 INPUT += stable_lib/task/task.h stable_lib/task/task.cpp
 INPUT += stable_lib/time-utils stable_lib/sleep
 INPUT += stable_lib/iw_core

@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "stable_lib/gateway_app/lora_config.h"
+#include "src/sender/appcode/gateway/lora_config.h"
 
 int main() {
   uint8_t frame[9] = {4, 7, 0x00, 0xc0, 0x64, 0x44, 2, 0, 0};

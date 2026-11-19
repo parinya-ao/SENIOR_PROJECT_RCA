@@ -141,34 +141,19 @@ class CompiledHandoffTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         temporary = tempfile.TemporaryDirectory()
         cls.addClassCleanup(temporary.cleanup)
-        directory = Path(temporary.name)
-        (directory / "handoff_config.h").write_text(
-            "#define APP_START 0x5800\n#define CCP_IOREG_VALUE 0xD8\n"
-            + "".join(
-                f"#define RESET_BYTE_{i} {byte}\n"
-                for i, byte in enumerate(bytes.fromhex("52c00000"))
-            )
+        cls.directory = Path(temporary.name) / "fixture"
+        boot.build_fixture(cls.directory)
+        cls.code = (cls.directory / "receiver-handoff.bin").read_bytes()
+
+    def test_fixture_contains_standalone_flash_artifacts(self) -> None:
+        for extension in ("elf", "map", "hex", "disassembly.txt"):
+            self.assertTrue((self.directory / f"receiver-handoff.{extension}").stat().st_size)
+        self.assertEqual(
+            normalize_ihex_region(
+                (self.directory / "receiver-handoff.hex").read_text(), 0, len(self.code)
+            ),
+            self.code,
         )
-        elf, binary = directory / "boot.elf", directory / "boot.bin"
-        subprocess.run(
-            [
-                str(boot.TOOLCHAIN / "avr-gcc"),
-                "-mmcu=avr128da28",
-                "-nostdlib",
-                "-nostartfiles",
-                "-I",
-                str(directory),
-                "-Wl,-e,_start",
-                str(boot.ROOT / "boot/receiver_handoff.S"),
-                "-o",
-                str(elf),
-            ],
-            check=True,
-        )
-        subprocess.run(
-            [str(boot.TOOLCHAIN / "avr-objcopy"), "-O", "binary", str(elf), str(binary)], check=True
-        )
-        cls.code = binary.read_bytes()
 
     def test_compiled_handoff_uses_correct_byte_target_and_interrupt_state(self) -> None:
         result = boot.trace_stub(self.code, bytes.fromhex("52c00000"))

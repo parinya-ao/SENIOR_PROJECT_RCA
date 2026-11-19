@@ -48,4 +48,11 @@ int main() {
   assert(source == 0 && destination == 1);
   assert(length == 2 && payload[0] == 3 && payload[1] == 1);
   assert(!receiver.available());
+
+  const uint8_t nack[] = {9, 1};
+  const uint8_t expected_nack[] = {0, 1, 0x34, 0x12, 9, 1};
+  assert(receiver.send(0, 0x1234, nack, sizeof nack) == 0);
+  assert(fake_radio::state.tx_size == sizeof expected_nack);
+  assert(
+      !memcmp(fake_radio::state.tx_copy, expected_nack, sizeof expected_nack));
 }

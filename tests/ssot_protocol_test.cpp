@@ -60,16 +60,13 @@ int main(void) {
   assert(decoded.campaign_id == 0x1234U && decoded.sequence == 1U);
   assert(decoded.type == 8U);
   assert(!ssot::DecodeFrame(expected, sizeof expected - 1U, &decoded));
+  memcpy(frame, expected, sizeof frame);
+  frame[6] = 'X';
+  // Decoding identifies the wire format. Application policy decides acceptance.
+  assert(ssot::DecodeFrame(frame, sizeof frame, &decoded));
   assert(ssot::DecodePayload(1U, 0U, 0x34U, 0x12U, expected + 4U,
                              sizeof expected - 4U, &decoded));
   assert(decoded.type == 8U && decoded.campaign_id == 0x1234U);
-  assert(ssot::ReplyForData(1U, 0U, 0x34U, 0x12U, expected + 4U,
-                            sizeof expected - 4U, 0x1234U, &decoded) == 3U);
-  assert(decoded.type == 8U && decoded.sequence == 1U);
-  assert(ssot::ReplyForData(1U, 0U, 0x34U, 0x12U, expected + 4U,
-                            sizeof expected - 5U, 0x1234U, &decoded) == 9U);
-  assert(ssot::ReplyForData(1U, 0U, 0x34U, 0x12U, expected + 4U,
-                            sizeof expected - 4U, 0x1235U, &decoded) == 0U);
 
   const ssot::Frame correct_ack = {0U, 1U, 0x1234U, 3U, 1U};
   assert(ssot::AckMatches(&correct_ack, 1U, 0U, 0x1234U, 1U));

@@ -1,5 +1,6 @@
 """Prepare a one-page Receiver boot repair. No hardware writes in preparation."""
 
+import argparse
 import hashlib
 import json
 import re
@@ -566,6 +567,108 @@ def verify_live_receipt(proof: Json, path: str | Path) -> bool:
     )
 
 
+def _build_handoff(
+    directory: Path, reset: bytes, command: Any
+) -> tuple[bytes, dict[str, Any]]:
+    """Compile and trace the historical handoff with the supplied reset vector."""
+    header = f"#define APP_START {APP_START}\n#define CCP_IOREG_VALUE 0xD8\n" + "".join(
+        f"#define RESET_BYTE_{index} {value}\n" for index, value in enumerate(reset)
+    )
+    (directory / "handoff_config.h").write_text(header)
+    code, _, _ = command(
+        "boot-device-contract",
+        [
+            str(TOOLCHAIN / "avr-gcc"),
+            "-mmcu=avr128da28",
+            "-std=c11",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-fsyntax-only",
+            "-I",
+            str(directory),
+            str(ROOT / "boot/receiver_handoff_contract.c"),
+        ],
+    )
+    if code:
+        msg = "installed AVR device definitions disagree with handoff contract"
+        raise ValueError(msg)
+    elf = directory / "receiver-handoff.elf"
+    code, _, _ = command(
+        "boot-compile",
+        [
+            str(TOOLCHAIN / "avr-gcc"),
+            "-mmcu=avr128da28",
+            "-nostdlib",
+            "-nostartfiles",
+            "-x",
+            "assembler-with-cpp",
+            "-I",
+            str(directory),
+            f"-Wl,-Map={directory / 'receiver-handoff.map'}",
+            "-Wl,--section-start=.text=0",
+            "-Wl,-e,_start",
+            str(ROOT / "boot/receiver_handoff.S"),
+            "-o",
+            str(elf),
+        ],
+    )
+    if code:
+        msg = "boot handoff compilation failed"
+        raise ValueError(msg)
+    for output_format, name in [
+        ("binary", "receiver-handoff.bin"),
+        ("ihex", "receiver-handoff.hex"),
+    ]:
+        subprocess.run(  # noqa: S603 -- fixed, absolute toolchain executable
+            [str(TOOLCHAIN / "avr-objcopy"), "-O", output_format, str(elf), str(directory / name)],
+            check=True,
+        )
+    disassembly = subprocess.check_output(  # noqa: S603 -- fixed, absolute toolchain executable
+        [str(TOOLCHAIN / "avr-objdump"), "-d", str(elf)], text=True
+    )
+    (directory / "receiver-handoff.disassembly.txt").write_text(disassembly)
+    audit = analyze(disassembly, APP_START)
+    if audit["application_transfers"] != [APP_START] or audit["unresolved"]:
+        msg = "compiled stub has no fully resolved APPCODE transfer"
+        raise ValueError(msg)
+    stub = (directory / "receiver-handoff.bin").read_bytes()
+    traces = {
+        "matching_reset": trace_stub(stub, reset),
+        "blank_application": trace_stub(stub, b"\xff" * 4),
+    }
+    if (
+        traces["matching_reset"] != {"application_entered": True, "cpuint": 0, "interrupts": False}
+        or traces["blank_application"]["application_entered"]
+    ):
+        msg = "compiled boot behavior differs from required handoff"
+        raise ValueError(msg)
+    for index in range(_RESET_VECTOR_SIZE):
+        wrong = bytearray(reset)
+        wrong[index] ^= 1
+        traces[f"wrong_reset_byte_{index}"] = trace_stub(stub, bytes(wrong))
+        if traces[f"wrong_reset_byte_{index}"]["application_entered"]:
+            msg = "boot guard accepted an incorrect reset vector"
+            raise ValueError(msg)
+    return stub, traces
+
+
+def build_fixture(directory: Path) -> None:
+    """Build the archived handoff without preparing a device programming package."""
+    directory.mkdir(parents=True)
+
+    def run_tool(_name: str, argv: list[str]) -> tuple[int, bytes, bytes]:
+        result = subprocess.run(argv, check=False, capture_output=True)  # noqa: S603
+        if result.returncode:
+            print(result.stderr.decode(errors="replace"), end="")
+        return result.returncode, result.stdout, result.stderr
+
+    _, traces = _build_handoff(directory, bytes.fromhex("52c00000"), run_tool)
+    (directory / "receiver-boot-instruction-traces.json").write_text(
+        json.dumps(traces, indent=2) + "\n"
+    )
+
+
 def prepare(proof: Json) -> int:  # noqa: C901, PLR0912, PLR0915 -- builds and verifies one approved image set
     """Compile, inspect and simulate the exact proposed overwrite and restoration."""
     directory = proof.run_dir
@@ -656,85 +759,7 @@ def prepare(proof: Json) -> int:  # noqa: C901, PLR0912, PLR0915 -- builds and v
     if reset is None:
         msg = "application reset vector was not found"
         raise ValueError(msg)
-    header = f"#define APP_START {APP_START}\n#define CCP_IOREG_VALUE 0xD8\n" + "".join(
-        f"#define RESET_BYTE_{index} {value}\n" for index, value in enumerate(reset)
-    )
-    (directory / "handoff_config.h").write_text(header)
-    code, _, _ = proof.command(
-        "boot-device-contract",
-        [
-            str(TOOLCHAIN / "avr-gcc"),
-            "-mmcu=avr128da28",
-            "-std=c11",
-            "-Wall",
-            "-Wextra",
-            "-Werror",
-            "-fsyntax-only",
-            "-I",
-            str(directory),
-            str(ROOT / "boot/receiver_handoff_contract.c"),
-        ],
-    )
-    if code:
-        msg = "installed AVR device definitions disagree with handoff contract"
-        raise ValueError(msg)
-    elf = directory / "receiver-handoff.elf"
-    code, _, _ = proof.command(
-        "boot-compile",
-        [
-            str(TOOLCHAIN / "avr-gcc"),
-            "-mmcu=avr128da28",
-            "-nostdlib",
-            "-nostartfiles",
-            "-x",
-            "assembler-with-cpp",
-            "-I",
-            str(directory),
-            f"-Wl,-Map={directory / 'receiver-handoff.map'}",
-            "-Wl,--section-start=.text=0",
-            "-Wl,-e,_start",
-            str(ROOT / "boot/receiver_handoff.S"),
-            "-o",
-            str(elf),
-        ],
-    )
-    if code:
-        msg = "boot handoff compilation failed"
-        raise ValueError(msg)
-    for output_format, name in [
-        ("binary", "receiver-handoff.bin"),
-        ("ihex", "receiver-handoff.hex"),
-    ]:
-        subprocess.run(  # noqa: S603 -- fixed, absolute toolchain executable
-            [str(TOOLCHAIN / "avr-objcopy"), "-O", output_format, str(elf), str(directory / name)],
-            check=True,
-        )
-    disassembly = subprocess.check_output(  # noqa: S603 -- fixed, absolute toolchain executable
-        [str(TOOLCHAIN / "avr-objdump"), "-d", str(elf)], text=True
-    )
-    (directory / "receiver-handoff.disassembly.txt").write_text(disassembly)
-    audit = analyze(disassembly, APP_START)
-    if audit["application_transfers"] != [APP_START] or audit["unresolved"]:
-        msg = "compiled stub has no fully resolved APPCODE transfer"
-        raise ValueError(msg)
-    stub = (directory / "receiver-handoff.bin").read_bytes()
-    traces = {
-        "matching_reset": trace_stub(stub, reset),
-        "blank_application": trace_stub(stub, b"\xff" * 4),
-    }
-    if (
-        traces["matching_reset"] != {"application_entered": True, "cpuint": 0, "interrupts": False}
-        or traces["blank_application"]["application_entered"]
-    ):
-        msg = "compiled boot behavior differs from required handoff"
-        raise ValueError(msg)
-    for index in range(_RESET_VECTOR_SIZE):
-        wrong = bytearray(reset)
-        wrong[index] ^= 1
-        traces[f"wrong_reset_byte_{index}"] = trace_stub(stub, bytes(wrong))
-        if traces[f"wrong_reset_byte_{index}"]["application_entered"]:
-            msg = "boot guard accepted an incorrect reset vector"
-            raise ValueError(msg)
+    stub, traces = _build_handoff(directory, reset, proof.command)
     proof.note("receiver-boot-instruction-traces.json", json.dumps(traces, indent=2) + "\n")
     page, changes = patch_page0(original, stub)
     (directory / "receiver-boot-page0.hex").write_text(ihex(page))
@@ -880,3 +905,9 @@ def prepare(proof: Json) -> int:  # noqa: C901, PLR0912, PLR0915 -- builds and v
         "PASS: static one-page boot package and simulated restoration; hardware writes NOT RUN.\n",
     )
     return 0
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Build the historical Receiver handoff fixture.")
+    parser.add_argument("output_dir", type=Path, help="new directory for offline fixture artifacts")
+    build_fixture(parser.parse_args().output_dir)

@@ -11,7 +11,6 @@ are the vendored protothread headers under `task/pt/`.
 | `arq` | ARQ codec, sender/receiver state machines, diagnostics | `arq.h` is the umbrella API; generated `board_ssot.c` is written here. |
 | `debug` | Firmware debug logging and assertions | Keeps the existing `Debug.h` compatibility header. |
 | `firmware_app` | Compile-time selected application lifecycle | Called by the Arduino entry points. |
-| `gateway_app` | Gateway GPIO, I2C mailbox, radio task, and application wiring | Uses shared settings, task scheduling, and AVR helpers. |
 | `gnss` | GNSS receiver data handling | Uses serial facilities supplied by the firmware target. |
 | `iw_avr128da28` | AVR128DA28 ADC, routing, RTC, and provisioning operations | Public headers use the `avr128da28_` prefix to avoid collisions. |
 | `iw_core` | Little-endian codecs, checked ranges, and fixed-capacity buffers | Platform-independent; no registry dependency. |
@@ -24,7 +23,6 @@ are the vendored protothread headers under `task/pt/`.
 | `mvp_app` | Minimal DATA/ACK application path | Used by its dedicated firmware profile. |
 | `printf` | Reduced-footprint formatted output | Existing bundled implementation is retained. |
 | `raw-storage` | Raw byte storage access | Storage driver is supplied by the selected target. |
-| `reliable_app` | Gateway/Tracker reliable DATA/ACK lifecycle | Runs the SSOT transport over the radio adapter. |
 | `reverse_raw_app` | Reverse-direction raw radio diagnostics | Kept as a separate diagnostic profile. |
 | `sd-storage` | SD-card storage interface | Used only by profiles that enable removable storage. |
 | `sd-utils` | SD-card path and file helpers | Uses the storage interface selected by the profile. |
@@ -49,3 +47,5 @@ Build the exercised firmware profiles with `pio run -e sender_hello`,
 `rtk python3 -m unittest discover -s tests`. The combined formatter, static
 analysis, documentation, host-test, and firmware-build gate is
 `rtk bash scripts/quality/check_cpp.sh`.
+
+The role entry points, Gateway scheduler and I2C tasks, and reliable and ARQ application orchestration live under [src](../src).

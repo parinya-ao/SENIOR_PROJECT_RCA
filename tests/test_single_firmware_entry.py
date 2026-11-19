@@ -1,3 +1,5 @@
+import json
+import subprocess
 import re
 import unittest
 from pathlib import Path
@@ -10,7 +12,7 @@ LIFECYCLE_DEFINITION = re.compile(
 
 
 class SingleFirmwareEntryTests(unittest.TestCase):
-    def test_only_src_main_defines_arduino_lifecycle(self):
+    def test_only_role_entries_define_arduino_lifecycle(self):
         definitions = {}
         for source_root in (ROOT / "src", ROOT / "stable_lib"):
             for source in sorted(source_root.rglob("*.cpp")):
@@ -18,14 +20,11 @@ class SingleFirmwareEntryTests(unittest.TestCase):
                     relative = source.relative_to(ROOT).as_posix()
                     definitions.setdefault(match.group(1), []).append(relative)
 
-        self.assertEqual(
-            definitions,
-            {
-                "onPreMain": ["src/main.cpp"],
-                "setup": ["src/main.cpp"],
-                "loop": ["src/main.cpp"],
-            },
-        )
+        entries = [
+            "src/receiver/appcode/main.cpp",
+            "src/sender/appcode/main.cpp",
+        ]
+        self.assertEqual(definitions, dict.fromkeys(("onPreMain", "setup", "loop"), entries))
 
     def test_project_firmware_implementations_live_under_stable_lib(self):
         sources = [
@@ -37,12 +36,30 @@ class SingleFirmwareEntryTests(unittest.TestCase):
         self.assertEqual(sources, [])
 
     def test_platformio_uses_one_entry_and_one_library_root(self):
-        config = (ROOT / "platformio.ini").read_text()
-
-        self.assertIn("lib_dir = stable_lib", config)
-        self.assertEqual(config.count("build_src_filter ="), 1)
-        self.assertIn("+<main.cpp>", config)
-        self.assertNotIn("lib_extra_dirs", config)
+        result = subprocess.check_output(
+            ["pio", "project", "config", "--json-output"], cwd=ROOT, text=True
+        )
+        config = {section: dict(options) for section, options in json.loads(result)}
+        self.assertTrue(config["platformio"]["lib_dir"].endswith("stable_lib"))
+        profiles = {"debug", "release"}
+        roles = {"sender", "receiver"}
+        targets = {section[4:]: options for section, options in config.items()
+                   if section.startswith("env:")}
+        self.assertLessEqual(profiles, targets.keys())
+        self.assertEqual(len(targets) - len(profiles), 19)
+        for target, options in targets.items():
+            with self.subTest(target=target):
+                filters = options["build_src_filter"]
+                sources = [entry[2:-1] for entry in filters if entry.startswith("+<")]
+                entries = [source for source in sources if source.endswith("main.cpp")]
+                if target in profiles:
+                    self.assertEqual(entries, [])
+                else:
+                    role = target.split("_", 1)[0]
+                    self.assertIn(role, roles)
+                    self.assertEqual(entries, [f"{role}/appcode/main.cpp"])
+                    self.assertTrue((ROOT / "src" / entries[0]).is_file())
+                self.assertNotIn("lib_extra_dirs", options)
 
 
 if __name__ == "__main__":

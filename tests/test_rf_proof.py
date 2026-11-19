@@ -329,7 +329,7 @@ class HardwareGateTests(unittest.TestCase):
             self.assertTrue(rf_proof.receiver_boot_handoff_supported(proof, args, "active config"))
 
     def test_sender_uses_only_supported_stable_lora_calls(self) -> None:
-        source = (Path(__file__).resolve().parents[1] / "src/app/gateway_radio.cpp").read_text()
+        source = (Path(__file__).resolve().parents[1] / "src/sender/appcode/gateway/gateway_radio.cpp").read_text()
         self.assertIn("#include <lora.h>", source)
         self.assertIn("reliable::Transport<LoRa>", source)
         self.assertIn("transport.SendReliableData", source)
@@ -357,13 +357,13 @@ class HardwareGateTests(unittest.TestCase):
              "rst":"PD1","irq":"PD3","dio1":"PD2","enable":"PA7"},
         )
         constructor = "LoRa lora(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1)"
-        self.assertIn(constructor,(root/"src/app/gateway_radio.cpp").read_text())
+        self.assertIn(constructor,(root/"src/sender/appcode/gateway/gateway_radio.cpp").read_text())
         self.assertIn(constructor,(root/"src/app/reliable_app.cpp").read_text())
         self.assertIn(constructor,(root/"stable_lib/legacy_receiver/legacy_receiver.cpp").read_text())
 
     def test_both_radio_setups_keep_dio1_input_and_reset_deasserted(self) -> None:
         root = Path(__file__).resolve().parents[1]
-        sender = (root / "stable_lib/gateway_app/io.cpp").read_text()
+        sender = (root / "src/sender/appcode/gateway/io.cpp").read_text()
         self.assertIn("pinModeFast(PIN_LORA_DIO1, INPUT);", sender)
         self.assertIn("digitalWriteFast(PIN_LORA_RST, HIGH);", sender)
         receiver = (root / "stable_lib/legacy_receiver/legacy_receiver.cpp").read_text()
@@ -381,7 +381,7 @@ class HardwareGateTests(unittest.TestCase):
         ):
             self.assertIn(expected, gateway_config)
 
-        sender_io = (root / "stable_lib/gateway_app/io.h").read_text()
+        sender_io = (root / "src/sender/appcode/gateway/io.h").read_text()
         self.assertIn("#define PIN_DEBUG_TX GatewaySSOT::Pins::DEBUG_TX", sender_io)
         self.assertIn("#define PIN_DEBUG_RX GatewaySSOT::Pins::DEBUG_RX", sender_io)
 
@@ -1240,7 +1240,7 @@ class RfEvidenceTests(unittest.TestCase):
         self.assertIn("multiple campaign IDs", evidence["issues"])
 
     def test_sender_no_longer_uses_the_removed_eeprom_campaign_gate(self) -> None:
-        source = (Path(__file__).resolve().parents[1] / "src/app/gateway_radio.cpp").read_text()
+        source = (Path(__file__).resolve().parents[1] / "src/sender/appcode/gateway/gateway_radio.cpp").read_text()
         self.assertNotIn("EEPROM", source)
         self.assertNotIn("CampaignBuildGateResult", source)
         self.assertIn("StartRadioTransaction", source)

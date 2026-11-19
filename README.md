@@ -77,7 +77,7 @@ tests replace physical MCU/radio I/O and do not prove an RF link.
 ```sh
 pio check -e sender_arq --flags 'cppcheck: --enable=warning,performance,portability --std=c++17' --fail-on-defect high
 uvx --from clang-tidy clang-tidy stable_lib/ssot/ssot_codec.cpp stable_lib/ssot/ssot_session.cpp stable_lib/ssot/ssot_control_input.cpp stable_lib/arq/codec.cpp stable_lib/arq/sender.cpp stable_lib/arq/receiver.cpp stable_lib/arq/commands.cpp -- -std=c++17 -Istable_lib/ssot -Istable_lib/arq -Iinclude
-uvx --from clang-format clang-format --dry-run --Werror src/main.cpp stable_lib/ssot/*.h stable_lib/ssot/*.cpp stable_lib/arq/*.h stable_lib/arq/*.cpp
+uvx --from clang-format clang-format --dry-run --Werror src/{sender,receiver}/appcode/main.cpp stable_lib/ssot/*.h stable_lib/ssot/*.cpp stable_lib/arq/*.h stable_lib/arq/*.cpp
 ```
 
 The checked-in Clang configuration uses Google formatting and focused correctness

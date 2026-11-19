@@ -388,7 +388,7 @@ class I2cRadioConfigTests(unittest.TestCase):
                     "-I",
                     str(ROOT / "stable_lib/shared"),
                     "-I",
-                    str(ROOT / "stable_lib/gateway_app"),
+                    str(ROOT / "src/sender/appcode/gateway"),
                     "-DLORA_ROLE_SENDER=1",
                     str(ROOT / "tests/radio_config_test.cpp"),
                     "-o",

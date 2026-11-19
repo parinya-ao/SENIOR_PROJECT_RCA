@@ -36,7 +36,14 @@ extern "C" bool updi_uart_try_tx(uint8_t c) {
 }
 // Keep the app and its test doubles in one TU so tests can inspect private
 // state.
-#include "../src/app/reliable_app.cpp"  // NOLINT(bugprone-suspicious-include)
+// NOLINTBEGIN(bugprone-suspicious-include)
+#include "../src/app/reliable_app.cpp"
+#if defined(LORA_ROLE_RECEIVER)
+#include "../src/receiver/appcode/reliable.cpp"
+#else
+#include "../src/sender/appcode/reliable.cpp"
+#endif
+// NOLINTEND(bugprone-suspicious-include)
 
 using namespace reliable_app;
 
@@ -138,7 +145,8 @@ int main() {
     const uint16_t campaign_id =
         static_cast<uint16_t>(fake_radio::state.tx_copy[2]) |
         (static_cast<uint16_t>(fake_radio::state.tx_copy[3]) << 8U);
-    deliver(kPeerAddress, kLocalAddress, ack, sizeof ack, campaign_id);
+    deliver(LORA_RECEIVER_ADDRESS, LORA_SENDER_ADDRESS, ack, sizeof ack,
+            campaign_id);
     reliable_app::Poll();
     assert(transport.result() == decltype(transport)::Result::kAccepted);
     mailbox_ready = true;
