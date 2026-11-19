@@ -43,7 +43,6 @@ void delay(unsigned ms) {
 }
 
 #define LORA_APP_RELIABLE 1
-#include "../src/app/reliable_app.cpp"
 #if defined(LORA_ROLE_RECEIVER)
 #include "../src/receiver/appcode/reliable.cpp"
 #else

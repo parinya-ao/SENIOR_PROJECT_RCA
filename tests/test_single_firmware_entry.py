@@ -59,6 +59,19 @@ class SingleFirmwareEntryTests(unittest.TestCase):
                     self.assertIn(role, roles)
                     self.assertEqual(entries, [f"{role}/appcode/main.cpp"])
                     self.assertTrue((ROOT / "src" / entries[0]).is_file())
+                    arq_sources = [source for source in sources if "/arq/" in source]
+                    if "_arq" in target:
+                        direction = (
+                            (roles - {role}).pop() if target.endswith("_reverse") else role
+                        )
+                        self.assertEqual(
+                            arq_sources, [f"{direction}/appcode/arq/{direction}.cpp"]
+                        )
+                    else:
+                        self.assertEqual(arq_sources, [])
+                self.assertTrue(all((ROOT / "src" / source).is_file() for source in sources))
+                self.assertFalse(any(source.startswith(("app/", "features/")) for source in sources))
+                self.assertIn("-<receiver/bootloader/**>", filters)
                 self.assertNotIn("lib_extra_dirs", options)
 
 

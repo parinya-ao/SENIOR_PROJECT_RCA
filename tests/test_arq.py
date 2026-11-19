@@ -16,7 +16,8 @@ sys.path.insert(0, str(ROOT / "tools/config"))
 
 class ArqTests(unittest.TestCase):
     def test_adapter(self) -> None:
-        self.assertTrue((ROOT / "src/app/arq/application.cpp").exists(), "ARQ adapter missing")
+        for role in ("sender", "receiver"):
+            self.assertTrue((ROOT / f"src/{role}/appcode/arq/{role}.cpp").is_file())
         with tempfile.TemporaryDirectory() as directory:
             objects = []
             for source in ("codec", "sender", "receiver"):
@@ -53,6 +54,7 @@ class ArqTests(unittest.TestCase):
                         "-Wno-unused-variable",
                         "-Wno-unused-function",
                         "-Itests/arq/stub",
+                        "-Isrc",
                         "-Itests/raw_mvp_stub",
                         "-Iinclude",
                         "-Istable_lib/arq",

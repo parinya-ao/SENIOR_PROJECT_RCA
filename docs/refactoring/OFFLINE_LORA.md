@@ -1,5 +1,7 @@
 # Offline LoRa firmware refactor
 
+This report records the first ownership pass. The current source layout, fresh matrix, and standalone BOOT comparison are in [Source ownership V2](SOURCE_OWNERSHIP_V2.md).
+
 ## Application and dependency audit
 
 | Responsibility | Before | After |

@@ -4,16 +4,16 @@
 #if defined(LORA_APP_GATEWAY)
 
 #include <Arduino.h>
-#include <features/reliable_transfer/reliable_transport.h>
 #include <lora.h>
+#include <shared/protocol/reliable_transport.h>
 #include <ssot.h>
 #include <string.h>
 
-#include "app/campaign_id.h"
 #include "gateway_app.h"
 #include "hello_config.h"
 #include "lora_rx.h"
 #include "role_log.h"
+#include "sender/appcode/campaign_id.h"
 #include "task.h"
 
 #if !HELLO_RF_DIAGNOSTIC_ONLY

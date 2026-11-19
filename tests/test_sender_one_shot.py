@@ -11,7 +11,7 @@ class SenderStableTransportTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.source = (ROOT / "src/sender/appcode/gateway/gateway_radio.cpp").read_text()
-        cls.transport = (ROOT / "src/features/reliable_transfer/reliable_transport.h").read_text()
+        cls.transport = (ROOT / "src/shared/protocol/reliable_transport.h").read_text()
 
     def test_gateway_radio_transaction_has_a_src_app_owner(self) -> None:
         self.assertTrue(

@@ -587,7 +587,7 @@ def _build_handoff(
             "-fsyntax-only",
             "-I",
             str(directory),
-            str(ROOT / "boot/receiver_handoff_contract.c"),
+            str(ROOT / "src/receiver/bootloader/handoff/receiver_handoff_contract.c"),
         ],
     )
     if code:
@@ -608,7 +608,7 @@ def _build_handoff(
             f"-Wl,-Map={directory / 'receiver-handoff.map'}",
             "-Wl,--section-start=.text=0",
             "-Wl,-e,_start",
-            str(ROOT / "boot/receiver_handoff.S"),
+            str(ROOT / "src/receiver/bootloader/handoff/receiver_handoff.S"),
             "-o",
             str(elf),
         ],

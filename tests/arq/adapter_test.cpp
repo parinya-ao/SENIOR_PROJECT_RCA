@@ -6,8 +6,15 @@
 
 // Load the implementation in this fixture to observe private foreground state.
 // NOLINTBEGIN(bugprone-suspicious-include)
-#include "../../src/app/arq/application.cpp"
-#include "../../src/app/arq/radio.cpp"
+#include "../../stable_lib/arq/arq_config.h"
+#if defined(ARQ_ROLE_SENDER)
+#include "../../src/sender/appcode/arq/sender.cpp"
+#else
+#include "../../src/receiver/appcode/arq/receiver.cpp"
+#endif
+#include "../../src/shared/diagnostics/arq_bench.cpp"
+#include "../../src/shared/protocol/arq_ingress.cpp"
+#include "../../src/shared/radio/arq_radio.cpp"
 #include "../../stable_lib/arq/board_ssot.c"
 #include "../../stable_lib/arq/commands.cpp"
 #include "../../stable_lib/arq/diagnostics.cpp"
@@ -56,7 +63,8 @@ int main(int argc, char** argv) {
     char output[8192];
     drain_status(output, sizeof output, true);
     assert(strstr(output, "e=STATUS_END ") && strstr(output, "e=REG "));
-    assert(strstr(output, "e=RX_IRQ ") && rx_done == 2 && raw_regs[1] == 0x85);
+    assert(strstr(output, "e=RX_IRQ ") && receive_counters.rx_done == 2 &&
+           raw_regs[1] == 0x85);
     assert(arq::diagnostics::OverflowCount() == 0);
     return 0;
   }
@@ -186,7 +194,7 @@ int main(int argc, char** argv) {
   assert(strchr(register_bytes, '\n') - register_bytes == 48);
   ResetLog();
   /* Polling diagnostics survive destructive driver reads and logger loss. */
-  unsigned observed_before = rx_done;
+  unsigned observed_before = receive_counters.rx_done;
   Poll();
   assert(!tx_starts);
   send_command("SEND 48656C6C6F20576F726C64");
@@ -228,7 +236,7 @@ int main(int argc, char** argv) {
     assert(sender.state == arq::SenderState::kWaitingAck &&
            rx_starts == starts + 1 && !irq_flags);
   }
-  assert(control_rejects == 4 && decode_errors == 1);
+  assert(control_rejects == 4 && receive_counters.decode_errors == 1);
   packet_length = arq::EncodeFrame(&ack, packet, 44);
   irq_flags = 0x40;
   clock_ms = sender.retry_at;
@@ -240,7 +248,8 @@ int main(int argc, char** argv) {
         strstr(QueuedLogLine(i), " q=0 "))
       delivered_sequence_seen = true;
   assert(delivered_sequence_seen);
-  assert(rx_done == observed_before + 6 && last_rx_flags == 0x40);
+  assert(receive_counters.rx_done == observed_before + 6 &&
+         receive_counters.last_rx_flags == 0x40);
   send_command("X");
   send_command("SEND 00");
   assert(sender.state == arq::SenderState::kDelivered);
@@ -264,9 +273,10 @@ int main(int argc, char** argv) {
   data_status = -7;
   irq_flags = 0x60;
   Poll();
-  assert(receiver.deliveries == 0 && crc_errors == 1);
+  assert(receiver.deliveries == 0 && receive_counters.crc_errors == 1);
   data_status = 0;
-  assert(rx_done == observed_before + 5 && last_rx_flags == 0x60);
+  assert(receive_counters.rx_done == observed_before + 5 &&
+         receive_counters.last_rx_flags == 0x60);
   assert(irq_flags == 0);
   ResetLog();
   ResetLog();

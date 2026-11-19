@@ -51,6 +51,7 @@ class DirectionalTests(unittest.TestCase):
                             "-Wno-unused-variable",
                             "-Wno-unused-function",
                             "-Itests/arq/stub",
+                            "-Isrc",
                             "-Itests/raw_mvp_stub",
                             "-Iinclude",
                             "-Istable_lib/arq",

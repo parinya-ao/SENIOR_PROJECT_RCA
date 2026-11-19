@@ -358,7 +358,8 @@ class HardwareGateTests(unittest.TestCase):
         )
         constructor = "LoRa lora(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1)"
         self.assertIn(constructor,(root/"src/sender/appcode/gateway/gateway_radio.cpp").read_text())
-        self.assertIn(constructor,(root/"src/app/reliable_app.cpp").read_text())
+        for role in ("sender", "receiver"):
+            self.assertIn(constructor, (root / f"src/{role}/appcode/reliable.cpp").read_text())
         self.assertIn(constructor,(root/"stable_lib/legacy_receiver/legacy_receiver.cpp").read_text())
 
     def test_both_radio_setups_keep_dio1_input_and_reset_deasserted(self) -> None:
@@ -514,7 +515,7 @@ class HardwareGateTests(unittest.TestCase):
                 arg for _, argv in proof.commands for arg in argv
                 if arg.endswith((".cpp", ".c"))
             ]
-            self.assertIn("src/features/radio_link/radio_link.cpp", source_args)
+            self.assertIn("src/shared/radio/radio_link.cpp", source_args)
             self.assertNotIn("stable_lib/lora/lora.cpp", source_args)
             self.assertNotIn("lib/lora/src/lora.cpp", source_args)
 

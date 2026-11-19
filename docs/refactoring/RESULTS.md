@@ -1,5 +1,7 @@
 # C++ Refactoring Results
 
+The follow-on source ownership verification is in [Source ownership V2](SOURCE_OWNERSHIP_V2.md) with its [fresh baseline](OWNERSHIP_BASELINE.md).
+
 Historical record of the C++ quality pass before the follow-on flat-tree work.
 The current library layout is documented in
 [stable_lib/README.md](../../stable_lib/README.md).

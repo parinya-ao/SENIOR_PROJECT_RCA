@@ -155,7 +155,7 @@ class StableLoraSafetyTests(unittest.TestCase):
             "-I" + str(ROOT / "stable_lib/lora"),
             "-I" + str(ROOT / "stable_lib/ssot"),
             str(cls.source),
-            str(ROOT / "src/features/radio_link/radio_link.cpp"),
+            str(ROOT / "src/shared/radio/radio_link.cpp"),
             "-o",
             str(cls.binary),
         ]

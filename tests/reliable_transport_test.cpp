@@ -1,5 +1,5 @@
 // Tests reliable DATA/ACK/NACK transitions, bounded retries, and duplicates.
-#include "features/reliable_transfer/reliable_transport.h"
+#include "shared/protocol/reliable_transport.h"
 
 #include <assert.h>
 #include <stdio.h>

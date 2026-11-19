@@ -1,5 +1,5 @@
 // Checks radio event FIFO ordering, capacity, and saturating overflow behavior.
-#include "features/diagnostics/radio_diagnostics.h"
+#include "shared/diagnostics/radio_diagnostics.h"
 
 #include <assert.h>
 #include <stdint.h>

@@ -12,10 +12,10 @@
 #endif
 
 #if defined(LORA_APP_RELIABLE)
-#include "app/reliable_app.h"
+#include "reliable.h"
 namespace selected = reliable_app;
 #elif defined(LORA_APP_ARQ)
-#include "app/arq/arq_application.h"
+#include "arq/application.h"
 namespace selected = arq::app;
 #elif defined(LORA_APP_MVP)
 #include <mvp_app.h>

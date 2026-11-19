@@ -37,7 +37,6 @@ extern "C" bool updi_uart_try_tx(uint8_t c) {
 // Keep the app and its test doubles in one TU so tests can inspect private
 // state.
 // NOLINTBEGIN(bugprone-suspicious-include)
-#include "../src/app/reliable_app.cpp"
 #if defined(LORA_ROLE_RECEIVER)
 #include "../src/receiver/appcode/reliable.cpp"
 #else

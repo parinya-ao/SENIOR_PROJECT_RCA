@@ -31,15 +31,11 @@ TOOLS = (
     "lizard", "jscpd", "include-what-you-use", "clang-doc", "g++", "nm",
 )
 RESULTS = []
-# Keep the existing ARQ adapter's coordinated IRQ and timing decisions intact.
+# Keep the existing status-line sequence and hardware initialization intact.
 # A new function over 15, or growth in an existing exception, fails the gate.
 COMPLEXITY_LIMITS = {
-    ("src/app/arq/application.cpp", "arq::app::FlushStatus"): 21,
-    ("src/app/arq/application.cpp", "arq::app::ExecuteCommand"): 28,
-    ("src/app/arq/radio.cpp", "arq::app::InitializeRadio"): 16,
-    ("src/app/arq/application.cpp", "arq::app::HandleReceive"): 30,
-    # Lizard counts both role branches. Each still calls RestoreReceive once.
-    ("src/app/arq/application.cpp", "arq::app::Poll"): 49,
+    ("src/shared/diagnostics/arq_bench.cpp", "arq::app::FlushBenchStatus"): 20,
+    ("src/shared/radio/arq_radio.cpp", "arq::app::InitializeRadio"): 16,
     # The checked FAULT parser also rejects trailing non-whitespace input.
     ("stable_lib/arq/commands.cpp", "arq::ParseCommand"): 22,
     ("stable_lib/arq/receiver.cpp", "arq::HandleDataFrame"): 17,

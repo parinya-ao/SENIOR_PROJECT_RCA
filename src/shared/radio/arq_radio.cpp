@@ -1,5 +1,5 @@
 // Owns the ARQ raw radio and its board-specific SPI transactions.
-#include "radio.h"
+#include "arq_radio.h"
 
 #include <Arduino.h>
 #include <SPI.h>

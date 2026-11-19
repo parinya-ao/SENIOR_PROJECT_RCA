@@ -60,15 +60,15 @@ class ReliableTransportTests(unittest.TestCase):
             print(result.stdout.strip())
 
     def test_hal_contract(self) -> None:
-        self.compile_run("tests/lora_contract_test.cpp", "src/features/radio_link/radio_link.cpp")
+        self.compile_run("tests/lora_contract_test.cpp", "src/shared/radio/radio_link.cpp")
 
     def test_existing_hal_vectors(self) -> None:
-        self.compile_run("tests/lora_wrapper_test.cpp", "src/features/radio_link/radio_link.cpp")
+        self.compile_run("tests/lora_wrapper_test.cpp", "src/shared/radio/radio_link.cpp")
 
     def test_five_dbm_candidate_reaches_radio_without_other_phy_changes(self) -> None:
         self.compile_run(
             "tests/lora_wrapper_test.cpp",
-            "src/features/radio_link/radio_link.cpp",
+            "src/shared/radio/radio_link.cpp",
             "-DLORA_TEST_TX_POWER_DBM=5",
             "-DEXPECTED_TX_POWER_DBM=5",
             '-DLORA_TEST_CONFIG_FINGERPRINT="candidate"',
@@ -76,27 +76,25 @@ class ReliableTransportTests(unittest.TestCase):
 
     def test_transport(self) -> None:
         self.assertTrue(
-            (ROOT / "src/features/reliable_transfer/reliable_transport.h").exists(),
+            (ROOT / "src/shared/protocol/reliable_transport.h").exists(),
             "reliable transfer feature is missing",
         )
         self.compile_run("tests/reliable_transport_test.cpp")
 
     def test_application(self) -> None:
-        self.assertTrue(
-            (ROOT / "src/app/reliable_app.cpp").exists(),
-            "reliable application is missing from src/app",
-        )
+        for role in ("sender", "receiver"):
+            self.assertTrue((ROOT / f"src/{role}/appcode/reliable.cpp").is_file())
         self.compile_run(
             "tests/reliable_app_test.cpp",
-            "src/features/diagnostics/radio_diagnostics.cpp",
-            "src/features/radio_link/radio_link.cpp",
+            "src/shared/diagnostics/radio_diagnostics.cpp",
+            "src/shared/radio/radio_link.cpp",
             "-DLORA_APP_RELIABLE=1",
             '-DLORA_BUILD_ID="HOST_TEST"',
         )
         self.compile_run(
             "tests/reliable_app_test.cpp",
-            "src/features/diagnostics/radio_diagnostics.cpp",
-            "src/features/radio_link/radio_link.cpp",
+            "src/shared/diagnostics/radio_diagnostics.cpp",
+            "src/shared/radio/radio_link.cpp",
             "-DLORA_APP_RELIABLE=1",
             '-DLORA_BUILD_ID="HOST_TEST"',
             "-ULORA_ROLE_SENDER",
@@ -104,8 +102,8 @@ class ReliableTransportTests(unittest.TestCase):
         )
         self.compile_run(
             "tests/reliable_app_test.cpp",
-            "src/features/diagnostics/radio_diagnostics.cpp",
-            "src/features/radio_link/radio_link.cpp",
+            "src/shared/diagnostics/radio_diagnostics.cpp",
+            "src/shared/radio/radio_link.cpp",
             "-DLORA_APP_RELIABLE=1",
             "-DHELLO_TEST_MODE=1",
             "-DTEST_WRONG_DESTINATION=1",
@@ -115,8 +113,8 @@ class ReliableTransportTests(unittest.TestCase):
     def test_radio_progress_when_ocd_mailbox_is_full(self) -> None:
         self.compile_run(
             "tests/reliable_app_test.cpp",
-            "src/features/diagnostics/radio_diagnostics.cpp",
-            "src/features/radio_link/radio_link.cpp",
+            "src/shared/diagnostics/radio_diagnostics.cpp",
+            "src/shared/radio/radio_link.cpp",
             "-DLORA_APP_RELIABLE=1",
             '-DLORA_BUILD_ID="HOST_TEST"',
             "-DLORA_NONBLOCKING_LOG=1",
@@ -126,8 +124,8 @@ class ReliableTransportTests(unittest.TestCase):
     def test_radio_progress_with_debug_output_disabled(self) -> None:
         self.compile_run(
             "tests/reliable_app_test.cpp",
-            "src/features/diagnostics/radio_diagnostics.cpp",
-            "src/features/radio_link/radio_link.cpp",
+            "src/shared/diagnostics/radio_diagnostics.cpp",
+            "src/shared/radio/radio_link.cpp",
             "-DLORA_APP_RELIABLE=1",
             '-DLORA_BUILD_ID="HOST_TEST"',
             "-DLORA_NONBLOCKING_LOG=1",
@@ -138,8 +136,8 @@ class ReliableTransportTests(unittest.TestCase):
     def test_diagnostic_disables_transmit(self) -> None:
         self.compile_run(
             "tests/reliable_app_test.cpp",
-            "src/features/diagnostics/radio_diagnostics.cpp",
-            "src/features/radio_link/radio_link.cpp",
+            "src/shared/diagnostics/radio_diagnostics.cpp",
+            "src/shared/radio/radio_link.cpp",
             "-DLORA_APP_RELIABLE=1",
             '-DLORA_BUILD_ID="HOST_TEST"',
             "-DHELLO_RF_DIAGNOSTIC_ONLY=1",

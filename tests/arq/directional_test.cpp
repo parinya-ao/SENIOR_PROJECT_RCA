@@ -8,8 +8,15 @@
 
 // Load the implementation in this fixture to observe private foreground state.
 // NOLINTBEGIN(bugprone-suspicious-include)
-#include "../../src/app/arq/application.cpp"
-#include "../../src/app/arq/radio.cpp"
+#include "../../stable_lib/arq/arq_config.h"
+#if defined(ARQ_ROLE_SENDER)
+#include "../../src/sender/appcode/arq/sender.cpp"
+#else
+#include "../../src/receiver/appcode/arq/receiver.cpp"
+#endif
+#include "../../src/shared/diagnostics/arq_bench.cpp"
+#include "../../src/shared/protocol/arq_ingress.cpp"
+#include "../../src/shared/radio/arq_radio.cpp"
 #include "../../stable_lib/arq/board_ssot.c"
 #include "../../stable_lib/arq/commands.cpp"
 #include "../../stable_lib/arq/diagnostics.cpp"

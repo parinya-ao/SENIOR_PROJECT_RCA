@@ -24,7 +24,7 @@ class RadioDiagnosticsTests(unittest.TestCase):
                 "-Isrc",
                 "-Iinclude",
                 "tests/radio_diagnostics_test.cpp",
-                "src/features/diagnostics/radio_diagnostics.cpp",
+                "src/shared/diagnostics/radio_diagnostics.cpp",
                 "-o",
                 str(binary),
             ]

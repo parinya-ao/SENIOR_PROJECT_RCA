@@ -376,7 +376,13 @@ class Gate1Tests(unittest.TestCase):
     def test_gate1_provenance_covers_migrated_arq_sources(self) -> None:
         from tools.rca import gate1_live
 
-        for name in ("src/app/arq/application.cpp", "src/app/arq/radio.cpp"):
+        for name in (
+            "src/sender/appcode/arq/sender.cpp",
+            "src/receiver/appcode/arq/receiver.cpp",
+            "src/shared/diagnostics/arq_bench.cpp",
+            "src/shared/protocol/arq_ingress.cpp",
+            "src/shared/radio/arq_radio.cpp",
+        ):
             with self.subTest(source=name):
                 self.assertIn(name, gate1_live.SOURCE_HASH_PATHS)
                 self.assertTrue((gate1_live.ROOT / name).is_file())
