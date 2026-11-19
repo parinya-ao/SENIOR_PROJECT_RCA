@@ -18,7 +18,7 @@ uv run --locked python -m tools.rf_stress \
   --historical-receipt artifacts/rf-proof/20261118T095311Z/physical-upload.json
 ```
 
-The enrolled `sender_hello` / `receiver` images support the fixed-payload ACK and one-shot NACK proof. They do not expose the variable-payload, Tracker TX, receiver payload-byte, or duplicate-counter interfaces needed by this suite. The stress command validates the supplied saved images and records `BLOCKED` before any RF command. It does not install firmware. The existing `tools.installed_rf` command remains the bounded 10 ACK / 10 NACK test for the currently installed pair.
+The enrolled `sender_hello` / `receiver` images support the fixed-payload ACK and one-shot NACK proof. They do not expose the variable-payload, Tracker TX, receiver payload-byte, or duplicate-counter interfaces needed by this suite. The special host transaction transport is also not implemented. The stress command validates the supplied saved images and records `BLOCKED` before any RF command. It does not install firmware. The existing `tools.installed_rf` command remains the bounded 10 ACK / 10 NACK test for the currently installed pair.
 
 Offline replay reads a prior `manifest.json`, its sibling `cases.jsonl` and `events.jsonl`, and writes a separate report. It never opens a radio or overwrites the source evidence.
 

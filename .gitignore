@@ -653,3 +653,22 @@ src/shared/*
 
 # Read-only installed LoRa bench runner.
 !tools/installed_rf.py
+
+# Interactive LoRa console sources and its validated runtime configuration.
+!tools/lora_chat/
+!tools/lora_chat/**
+tools/lora_chat/__pycache__/
+!tests/
+tests/*
+!tests/test_lora_chat_*.py
+!config/lora_chat.json
+
+# Keep the opt-in LoRa stress harness visible without adding it to normal test discovery.
+!tools/rf_stress/
+!tools/rf_stress/**
+tools/rf_stress/**/__pycache__/
+tools/rf_stress/**/*.pyc
+!tests/rf_stress_special/
+!tests/rf_stress_special/**
+tests/rf_stress_special/**/__pycache__/
+tests/rf_stress_special/**/*.pyc

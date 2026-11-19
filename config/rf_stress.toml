@@ -15,15 +15,15 @@ tracker_capabilities = ["fixed_payload_rx", "ack_tx", "single_nack_tx"]
 
 [profiles.smoke]
 random_cases_per_direction = 10
-nack_cases_per_direction = 10
-duplicate_cases_per_direction = 10
+nack_cases_total = 10
+duplicate_cases_total = 10
 
 [profiles.stress]
 random_cases_per_direction = 100
-nack_cases_per_direction = 100
-duplicate_cases_per_direction = 100
+nack_cases_total = 100
+duplicate_cases_total = 100
 
 [profiles.torture]
-random_cases_per_direction = 300
-nack_cases_per_direction = 100
-duplicate_cases_per_direction = 100
+random_cases_per_direction = 400
+nack_cases_total = 100
+duplicate_cases_total = 100

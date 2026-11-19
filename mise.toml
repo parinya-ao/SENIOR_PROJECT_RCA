@@ -10,6 +10,10 @@ run = "echo hello"
 description = "Production LoRa DATA/ACK/NACK bench debugger"
 run = "uv run --locked python -m tools.debug_protocol_ack_nack"
 
+[tasks.lora_chat]
+description = "Interactive Gateway ↔ Tracker LoRa debug console"
+run = "uv run --no-sync python -m tools.lora_chat"
+
 [tasks.rf_stress]
 description = "Build a safe dry-run bundle for the isolated LoRa stress suite"
 run = "uv run --locked python -m tools.rf_stress"

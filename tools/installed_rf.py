@@ -6,8 +6,10 @@ import argparse
 import hashlib
 import json
 import queue
+import re
 import time
 import tomllib
+from collections import Counter
 from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
@@ -22,6 +24,15 @@ TRIALS = 10
 AVR128DA28_FLASH_BYTES = 128 * 1024
 
 
+def capture_event_phase(*, after_rf_reopen: bool, ready_barrier_seen: bool) -> str:
+    """Classify buffered reconnect lines separately from events after readiness."""
+    if ready_barrier_seen:
+        return "live_after_ready_barrier"
+    if after_rf_reopen:
+        return "buffered_after_rf_reopen"
+    return "unclassified_before_ready"
+
+
 class Capture:
     """Own both UPDI monitors and retain the connection provenance of each line."""
 
@@ -33,7 +44,10 @@ class Capture:
         self.generations = dict.fromkeys(rf.PORTS, 0)
         self.connections: dict[str, tuple[str, int]] = {}
         self.lines: list[str] = []
+        self.line_segments: list[tuple[str, int, str]] = []
+        self.records: list[rf.Json] = []
         self.after_rf: set[tuple[str, int]] = set()
+        self.ready_barriers: set[tuple[str, int]] = set()
 
     def record(self, role: str, stream: str, line: str, generation: int) -> None:
         """Journal host receipt time separately from embedded firmware time."""
@@ -46,13 +60,19 @@ class Capture:
             "line": line,
             "connection": generation,
             "delivery": delivery,
+            "phase": capture_event_phase(
+                after_rf_reopen=(role, generation) in self.after_rf,
+                ready_barrier_seen=(role, generation) in self.ready_barriers,
+            ),
             "received_utc": datetime.now(UTC).isoformat(timespec="milliseconds"),
             "received_monotonic_ns": time.monotonic_ns(),
         }
         with (self.proof.run_dir / "events.jsonl").open("a") as out:
             out.write(json.dumps(row) + "\n")
+        self.records.append(row)
         if stream == "stdout":
             self.lines.append(line)
+            self.line_segments.append((role, generation, line))
 
     def connect(self, role: str, *, after_rf: bool = False) -> None:
         """Open a new capture segment without explicitly resetting the target."""
@@ -119,9 +139,21 @@ class Capture:
     def marker(self, role: str, command: str, marker: str) -> None:
         """Send a control and require its role-specific completion."""
         start = self.send(role, command)
-        if not self.wait(lambda: f"[{role.upper()}] {marker}" in self.lines[start:], 20):
+        expected_line = f"[{role.upper()}] {marker}"
+        if not self.wait(lambda: expected_line in self.lines[start:], 20):
             msg = f"{role}: missing {marker} after {command}"
             raise TimeoutError(msg)
+        generation = self.generations[role]
+        fresh_marker = any(
+            line.startswith(expected_line)
+            for line_role, line_generation, line in self.line_segments[start:]
+            if line_role == role and line_generation == generation
+        )
+        if not fresh_marker:
+            msg = f"{role}: {marker} came from an earlier monitor connection"
+            raise TimeoutError(msg)
+        if marker == "RX_READY":
+            self.ready_barriers.add((role, generation))
 
 
 def verify_snapshots(snapshot: Path, receipt_path: Path) -> dict[str, rf.Json]:
@@ -179,11 +211,52 @@ def gateway_finished(capture: Capture, start: int) -> bool:
     )
 
 
+def unplanned_transaction_failures(lines: list[str], planned_campaigns: set[str]) -> list[str]:
+    """Return transaction-failure events whose campaign is outside this run's cases."""
+    failures = []
+    for line in lines:
+        if "TRANSACTION_FAILED" not in line:
+            continue
+        match = re.search(r"\bSID=([0-9A-Fa-f]+)\b", line)
+        campaign = match.group(1).upper() if match is not None else None
+        if campaign not in planned_campaigns:
+            failures.append(line)
+    return failures
+
+
+def capture_diagnostics(lines: list[str]) -> dict[str, rf.Json]:
+    """Summarize only status, IRQ, signal, and airtime values present in captured lines."""
+    radio_errors: Counter[int] = Counter()
+    irq_flags: set[int] = set()
+    rssi_dbm: list[float] = []
+    snr_db: list[float] = []
+    airtime_us: list[int] = []
+    for line in lines:
+        for value in re.findall(r"\bE=(-?\d+)\b", line):
+            radio_errors[int(value)] += 1
+        for value in re.findall(r"\bIRQ_FLAGS=(0x[0-9A-Fa-f]+|\d+)\b", line):
+            irq_flags.add(int(value, 0))
+        for key, values in (("RSSI_DBM", rssi_dbm), ("SNR_DB", snr_db)):
+            values.extend(
+                float(value) for value in re.findall(rf"\b{key}=(-?\d+(?:\.\d+)?)\b", line)
+            )
+        airtime_us.extend(int(value) for value in re.findall(r"\bAIRTIME_US=(\d+)\b", line))
+    return {
+        "radio_error_counts": {str(code): count for code, count in sorted(radio_errors.items())},
+        "irq_flags_seen": sorted(irq_flags) or None,
+        "rssi_dbm": sum(rssi_dbm) / len(rssi_dbm) if rssi_dbm else None,
+        "snr_db": sum(snr_db) / len(snr_db) if snr_db else None,
+        "airtime_us": sum(airtime_us) if airtime_us else None,
+    }
+
+
 def run(capture: Capture, images: dict[str, rf.Json], profile: rf.Json) -> int:
     """Run each bounded case sequentially and park both radios on exit."""
     outcomes: list[rf.Json] = []
     parked = {}
     error = None
+    unplanned_failures: list[str] = []
+    unplanned_failure_events: list[rf.Json] = []
     try:
         for role in ("receiver", "gateway"):
             capture.marker(role, "R", "RX_READY")
@@ -212,6 +285,19 @@ def run(capture: Capture, images: dict[str, rf.Json], profile: rf.Json) -> int:
     except (OSError, ValueError) as exc:
         error = str(exc)
     finally:
+        planned_campaigns = {
+            str(outcome["result"]["campaign"]).upper()
+            for outcome in outcomes
+            if outcome.get("result") is not None
+        }
+        unplanned_failures = unplanned_transaction_failures(capture.lines, planned_campaigns)
+        unplanned_failure_events = [
+            row
+            for row in capture.records
+            if row["line"] in unplanned_failures and "TRANSACTION_FAILED" in row["line"]
+        ]
+        if unplanned_failures and error is None:
+            error = "unplanned transaction failure outside the scheduled RF cases"
         for role in rf.PORTS:
             try:
                 capture.marker(role, "P", "PARKED E=0")
@@ -221,7 +307,16 @@ def run(capture: Capture, images: dict[str, rf.Json], profile: rf.Json) -> int:
             finally:
                 capture.close(role)
         owners = rf.check_port_owners(capture.proof, "postflight")
-        report = {"trials": outcomes, "error": error, "parked": parked, "port_owners": owners}
+        diagnostics = capture_diagnostics(capture.lines)
+        report = {
+            "trials": outcomes,
+            "error": error,
+            "unplanned_failures": unplanned_failures,
+            "unplanned_failure_events": unplanned_failure_events,
+            "parked": parked,
+            "port_owners": owners,
+            **diagnostics,
+        }
         capture.proof.note("summary.json", json.dumps(report, indent=2) + "\n")
     return int(error is not None or not all(parked.values()) or bool(owners))
 

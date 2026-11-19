@@ -1,0 +1,6 @@
+{
+  "max_pending_messages": 8,
+  "event_history_limit": 120,
+  "refresh_interval_ms": 100,
+  "manual_retry_limit": 1
+}
