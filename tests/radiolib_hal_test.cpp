@@ -120,4 +120,5 @@ int main() {
         "begin -> carrier E4C000 -> IRQ read/W1C -> TX/FIFO -> finish "
         "833us/standby -> RX -> FIFO/CRC/clear: PASS");
   }
+  return 0;
 }

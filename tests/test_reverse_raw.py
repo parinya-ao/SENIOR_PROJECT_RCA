@@ -53,9 +53,7 @@ class ReverseRawTests(unittest.TestCase):
                 r: {"process": SimpleNamespace(poll=lambda: None)} for r in ("sender", "receiver")
             }
 
-            def command(
-                role: str, text: str, c: Any = c, mode: int = mode
-            ) -> None:
+            def command(role: str, text: str, c: Any = c, mode: int = mode) -> None:
                 c.commands.append({"role": role, "text": text})
                 rows = []
                 if text == "RX":

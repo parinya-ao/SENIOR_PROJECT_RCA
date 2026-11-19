@@ -119,7 +119,7 @@ class ReceiverHardwareTests(unittest.TestCase):
                 ],
                 capture_output=True,
                 text=True,
-            check=False,
+                check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             result = subprocess.run([str(binary)], capture_output=True, text=True, check=False)

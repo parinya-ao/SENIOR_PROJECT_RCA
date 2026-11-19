@@ -1,11 +1,14 @@
 # Gateway-to-Receiver SF7 Hello World
 
+> Historical note: the linked artifacts are absent from this checkout. The result summaries below are historical and are not fresh evidence for the current build. Current verification is recorded in [LORA_ACK_NACK.md](docs/testing/LORA_ACK_NACK.md).
+
+
 ## Current result — Receiver installed, normal startup unresolved
 
 The owner's `OPERATOR_SAFETY_ATTESTATION` was accepted as the no-meter
 programming assessment without inventing electrical measurements. The exact
 approved Receiver installation **physically passed** in
-[152319Z](artifacts/rf-proof/20261106T152319Z/receiver-boot-receipt.json):
+152319Z (artifact file not present in this checkout):
 RF-disabled APPCODE first, independent readback, BOOT page 0 last, and full
 preservation checks. No fuse, EEPROM or lock write or chip erase occurred.
 The Gateway has not been programmed.
@@ -13,15 +16,15 @@ The Gateway has not been programmed.
 The Receiver has not produced the new Build ID. Two confirmation cycles used
 valid `RSTFR=0x20` baselines and observed fresh `0x02` BORF after release;
 the separate zero-baseline `0x10` test is DxCore's intentional software reset.
-See [the actual execution report](artifacts/rf-proof/20261106T154458Z/MISSION_RESULT.md).
+See the actual execution report (artifact file not present in this checkout).
 One bounded read-only UPDI recovery at 57600 baud succeeded and freshly
 confirmed BODCFG `0x54`. The final control snapshot shows RESET_REQ `0x00`,
 SYS_STATUS `0xA2` and OCD_STATUS `0x00`. Normal startup and the physical cause
 remain unresolved; SPI and RF success are not claimed. See
-[the recovery/RCA evidence](artifacts/rf-proof/20261106T155949Z/UPDI_RECOVERY.md).
+the recovery/RCA evidence (artifact file not present in this checkout).
 
 The affected Python suite passed **130 tests** after the attestation changes
-([log](artifacts/rf-proof/20261106T153656Z/python-regression.stderr.log)).
+(log (artifact file not present in this checkout)).
 Unchanged firmware/C++ tests were not repeated. Earlier status sections below
 are retained as history and are superseded by this update where they differ.
 
@@ -35,16 +38,16 @@ RF module and antenna suitability checks remain independent. Unknown voltages
 remain null; this mode does not assert `power_verified`.
 
 Actual live identification passed on both boards in
-[20261106T145856Z](artifacts/rf-proof/20261106T145856Z/target-identification.log).
-[Complete live memory reads](artifacts/rf-proof/20261106T145941Z/no-meter-target-readback.json)
+20261106T145856Z (artifact file not present in this checkout).
+Complete live memory reads (artifact file not present in this checkout)
 confirmed both unique serials, fuses and lock state; both complete Flash images
 equal their original backups byte for byte. The new boot handoff is not installed.
 The Python suite now passes 128 tests, including no-meter rejection cases;
-[logs](artifacts/rf-proof/20261106T150533Z/python-regression.stderr.log).
+logs (artifact file not present in this checkout).
 These changes do not alter firmware, generated configuration or existing builds.
 
 A compiled 48-byte handoff and exact one-page BOOT overwrite/recovery package
-are ready in [the specific approval report](artifacts/rf-proof/20261106T141150Z/APPROVAL.md).
+are ready in the specific approval report (artifact file not present in this checkout).
 It programs RF-disabled APPCODE pages 44–103 first, verifies them, then modifies
 only BOOT page 0. Fourteen focused boot/package/programming tests and the 43
 affected proof-runner tests pass. Installed AVRDUDE 8.1 dryrun verifies both
@@ -54,17 +57,17 @@ does so automatically. The existing application binaries and SSOT are unchanged.
 
 The operator explicitly approved the exact Receiver-only application-first,
 BOOT-page-0-last package and reviewed recovery procedure. Gateway programming
-is excluded. The [approval record](artifacts/rf-proof/20261106T142617Z/operator-authorization.json)
+is excluded. The approval record (artifact file not present in this checkout)
 preserves that scope; the approval package itself remains unchanged.
 
 The operator reported both boards powered and connected; live UPDI identity and
 full-memory reads are recorded in the technical evidence linked above.
 The operator explicitly reports actual supply source, CP2102 VCC/backfeed,
 physical ground/header inspection and unchanged safe wiring unconfirmed.
-The [no-meter installer attempt](artifacts/rf-proof/20261106T150102Z/receiver-boot-install.log)
+The no-meter installer attempt (artifact file not present in this checkout)
 therefore stopped before any write. No repeat Receiver approval is needed.
 
-[Fresh non-destructive verification](artifacts/rf-proof/20261106T142617Z/approved-mission-verification.json)
+Fresh non-destructive verification (artifact file not present in this checkout)
 checked all 13 backup hashes, the unchanged approved package, generated
 configuration, effective Flash boundaries and all five existing image hashes.
 No application rebuild or unrelated host-suite rerun was needed. The user-reported
@@ -90,15 +93,15 @@ inventory remains unknown.
 
 | Check | Actual result | Evidence |
 |---|---|---|
-| Python suite | 128 tests PASS after no-meter integration | [regression log](artifacts/rf-proof/20261106T150533Z/python-regression.stderr.log) |
+| Python suite | 128 tests PASS after no-meter integration | regression log (artifact file not present in this checkout) |
 | C++ protocol | 130 checks PASS | Same host evidence directory |
 | C++ radio wrapper | 77 checks PASS | Same host evidence directory |
 | Role logging | 10 checks PASS | Same host evidence directory |
 | RF-disabled send protection | PASS; send denied even after successful stub initialization | diagnostic-protection-tests log |
-| Five clean builds | PASS; all starts, ends and reset targets validated | [firmware measurements](artifacts/rf-proof/20261106T132834Z/firmware-measurements.json) |
+| Five clean builds | PASS; all starts, ends and reset targets validated | firmware measurements (artifact file not present in this checkout) |
 | Generated artifacts | Validator and generator --check PASS | [manifest](generated/lora_manifest.json) |
-| Saved Receiver boot | NO_APPLICATION_HANDOFF | [reachable boot audit](artifacts/rf-proof/20261106T132129Z/receiver-boot-audit.json) |
-| Physical SPI/upload/DATA/ACK | NOT RUN; guarded stage blocked before serial open | [SPI stage log](artifacts/rf-proof/20261106T133004Z/radio-spi-smoke.log) |
+| Saved Receiver boot | NO_APPLICATION_HANDOFF | reachable boot audit (artifact file not present in this checkout) |
+| Physical SPI/upload/DATA/ACK | NOT RUN; guarded stage blocked before serial open | SPI stage log (artifact file not present in this checkout) |
 
 The host tests deliberately contain synthetic logs and radio stubs. They are not
 physical evidence. A pure parsed log is classified as structural validation;

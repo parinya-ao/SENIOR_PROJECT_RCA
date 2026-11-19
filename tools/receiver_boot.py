@@ -569,7 +569,7 @@ def verify_live_receipt(proof: Json, path: str | Path) -> bool:
 
 def _build_handoff(
     directory: Path, reset: bytes, command: Any
-) -> tuple[bytes, dict[str, Any]]:
+) -> tuple[bytes, dict[str, Any], dict[str, Any]]:
     """Compile and trace the historical handoff with the supplied reset vector."""
     header = f"#define APP_START {APP_START}\n#define CCP_IOREG_VALUE 0xD8\n" + "".join(
         f"#define RESET_BYTE_{index} {value}\n" for index, value in enumerate(reset)
@@ -650,11 +650,11 @@ def _build_handoff(
         if traces[f"wrong_reset_byte_{index}"]["application_entered"]:
             msg = "boot guard accepted an incorrect reset vector"
             raise ValueError(msg)
-    return stub, traces
+    return stub, traces, audit
 
 
-def build_fixture(directory: Path) -> None:
-    """Build the archived handoff without preparing a device programming package."""
+def build_fixture(directory: Path) -> dict[str, Any]:
+    """Build the handoff fixture and return its verified control-flow audit."""
     directory.mkdir(parents=True)
 
     def run_tool(_name: str, argv: list[str]) -> tuple[int, bytes, bytes]:
@@ -663,10 +663,11 @@ def build_fixture(directory: Path) -> None:
             print(result.stderr.decode(errors="replace"), end="")
         return result.returncode, result.stdout, result.stderr
 
-    _, traces = _build_handoff(directory, bytes.fromhex("52c00000"), run_tool)
+    _, traces, audit = _build_handoff(directory, bytes.fromhex("52c00000"), run_tool)
     (directory / "receiver-boot-instruction-traces.json").write_text(
         json.dumps(traces, indent=2) + "\n"
     )
+    return audit
 
 
 def prepare(proof: Json) -> int:  # noqa: C901, PLR0912, PLR0915 -- builds and verifies one approved image set
@@ -759,7 +760,7 @@ def prepare(proof: Json) -> int:  # noqa: C901, PLR0912, PLR0915 -- builds and v
     if reset is None:
         msg = "application reset vector was not found"
         raise ValueError(msg)
-    stub, traces = _build_handoff(directory, reset, proof.command)
+    stub, traces, audit = _build_handoff(directory, reset, proof.command)
     proof.note("receiver-boot-instruction-traces.json", json.dumps(traces, indent=2) + "\n")
     page, changes = patch_page0(original, stub)
     (directory / "receiver-boot-page0.hex").write_text(ihex(page))

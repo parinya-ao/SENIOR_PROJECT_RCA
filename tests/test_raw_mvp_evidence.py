@@ -34,7 +34,7 @@ class RawEvidenceTests(unittest.TestCase):
                 ],
                 capture_output=True,
                 text=True,
-            check=False,
+                check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn('"passed": true', result.stdout)

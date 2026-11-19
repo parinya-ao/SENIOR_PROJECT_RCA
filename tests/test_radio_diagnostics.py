@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class RadioDiagnosticsTests(unittest.TestCase):
     def test_queue_preserves_fifo_across_wrap_and_saturates_overflow(self) -> None:
         compiler = shutil.which("g++") or shutil.which("clang++")
-        self.assertIsNotNone(compiler, "a host C++ compiler is required")
+        if compiler is None:
+            self.fail("a host C++ compiler is required")
         with tempfile.TemporaryDirectory() as directory:
             binary = Path(directory) / "radio_diagnostics_test"
             command = [
@@ -28,9 +29,7 @@ class RadioDiagnosticsTests(unittest.TestCase):
                 "-o",
                 str(binary),
             ]
-            result = subprocess.run(
-                command, cwd=ROOT, capture_output=True, text=True, check=False
-            )
+            result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             result = subprocess.run(
                 [binary], capture_output=True, text=True, check=False, timeout=10

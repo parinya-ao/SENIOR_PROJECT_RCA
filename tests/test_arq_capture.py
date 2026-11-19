@@ -316,7 +316,7 @@ class CaptureTests(unittest.TestCase):
                     arq_trial.campaign()
                 restore.assert_called_once()
 
-    def make_capture(self, responses: Any=True) -> Any:
+    def make_capture(self, responses: Any = True) -> Any:
         c = Capture(None)
         get = c.queue.get
         setattr(c.queue, "get", lambda **kwargs: get(block=False))
@@ -338,7 +338,7 @@ class CaptureTests(unittest.TestCase):
         setattr(c, "command", command)
         return c, monotonic
 
-    def status(self, role: Any, overflow: Any=0, build: Any="build") -> Any:
+    def status(self, role: Any, overflow: Any = 0, build: Any = "build") -> Any:
         return [
             "A t=1 e=BOOT s=0 rc=0 v=4",
             f"A t=1 e=IDENTITY s=0 build={build} config=config",

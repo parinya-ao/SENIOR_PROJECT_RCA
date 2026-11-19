@@ -243,7 +243,7 @@ class LiveProofTests(unittest.TestCase):
     def test_repeated_wait_start_never_reissues_sender_command(self) -> None:
         self._run_capture(repeat_wait_start=True)
 
-    def _run_capture(self, short_write: Any=False, repeat_wait_start: Any=False) -> None:
+    def _run_capture(self, short_write: Any = False, repeat_wait_start: Any = False) -> None:
         _manifest, journal, images = fixture()
         writes = []
 

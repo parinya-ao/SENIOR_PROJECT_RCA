@@ -2,6 +2,58 @@
 
 The follow-on source ownership verification is in [Source ownership V2](SOURCE_OWNERSHIP_V2.md) with its [fresh baseline](OWNERSHIP_BASELINE.md).
 
+Current ACK/NACK behavior and validation status are maintained in
+[docs/testing/LORA_ACK_NACK.md](../testing/LORA_ACK_NACK.md), with hardware
+nets in the repository [pin audit](../../PIN_MAPPING_AUDIT.md). The current
+[regression matrix](../testing/REGRESSION_MATRIX.md) and
+[real-radio evidence ledger](../testing/REAL_RADIO_EVIDENCE.md) carry the
+per-target sizes and physical-test blockers.
+
+## Current follow-up verification — 2026-11-19
+
+This is the fresh evidence for the current worktree; the remaining sections
+retain the earlier C++ quality pass as historical context.
+
+- The final PlatformIO matrix passed **19/19** with **0 compiler warnings**.
+  The default Sender image is **38,794 B Flash / 7,079 B static SRAM** and the
+  Receiver image is **35,788 B / 3,849 B**; both match the first clean
+  pre-fix build in this loop. The approved-plan historical baseline was
+  **38,820 / 7,079 B** for Sender and **35,908 / 3,842 B** for Receiver. Those
+  differences were already present before this loop's ARQ change.
+  The ARQ Sender changed from **37,022 B** to **37,028 B**, and ARQ Receiver
+  from **35,774 B** to **35,772 B**; their static SRAM remains **5,202 B** and
+  **5,046 B**. These are the measured sizes after moving the shared deadline
+  helper; no protocol field or retry rule changed.
+- The full host suite ran **434 tests: 433 passed, 0 failed, 1 skipped**. The
+  skip is the archived BOOTSIZE=44 package case, which does not match the active
+  Receiver geometry.
+- `mise run lint:python` passed Ruff, formatting, and MyPy across 72 files.
+  `bash scripts/quality/check_cpp.sh` exited **0**; all reported supported
+  analyses, Doxygen, formatting, and its five selected AVR builds passed.
+  Native AVR LLVM, TimeUtils LLVM, and selected Gateway LLVM checks remain
+  marked UNSUPPORTED by the established gate.
+- The generated-config `--check` passed. The 19 final link maps contain no BOOT
+  source; the Sender ARQ ELF extracts only `sender.cpp.o`, and the Receiver ARQ
+  ELF only `receiver.cpp.o`. An `avr-objdump` scan found **0 SPM instructions
+  across 19 APPCODE ELFs**. No memory layout, fuse, wire format, or physical
+  hardware was changed.
+- Graphify was queried before source reads and refreshed with `graphify update .`
+  to **3,612 nodes / 7,011 edges**. CodeGraph MCP has no usable index in this
+  checkout; no CodeGraph result is claimed.
+- The offline handoff fixture remains **48 bytes**. Its valid reset bytes
+  `52 C0 00 00` jump to `0x5800`; the blank vector and all four altered-byte
+  cases park with interrupts disabled.
+  It does not validate an active BOOT/APPCODE pairing or installer.
+- The native Codex Goal remains **active**. Physical 10/10 DATA/ACK and 10/10
+  wrong-destination trials are **BLOCKED** because passive discovery found no
+  devices and `/dev/serial/by-path` is absent. No firmware was uploaded and no
+  RF was transmitted.
+- The active documentation audit checked **91 relative links across 28 files**
+  with no broken targets. No Markdown was deleted or consolidated. The wider
+  ignored historical RF report's 18 stale absolute links were converted to
+  literal captured paths; its original is backed up under `/tmp`. The full
+  66-file scan now has no broken links.
+
 Historical record of the C++ quality pass before the follow-on flat-tree work.
 The current library layout is documented in
 [stable_lib/README.md](../../stable_lib/README.md).

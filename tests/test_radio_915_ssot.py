@@ -259,7 +259,7 @@ class Radio915ValidationTests(unittest.TestCase):
                 input='#include "include/generated/radio_915_config.h"\n',
                 text=True,
                 capture_output=True,
-            check=False,
+                check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
         for roles in ([], ["-DLORA_ROLE_SENDER=1", "-DLORA_ROLE_RECEIVER=1"]):
@@ -278,7 +278,7 @@ class Radio915ValidationTests(unittest.TestCase):
                 input='#include "include/generated/radio_915_config.h"\n',
                 text=True,
                 capture_output=True,
-            check=False,
+                check=False,
             )
             self.assertNotEqual(result.returncode, 0)
 
@@ -289,7 +289,7 @@ class Radio915ValidationTests(unittest.TestCase):
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
-            check=False,
+                check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
@@ -327,7 +327,7 @@ class Radio915ValidationTests(unittest.TestCase):
                     'static_assert(HELLO_RF_TX_POWER_DBM == 5, "candidate power");\n',
                     text=True,
                     capture_output=True,
-                check=False,
+                    check=False,
                 )
                 self.assertEqual(result.returncode == 0, valid, result.stderr)
 
@@ -347,9 +347,7 @@ class Radio915ValidationTests(unittest.TestCase):
         main = (directory / "main.py").read_text()
         config = (directory / "config.txt").read_text()
         self.assertIn('CONFIG_LORA_STRUCT_FMT = "<BfbB"', loraboard)
-        self.assertIn(
-            "def configure(self, addr, freq, tx_power, long_range):", loraboard
-        )
+        self.assertIn("def configure(self, addr, freq, tx_power, long_range):", loraboard)
         self.assertRegex(
             main,
             r"b\.configure\(\s*loraboards_config\['address'\]\s*,\s*"
@@ -396,7 +394,7 @@ class I2cRadioConfigTests(unittest.TestCase):
                 ],
                 capture_output=True,
                 text=True,
-            check=False,
+                check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             result = subprocess.run([str(binary)], capture_output=True, text=True, check=False)

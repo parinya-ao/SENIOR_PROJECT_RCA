@@ -22,6 +22,11 @@ boot/
 
 The measured starting point is in [OWNERSHIP_BASELINE.md](OWNERSHIP_BASELINE.md).
 
+This V2 report preserves its historical measurements. The current follow-up
+verification, including 19 target sizes and final ARQ link-map evidence, is in
+[ACK/NACK verification](../testing/LORA_ACK_NACK.md), with the present
+[architecture map](../architecture/FINAL_ARCHITECTURE.md).
+
 ## B. Task
 
 Assign startup and foreground transaction policy to their Sender or Receiver application sources. Keep common transport, packet read/decode, radio access, and diagnostic formatting reusable. Build the historical BOOT handoff independently and preserve the active Flash geometry, fuses, RF configuration, and wire contracts.

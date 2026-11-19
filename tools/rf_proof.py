@@ -1480,9 +1480,7 @@ def program_application(
         if end > bounds[1]:
             msg = "last application page exceeds approved Flash region"
             raise ValueError(msg)
-        if approved_sha is not None and (
-            hashlib.sha256(data).hexdigest() != approved_sha or approved_pages != (start, end)
-        ):
+        if hashlib.sha256(data).hexdigest() != approved_sha or approved_pages != (start, end):
             msg = "image hash or application pages differ from authorization"
             raise ValueError(msg)
         code, out, err = proof.command(
@@ -1495,7 +1493,7 @@ def program_application(
         if approved_serial is not None:
             snapshot_options["include_usersig"] = True
         before = read_snapshot(proof, environment + "-before-page-write", role, **snapshot_options)
-        if approved_serial is not None and before["sernum"].hex() != approved_serial:
+        if before["sernum"].hex() != approved_serial:
             msg = "live MCU serial differs from authorization"
             raise ValueError(msg)
         expected = normalize_ihex_region(data.decode("ascii"), start, end)
@@ -2960,6 +2958,8 @@ def run_stable_ack_rf_test(
             ]
             if all(parked):
                 break
+            key = stream = ""
+            raw = None
             try:
                 key, stream, raw = output_queue.get(timeout=0.1)
             except queue.Empty:
@@ -3140,6 +3140,8 @@ def run_wrong_destination_rf_test(
             ]
             if all(parked):
                 break
+            key = stream = ""
+            raw: bytes | None = None
             try:
                 key, stream, raw = output_queue.get(timeout=0.1)
             except queue.Empty:
@@ -3237,7 +3239,7 @@ def run_stable_campaign(proof: ProofRun, args: argparse.Namespace,
     cases = [("T01", "T01", False), ("T02", "T02", False), ("lost-ACK", "T01", True)]
     cases += [(f"normal-{count}-{i + 1:04}", "T01", False)
               for count in (10, 100, 1000) for i in range(count)]
-    results = []
+    results: list[Json] = []
     status = 0
     for name, test, drop in cases:
         options = argparse.Namespace(**vars(args))
@@ -3254,8 +3256,12 @@ def run_stable_campaign(proof: ProofRun, args: argparse.Namespace,
             output.write(json.dumps(row) + "\n")
         if status:
             break
-    summary = {"passed": status == 0 and len(results) == len(cases),
-               "planned": len(cases), "executed": len(results), "cases": results}
+    summary: dict[str, Json] = {
+        "passed": status == 0 and len(results) == len(cases),
+        "planned": len(cases),
+        "executed": len(results),
+        "cases": results,
+    }
     summary["successful"] = sum(row["exit_code"] == 0 for row in results)
     for field, source in (("data_tx", "attempts"), ("ack_tx", "ack_tx"),
                           ("nack_tx", "nack_tx"), ("retries", "retries"),

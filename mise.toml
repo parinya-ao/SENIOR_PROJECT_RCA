@@ -21,10 +21,10 @@ description = "Strict Python lint, formatting, and type checks (read-only)"
 depends = ["lint:python:ruff", "lint:python:format", "lint:python:types"]
 
 [tasks."lint:python:ruff"]
-run = "uv run --locked ruff check src/lora tools tests"
+run = "uv run --locked --no-sync ruff check tools tests"
 
 [tasks."lint:python:format"]
-run = "uv run --locked ruff format --check src/lora tools tests"
+run = "uv run --locked --no-sync ruff format --check tools tests"
 
 [tasks."lint:python:types"]
-run = "uv run --locked mypy"
+run = "uv run --locked --no-sync mypy"

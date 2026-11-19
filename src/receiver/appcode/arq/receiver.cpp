@@ -4,9 +4,10 @@
 
 #include "application.h"
 #include "application_config.h"
-#include "arq.h"
 #include "arq_commands.h"
+#include "arq_deadline.h"
 #include "arq_diagnostics.h"
+#include "arq_receiver.h"
 #include "shared/diagnostics/arq_bench.h"
 #include "shared/protocol/arq_ingress.h"
 #include "shared/radio/arq_radio.h"

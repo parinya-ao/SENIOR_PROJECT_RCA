@@ -83,7 +83,9 @@ class RawMvpTests(unittest.TestCase):
             self.assertIn(role + "_mvp", profile["environments"][role])
 
     def test_real_entrypoint(self) -> None:
-        self.assertTrue((ROOT / "stable_lib/mvp_app/mvp_app.cpp").exists(), "raw MVP entrypoint missing")
+        self.assertTrue(
+            (ROOT / "stable_lib/mvp_app/mvp_app.cpp").exists(), "raw MVP entrypoint missing"
+        )
         with tempfile.TemporaryDirectory() as directory:
             for role in ("SENDER", "RECEIVER"):
                 binary = Path(directory) / role

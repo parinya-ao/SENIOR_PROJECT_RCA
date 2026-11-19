@@ -1,11 +1,12 @@
 """Host contracts for the stable LoRa ACK/NACK hardware proof path."""
 
+import argparse
 import json
 import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 from tools import rf_proof
@@ -13,17 +14,12 @@ from tools import rf_proof
 ROOT = Path(__file__).resolve().parents[1]
 CAMPAIGN_ID = 0x1234
 PAYLOAD_LINE = (
-    f"PAYLOAD_BYTES C={CAMPAIGN_ID:04X} S=01 LEN=11 "
-    "HEX=68656C6C6F20776F726C64 ASCII=hello world"
+    f"PAYLOAD_BYTES C={CAMPAIGN_ID:04X} S=01 LEN=11 HEX=68656C6C6F20776F726C64 ASCII=hello world"
 )
 
 
-def event(name: str, timestamp: int, packet_type: int, sequence: int = 1,
-          error: int = 0) -> str:
-    return (
-        f"{name} SID={CAMPAIGN_ID:04X} T={timestamp} TYPE={packet_type} "
-        f"Q={sequence} E={error}"
-    )
+def event(name: str, timestamp: int, packet_type: int, sequence: int = 1, error: int = 0) -> str:
+    return f"{name} SID={CAMPAIGN_ID:04X} T={timestamp} TYPE={packet_type} Q={sequence} E={error}"
 
 
 def image_evidence(run_id: str = "run-1") -> dict[str, dict[str, Any]]:
@@ -60,8 +56,8 @@ def journal(nack: bool = False) -> list[dict[str, Any]]:
         )
     rows.extend(
         [
-        ("HOST_RECEIVER", "?"),
-        ("RECEIVER", "RADIO_READY"),
+            ("HOST_RECEIVER", "?"),
+            ("RECEIVER", "RADIO_READY"),
         ]
     )
     if nack:
@@ -159,8 +155,9 @@ def wrong_destination_journal() -> list[dict[str, Any]]:
                 ("GATEWAY", "WRONG_DEST_TX_DONE"),
                 (
                     "RECEIVER",
-                    event("RX_DISCARD_DEST", trial + 10, 0, sequence=0)
-                    .replace("SID=1234", "SID=0000"),
+                    event("RX_DISCARD_DEST", trial + 10, 0, sequence=0).replace(
+                        "SID=1234", "SID=0000"
+                    ),
                 ),
             ]
         )
@@ -306,9 +303,12 @@ class StableTransportProofTests(unittest.TestCase):
         ]
         rows[at:at] = [{"role": role, "line": f"[{role}] {line}"} for role, line in extra]
         for row in rows:
-            if "ACK_TX_BEGIN" in row["line"]: row["line"] = row["line"].replace("T=4", "T=3006")
-            if "ACK_TX_DONE" in row["line"]: row["line"] = row["line"].replace("T=5", "T=3007")
-            if "ACK_ACCEPTED" in row["line"]: row["line"] = row["line"].replace("T=6", "T=3008")
+            if "ACK_TX_BEGIN" in row["line"]:
+                row["line"] = row["line"].replace("T=4", "T=3006")
+            if "ACK_TX_DONE" in row["line"]:
+                row["line"] = row["line"].replace("T=5", "T=3007")
+            if "ACK_ACCEPTED" in row["line"]:
+                row["line"] = row["line"].replace("T=6", "T=3008")
         result = rf_proof.validate_stable_transport(rows, image_evidence(), "run-1", "T01")
         self.assertTrue(result["valid"], result["issues"])
         self.assertEqual(result["attempts"], 2)
@@ -318,7 +318,12 @@ class StableTransportProofTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             proof = SimpleNamespace(run_dir=Path(directory))
             with patch.object(rf_proof, "run_stable_ack_rf_test", return_value=1) as execute:
-                result = rf_proof.run_stable_campaign(proof, SimpleNamespace(), "run-1", image_evidence())
+                result = rf_proof.run_stable_campaign(
+                    cast(rf_proof.ProofRun, proof),
+                    cast(argparse.Namespace, SimpleNamespace()),
+                    "run-1",
+                    image_evidence(),
+                )
             self.assertEqual(result, 1)
             self.assertEqual(execute.call_count, 1)
             summary = json.loads((proof.run_dir / "campaign.json").read_text())
@@ -329,16 +334,31 @@ class StableTransportProofTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             proof = SimpleNamespace(run_dir=Path(directory))
             calls = []
+
             def execute(child: Any, options: Any, _run: str, _images: Any) -> int:
                 calls.append(options.transport_test)
                 index = len(calls)
-                result = {"attempts": index, "ack_tx": int(index < 3), "nack_tx": int(index == 2),
-                          "retries": index - 1, "timeouts": int(index == 3),
-                          "rtt_ms": index * 100 if index < 3 else None}
+                result = {
+                    "attempts": index,
+                    "ack_tx": int(index < 3),
+                    "nack_tx": int(index == 2),
+                    "retries": index - 1,
+                    "timeouts": int(index == 3),
+                    "rtt_ms": index * 100 if index < 3 else None,
+                }
                 (child.run_dir / "rf-test.json").write_text(json.dumps(result))
                 return int(index == 3)
+
             with patch.object(rf_proof, "run_stable_ack_rf_test", side_effect=execute):
-                self.assertEqual(rf_proof.run_stable_campaign(proof, SimpleNamespace(), "run-1", image_evidence()), 1)
+                self.assertEqual(
+                    rf_proof.run_stable_campaign(
+                        cast(rf_proof.ProofRun, proof),
+                        cast(argparse.Namespace, SimpleNamespace()),
+                        "run-1",
+                        image_evidence(),
+                    ),
+                    1,
+                )
             summary = json.loads((proof.run_dir / "campaign.json").read_text())
             self.assertEqual(summary["executed"], 3)
             self.assertEqual(summary["successful"], 2)
@@ -396,7 +416,15 @@ class StableTransportProofTests(unittest.TestCase):
                 proof = Proof(Path(directory))
                 processes: dict[str, Process] = {}
 
-                def start(_proof: Any, key: str, _port: str, output: Any) -> dict[str, Any]:
+                def start(
+                    _proof: Any,
+                    key: str,
+                    _port: str,
+                    output: Any,
+                    test_id: str = test_id,
+                    processes: dict[str, Process] = processes,
+                ) -> dict[str, Any]:
+                    """Queue a monitor that emits the selected campaign sequence."""
                     process = Process(key, output, test_id == "T02")
                     processes[key] = process
                     return {"process": process, "threads": []}
@@ -408,8 +436,8 @@ class StableTransportProofTests(unittest.TestCase):
                     patch.object(rf_proof, "RF_COMPLETION_LOG_SETTLE_SECONDS", 0),
                 ):
                     status = rf_proof.run_stable_ack_rf_test(
-                        proof,
-                        SimpleNamespace(transport_test=test_id),
+                        cast(rf_proof.ProofRun, proof),
+                        cast(argparse.Namespace, SimpleNamespace(transport_test=test_id)),
                         "run-1",
                         image_evidence(),
                     )

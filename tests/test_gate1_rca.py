@@ -364,7 +364,7 @@ class Gate1Tests(unittest.TestCase):
             capture_output=True,
             text=True,
             timeout=5,
-        check=False,
+            check=False,
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("--execute-gate1", proc.stdout)
@@ -519,7 +519,7 @@ class Gate1Tests(unittest.TestCase):
             def instr(self, frame: Any) -> None:
                 self.read_pending = True
 
-            def recv(self, n: Any, expected: Any=None) -> Any:
+            def recv(self, n: Any, expected: Any = None) -> Any:
                 if expected is not None:
                     return expected
                 self.read_pending = False
@@ -579,7 +579,7 @@ class Gate1Tests(unittest.TestCase):
             def instr(self, frame: Any) -> None:
                 pass
 
-            def recv(self, n: Any, expected: Any=None) -> Any:
+            def recv(self, n: Any, expected: Any = None) -> Any:
                 return expected if expected is not None else bytes([self.gpr])
 
             def send(self, data: Any) -> None:
@@ -602,7 +602,7 @@ class Gate1Tests(unittest.TestCase):
             def instr(self, frame: Any) -> None:
                 self.frames.append(frame)
 
-            def recv(self, n: Any, expected: Any=None) -> Any:
+            def recv(self, n: Any, expected: Any = None) -> Any:
                 self.expected.append(expected)
                 return expected
 
@@ -630,7 +630,7 @@ class Gate1Tests(unittest.TestCase):
                 elif frame[0] == 0x44:
                     self.address = frame[1] | (frame[2] << 8)
 
-            def recv(self, n: Any, expected: Any=None) -> Any:
+            def recv(self, n: Any, expected: Any = None) -> Any:
                 if expected is not None:
                     return expected
                 self.read_data = False
@@ -668,7 +668,7 @@ class Gate1Tests(unittest.TestCase):
             def instr(self, frame: Any) -> None:
                 self.frames.append(frame)
 
-            def recv(self, n: Any, expected: Any=None) -> Any:
+            def recv(self, n: Any, expected: Any = None) -> Any:
                 return expected
 
             def send(self, data: Any) -> None:

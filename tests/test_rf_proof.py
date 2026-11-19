@@ -1,5 +1,7 @@
+import argparse
 import hashlib
 import json
+import queue
 import subprocess
 import sys
 import tempfile
@@ -117,6 +119,7 @@ def ihex_record(address: int, record_type: int, data: bytes) -> bytes:
 
 
 def application_authorization_fixture(root: Path) -> dict[str, Any]:
+    """Build isolated image metadata for upload authorization tests."""
     hardware = {
         "receiver": {
             "device_serial_hex": "11" * 16,
@@ -135,7 +138,7 @@ def application_authorization_fixture(root: Path) -> dict[str, Any]:
     (generated / "lora_manifest.json").write_bytes(
         (rf_proof.ROOT / "generated/lora_manifest.json").read_bytes()
     )
-    authorizations = {}
+    authorizations: dict[str, Any] = {}
     for environment, role, payload, prefix in (
         ("receiver", "receiver", b"\x01\x02", ""),
         ("sender_hello", "gateway", b"\x03\x04", "gateway_"),
@@ -306,7 +309,7 @@ class HardwareGateTests(unittest.TestCase):
         )
         sections = rf_proof.effective_project_sections(config)
         if sections is None:
-            self.Fail("effective PlatformIO configuration did not parse")
+            self.fail("effective PlatformIO configuration did not parse")
         for environment in ("env:sender_hello", "env:receiver"):
             with self.subTest(environment=environment):
                 self.assertIn(
@@ -329,12 +332,20 @@ class HardwareGateTests(unittest.TestCase):
             self.assertTrue(rf_proof.receiver_boot_handoff_supported(proof, args, "active config"))
 
     def test_sender_uses_only_supported_stable_lora_calls(self) -> None:
-        source = (Path(__file__).resolve().parents[1] / "src/sender/appcode/gateway/gateway_radio.cpp").read_text()
+        source = (
+            Path(__file__).resolve().parents[1] / "src/sender/appcode/gateway/gateway_radio.cpp"
+        ).read_text()
         self.assertIn("#include <lora.h>", source)
         self.assertIn("reliable::Transport<LoRa>", source)
         self.assertIn("transport.SendReliableData", source)
-        for legacy in ("read_chip_version", "last_error", "time_on_air_us",
-                       "start_receive", "recover", "EEPROM"):
+        for legacy in (
+            "read_chip_version",
+            "last_error",
+            "time_on_air_us",
+            "start_receive",
+            "recover",
+            "EEPROM",
+        ):
             with self.subTest(legacy=legacy):
                 self.assertNotIn(legacy, source)
 
@@ -353,14 +364,26 @@ class HardwareGateTests(unittest.TestCase):
         self.assertEqual(profile["sender"]["pins"]["dio1"], gateway["DIO1"].removeprefix("PIN_"))
         self.assertEqual(
             profile["receiver"]["pins"],
-            {"mosi":"PC0","miso":"PC1","sck":"PC2","cs":"PD0",
-             "rst":"PD1","irq":"PD3","dio1":"PD2","enable":"PA7"},
+            {
+                "mosi": "PC0",
+                "miso": "PC1",
+                "sck": "PC2",
+                "cs": "PD0",
+                "rst": "PD1",
+                "irq": "PD3",
+                "dio1": "PD2",
+                "enable": "PA7",
+            },
         )
         constructor = "LoRa lora(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1)"
-        self.assertIn(constructor,(root/"src/sender/appcode/gateway/gateway_radio.cpp").read_text())
+        self.assertIn(
+            constructor, (root / "src/sender/appcode/gateway/gateway_radio.cpp").read_text()
+        )
         for role in ("sender", "receiver"):
             self.assertIn(constructor, (root / f"src/{role}/appcode/reliable.cpp").read_text())
-        self.assertIn(constructor,(root/"stable_lib/legacy_receiver/legacy_receiver.cpp").read_text())
+        self.assertIn(
+            constructor, (root / "stable_lib/legacy_receiver/legacy_receiver.cpp").read_text()
+        )
 
     def test_both_radio_setups_keep_dio1_input_and_reset_deasserted(self) -> None:
         root = Path(__file__).resolve().parents[1]
@@ -434,12 +457,13 @@ class HardwareGateTests(unittest.TestCase):
         )
 
     def test_effective_profile_validator_rejects_role_specific_overrides(self) -> None:
+        """Reject role-specific PHY overrides while accepting the shared profile."""
         validator = dynamic_attr("valid_rf_profile_config")
         self.assertTrue(callable(validator))
         profile = effective_platformio_config()
         shared_profile = rf_proof.shared_rf_profile(profile)
         if shared_profile is None:
-            self.Fail("shared RF profile did not parse")
+            self.fail("shared RF profile did not parse")
         self.assertEqual(shared_profile["frequency_mhz"], 915.0)
         changed_receiver = effective_platformio_config(
             receiver_flags=[
@@ -481,8 +505,7 @@ class HardwareGateTests(unittest.TestCase):
                 missing = [
                     arg
                     for arg in argv
-                    if arg.endswith((".cpp", ".c"))
-                    and not (dynamic_attr("ROOT") / arg).is_file()
+                    if arg.endswith((".cpp", ".c")) and not (dynamic_attr("ROOT") / arg).is_file()
                 ]
                 if missing:
                     return 1, b"", f"missing source: {missing[0]}".encode()
@@ -512,8 +535,7 @@ class HardwareGateTests(unittest.TestCase):
             )
             self.assertIn("-DLORA_ROLE_SENDER=1", diagnostic_argv)
             source_args = [
-                arg for _, argv in proof.commands for arg in argv
-                if arg.endswith((".cpp", ".c"))
+                arg for _, argv in proof.commands for arg in argv if arg.endswith((".cpp", ".c"))
             ]
             self.assertIn("src/shared/radio/radio_link.cpp", source_args)
             self.assertNotIn("stable_lib/lora/lora.cpp", source_args)
@@ -546,6 +568,8 @@ class HardwareGateTests(unittest.TestCase):
 
     def test_combined_upload_requires_exact_authorization_for_both_images(self) -> None:
         class RecordingProof:
+            run_dir: Path
+
             def __init__(self) -> None:
                 self.commands: list[Any] = []
                 self.notes: list[Any] = []
@@ -578,7 +602,12 @@ class HardwareGateTests(unittest.TestCase):
             patch.object(rf_proof, "receiver_boot_handoff_supported", return_value=True),
         ):
             proof.run_dir = Path(directory)
-            result = rf_proof.upload(proof, args, True, "effective")
+            result = rf_proof.upload(
+                cast(rf_proof.ProofRun, proof),
+                cast(argparse.Namespace, args),
+                True,
+                "effective",
+            )
         self.assertEqual(result, 2)
         program.assert_not_called()
         self.assertEqual(proof.commands, [])
@@ -586,6 +615,8 @@ class HardwareGateTests(unittest.TestCase):
 
     def test_invalid_gateway_authorization_blocks_before_receiver_write(self) -> None:
         class RecordingProof:
+            run_dir: Path
+
             def __init__(self) -> None:
                 self.commands: list[Any] = []
                 self.notes: list[Any] = []
@@ -614,7 +645,9 @@ class HardwareGateTests(unittest.TestCase):
             )
             with (
                 patch.object(rf_proof, "ROOT", root),
-                patch.object(rf_proof, "application_bounds_for_environment", return_value=(0, 0x1FC00)),
+                patch.object(
+                    rf_proof, "application_bounds_for_environment", return_value=(0, 0x1FC00)
+                ),
                 patch.object(rf_proof, "program_application") as program,
                 patch.object(rf_proof, "physical_readiness_errors", return_value=[]),
                 patch.object(rf_proof, "hardware_blockers", return_value=[]),
@@ -625,13 +658,20 @@ class HardwareGateTests(unittest.TestCase):
                 patch.object(rf_proof, "receiver_boot_handoff_supported", return_value=True),
                 patch.object(rf_proof, "verify_installed_images", return_value={}),
             ):
-                result = rf_proof.upload(proof, args, True, "effective")
+                result = rf_proof.upload(
+                    cast(rf_proof.ProofRun, proof),
+                    cast(argparse.Namespace, args),
+                    True,
+                    "effective",
+                )
         self.assertEqual(result, 2)
         program.assert_not_called()
         self.assertEqual(proof.commands, [])
 
     def test_rf_enabled_upload_programs_receiver_before_boot_campaign_sender(self) -> None:
         class RecordingProof:
+            run_dir: Path
+
             def __init__(self) -> None:
                 self.commands: list[Any] = []
                 self.notes: list[Any] = []
@@ -662,7 +702,9 @@ class HardwareGateTests(unittest.TestCase):
             )
             with (
                 patch.object(rf_proof, "ROOT", root),
-                patch.object(rf_proof, "application_bounds_for_environment", return_value=(0, 0x1FC00)),
+                patch.object(
+                    rf_proof, "application_bounds_for_environment", return_value=(0, 0x1FC00)
+                ),
                 patch.object(rf_proof, "program_application", return_value=0) as program,
                 patch.object(rf_proof, "receiver_boot_handoff_supported", return_value=True),
                 patch.object(rf_proof, "verify_installed_images", return_value={}),
@@ -724,7 +766,9 @@ class HardwareGateTests(unittest.TestCase):
             )
             with (
                 patch.object(rf_proof, "ROOT", root),
-                patch.object(rf_proof, "application_bounds_for_environment", return_value=(0, 0x1FC00)),
+                patch.object(
+                    rf_proof, "application_bounds_for_environment", return_value=(0, 0x1FC00)
+                ),
                 patch.object(rf_proof, "program_application", return_value=0) as program,
                 patch.object(rf_proof, "receiver_boot_handoff_supported", return_value=True),
                 patch.object(rf_proof, "verify_installed_images", return_value={}),
@@ -799,9 +843,7 @@ class HardwareGateTests(unittest.TestCase):
         class Proof:
             run_dir = Path()
 
-        def start_monitor(
-            _proof: Any, role: str, _port: str, output_queue: Any
-        ) -> object:
+        def start_monitor(_proof: Any, role: str, _port: str, output_queue: Any) -> object:
             output_queue.put((role, "stdout", b"[GATEWAY] RADIO_SPI_VERSION=0x12\r\n"))
             output_queue.put((role, "stdout", b"[GATEWAY] RF_TX_DISABLED_DIAGNOSTIC\r\n"))
             return object()
@@ -883,7 +925,9 @@ class HardwareGateTests(unittest.TestCase):
             )
             with (
                 patch.object(rf_proof, "ROOT", root),
-                patch.object(rf_proof, "application_bounds_for_environment", return_value=(0, 0x1FC00)),
+                patch.object(
+                    rf_proof, "application_bounds_for_environment", return_value=(0, 0x1FC00)
+                ),
                 patch.object(rf_proof, "receiver_boot_handoff_supported", return_value=True),
                 patch.object(rf_proof, "program_application", return_value=0) as program,
                 patch.object(rf_proof, "application_layout_verified", return_value=True),
@@ -964,7 +1008,9 @@ class HardwareGateTests(unittest.TestCase):
                 ),
             ):
                 result = rf_proof.radio_spi_smoke(
-                    proof, args, effective_platformio_config()
+                    cast(rf_proof.ProofRun, proof),
+                    cast(argparse.Namespace, args),
+                    effective_platformio_config(),
                 )
         self.assertEqual(result, 2)
         program.assert_not_called()
@@ -1035,6 +1081,8 @@ class HardwareGateTests(unittest.TestCase):
         )
 
     def test_rf_monitor_uses_existing_python_environment_without_project_build(self) -> None:
+        """Start log capture without invoking the project build or opening RF."""
+
         class Stream:
             def readline(self) -> bytes:
                 return b""
@@ -1042,15 +1090,12 @@ class HardwareGateTests(unittest.TestCase):
         process = SimpleNamespace(stdin=None, stdout=Stream(), stderr=Stream(), pid=1)
         with tempfile.TemporaryDirectory() as directory:
             proof: Any = SimpleNamespace(run_dir=Path(directory))
-            with patch.object(rf_proof.subprocess, "Popen", return_value=process) as popen:
-                monitor = rf_proof.start_rf_monitor(
-                    proof, "receiver", "/dev/fake", SimpleNamespace(put=lambda *_: None)
-                )
+            with patch.object(subprocess, "Popen", return_value=process) as popen:
+                output_queue: queue.Queue[tuple[str, str, bytes | None]] = queue.Queue()
+                monitor = rf_proof.start_rf_monitor(proof, "receiver", "/dev/fake", output_queue)
                 for thread in monitor["threads"]:
                     thread.join(timeout=1)
-            self.assertEqual(
-                popen.call_args.args[0][:4], ["uv", "run", "--no-project", "python"]
-            )
+            self.assertEqual(popen.call_args.args[0][:4], ["uv", "run", "--no-project", "python"])
 
     def test_test_counts_parse_protocol_stdout_and_unittest_stderr(self) -> None:
         self.assertEqual(
@@ -1241,7 +1286,9 @@ class RfEvidenceTests(unittest.TestCase):
         self.assertIn("multiple campaign IDs", evidence["issues"])
 
     def test_sender_no_longer_uses_the_removed_eeprom_campaign_gate(self) -> None:
-        source = (Path(__file__).resolve().parents[1] / "src/sender/appcode/gateway/gateway_radio.cpp").read_text()
+        source = (
+            Path(__file__).resolve().parents[1] / "src/sender/appcode/gateway/gateway_radio.cpp"
+        ).read_text()
         self.assertNotIn("EEPROM", source)
         self.assertNotIn("CampaignBuildGateResult", source)
         self.assertIn("StartRadioTransaction", source)
@@ -1359,6 +1406,7 @@ class FlashSafetyTests(unittest.TestCase):
         self.assertEqual(rf_proof.physical_readiness_errors(args, require_rf=True), [])
 
     def test_no_meter_does_not_bypass_mapping_or_electrical_safety(self) -> None:
+        """Keep mapping and power readiness gates active without measurement mode."""
         for key in ("physical_mapping_verified", "power_verified"):
             with self.subTest(key=key):
                 args: Any = SimpleNamespace(
@@ -1367,7 +1415,7 @@ class FlashSafetyTests(unittest.TestCase):
                 setattr(args, key, False)
                 proof: Any = SimpleNamespace(
                     note=lambda *_: None,
-                    command=lambda *_: self.Fail("unsafe target must not be accessed"),
+                    command=lambda *_: self.fail("unsafe target must not be accessed"),
                 )
                 self.assertTrue(rf_proof.physical_readiness_errors(args))
                 self.assertEqual(rf_proof.identify_targets(proof, args), 2)

@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from typing import ClassVar
 
 ROOT = Path(__file__).resolve().parents[1]
 PROBE = r"""
@@ -55,12 +56,15 @@ int main(int argc, char** argv) {
         fake_radio::state.received_action();
         Address source = 0, destination = 0;
         uint8_t length = 0, payload[256] = {};
-        if (radio.recv(&source, &destination, payload, sizeof payload, &length) >= 0 || length != 0) return 4;
+        const int16_t received =
+            radio.recv(&source, &destination, payload, sizeof payload, &length);
+        if (received >= 0 || length != 0) return 4;
         return 0;
     }
     if (!strcmp(mode, "tx-oversize")) {
         uint8_t payload[255] = {};
-        if (radio.send(1, payload, sizeof(payload)) != RADIOLIB_ERR_PACKET_TOO_LONG || fake_radio::state.transmit_starts) return 4;
+        const int16_t sent = radio.send(1, payload, sizeof(payload));
+        if (sent != RADIOLIB_ERR_PACKET_TOO_LONG || fake_radio::state.transmit_starts) return 4;
         return 0;
     }
     if (!strcmp(mode, "bounds")) {
@@ -70,14 +74,16 @@ int main(int argc, char** argv) {
             const int before = fake_radio::state.transmit_starts;
             const int16_t result = radio.send(1, payload, size);
             if (size > 251) {
-                if (result != RADIOLIB_ERR_PACKET_TOO_LONG || before != fake_radio::state.transmit_starts) return 5;
+                if (result != RADIOLIB_ERR_PACKET_TOO_LONG ||
+                    before != fake_radio::state.transmit_starts) return 5;
             } else {
                 if (result != 0) return 6;
                 if (radio.send_done() != 0) return 7;
                 fake_radio::state.sent_action();
                 if (radio.send_done() != 1) return 8;
                 const int finished = fake_radio::state.finish_transmits;
-                if (radio.send_done() != 1 || finished != fake_radio::state.finish_transmits) return 9;
+                if (radio.send_done() != 1 ||
+                    finished != fake_radio::state.finish_transmits) return 9;
             }
         }
         if (radio.send(1, nullptr, 1) != RADIOLIB_ERR_NULL_POINTER) return 10;
@@ -87,13 +93,17 @@ int main(int argc, char** argv) {
         for (size_t size : frames) {
             fake_radio::state.rx_size = size;
             fake_radio::state.received_action();
-            const int16_t result = radio.recv(&source, &destination, output, sizeof output, &length);
+            const int16_t result =
+                radio.recv(&source, &destination, output, sizeof output, &length);
             if ((size < 4 || size > 255) ? result >= 0 : result != 0) return 11;
         }
         fake_radio::state.rx_size = 6;
         fake_radio::state.received_action();
-        if (radio.recv(&source, &destination, output, 1, &length) != RADIOLIB_ERR_PACKET_TOO_LONG || length) return 12;
-        if (radio.recv(nullptr, &destination, output, sizeof output, &length) != RADIOLIB_ERR_NULL_POINTER) return 13;
+        const int16_t oversized = radio.recv(&source, &destination, output, 1, &length);
+        if (oversized != RADIOLIB_ERR_PACKET_TOO_LONG || length) return 12;
+        const int16_t null_pointer =
+            radio.recv(nullptr, &destination, output, sizeof output, &length);
+        if (null_pointer != RADIOLIB_ERR_NULL_POINTER) return 13;
         return 0;
     }
     if (!strcmp(mode, "recovery")) {
@@ -112,7 +122,9 @@ int main(int argc, char** argv) {
         fake_radio::state.received_action();
         Address source = 0, destination = 0;
         uint8_t length = 99, output[4] = {};
-        if (radio.recv(&source, &destination, output, sizeof output, &length) != RADIOLIB_ERR_CRC_MISMATCH || length) return 9;
+        const int16_t crc_status =
+            radio.recv(&source, &destination, output, sizeof output, &length);
+        if (crc_status != RADIOLIB_ERR_CRC_MISMATCH || length) return 9;
         fake_radio::state.start_receive_status = -6;
         fake_radio::state.received_action();
         if (radio.recv(&source, &destination, output, sizeof output, &length) != -6) return 11;
@@ -126,15 +138,22 @@ int main(int argc, char** argv) {
 
 
 class StableLoraSafetyTests(unittest.TestCase):
+    directory: ClassVar[tempfile.TemporaryDirectory[str]]
+    binary: ClassVar[Path]
+    source: ClassVar[Path]
+    compiler_warning: ClassVar[str]
+
     @classmethod
     def setUpClass(cls) -> None:
+        """Compile the real radio wrapper with bounded host stubs and sanitizers."""
         cls.directory = tempfile.TemporaryDirectory(prefix="stable-lora-safety-")
         cls.binary = Path(cls.directory.name) / "probe"
         cls.source = Path(cls.directory.name) / "probe.cpp"
         cls.source.write_text(PROBE)
         compiler = shutil.which("clang")
         if compiler is None:
-            raise RuntimeError("Clang with its ASan/UBSan runtime is required for these probes")
+            message = "Clang with its ASan/UBSan runtime is required for these probes"
+            raise RuntimeError(message)
         command = [
             compiler,
             "--driver-mode=g++",

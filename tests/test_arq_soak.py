@@ -27,7 +27,7 @@ def confirmed_rf_preflight() -> Any:
     )
 
 
-def write_soak_progress(run_dir: Any, plan: Any, *, span_ns: Any=1_000_000_000) -> None:
+def write_soak_progress(run_dir: Any, plan: Any, *, span_ns: Any = 1_000_000_000) -> None:
     progress = run_dir / "soak/soak-progress.jsonl"
     progress.parent.mkdir(parents=True)
     rows: list[dict[str, Any]] = []

@@ -27,7 +27,7 @@ class ArqTests(unittest.TestCase):
                     [
                         "clang",
                         "--driver-mode=g++",
-                    "-std=c++17",
+                        "-std=c++17",
                         "-Istable_lib/arq",
                         "-Iinclude",
                         "-c",

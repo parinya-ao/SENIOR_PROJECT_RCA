@@ -1,6 +1,15 @@
 # Offline LoRa firmware refactor
 
+The current protocol and hardware validation record is in
+[docs/testing/LORA_ACK_NACK.md](../testing/LORA_ACK_NACK.md), with the
+[current pin audit](../../PIN_MAPPING_AUDIT.md). This document records the
+source-ownership migration and its historical build evidence.
+
 This report records the first ownership pass. The current source layout, fresh matrix, and standalone BOOT comparison are in [Source ownership V2](SOURCE_OWNERSHIP_V2.md).
+
+The firmware-size table below is that historical ownership-pass measurement.
+Fresh 2026-11-19 sizes, host results, link-map role isolation, and current
+hardware blockers are recorded in [ACK/NACK verification](../testing/LORA_ACK_NACK.md).
 
 ## Application and dependency audit
 

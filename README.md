@@ -6,10 +6,14 @@ The separate ARQ diagnostic protocol retains its own existing framing and values
 
 The handwritten application implementations are C++17. Existing Arduino entry
 points, RadioLib integration, fixed-capacity buffers and caller-owned protocol
-state remain in place. See [migration baseline](docs/migration/baseline.md),
-[architecture](docs/architecture.md), and
-[migration verification](docs/migration/verification.md) and
-[readability verification](docs/migration/readability-verification.md).
+state remain in place. Start with the [source map](src/README.md), the
+[hardware pin audit](PIN_MAPPING_AUDIT.md), and the
+[ACK/NACK protocol and test guide](docs/testing/LORA_ACK_NACK.md). Historical
+source ownership evidence is in [Source Ownership V2](docs/refactoring/SOURCE_OWNERSHIP_V2.md).
+The current [architecture](docs/architecture/FINAL_ARCHITECTURE.md),
+[regression matrix](docs/testing/REGRESSION_MATRIX.md),
+[real-radio evidence](docs/testing/REAL_RADIO_EVIDENCE.md), and
+[deletion audit](docs/migration/DELETION_AUDIT.md) are separate focused references.
 
 ## Build
 
@@ -81,10 +85,10 @@ uvx --from clang-format clang-format --dry-run --Werror src/{sender,receiver}/ap
 ```
 
 The checked-in Clang configuration uses Google formatting and focused correctness
-checks. It preserves existing native enum layout and positional APIs. Full-tree
-Cppcheck also reports existing protothread parsing limitations and a RadioLib
-output-buffer initialization finding; migration-specific results and baseline
-comparison are recorded in the verification note.
+checks. It preserves existing native enum layout and positional APIs. The
+historical C++ quality baseline is in
+[docs/refactoring/BASELINE.md](docs/refactoring/BASELINE.md). Current ACK/NACK
+validation evidence is in [docs/testing/LORA_ACK_NACK.md](docs/testing/LORA_ACK_NACK.md).
 
 ## Preserved boundaries
 

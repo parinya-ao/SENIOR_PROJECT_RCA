@@ -3,11 +3,6 @@
 
 #include "arq_sender.h"
 
-bool arq::IsDeadlineDue(uint32_t now_ms,
-                        uint32_t deadline) {  // Deadlines must be less than
-                                              // half the uint32_t range apart.
-  return now_ms - deadline < (UINT32_C(1) << 31U);
-}
 void arq::InitSender(arq::Sender* sender) {
   *sender = {};
   sender->sequence = ARQ_INITIAL_SEQUENCE;

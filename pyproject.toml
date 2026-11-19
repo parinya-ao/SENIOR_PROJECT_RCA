@@ -104,14 +104,14 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.14"
-files = ["src/lora", "tools", "tests"]
+files = ["tools", "tests"]
 exclude = [
     '^(\.pio|artifacts|docs/rca|generated|graphify-out|third_party)/',
     '^(get-platformio\.py|tools/bootstrap/get-platformio\.py)$',
     '^tools/config/(lora_profile|platformio_generate)\.py$',
 ]
 explicit_package_bases = true
-mypy_path = ["$MYPY_CONFIG_FILE_DIR/src"]
+mypy_path = ["$MYPY_CONFIG_FILE_DIR"]
 strict = true
 extra_checks = true
 disallow_any_unimported = true

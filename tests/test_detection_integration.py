@@ -237,9 +237,14 @@ class DetectionIntegrationTests(unittest.TestCase):
             calls = 0
 
             def communicate(self, timeout: float | None = None) -> tuple[str, str]:
+                """Simulate one timed-out probe followed by a clean retry."""
                 self.calls += 1
                 if self.calls == 1:
-                    raise subprocess.TimeoutExpired("upditerm", timeout)
+                    if timeout is None:
+                        message = "the UPDI probe must supply a timeout"
+                        raise AssertionError(message)
+                    command = "upditerm"
+                    raise subprocess.TimeoutExpired(command, timeout)
                 return "", ""
 
             def send_signal(self, _signal: int) -> None:
@@ -247,9 +252,7 @@ class DetectionIntegrationTests(unittest.TestCase):
 
         def popen(argv: list[str], **_kwargs: Json) -> Process:
             logfile = Path(argv[argv.index("-l") + 1])
-            logfile.write_bytes(
-                b"[SENDER] ID V1 sender Nov  6 2026 05:00:00 CRC=15\r\n"
-            )
+            logfile.write_bytes(b"[SENDER] ID V1 sender Nov  6 2026 05:00:00 CRC=15\r\n")
             return Process()
 
         result = probe(

@@ -23,11 +23,7 @@ class Board:
             stderr=subprocess.PIPE,
             text=True,
         )
-        if (
-            self.process.stdin is None
-            or self.process.stdout is None
-            or self.process.stderr is None
-        ):
+        if self.process.stdin is None or self.process.stdout is None or self.process.stderr is None:
             msg = "board process streams were not opened"
             raise RuntimeError(msg)
         self.stdin = self.process.stdin
@@ -93,7 +89,8 @@ class MvpRoundtripTests(unittest.TestCase):
         cls.binaries = {}
         compiler = shutil.which("g++") or shutil.which("clang++")
         if compiler is None:
-            raise RuntimeError("C++ host compiler required for firmware role simulation")
+            message = "C++ host compiler required for firmware role simulation"
+            raise RuntimeError(message)
         for role in ("sender", "receiver"):
             binary = Path(cls.directory.name) / role
             ssot_object = Path(cls.directory.name) / (role + "_ssot.o")
@@ -124,7 +121,7 @@ class MvpRoundtripTests(unittest.TestCase):
                 capture_output=True,
                 text=True,
                 timeout=30,
-            check=False,
+                check=False,
             )
             if c_result.returncode:
                 raise AssertionError(c_result.stdout + c_result.stderr)
@@ -179,7 +176,7 @@ class MvpRoundtripTests(unittest.TestCase):
                     capture_output=True,
                     text=True,
                     timeout=30,
-                check=False,
+                    check=False,
                 )
                 if dependency.returncode:
                     raise AssertionError(dependency.stdout + dependency.stderr)
@@ -275,9 +272,7 @@ class MvpRoundtripTests(unittest.TestCase):
     def test_wrong_peer_ack_does_not_complete(self) -> None:
         sender = self.board("sender")
         data = self.start(sender)
-        wrong_peer_ack = (
-            bytes.fromhex("0009") + data[2:4] + bytes.fromhex("0301")
-        )
+        wrong_peer_ack = bytes.fromhex("0009") + data[2:4] + bytes.fromhex("0301")
         result = sender.command("RX " + wrong_peer_ack.hex())
         self.assertNotIn("ACK_ACCEPTED", "\n".join(result))
         self.assertNotEqual(sender.status()["state"], "COMPLETE")

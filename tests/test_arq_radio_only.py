@@ -92,7 +92,7 @@ int main(void) {
                     [
                         "clang",
                         "--driver-mode=g++",
-                    "-std=c++17",
+                        "-std=c++17",
                         "-DARQ_RADIO_ONLY_DIAGNOSTIC=1",
                         "-Istable_lib/arq",
                         "-Iinclude",

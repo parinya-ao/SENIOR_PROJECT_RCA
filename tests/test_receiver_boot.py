@@ -1,4 +1,5 @@
 import hashlib
+import importlib
 import json
 import subprocess
 import sys
@@ -6,13 +7,14 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, ClassVar
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import tools.receiver_boot as boot
-import receiver_boot as receiver_boot_module
 from tools.device_detection.firmware_identity import normalize_ihex_region
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+receiver_boot_module = importlib.import_module("receiver_boot")
 
 
 def recording_command(commands: list[list[str]]) -> Any:
@@ -24,6 +26,14 @@ def recording_command(commands: list[list[str]]) -> Any:
 
 
 class ReceiverBootTests(unittest.TestCase):
+    def test_fixture_returns_the_resolved_handoff_audit(self) -> None:
+        """Expose the verified control-flow audit from the offline fixture build."""
+        with tempfile.TemporaryDirectory() as directory:
+            audit = boot.build_fixture(Path(directory) / "fixture")
+
+        self.assertEqual(audit["application_transfers"], [boot.APP_START])
+        self.assertEqual(audit["unresolved"], [])
+
     def test_snapshot_read_retries_at_lower_baud_after_link_failure(self) -> None:
         class Proof:
             run_dir = Path()
@@ -136,6 +146,7 @@ class ReceiverBootTests(unittest.TestCase):
 
 class CompiledHandoffTests(unittest.TestCase):
     code: bytes
+    directory: ClassVar[Path]
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -188,14 +199,12 @@ class BootPackageTests(unittest.TestCase):
             != 44
         ):
             msg = "archived BOOTSIZE=44 repair does not apply to the replacement Receiver"
-            raise unittest.SkipTest(
-                msg
-            )
+            raise unittest.SkipTest(msg)
         temporary = tempfile.TemporaryDirectory()
         cls.addClassCleanup(temporary.cleanup)
         cls.directory = Path(temporary.name)
 
-        def command(name: Any, argv: Any, timeout: Any=None) -> Any:
+        def command(name: Any, argv: Any, timeout: Any = None) -> Any:
             result = subprocess.run(argv, capture_output=True, timeout=timeout, check=False)
             (cls.directory / (name + ".stdout.log")).write_bytes(result.stdout)
             (cls.directory / (name + ".stderr.log")).write_bytes(result.stderr)
@@ -335,7 +344,8 @@ class BootPackageTests(unittest.TestCase):
         with (
             patch.object(boot, "read_snapshot", side_effect=[base, app]),
             patch.object(rf, "physical_readiness_errors", return_value=[]),
-            patch.object(rf, "check_port_owners", return_value=[]),self.assertRaises(ValueError)
+            patch.object(rf, "check_port_owners", return_value=[]),
+            self.assertRaises(ValueError),
         ):
             boot.install(proof, args)
         self.assertEqual(len(commands), 1)
@@ -471,7 +481,9 @@ class ApplicationPageWriteTests(unittest.TestCase):
                         proof,
                         "receiver_spi",
                         effective_platformio_config(),
-                        approved_sha=hashlib.sha256((build / "firmware.hex").read_bytes()).hexdigest(),
+                        approved_sha=hashlib.sha256(
+                            (build / "firmware.hex").read_bytes()
+                        ).hexdigest(),
                         approved_serial=approved_serial,
                         approved_pages=(boot.APP_START, boot.APP_START + 512),
                     ),

@@ -5,6 +5,7 @@
 #define SENIOR_PROJECT_RCA_SRC_ARQ_SENDER_H_
 #include "arq_codec.h"
 #include "arq_config.h"
+#include "arq_deadline.h"
 namespace arq {
 /// Keeps the original native int representation; states never become wire
 /// bytes.
@@ -73,11 +74,6 @@ struct Sender {
   /// Owned DATA frame reused for each attempt.
   Frame frame;
 };
-/// Tests a wraparound deadline; now/deadline must be less than 2^31 ms apart.
-/// @param now Current tick in milliseconds.
-/// @param deadline Absolute tick in the same clock domain.
-/// @return True when now equals or follows deadline modulo uint32_t.
-bool IsDeadlineDue(uint32_t now, uint32_t deadline);
 /// Clears diagnostics and starts an unarmed session at the configured initial
 /// sequence.
 /// @param sender Non-null caller-owned state to reset.

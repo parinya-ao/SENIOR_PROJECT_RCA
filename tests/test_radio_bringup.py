@@ -15,7 +15,7 @@ from tools import rf_proof as rf
 
 class RadioBringupTests(unittest.TestCase):
     @staticmethod
-    def snapshot(mode: Any=0x85) -> Any:
+    def snapshot(mode: Any = 0x85) -> Any:
         return {
             "e": "REG",
             "bytes": bytes(
@@ -99,7 +99,8 @@ class RadioBringupTests(unittest.TestCase):
                 "sys.argv",
                 ["arq_trial", "--hello-lora", "--physical-mapping-verified", "--power-verified"],
             ),
-            patch.object(trial, "radio_only_bringup") as run,self.assertRaises(SystemExit)
+            patch.object(trial, "radio_only_bringup") as run,
+            self.assertRaises(SystemExit),
         ):
             trial.main()
         run.assert_not_called()
@@ -107,7 +108,8 @@ class RadioBringupTests(unittest.TestCase):
     def test_bringup_cli_blocks_missing_power_before_hardware(self) -> None:
         with (
             patch("sys.argv", ["arq_trial", "--radio-only-bringup"]),
-            patch.object(trial, "radio_only_bringup") as run,self.assertRaises(SystemExit)
+            patch.object(trial, "radio_only_bringup") as run,
+            self.assertRaises(SystemExit),
         ):
             trial.main()
         run.assert_not_called()
@@ -187,15 +189,15 @@ class RadioBringupTests(unittest.TestCase):
     def test_reverse_non_transmitting_bringup_has_no_send(self) -> None:
         self.check_bringup_cleanup(fail_rx=False, reverse=True)
 
-    def check_bringup_cleanup(self, *, fail_rx: Any, test_id: Any=None, reverse: Any=False) -> None:
+    def check_bringup_cleanup(
+        self, *, fail_rx: Any, test_id: Any = None, reverse: Any = False
+    ) -> None:
         reverse = reverse or test_id in ("T03", "T04")
         suffix = "_reverse" if reverse else ""
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "generated").mkdir()
-            (root / "generated/arq_manifest.json").write_text(
-                json.dumps({"config_hash": "config"})
-            )
+            (root / "generated/arq_manifest.json").write_text(json.dumps({"config_hash": "config"}))
             from tools.config.generate_lora_config import digest
             from tools.receiver_boot import ihex
 
@@ -245,9 +247,7 @@ class RadioBringupTests(unittest.TestCase):
                     elif text == "STATUS":
                         if inner.pending_stop:
                             msg = "STATUS before STOP drained overflows the 16-slot logger"
-                            raise AssertionError(
-                                msg
-                            )
+                            raise AssertionError(msg)
                         inner.events.extend(
                             [
                                 {
@@ -356,9 +356,7 @@ class RadioBringupTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "generated").mkdir()
-            (root / "generated/arq_manifest.json").write_text(
-                json.dumps({"config_hash": "config"})
-            )
+            (root / "generated/arq_manifest.json").write_text(json.dumps({"config_hash": "config"}))
             build = root / ".pio/build/receiver_arq_radio_only"
             build.mkdir(parents=True)
             (build / "firmware.hex").write_text("stale")
@@ -373,14 +371,13 @@ class RadioBringupTests(unittest.TestCase):
                 ),
                 patch.object(getattr(trial, "rf"), "check_port_owners", return_value=[]),
                 patch.object(getattr(trial, "rf"), "identify_targets", return_value=0),
-                patch.object(
-                    trial, "reader_free_h01_firmware", return_value={"build_id": "stale"}
-                ),
+                patch.object(trial, "reader_free_h01_firmware", return_value={"build_id": "stale"}),
                 patch.object(
                     getattr(trial, "rf"),
                     "program_application",
                     side_effect=ValueError("programming reached"),
-                ) as program,self.assertRaisesRegex(ValueError, "stale candidate")
+                ) as program,
+                self.assertRaisesRegex(ValueError, "stale candidate"),
             ):
                 trial.radio_only_bringup(args)
             program.assert_not_called()

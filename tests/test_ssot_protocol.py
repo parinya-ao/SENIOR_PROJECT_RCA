@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SsotProtocolTests(unittest.TestCase):
-    def compile_and_run(self, flags: Any=()) -> None:
+    def compile_and_run(self, flags: Any = ()) -> None:
         with tempfile.TemporaryDirectory(prefix="ssot-protocol-") as directory:
             binary = Path(directory) / "ssot_protocol_test"
             compile_result = subprocess.run(

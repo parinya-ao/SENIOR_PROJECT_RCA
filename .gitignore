@@ -630,3 +630,22 @@ artifacts/**
 .python-version
 .repomixignore
 *.js
+
+# Keep the requested architecture guides visible despite broad global ignores.
+!docs/testing/
+!docs/testing/LORA_ACK_NACK.md
+!src/
+src/*
+!src/README.md
+!src/receiver/
+src/receiver/*
+!src/receiver/README.md
+!src/receiver/bootloader/
+src/receiver/bootloader/*
+!src/receiver/bootloader/README.md
+!src/sender/
+src/sender/*
+!src/sender/README.md
+!src/shared/
+src/shared/*
+!src/shared/README.md
