@@ -3,7 +3,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef struct { uint8_t cs, rst, irq, dio1; } arq_board;
+typedef struct {
+  uint8_t cs, rst, irq, dio1;
+} arq_board;
 extern const arq_board board_ssot;
 void board_ssot_init(void);
 #ifdef __cplusplus

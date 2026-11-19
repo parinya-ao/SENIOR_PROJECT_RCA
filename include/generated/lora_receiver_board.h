@@ -1,6 +1,7 @@
 #pragma once
 // Generated from config/lora_system.json.
-#define LORA_BUILD_FINGERPRINT "05fd57622430e7982ce66cc10d2e988bf2dd6a3cc396199c995150d3c0fb4ef8"
+#define LORA_BUILD_FINGERPRINT \
+  "05fd57622430e7982ce66cc10d2e988bf2dd6a3cc396199c995150d3c0fb4ef8"
 #define LORA_IMAGE_START 0
 #define LORA_IMAGE_END 130048
 #define LORA_PIN_SD_CS PIN_PC3
