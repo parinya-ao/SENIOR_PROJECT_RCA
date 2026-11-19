@@ -32,7 +32,10 @@ int main() {
   assert(memcmp(fake_radio::state.tx_copy, expected, sizeof(expected)) == 0);
   assert(!sender.send_done());
   fake_radio::state.sent_action();
-  assert(sender.send_done());
+  bool tx_done = false;
+  int16_t rx_rearm = -1;
+  assert(sender.send_done(&tx_done, &rx_rearm) == 1);
+  assert(tx_done && rx_rearm == 0);
 
   LoRa receiver(PIN_PD0, PIN_PD3, PIN_PD1, PIN_PD2);
   assert(receiver.init(1, 915.0f, 2, 0) == 0);

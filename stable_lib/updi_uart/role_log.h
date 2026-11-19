@@ -22,6 +22,10 @@ static uint8_t updi_log_queue[1024];
 static uint16_t updi_log_head, updi_log_count, updi_log_drops;
 // Returns the saturating count of log bytes dropped because the queue was full.
 inline uint16_t updi_role_log_dropped() { return updi_log_drops; }
+// Lets deferred producers wait for a complete multi-line observation to fit.
+inline bool updi_role_log_has_space(uint16_t bytes) {
+  return sizeof(updi_log_queue) - updi_log_count >= bytes;
+}
 // Transmits at most one queued byte when the UPDI mailbox is ready.
 inline void updi_role_log_service() {
   if (updi_log_count && updi_uart_try_tx(updi_log_queue[updi_log_head])) {

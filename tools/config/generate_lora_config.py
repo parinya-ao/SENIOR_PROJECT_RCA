@@ -358,6 +358,29 @@ def generate(*, check: bool = False) -> None:
             _write_atomic(path, contents)
 
 
+def prepare_build_inputs() -> None:
+    """Verify generated headers and INI, then refresh ignored build manifests."""
+    from application_config import load as load_application  # type: ignore[import-not-found]
+    from application_config import render as render_application
+
+    if (ROOT / "include/application_config.h").read_text() != render_application(
+        load_application()
+    ):
+        msg = "stale generated application policy"
+        raise ValueError(msg)
+    outputs = artifacts(load(ROOT / "config/lora_system.json"))
+    manifests = {"generated/lora_manifest.json", "generated/arq_manifest.json"}
+    for name, contents in outputs.items():
+        if name in manifests or name.startswith("../"):
+            continue
+        path = ROOT / name
+        if not path.is_file() or path.read_text() != contents:
+            msg = f"stale or missing generated configuration: {name}"
+            raise ValueError(msg)
+    for name in sorted(manifests):
+        _write_atomic(ROOT / name, outputs[name])
+
+
 def main() -> None:
     """Run validation or deterministic artifact generation from the CLI."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -366,11 +389,18 @@ def main() -> None:
         "--check", action="store_true", help="fail if generated files are stale or missing"
     )
     mode.add_argument("--validate", action="store_true", help="validate both source configurations")
+    mode.add_argument(
+        "--prepare-build",
+        action="store_true",
+        help="validate INI and headers then refresh manifests",
+    )
     args = parser.parse_args()
     try:
         if args.validate:
             load(ROOT / "config/lora_system.json")
             load_radio_profile(ROOT / "config/radio_915.toml")
+        elif args.prepare_build:
+            prepare_build_inputs()
         else:
             generate(check=args.check)
     except (ValueError, OSError) as error:

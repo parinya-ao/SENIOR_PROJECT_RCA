@@ -27,4 +27,9 @@ void StartHelloTestIfEnabled();
 /// @return False while merely waiting for an ACK.
 bool IsRadioTransmitting();
 
+// Poll the bounded production UPDI radio console.
+void PollRadioConsole();
+// True while the bench owns radio commands instead of I2C.
+bool IsRadioBenchActive();
+
 #endif  // SENIOR_PROJECT_RCA_SRC_SENDER_LIB_LORA_RX_H_

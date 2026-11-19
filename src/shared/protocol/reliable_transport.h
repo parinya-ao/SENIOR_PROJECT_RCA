@@ -91,15 +91,29 @@ class Transport {
   uint32_t duplicates() const { return duplicates_; }
   /// @return Current sender campaign or the receiver's adopted DATA campaign.
   uint16_t campaign_id() const { return campaign_id_; }
-  /// Drops one future response for explicit diagnostics, preserving duplicate
-  /// history.
-  void SuppressNextResponse() { suppress_response_ = true; }
+  /// Campaign of the event currently being delivered.
+  uint16_t event_campaign_id() const { return event_campaign_id_; }
+  /// Fixed one-shot faults available to the board-owned bench console.
+  enum class ResponseFault : uint8_t {
+    kNone,
+    kDrop,
+    kCampaign,
+    kSequence,
+    kDuplicate
+  };
+  void SetResponseFault(ResponseFault fault) {
+    response_fault_ = fault;
+    if (fault == ResponseFault::kNone) repeat_ack_ = false;
+  }
+  void SuppressNextResponse() { SetResponseFault(ResponseFault::kDrop); }
 
   /// Parks the radio and cancels current work. Rearm before sending again.
   /// @return Driver status from parking the radio.
   int16_t Stop() {
     paused_ = true;
     armed_ = false;
+    response_fault_ = ResponseFault::kNone;
+    repeat_ack_ = sending_repeat_ = false;
     state_ = State::kRxWait;
     error_ = radio_.sleep();
     return error_;
@@ -142,15 +156,16 @@ class Transport {
       next_rx_ = 1;
     }
     duplicates_ = 0;
-    suppress_response_ = false;
+    response_fault_ = ResponseFault::kNone;
+    repeat_ack_ = sending_repeat_ = false;
     state_ = armed_ ? State::kRxWait : State::kFailed;
     result_ = armed_ ? Result::kPending : Result::kRadioError;
     return armed_;
   }
 
   /// Copies 1..kMaxData bytes and starts one bounded reliable transaction.
-  /// Requires an armed idle radio, a nonzero campaign, and a sequence higher
-  /// than any request submitted in the same campaign. Retries are internal.
+  /// Requires an armed idle radio and a nonzero campaign. A failed request can
+  /// restart only with identical bytes and sequence in that campaign.
   /// @param sequence Nonzero transaction sequence.
   /// @param data Caller buffer copied synchronously.
   /// @param size Application bytes to copy.
@@ -161,10 +176,18 @@ class Transport {
     if (!armed_ || paused_ || IsActive() || !campaign_id_ || !data || !size ||
         size > kMaxData || !sequence)
       return false;
-    if (tx_campaign_id_ == campaign_id_ && sequence <= last_tx_sequence_)
-      return false;
+    if (tx_campaign_id_ == campaign_id_) {
+      if (tx_outstanding_) {
+        if (sequence != last_tx_sequence_ || size + 2 != wire_size_ ||
+            memcmp(wire_ + 2, data, size) != 0)
+          return false;
+      } else if (sequence <= last_tx_sequence_) {
+        return false;
+      }
+    }
     tx_campaign_id_ = campaign_id_;
     last_tx_sequence_ = sequence;
+    tx_outstanding_ = true;
     transaction_started_ = now;
     wire_[0] = ssot::kDataType;
     wire_[1] = sequence;
@@ -180,7 +203,7 @@ class Transport {
   /// waiting. Timestamps are modulo-uint32 milliseconds; poll within the
   /// timeout interval.
   /// @param now Local time in milliseconds.
-  void Poll(uint32_t now) {
+  void Poll(uint32_t now, bool receive_data = true) {
     if (!armed_ || paused_) return;
     if (IsActive() && state_ != State::kTxResponse &&
         now - transaction_started_ >= kTransactionTimeoutMs) {
@@ -205,7 +228,7 @@ class Transport {
       default:
         break;
     }
-    if (radio_.available()) HandleReceive(now);
+    if (radio_.available()) HandleReceive(now, receive_data);
   }
 
  private:
@@ -215,7 +238,8 @@ class Transport {
   /// @param sequence Wire sequence number.
   /// @param error Driver status or zero.
   void EmitEvent(const char* event, uint8_t type, uint8_t sequence,
-                 int16_t error = 0) {
+                 int16_t error = 0, uint16_t campaign = 0) {
+    event_campaign_id_ = campaign ? campaign : campaign_id_;
     if (event_) event_(event_context_, event, type, sequence, error);
   }
 
@@ -257,21 +281,39 @@ class Transport {
   /// @post DATA TX completion starts its response timeout; response TX returns
   ///   to receive state.
   void PollTransmit(uint32_t now) {
-    const int16_t status = radio_.send_done();
+    bool tx_done = false;
+    int16_t rearm = 0;
+    const int16_t status = radio_.send_done(&tx_done, &rearm);
+    const bool data = state_ == State::kTxData;
+    const uint8_t type = data ? ssot::kDataType : reply_[0];
+    const uint8_t seq = data ? sequence_ : reply_[1];
+    const uint16_t campaign = data ? campaign_id_ : reply_campaign_;
+    if (tx_done) {
+      const char* event = "DATA_TX_DONE";
+      if (!data) {
+        event = type == ssot::kAckType ? "ACK_TX_DONE" : "NACK_TX_DONE";
+        if (sending_repeat_) event = "ACK_DUP_TX_DONE";
+      }
+      EmitEvent(event, type, seq, 0, campaign);
+      if (rearm < 0) EmitEvent("RX_REARM_FAILED", type, seq, rearm, campaign);
+    }
     if (status < 0) {
-      Fail(Result::kRadioError, ssot::kDataType, sequence_, status);
+      Fail(Result::kRadioError, type, seq, status);
     } else if (status == 1) {
-      if (state_ == State::kTxData) {
+      if (data) {
         state_ = State::kWaitResponse;
         started_ = now;
-        EmitEvent("DATA_TX_DONE", ssot::kDataType, sequence_);
+        EmitEvent("RX_REARMED", ssot::kDataType, sequence_);
       } else {
         state_ = State::kRxWait;
-        EmitEvent(reply_[0] == ssot::kAckType ? "ACK_TX_DONE" : "NACK_TX_DONE",
-                  reply_[0], reply_[1]);
+        sending_repeat_ = false;
+        if (repeat_ack_) {
+          repeat_ack_ = false;
+          sending_repeat_ = TransmitResponse(now);
+        }
       }
     } else if (now - started_ >= LORA_TX_TIMEOUT_MS) {
-      Fail(Result::kTxTimeout, ssot::kDataType, sequence_);
+      Fail(Result::kTxTimeout, type, seq);
     }
   }
 
@@ -289,7 +331,7 @@ class Transport {
   /// @brief Reads and classifies one available radio packet.
   /// @param now Current wrapping millisecond counter.
   /// @post Invalid packets cannot advance transaction or application state.
-  void HandleReceive(uint32_t now) {
+  void HandleReceive(uint32_t now, bool receive_data) {
     uint8_t source = 0, destination = 0, size = 0;
     uint16_t campaign_id = 0;
     const int16_t error = radio_.recv(&source, &destination, &campaign_id, rx_,
@@ -303,7 +345,8 @@ class Transport {
       return;
     }
     if (destination != local_) {
-      EmitEvent("RX_DISCARD_DEST", 0, 0);
+      EmitEvent("RX_DISCARD_DEST", size >= 2 ? rx_[0] : 0,
+                size >= 2 ? rx_[1] : 0, 0, campaign_id);
       return;
     }
     if (source != peer_ || size < 2 || size > 251 || !campaign_id || !rx_[1]) {
@@ -312,12 +355,15 @@ class Transport {
     }
     if (session_locked_ && campaign_id != campaign_id_ &&
         !CanRollCampaign(campaign_id, size)) {
-      EmitEvent("RX_DISCARD", 0, 0);
+      if (rx_[0] == ssot::kAckType || rx_[0] == ssot::kNackType)
+        EmitEvent("CONTROL_IGNORED", rx_[0], rx_[1], 0, campaign_id);
+      else
+        EmitEvent("RX_DISCARD", rx_[0], rx_[1], 0, campaign_id);
       return;
     }
     if (rx_[0] == ssot::kAckType || rx_[0] == ssot::kNackType) {
       HandleControl(size);
-    } else {
+    } else if (receive_data) {
       HandleData(campaign_id, size, now);
     }
   }
@@ -339,9 +385,13 @@ class Transport {
   /// @post Only an exact two-byte matching sequence can change the transaction.
   void HandleControl(uint8_t size) {
     const uint8_t type = rx_[0], sequence = rx_[1];
-    if (size != 2 || sequence != sequence_ || state_ != State::kWaitResponse)
+    if (size != 2 || sequence != sequence_ || state_ != State::kWaitResponse) {
+      EmitEvent("CONTROL_IGNORED", type, sequence);
       return;
+    }
     if (type == ssot::kAckType) {
+      EmitEvent("ACK_RX", type, sequence);
+      tx_outstanding_ = false;
       state_ = State::kComplete;
       result_ = Result::kAccepted;
       EmitEvent("ACK_ACCEPTED", type, sequence);
@@ -358,24 +408,15 @@ class Transport {
   /// @param campaign_id Campaign identifier from the radio header.
   /// @param size Received payload size.
   /// @param now Current wrapping millisecond counter.
-  /// @post A changed campaign resets receive-sequence state before validation.
   void HandleData(uint16_t campaign_id, uint8_t size, uint32_t now) {
     const uint8_t type = rx_[0], sequence = rx_[1];
     if (type != ssot::kDataType || IsActive() || size < 3) {
       EmitEvent("RX_DISCARD", type, sequence);
       return;
     }
-    if (!session_locked_ || campaign_id != campaign_id_) {
-      if (have_accepted_ && campaign_id != last_campaign_id_) {
-        have_accepted_ = false;
-        next_rx_ = 1;
-      }
-      campaign_id_ = campaign_id;
-      session_locked_ = true;
-    }
     const bool accepted =
-        ValidatePayload(sequence, static_cast<uint8_t>(size - 2));
-    SendResponse(sequence, accepted, now);
+        ValidatePayload(campaign_id, sequence, static_cast<uint8_t>(size - 2));
+    SendResponse(campaign_id, sequence, accepted, now);
   }
 
   /// @brief Checks duplicates and invokes the application DATA validator.
@@ -384,22 +425,31 @@ class Transport {
   /// @return True for accepted data or an exact duplicate of accepted data.
   /// @post Accepted payload bytes are saved before the ACK is sent; sequence
   ///   zero marks an exhausted receive campaign.
-  bool ValidatePayload(uint8_t sequence, uint8_t data_size) {
-    if (have_accepted_ && campaign_id_ == last_campaign_id_ &&
+  bool ValidatePayload(uint16_t campaign_id, uint8_t sequence,
+                       uint8_t data_size) {
+    if (have_accepted_ && campaign_id == last_campaign_id_ &&
         sequence == last_sequence_ && data_size == last_size_ &&
         memcmp(rx_ + 2, last_data_, data_size) == 0) {
+      campaign_id_ = campaign_id;
+      session_locked_ = true;
       ++duplicates_;
       EmitEvent("DATA_DUP", ssot::kDataType, sequence);
       return true;
     }
-    if (sequence != next_rx_) {
+    const uint8_t expected = have_accepted_ && campaign_id == last_campaign_id_
+                                 ? next_rx_
+                                 : ssot::kSequence;
+    if (sequence != expected) {
       EmitEvent("DATA_REJECTED_SEQUENCE", ssot::kDataType, sequence);
       return false;
     }
+    event_campaign_id_ = campaign_id;
     if (!accept_(context_, sequence, rx_ + 2, data_size)) return false;
 
+    campaign_id_ = campaign_id;
+    session_locked_ = true;
     have_accepted_ = true;
-    last_campaign_id_ = campaign_id_;
+    last_campaign_id_ = campaign_id;
     last_sequence_ = sequence;
     last_size_ = data_size;
     memcpy(last_data_, rx_ + 2, data_size);
@@ -413,24 +463,39 @@ class Transport {
   /// @param accepted Whether application validation accepted the payload.
   /// @param now Current wrapping millisecond counter.
   /// @post The reply remains in owned storage until asynchronous TX completes.
-  void SendResponse(uint8_t sequence, bool accepted, uint32_t now) {
+  void SendResponse(uint16_t campaign_id, uint8_t sequence, bool accepted,
+                    uint32_t now) {
     reply_[0] = accepted ? ssot::kAckType : ssot::kNackType;
     reply_[1] = sequence;
-    if (suppress_response_) {
-      suppress_response_ = false;
+    reply_campaign_ = campaign_id;
+    const ResponseFault fault = response_fault_;
+    response_fault_ = ResponseFault::kNone;
+    if (fault == ResponseFault::kDrop) {
       state_ = State::kRxWait;
-      EmitEvent("RESPONSE_DROPPED", reply_[0], sequence);
+      EmitEvent("RESPONSE_DROPPED", reply_[0], sequence, 0, campaign_id);
       return;
     }
+    if (accepted && fault == ResponseFault::kCampaign)
+      reply_campaign_ = ssot::NextCampaignId(campaign_id);
+    if (accepted && fault == ResponseFault::kSequence)
+      reply_[1] = sequence == UINT8_MAX ? ssot::kSequence : sequence + 1;
+    repeat_ack_ = accepted && fault == ResponseFault::kDuplicate;
+    if (TransmitResponse(now))
+      EmitEvent(accepted ? "ACK_TX_BEGIN" : "NACK_TX_BEGIN", reply_[0],
+                reply_[1], 0, reply_campaign_);
+  }
+
+  /// Starts TX of the owned two-byte response and keeps it until TxDone.
+  bool TransmitResponse(uint32_t now) {
     const int16_t sent =
-        radio_.send(peer_, campaign_id_, reply_, sizeof(reply_));
+        radio_.send(peer_, reply_campaign_, reply_, sizeof(reply_));
     if (sent < 0) {
-      Fail(Result::kRadioError, reply_[0], sequence, sent);
-      return;
+      Fail(Result::kRadioError, reply_[0], reply_[1], sent);
+      return false;
     }
     state_ = State::kTxResponse;
     started_ = now;
-    EmitEvent(accepted ? "ACK_TX_BEGIN" : "NACK_TX_BEGIN", reply_[0], sequence);
+    return true;
   }
 
   // Non-owning reference; radio and callback contexts must outlive this
@@ -450,12 +515,14 @@ class Transport {
   // history.
   bool armed_ = false, paused_ = false, have_accepted_ = false,
        session_locked_ = false;
-  bool suppress_response_ = false;
+  bool tx_outstanding_ = false, repeat_ack_ = false, sending_repeat_ = false;
+  ResponseFault response_fault_ = ResponseFault::kNone;
   uint8_t local_ = 0, peer_ = 0, sequence_ = 1, attempts_ = 0, next_rx_ = 1;
   uint8_t last_sequence_ = 0, last_size_ = 0, wire_size_ = 0;
   uint8_t last_tx_sequence_ = 0;
   uint16_t campaign_id_ = 0, tx_campaign_id_ = 0;
   uint16_t last_campaign_id_ = 0;
+  uint16_t event_campaign_id_ = 0, reply_campaign_ = 0;
   // Origin of the current TX/ACK timeout; unsigned subtraction tolerates
   // rollover.
   uint32_t started_ = 0, transaction_started_ = 0, duplicates_ = 0;

@@ -16,7 +16,6 @@
 #include "io.h"
 #include "lora_rx.h"
 #include "ring_buffer.h"
-#include "role_log.h"
 #include "status_leds.h"
 #include "task.h"
 #include "tracker_radio_packets.h"
@@ -32,8 +31,6 @@ iw::core::RingBuffer<GatewaySSOT::Memory::SHARED_RINGBUF_BYTES> ringbuf;
 TaskScheduler scheduler;
 /// Latest foreground temperature sample in degrees Celsius.
 int16_t current_temperature;
-/// Latches whether the build identity has been emitted to the monitor.
-static bool role_identity_logged = false;
 static status_leds::Controller led_status(
     GatewaySSOT::Pins::LED1, GatewaySSOT::Pins::LED2,
     GatewaySSOT::Pins::LED_ON_LEVEL, GatewaySSOT::Pins::LED_OFF_LEVEL,
@@ -106,15 +103,8 @@ void Initialize() {
 
 /// Samples temperature, advances the scheduler and updates status LEDs.
 void Poll() {
-  if (!role_identity_logged && updi_uart_enabled()) {
-#if HELLO_TEST_MODE
-    updi_role_log_identity("SENDER", "sender_hello", __DATE__, __TIME__);
-#else
-    updi_role_log_identity("SENDER", "sender", __DATE__, __TIME__);
-#endif
-    role_identity_logged = true;
-  }
   current_temperature = ReadTemperatureCelsius();
+  PollRadioConsole();
   scheduler.Loop();
   led_status.Poll(millis(), IsRadioTransmitting());
 }

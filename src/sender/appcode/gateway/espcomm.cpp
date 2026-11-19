@@ -123,7 +123,9 @@ class I2cCommandTask : public virtual Task {
           }
         }
       } else if (command_ == kI2cConfigLora) {
-        if (DecodeLoraConfig(rx_buf, command_length_, &config)) {
+        if (IsRadioBenchActive()) {
+          DEBUG_TS("%s LoRa is reserved by the bench\r\n", GetName());
+        } else if (DecodeLoraConfig(rx_buf, command_length_, &config)) {
           DEBUG_TS("%s Config LoRa address=%" PRIu8 "\r\n", GetName(),
                    config.addr);
           InitializeRadio(config.addr);
@@ -132,10 +134,10 @@ class I2cCommandTask : public virtual Task {
         }
       } else if (command_ == kI2cStartLora) {
         DEBUG_TS("%s LoRa started\r\n", GetName());
-        StartRadioTransaction();
+        if (!IsRadioBenchActive()) StartRadioTransaction();
       } else if (command_ == kI2cStopLora) {
         DEBUG_TS("%s LoRa stopped\r\n", GetName());
-        StopRadio();
+        if (!IsRadioBenchActive()) StopRadio();
       } else if (command_ == kI2cReadTemperature) {
         DEBUG_TS("%s Read temperature\r\n", GetName());
         tx_len = kI2cUint16ResponseBytes;

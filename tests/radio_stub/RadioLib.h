@@ -70,6 +70,7 @@ extern State state;
 
 class Module {
  public:
+  uint8_t SPIreadRegister(uint8_t) { return fake_radio::state.op_mode; }
   int16_t SPIsetRegValue(uint8_t, uint8_t value, uint8_t = 7, uint8_t = 0) {
     fake_radio::state.op_mode = value;
     return fake_radio::state.config_status;

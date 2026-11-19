@@ -1,6 +1,135 @@
 # LoRa ACK/NACK analysis and verification
 
-## Current evidence
+## Production bench repair report
+
+**Situation.** The debugger's first checkpoint required an upload receipt
+before reading either target and expected the separate `sender_hello` console.
+The production pair also had two session failures. A rejected first DATA
+could bind the Tracker and a recoverable Gateway error could change campaigns
+while the Tracker was still bound to the previous one.
+
+**Task.** Verify and exercise the production `sender` and `receiver` images
+using the existing addresses, 11-byte `hello world` payload, and DATA,
+ACK, and NACK framing. Restrict programming to live APPCODE pages.
+
+**Action.** The Gateway UPDI console and ESP32 I²C path schedule the same
+production radio task. The Tracker commits a campaign on application
+acceptance and replies to exact duplicates without delivering twice. The
+Gateway retains its campaign and outstanding bytes across a recoverable error,
+starts a new bounded budget on an explicit retry, and advances sequence only
+after a matching ACK. The debugger checks generated inputs, ELF/HEX geometry,
+enrolled target identity, and fresh full-page Flash before opening monitors.
+An eligible and explicitly authorized write uses the existing AVRDUDE page
+programmer, verifies the serial and fuses in the programming session before
+erasing, and compares protected memories afterward.
+
+**Result.** Live UPDI identified both enrolled AVR128DA28s with signature
+`1e970a`. Both returned `BOOTSIZE=0x00`, `CODESIZE=0x00`, and
+`BODCFG=0x00`. Both full-page readbacks differed from their production
+images. The live fuse setting classifies all Flash as BOOT on these targets, so
+preparation stopped at checkpoint 1. No firmware was written. Running build
+IDs, SPI and radio register measurements, DATA/ACK, NACK, retry counts, reset
+recovery, and live standby are **NOT RUN** for the production images. The
+debugger saves the exact results, readback hashes, and serial captures beneath
+`artifacts/rf-debug/<UTC run>/`. [Microchip AVR DA Flash section table](https://onlinedocs.microchip.com/oxy/GUID-CBA6F7C8-69DB-44BF-ACE3-6949CC30E98A-en-US-5/GUID-1FBA83BB-35A7-4B9D-A92E-8A9C7CB8DED6.html)
+
+PlatformIO built all 19 production and diagnostic environments with zero
+compiler warnings. The production Gateway uses 41,486 bytes of Flash and
+8,759 bytes of static SRAM. The Tracker uses 37,484 bytes of Flash and
+4,183 bytes of static SRAM. These SRAM totals exclude runtime stack usage.
+The host suite ran 442 tests with 441 passing and one skipped. Ruff, Ruff
+format checking, and MyPy passed through `mise run lint:python`. The dry
+run exited 0. The interactive readback exited 2 and released both ports.
+Standalone `q` and Ctrl-C cancellation checks exited 130. Bench standby
+after an active RF exchange still requires the matching installed images.
+
+### Runbook
+
+Run these commands from the repository root:
+
+```sh
+mise install
+uv sync --locked
+uv run --locked python --version
+uv run --locked python -m tools.debug_protocol_ack_nack --help
+uv run --locked python -m unittest discover -s tests -p 'test_*.py'
+mise run lint:python
+mise run debug_protocol_ACK_NACK --dry-run
+mise run debug_protocol_ACK_NACK --interactive --no-flash
+```
+
+The dry run validates the generated headers and INI, refreshes the ignored
+manifests, and inspects the linked production images without opening live
+ports. In interactive mode, Enter runs the selected checkpoint, `r` retries,
+`b` moves back, and `l` shows capture lines. `q` and Ctrl-C request standby
+and release any acquired monitors. Stable port aliases are optional via
+`--gateway-port` and `--tracker-port`. Both aliases must resolve to the
+enrolled adapters in [the hardware inventory](../../config/current_hardware.json).
+
+For an established 915 MHz RF test arrangement, run the full set without
+interactive prompts:
+
+```sh
+mise run debug_protocol_ACK_NACK --no-flash --authorize-rf-test
+```
+
+1. Build `sender` and `receiver`, verify both target serials and fuse geometry,
+   and compare installed Flash to the expected rounded image pages.
+2. Confirm both running build IDs, independent SPI version reads, the live
+   PHY registers, Tracker radio enable and SD chip select, and fresh RX
+   readiness. The bench holds Tracker replies disabled during this checkpoint.
+3. Capture one controlled Gateway DATA TX completion and Tracker reception.
+4. Verify DATA from Gateway address 0 to Tracker address 1, campaign, sequence
+   1, radio CRC, and all 11 bytes of `hello world`.
+5. Verify on-air ACK type `0x03`, sequence 1, TX completion on the Tracker
+   and acceptance on the Gateway. Complete ten DATA/ACK trials.
+6. Run ten one-shot payload rejections. Require a NACK on air, matching
+   Gateway NACK handling, a retry, and final ACK acceptance for each.
+7. Run ten wrong-destination and ten duplicate-DATA trials, fixed malformed
+   DATA and invalid ACK cases, four-attempt exhaustion, explicit retry, and
+   coordinated UPDI reset recovery.
+8. Verify both radios returned to standby, release the serial handles, and
+   inspect `summary.json`, `gateway.log`, `receiver.log`, and `events.jsonl`.
+
+Exit status is 0 for success, 1 for a test or build failure, 2 for a blocked
+prerequisite, and 130 for cancellation. `--verbose` mirrors raw diagnostics.
+When a different enrolled target layout has eligible APPCODE pages and the
+exact write is approved, pass `--write-approval /path/to/approval.json` in
+place of `--no-flash`. The approval contains one entry per mismatched role,
+keyed by `GATEWAY` or `RECEIVER`, with `serial_number`,
+`firmware_sha256`, `start`, and `end` as printed by preparation. `end` is
+exclusive. Preparation publishes `physical-upload.json` only after both
+images verify and always rechecks live Flash on a new run.
+
+### Installed SRAM-only pair
+
+Use the installed runner when fresh readback matches the reviewed
+`sender_hello` and `receiver` pair. It checks both enrolled MCU identities,
+the full saved Flash dumps and both running build IDs before sending DATA.
+The readback directory must come from a read-only capture of both currently
+connected targets.
+
+```sh
+uv run --locked python -m tools.installed_rf \
+  --readback <fresh-readback-directory> \
+  --historical-receipt artifacts/rf-proof/20261118T095311Z/physical-upload.json \
+  --authorize-rf-test
+```
+
+The Tracker's installed `N` command rejects the next DATA in SRAM. The Gateway
+must receive the matching NACK over RF, retry, and accept the ACK for the same
+campaign and sequence. The runner disconnects the Tracker UPDI monitor
+during RF and reopens it after the Gateway terminal event. Tracker evidence
+collected after reopening has `delivery=after_rf_reopen` in `events.jsonl`.
+Embedded `T=` values are per-device uptime. Host timestamps record receipt
+and cannot establish radio timing across the two devices.
+
+Raw per-connection logs and the correlated trial results are in
+`artifacts/rf-debug/sram-rf-*/`. A dropped capture does not issue another DATA
+command. Failed evidence stops the batch and both installed radios are parked
+using their existing sleep command.
+
+## Historical baseline evidence
 
 | Area | Result | Evidence |
 |---|---|---|
@@ -120,9 +249,9 @@ the effective addressed-path SPI rate has not been measured. [RadioLib 7.1.2
 SX1278 implementation](https://raw.githubusercontent.com/jgromes/RadioLib/7.1.2/src/modules/SX127x/SX1278.cpp),
 [RadioLib 7.1.2 SX1278 header](https://raw.githubusercontent.com/jgromes/RadioLib/7.1.2/src/modules/SX127x/SX1278.h).
 
-The sender path is
+The production sender path is
 
-1. sender_hello selects the Sender reliable application.
+1. The `sender` Gateway scheduler receives a request from UPDI or ESP32 I²C.
 2. Initialize arms the shared Transport with the Sender address, expected peer,
    payload validator, and a generated nonzero campaign ID.
 3. A request copies the application bytes into fixed storage and starts DATA TX.
@@ -271,7 +400,7 @@ Run the C++ quality gate and Python lint/type tasks with
 Build all 19 role-bearing targets with the resolved environment names from
 platformio.ini. The default pio run builds sender and receiver only.
 
-## Hardware trial requirements and result
+## Historical hardware trial requirements and result
 
 A physical PASS requires independent paired logs for every trial. Each valid
 trial must show DATA TX, all 11 payload bytes accepted by the Tracker, ACK type

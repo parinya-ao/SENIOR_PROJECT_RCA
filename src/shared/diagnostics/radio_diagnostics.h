@@ -40,6 +40,11 @@ class EventQueue {
   uint8_t size() const { return count_; }
   /// @return Number of dropped events, clamped at the counter limit.
   uint16_t overflow_count() const { return overflow_count_; }
+  /// Starts a fresh capture at an idle bench boundary.
+  void Clear() {
+    head_ = count_ = 0;
+    overflow_count_ = 0;
+  }
 
  private:
   static_assert(kCapacity > 0, "diagnostic queue capacity must be nonzero");

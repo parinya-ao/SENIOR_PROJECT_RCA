@@ -1,0 +1,29 @@
+schema_version = 1
+
+[runner]
+default_seed = 12345
+long_duration_minutes = 60
+maximum_runtime_minutes = 1800
+minimum_torture_transactions = 1000
+rf_profile = "radio_915"
+
+[installed_pair]
+gateway_environment = "sender_hello"
+tracker_environment = "receiver"
+gateway_capabilities = ["fixed_payload_tx", "ack_receive", "single_nack_retry"]
+tracker_capabilities = ["fixed_payload_rx", "ack_tx", "single_nack_tx"]
+
+[profiles.smoke]
+random_cases_per_direction = 10
+nack_cases_per_direction = 10
+duplicate_cases_per_direction = 10
+
+[profiles.stress]
+random_cases_per_direction = 100
+nack_cases_per_direction = 100
+duplicate_cases_per_direction = 100
+
+[profiles.torture]
+random_cases_per_direction = 300
+nack_cases_per_direction = 100
+duplicate_cases_per_direction = 100

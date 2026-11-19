@@ -1451,6 +1451,7 @@ def program_application(
     approved_sha: str | None = None,
     approved_serial: str | None = None,
     approved_pages: tuple[int, int] | None = None,
+    protect_boot: bool = False,
 ) -> int:
     """AVRDUDE -D suppresses auto erase; explicitly erase only the validated image pages."""
     from device_detection.firmware_identity import normalize_ihex_region
@@ -1496,6 +1497,12 @@ def program_application(
         if before["sernum"].hex() != approved_serial:
             msg = "live MCU serial differs from authorization"
             raise ValueError(msg)
+        if protect_boot:
+            boot_end = before["fuses"][8] * 512
+            code_end = before["fuses"][7] * 512 or len(before["flash"])
+            if not 0 < boot_end <= start < end <= code_end:
+                msg = "requested pages are outside live APPCODE"
+                raise ValueError(msg)
         expected = normalize_ihex_region(data.decode("ascii"), start, end)
         if before["flash"][start:end] == expected:
             proof.note(
@@ -1519,6 +1526,16 @@ def program_application(
             "-b",
             "115200",
             "-D",
+            *(
+                [
+                    "-U",
+                    f"sernum:v:{proof.run_dir / (environment + '-before-page-write-sernum.bin')}:r",
+                    "-U",
+                    f"fuses:v:{proof.run_dir / (environment + '-before-page-write-fuses.bin')}:r",
+                ]
+                if protect_boot
+                else []
+            ),
             "-T",
             f"erase flash {start:#x} {end - start:#x}",
             "-U",
@@ -1705,6 +1722,8 @@ def start_rf_monitor(
     role: str,
     port: str,
     output_queue: queue.Queue[tuple[str, str, bytes | None]],
+    *,
+    reset: bool = False,
 ) -> dict[str, Any]:
     argv = [
         "uv",
@@ -1713,6 +1732,7 @@ def start_rf_monitor(
         "python",
         "-u",
         "third_party/upditerm/upditerm.py",
+        *(["-r"] if reset else []),
         port,
         "38400",
     ]
@@ -2317,6 +2337,8 @@ def validate_stable_transport(
     images: Mapping[str, Json],
     run_id: str,
     diagnostic_test: str,
+    *,
+    bench_sequence: int | None = None,
 ) -> dict[str, Json]:
     """Validate the current stable-library DATA/ACK or bounded DATA/NACK logs."""
     issues: list[str] = []
@@ -2325,6 +2347,8 @@ def validate_stable_transport(
 
     config = json.loads((ROOT / "config/lora_system.json").read_text())
     protocol = config["protocol"]
+    if bench_sequence is not None:
+        protocol["sequence"] = bench_sequence
     payload = protocol["payload"].encode("ascii")
     max_attempts = int(config["retries"]["max_retries"]) + 1
     roles = {"GATEWAY": "sender_hello", "RECEIVER": "receiver"}
@@ -2378,21 +2402,39 @@ def validate_stable_transport(
         for index, item in enumerate(journal)
         if item["role"] in ("HOST_RECEIVER", "HOST_GATEWAY")
     ]
-    expected_commands = [
-        ("HOST_RECEIVER", "?"),
-        *(([("HOST_RECEIVER", "N")] if diagnostic_test == "T02" else [])),
-        ("HOST_RECEIVER", "R"),
-        *([("HOST_RECEIVER", "D")] if any(role == "HOST_RECEIVER" and text == "D" for _, role, text in host_commands) else []),
-        ("HOST_GATEWAY", "R"),
-        ("HOST_GATEWAY", "?"),
-        ("HOST_GATEWAY", "S"),
-        ("HOST_RECEIVER", "P"),
-        ("HOST_GATEWAY", "P"),
-    ]
-    if [(role, command) for _, role, command in host_commands] != expected_commands:
+    actual_commands = [(role, command) for _, role, command in host_commands]
+    legacy_claimed = bench_sequence is None and actual_commands[:1] == [("HOST_RECEIVER", "B")]
+    claimed = bench_sequence is not None or legacy_claimed
+    receiver_park = "E" if legacy_claimed else "P"
+    if claimed:
+        expected_commands = [
+            *([("HOST_RECEIVER", "B")] if legacy_claimed else []),
+            ("HOST_RECEIVER", "R"),
+            ("HOST_RECEIVER", "?"),
+            ("HOST_RECEIVER", "T"),
+            *([("HOST_RECEIVER", "N")] if diagnostic_test == "T02" else []),
+        ]
+    else:
+        expected_commands = [
+            ("HOST_RECEIVER", "?"),
+            *([("HOST_RECEIVER", "N")] if diagnostic_test == "T02" else []),
+            ("HOST_RECEIVER", "R"),
+        ]
+    if ("HOST_RECEIVER", "D") in actual_commands:
+        expected_commands.append(("HOST_RECEIVER", "D"))
+    expected_commands.extend(
+        [
+            ("HOST_GATEWAY", "R"),
+            ("HOST_GATEWAY", "?"),
+            ("HOST_GATEWAY", "S"),
+            ("HOST_RECEIVER", receiver_park),
+            ("HOST_GATEWAY", "P"),
+        ]
+    )
+    if actual_commands != expected_commands:
         issues.append("incorrect, repeated or out-of-order stable control commands")
 
-    if sum(role == "HOST_RECEIVER" and command == "P" for _, role, command in host_commands) != 1 or sum(
+    if sum(role == "HOST_RECEIVER" and command == receiver_park for _, role, command in host_commands) != 1 or sum(
         role == "HOST_GATEWAY" and command == "P" for _, role, command in host_commands
     ) != 1:
         issues.append("both radios were not explicitly parked")
@@ -2476,6 +2518,11 @@ def validate_stable_transport(
 
     data_tx = selected("GATEWAY", "DATA_TX_BEGIN")
     data_done = selected("GATEWAY", "DATA_TX_DONE")
+    if bench_sequence is not None:
+        if len(selected("GATEWAY", "RX_REARMED")) != len(data_done):
+            issues.append("Gateway RX rearm was not observed for every DATA TX")
+        if len(selected("GATEWAY", "ACK_RX")) != 1:
+            issues.append("Gateway did not report one matching on-air ACK")
     requested = selected("GATEWAY", "DATA_TX_REQUESTED")
     if (
         len(requested) != 1
@@ -2549,6 +2596,13 @@ def validate_stable_transport(
     )
     if sum(line == payload_line for _, line in logs["RECEIVER"]) != 1:
         issues.append("receiver did not log the exact application payload once")
+    if bench_sequence is not None:
+        address_line = (
+            f"[RECEIVER] DATA_ADDRESS SID={campaign_id:04X} Q={bench_sequence} "
+            f"SRC={protocol['sender_address']} DST={protocol['receiver_address']} CRC=OK"
+        )
+        if sum(line == address_line for _, line in logs["RECEIVER"]) != 1:
+            issues.append("receiver did not confirm DATA destination, peer and CRC")
     dropped = selected("RECEIVER", "RESPONSE_DROPPED")
     drop_requested = any(role == "HOST_RECEIVER" and text == "D" for _, role, text in host_commands)
     if len(dropped) != int(drop_requested):
@@ -2732,7 +2786,13 @@ def validate_wrong_destination_trials(
 
 
 def verify_installed_images(
-    proof: ProofRun, effective_config: str, manifest: Json, run_id: str
+    proof: ProofRun,
+    effective_config: str,
+    manifest: Json,
+    run_id: str,
+    *,
+    environments: tuple[str, str] = ("sender_hello", "receiver"),
+    report_mismatches: bool = False,
 ) -> dict[str, Json] | None:
     """Read signature and Flash anew; compare image bytes before allowing any S command."""
     from device_detection.firmware_identity import normalize_ihex_region
@@ -2742,7 +2802,7 @@ def verify_installed_images(
     executable = core / "packages/tool-avrdude/avrdude"
     configuration = core / "packages/tool-avrdude/avrdude.conf"
     images: dict[str, Json] = {}
-    for role, environment in [("GATEWAY", "sender_hello"), ("RECEIVER", "receiver")]:
+    for role, environment in zip(("GATEWAY", "RECEIVER"), environments, strict=True):
         image = ROOT / ".pio/build" / environment / "firmware.hex"
         signature_path = proof.run_dir / f"{role.lower()}-live-signature.bin"
         serial_path = proof.run_dir / f"{role.lower()}-live-serial.bin"
@@ -2791,27 +2851,32 @@ def verify_installed_images(
             ):
                 return None
             start, end = region["start"], region["end_exclusive"]
+            if report_mismatches:
+                end = (end + 511) // 512 * 512
+                if not bounds or start % 512 or end > bounds[1]:
+                    return None
             expected = normalize_ihex_region(data.decode("ascii"), start, end)
-            if (
-                flash[start:end] != expected
-                or manifest["environments"][environment]["build_id"].encode() not in expected
-            ):
+            build_id = manifest["environments"][environment]["build_id"]
+            if build_id.encode() not in expected:
+                return None
+            matches = flash[start:end] == expected
+            if not matches and not report_mismatches:
                 return None
             images[role] = {
                 "origin": "PHYSICAL_UPDI",
                 "run_id": run_id,
-                "verified": True,
+                "verified": matches,
                 "signature": "1e970a",
                 "port": PORTS[role.lower()],
                 "environment": environment,
                 "serial_number": serial_path.read_bytes().hex(),
                 "firmware_sha256": hashlib.sha256(data).hexdigest(),
                 "readback_region_sha256": hashlib.sha256(flash[start:end]).hexdigest(),
-                "build_id": manifest["environments"][environment]["build_id"],
+                "build_id": build_id,
                 "start": start,
                 "end": end,
             }
-        except (OSError, ValueError, KeyError):
+        except OSError, ValueError, KeyError:
             return None
     proof.note("live-image-identities.json", json.dumps(images, indent=2) + "\n")
     return images
@@ -2854,6 +2919,64 @@ def reserve_session(proof: ProofRun, run_id: str) -> int:
     raise ValueError(msg)
 
 
+def assess_installed_exchange(lines: Sequence[str], expect_nack: bool) -> dict[str, Json] | None:
+    """Correlate firmware events by campaign, sequence and role after a single trigger."""
+    if any("LOG_OVERFLOW" in line or "TRANSACTION_FAILED" in line for line in lines):
+        return None
+    pattern = re.compile(
+        r"\[(GATEWAY|RECEIVER)\] (\w+) SID=([0-9A-F]{4}) T=(\d+) TYPE=(\d+) Q=1 E=0"
+    )
+    events: dict[str, dict[tuple[str, str, str], list[int]]] = {}
+    for line in lines:
+        match = pattern.fullmatch(line)
+        if match:
+            role, name, campaign, timestamp, packet_type = match.groups()
+            events.setdefault(campaign, {}).setdefault((role, name, packet_type), []).append(
+                int(timestamp)
+            )
+    required = (
+        ("GATEWAY", "DATA_TX_DONE", "8"),
+        ("RECEIVER", "DATA_VALIDATED", "8"),
+        ("RECEIVER", "ACK_TX_DONE", "3"),
+        ("GATEWAY", "ACK_ACCEPTED", "3"),
+    )
+    nack_tx = ("RECEIVER", "NACK_TX_DONE", "9")
+    nack_rx = ("GATEWAY", "NACK_RX", "9")
+    events = {campaign: rows for campaign, rows in events.items() if required[0] in rows}
+    if len(events) != 1:
+        return None
+    campaign, transaction = next(iter(events.items()))
+    if not all(event in transaction for event in required):
+        return None
+    if (nack_tx in transaction) != expect_nack or (nack_rx in transaction) != expect_nack:
+        return None
+    payload = json.loads((ROOT / "config/lora_system.json").read_text())["protocol"][
+        "payload"
+    ].encode("ascii")
+    marker = (
+        f"[RECEIVER] PAYLOAD_BYTES C={campaign} S=01 LEN={len(payload)} "
+        f"HEX={payload.hex().upper()} ASCII={payload.decode('ascii')}"
+    )
+    if lines.count(marker) != 1 or len(transaction[required[-1]]) != 1:
+        return None
+    attempts = len(transaction[required[0]])
+    if expect_nack and attempts < 2:
+        return None
+    return {
+        "campaign": campaign,
+        "sequence": 1,
+        "payload": payload.decode("ascii"),
+        "attempts": attempts,
+        "retries": attempts - 1,
+        "gateway_data_tx_done_ms": transaction[required[0]],
+        "tracker_data_validated_ms": transaction[required[1]][0],
+        "tracker_ack_tx_done_ms": transaction[required[2]][0],
+        "gateway_ack_accepted_ms": transaction[required[3]][0],
+        "tracker_nack_tx_done_ms": transaction.get(nack_tx, []),
+        "gateway_nack_rx_ms": transaction.get(nack_rx, []),
+    }
+
+
 def run_stable_ack_rf_test(
     proof: ProofRun,
     args: argparse.Namespace,
@@ -2890,7 +3013,7 @@ def run_stable_ack_rf_test(
         monitors["receiver"] = start_rf_monitor(
             proof, "receiver", PORTS["receiver"], output_queue
         )
-        command("receiver", "?")
+        command("receiver", "B")
         while time.monotonic() < deadline:
             try:
                 key, stream, raw = output_queue.get(timeout=0.1)
@@ -2914,12 +3037,17 @@ def run_stable_ack_rf_test(
             if "LOG_OVERFLOW" in line or (line.endswith("RADIO_NOT_READY") and not (key == "receiver" and not rearmed)):
                 stop_reason = line
                 break
-            if key == "receiver" and line in ("[RECEIVER] RADIO_READY", "[RECEIVER] RADIO_NOT_READY") and not rearmed:
+            if key == "receiver" and line == "[RECEIVER] BENCH_READY":
+                command("receiver", "R")
+            elif key == "receiver" and line == "[RECEIVER] RX_READY" and not rearmed:
+                if ("HOST_RECEIVER", "R") not in [(row["role"], row["line"]) for row in journal]:
+                    continue
+                command("receiver", "?")
+                rearmed = True
+            elif key == "receiver" and rearmed and line == "[RECEIVER] RADIO_READY" and "gateway" not in monitors:
+                command("receiver", "T")
                 if nack:
                     command("receiver", "N")
-                command("receiver", "R")
-                rearmed = True
-            elif key == "receiver" and rearmed and line == "[RECEIVER] RX_READY" and "gateway" not in monitors:
                 if getattr(args, "drop_response_once", False):
                     command("receiver", "D")
                 monitors["gateway"] = start_rf_monitor(
@@ -2947,7 +3075,7 @@ def run_stable_ack_rf_test(
             monitor = monitors.get(key)
             if monitor is not None and monitor["process"].poll() is None:
                 try:
-                    command(key, "P")
+                    command(key, "E" if key == "receiver" else "P")
                 except OSError:
                     capture_error = True
         park_deadline = time.monotonic() + 5

@@ -36,6 +36,13 @@ class LoRa {
   /// read.
   /// @return SX127x RegVersion, or zero before a successful register read.
   uint8_t version() const { return _radio_version; }
+  /// Reads one SX127x register while the foreground owns an idle radio bus.
+  uint8_t read_register(uint8_t address) {
+    return _hardware.SPIreadRegister(address);
+  }
+
+  /// Switches to LoRa standby and verifies the programmed HF op mode.
+  int16_t park();
 
   /// Checks the RX callback latch without touching SPI.
   /// @return True if a packet is latched on an initialized radio.
@@ -60,9 +67,10 @@ class LoRa {
   int16_t send(Address dst, uint16_t campaign_id, const uint8_t* pkt,
                uint8_t len);
   /// Calls finishTransmit and re-arms RX after a completed TX.
+  /// Optional outputs record the TxDone latch and RX rearm status separately.
   /// @return Zero for pending TX, one for idle or completed TX with RX armed,
   ///   or a negative RadioLib status.
-  int16_t send_done();
+  int16_t send_done(bool* tx_done = nullptr, int16_t* rx_rearm = nullptr);
 
   /// Reads one latched packet, fills source/destination/payload length, then
   /// re-arms RX. `capacity` bounds writes to `pkt`; after pointer validation,

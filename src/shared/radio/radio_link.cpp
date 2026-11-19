@@ -73,13 +73,17 @@ int16_t LoRa::send(Address destination, uint16_t campaign_id,
   return error;
 }
 
-int16_t LoRa::send_done() {
+int16_t LoRa::send_done(bool* tx_done, int16_t* rx_rearm) {
+  if (tx_done) *tx_done = false;
+  if (rx_rearm) *rx_rearm = RADIOLIB_ERR_NONE;
   if (!_initialized) return RADIOLIB_ERR_WRONG_MODEM;
   if (_transmitting) return 0;
   if (!_tx_pending) return 1;
   _tx_pending = false;
+  if (tx_done) *tx_done = true;
   const int16_t error = _module.finishTransmit();
   const int16_t rearm = receive_start();
+  if (rx_rearm) *rx_rearm = rearm;
   _initialized = rearm == RADIOLIB_ERR_NONE;
   if (error != RADIOLIB_ERR_NONE) return error;
   return rearm == RADIOLIB_ERR_NONE ? 1 : rearm;
@@ -131,6 +135,17 @@ int16_t LoRa::sleep() {
     _received = false;
   }
   return error;
+}
+
+int16_t LoRa::park() {
+  const int16_t status = _module.standby();
+  if (status != RADIOLIB_ERR_NONE) return status;
+  _initialized = false;
+  _transmitting = false;
+  _tx_pending = false;
+  _received = false;
+  return read_register(0x01) == 0x81 ? RADIOLIB_ERR_NONE
+                                     : RADIOLIB_ERR_WRONG_MODEM;
 }
 
 void LoRa::_sent_action() {

@@ -32,6 +32,9 @@ static bool boot_logged = false;
 #if !HELLO_RF_DIAGNOSTIC_ONLY
 // Explicit diagnostic controls remain independent of protocol state.
 static bool reject_data = false, spi_selected = false;
+static bool bench = false, park_requested = false, leave_bench = false;
+static bool bench_reply_enabled = false;
+static bool fresh_campaign = false;
 #endif
 // Retains the last accepted bytes until their queued diagnostic is flushed.
 static uint8_t accepted_payload[ssot::kHelloPayloadSize];
@@ -47,7 +50,7 @@ static radio_diagnostics::EventQueue event_queue;
 static void RecordTransportEvent(void*, const char* event, uint8_t type,
                                  uint8_t sequence, int16_t error) {
   event_queue.Push(
-      {event, millis(), error, type, sequence, transport.campaign_id()});
+      {event, millis(), error, type, sequence, transport.event_campaign_id()});
 }
 
 #if !HELLO_RF_DIAGNOSTIC_ONLY
@@ -110,8 +113,12 @@ static bool ArmRadio() {
     if (!SPI.swap(LORA_SPI_ROUTE)) return false;
     spi_selected = true;
   }
-  return transport.Arm(LORA_RECEIVER_ADDRESS, LORA_SENDER_ADDRESS, AcceptData,
-                       nullptr);
+  const uint16_t binding = fresh_campaign ? 0 : transport.campaign_id();
+  if (!transport.Arm(LORA_RECEIVER_ADDRESS, LORA_SENDER_ADDRESS, AcceptData,
+                     nullptr, binding))
+    return false;
+  fresh_campaign = false;
+  return true;
 }
 
 #endif
@@ -159,23 +166,55 @@ static void ReportBoot() {
 /// @param command Command byte polled from the host UART.
 /// @post Fault-injection controls affect only their documented next operation.
 static void HandleRadioCommand(char command) {
+  using Fault = decltype(transport)::ResponseFault;
+  if (transport.IsTransmitting() && command != 'P' && command != 'E') return;
   switch (command) {
-    case 'P': {
-      const int16_t error = transport.Stop();
-      radio_ready = false;
-      updi_role_log_status(kRole, "PARKED", error);
+    case 'B':
+      if (!bench) {
+        bench = true;
+        bench_reply_enabled = false;
+        fresh_campaign = true;
+        event_queue.Clear();
+        updi_role_log(kRole, "BENCH_READY");
+      }
       break;
-    }
+    case 'E':
+    case 'P':
+      park_requested = true;
+      bench_reply_enabled = false;
+      leave_bench = command == 'E';
+      reject_data = false;
+      transport.SetResponseFault(Fault::kNone);
+      break;
+    case 'T':
+      if (bench && radio_ready && !park_requested) {
+        bench_reply_enabled = true;
+        updi_role_log(kRole, "BENCH_TX_READY");
+      }
+      break;
     case 'N':
-      reject_data = true;
+      if (bench && !park_requested) reject_data = true;
       break;
     case 'A':
       reject_data = false;
       break;
     case 'D':
-      transport.SuppressNextResponse();
+      if (bench && !park_requested) transport.SetResponseFault(Fault::kDrop);
+      break;
+    case 'C':
+      if (bench && !park_requested)
+        transport.SetResponseFault(Fault::kCampaign);
+      break;
+    case 'Q':
+      if (bench && !park_requested)
+        transport.SetResponseFault(Fault::kSequence);
+      break;
+    case 'U':
+      if (bench && !park_requested)
+        transport.SetResponseFault(Fault::kDuplicate);
       break;
     case 'R':
+      if (park_requested) break;
       radio_ready = ArmRadio();
       updi_role_log(kRole, radio_ready ? "RX_READY" : "RADIO_INIT_FAILED");
       break;
@@ -197,7 +236,7 @@ void Poll() {
   led_status.Poll(millis(), false);
 #else
   const uint32_t now = millis();
-  transport.Poll(now);
+  transport.Poll(now, !bench || bench_reply_enabled);
   if (transport.state() == decltype(transport)::State::kFailed)
     radio_ready = false;
   led_status.Poll(now, transport.IsTransmitting());
@@ -205,16 +244,37 @@ void Poll() {
   while (updi_uart_rx_poll()) {
     const char command = static_cast<char>(updi_uart_rx());
     if (command == '?') {
+      if (transport.IsActive()) continue;
       radio_diagnostics::ReportRadioStatus(kRole, lora, radio_ready,
                                            event_queue);
+#if !HELLO_RF_DIAGNOSTIC_ONLY
+      if (bench && radio_ready) {
+        char pins[38];
+        snprintf(pins, sizeof pins, "TRACKER_GPIO LORA_EN=%d SD_CS=%d",
+                 digitalReadFast(LORA_PIN_ENABLE),
+                 digitalReadFast(LORA_PIN_SD_CS));
+        updi_role_log(kRole, pins);
+        radio_diagnostics::ReportRegisters(kRole, lora);
+      }
+#endif
       continue;
     }
 #if !HELLO_RF_DIAGNOSTIC_ONLY
     HandleRadioCommand(command);
 #endif
   }
+#if !HELLO_RF_DIAGNOSTIC_ONLY
+  if (park_requested && !transport.IsTransmitting()) {
+    if (spi_selected) static_cast<void>(transport.Stop());
+    radio_ready = false;
+    park_requested = false;
+    if (leave_bench) bench = false;
+    updi_role_log_status(kRole, "PARKED",
+                         spi_selected ? lora.park() : RADIOLIB_ERR_WRONG_MODEM);
+  }
+#endif
   if (!transport.IsActive())
-    radio_diagnostics::FlushEvent(event_queue, kRole, accepted_payload);
+    radio_diagnostics::FlushEvent(event_queue, kRole, accepted_payload, true);
 }
 
 }  // namespace reliable_app

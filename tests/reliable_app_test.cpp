@@ -179,13 +179,24 @@ int main() {
                           'r',
                           'l',
                           'd'};
+  // Fault controls are available only after the bench claims the radio.
   deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, data, sizeof data);
+  reliable_app::Poll();
+  assert(fake_radio::state.tx_copy[4] == ssot::kAckType);
+  complete_tx();
+  command("BRN");
+  const auto before_rf_authorization = fake_radio::state.transmit_starts;
+  deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, data, sizeof data, 2);
+  reliable_app::Poll();
+  assert(fake_radio::state.transmit_starts == before_rf_authorization);
+  command("T");
+  deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, data, sizeof data, 2);
   reliable_app::Poll();
   assert(fake_radio::state.tx_copy[4] == ssot::kNackType);
   complete_tx();
   assert(strstr(logs, "DATA_REJECTED_TEST"));
   // N rejects exactly one DATA; the retransmission must be accepted.
-  deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, data, sizeof data);
+  deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, data, sizeof data, 2);
   reliable_app::Poll();
   assert(fake_radio::state.tx_copy[4] == ssot::kAckType);
   complete_tx();
@@ -195,11 +206,11 @@ int main() {
   command("D");
   const int before = fake_radio::state.transmit_starts;
   deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, next_data,
-          sizeof next_data);
+          sizeof next_data, 2);
   reliable_app::Poll();
   assert(fake_radio::state.transmit_starts == before);
   deliver(LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS, next_data,
-          sizeof next_data);
+          sizeof next_data, 2);
   reliable_app::Poll();
   assert(fake_radio::state.transmit_starts == before + 1 &&
          fake_radio::state.tx_copy[4] == ssot::kAckType);

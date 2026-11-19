@@ -35,7 +35,11 @@ extern uint32_t host_ms;
 inline uint32_t millis() { return host_ms; }
 inline uint32_t micros() { return host_ms * 1000U; }
 void delay(unsigned ms);
-inline void digitalWrite(uint8_t, uint8_t) {}
+inline uint8_t test_gpio_levels[32];
+inline void digitalWrite(uint8_t pin, uint8_t value) {
+  if (pin < sizeof test_gpio_levels) test_gpio_levels[pin] = value;
+}
+inline int8_t digitalReadFast(uint8_t pin) { return test_gpio_levels[pin]; }
 inline void pinMode(uint8_t, uint8_t) {}
 inline void digitalWriteFast(uint8_t pin, uint8_t value) {
   digitalWrite(pin, value);

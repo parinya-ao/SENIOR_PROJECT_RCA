@@ -32,7 +32,9 @@ struct FakeRadio {
     memcpy(bytes, payload, size);
     return send_error;
   }
-  int16_t send_done() {
+  int16_t send_done(bool* tx_done = nullptr, int16_t* rx_rearm = nullptr) {
+    if (tx_done) *tx_done = done;
+    if (rx_rearm) *rx_rearm = 0;
     if (completion_error) return completion_error;
     return done ? int16_t{1} : int16_t{0};
   }
@@ -261,6 +263,43 @@ static void stress_round_trips(unsigned transactions) {
 }
 
 int main() {
+  // A rejected first DATA may NACK its sender, but cannot lock out another.
+  {
+    Pair p;
+    p.bb.reject = true;
+    start_data(p);
+    deliver(p.a, p.b);
+    p.y.Poll(2);
+    assert(p.b.bytes[0] == ssot::kNackType && p.b.campaign_id == p.session_id);
+    assert(p.y.campaign_id() == 0);
+    finish_reply(p.b, p.y, 3);
+    p.bb.reject = false;
+    deliver(p.a, p.b);
+    p.b.incoming_campaign_id = p.session_id + 1;
+    p.y.Poll(4);
+    assert(p.y.campaign_id() == p.session_id + 1 && p.bb.applied == 1);
+  }
+
+  // An explicit retry after a radio failure keeps the original wire identity.
+  {
+    Pair p;
+    start_data(p);
+    deliver(p.a, p.b);
+    p.y.Poll(2);
+    finish_reply(p.b, p.y, 3);  // ACK lost after application delivery.
+    p.a.receive_error = -1;
+    deliver(p.b, p.a);
+    p.x.Poll(4);
+    assert(p.x.result() == Transport::Result::kRadioError);
+    assert(p.x.Arm(0, 1, accept, &p.aa, p.session_id));
+    p.a.receive_error = 0;
+    assert(!p.x.SendReliableData(1, hello, sizeof(hello) - 2, 5));
+    assert(!p.x.SendReliableData(2, hello, sizeof(hello) - 1, 5));
+    start_data(p, 1, 6);
+    successful_round_trip(p, 6);
+    assert(p.bb.applied == 1 && p.y.duplicates() == 1 && p.x.attempts() == 1);
+  }
+
   for (uint8_t first = 0; first < 2; ++first) {
     Pair p(first);
     start_data(p);

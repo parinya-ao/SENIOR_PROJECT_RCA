@@ -634,6 +634,7 @@ artifacts/**
 # Keep the requested architecture guides visible despite broad global ignores.
 !docs/testing/
 !docs/testing/LORA_ACK_NACK.md
+!tools/production_bench.py
 !src/
 src/*
 !src/README.md
@@ -649,3 +650,6 @@ src/sender/*
 !src/shared/
 src/shared/*
 !src/shared/README.md
+
+# Read-only installed LoRa bench runner.
+!tools/installed_rf.py

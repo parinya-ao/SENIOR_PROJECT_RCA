@@ -44,6 +44,45 @@ inline void ReportRadioProfile(const char* role, const LoRa& radio,
   if (ready) ReportPhy(role, radio);
 }
 
+/// Takes a foreground SPI snapshot only for an idle, armed production radio.
+inline void ReportRegisters(const char* role, LoRa& radio) {
+  unsigned version_matches = 0;
+  for (uint32_t i = 0; i < application_config::startup::kVersionProbeAttempts;
+       ++i) {
+    if (radio.read_register(0x42) == 0x12) ++version_matches;
+  }
+  const uint8_t pa = radio.read_register(0x09);
+  const uint8_t ocp = radio.read_register(0x0B);
+  const uint8_t lna = radio.read_register(0x0C);
+  const uint8_t dac = radio.read_register(0x4D);
+  char power[66];
+  snprintf(power, sizeof power,
+           "RADIO_POWER VERSIONS=%u PA=%02X OCP=%02X LNA=%02X DAC=%02X",
+           version_matches, pa, ocp, lna, dac);
+  updi_role_log(role, power);
+  const uint8_t mode = radio.read_register(0x01);
+  const uint8_t frf_msb = radio.read_register(0x06);
+  const uint8_t frf_mid = radio.read_register(0x07);
+  const uint8_t frf_lsb = radio.read_register(0x08);
+  const uint8_t modem1 = radio.read_register(0x1D);
+  const uint8_t modem2 = radio.read_register(0x1E);
+  const uint8_t modem3 = radio.read_register(0x26);
+  const uint16_t preamble =
+      (static_cast<uint16_t>(radio.read_register(0x20)) << 8U) |
+      radio.read_register(0x21);
+  const uint8_t iq = radio.read_register(0x33);
+  const uint8_t sync = radio.read_register(0x39);
+  const uint8_t dio = radio.read_register(0x40);
+  const uint8_t irq_mask = radio.read_register(0x11);
+  char line[114];
+  snprintf(line, sizeof line,
+           "RADIO_REG MODE=%02X FRF=%02X%02X%02X MC=%02X%02X%02X PRE=%u "
+           "IQ=%02X SYNC=%02X DIO=%02X MASK=%02X",
+           mode, frf_msb, frf_mid, frf_lsb, modem1, modem2, modem3, preamble,
+           iq, sync, dio, irq_mask);
+  updi_role_log(role, line);
+}
+
 /// Emits readiness and any bounded logger overflow for a status request.
 inline void ReportRadioStatus(const char* role, const LoRa& radio,
                               bool radio_ready, const EventQueue& event_queue) {
@@ -61,8 +100,14 @@ inline void ReportRadioStatus(const char* role, const LoRa& radio,
 
 /// Emits at most one queued observation when UPDI is available.
 inline void FlushEvent(EventQueue& event_queue, const char* role,
-                       const uint8_t* accepted_payload) {
+                       const uint8_t* accepted_payload,
+                       bool log_address = false) {
   if (!event_queue.size() || !updi_uart_enabled()) return;
+#if defined(LORA_NONBLOCKING_LOG) && LORA_NONBLOCKING_LOG
+  // The Receiver can enqueue three lines for one validated DATA observation.
+  if (!updi_role_log_has_space(3U * application_config::logging::kSlotBytes))
+    return;
+#endif
   radio_diagnostics::Event event{};
   if (!event_queue.Pop(&event)) return;
   char line[80];
@@ -70,10 +115,20 @@ inline void FlushEvent(EventQueue& event_queue, const char* role,
            event.campaign_id, static_cast<unsigned long>(event.time_ms),
            event.type, event.sequence, event.error);
   updi_role_log(role, line);
-  if (!strcmp(event.name, "DATA_VALIDATED"))
+  if (accepted_payload && !strcmp(event.name, "DATA_VALIDATED")) {
     updi_role_log_payload(role, "PAYLOAD_BYTES", event.campaign_id,
                           event.sequence, accepted_payload,
                           ssot::kHelloPayloadSize);
+    if (log_address) {
+      // DATA_VALIDATED follows decoded peer, destination and RadioLib CRC
+      // checks.
+      snprintf(line, sizeof line,
+               "DATA_ADDRESS SID=%04X Q=%u SRC=%u DST=%u CRC=OK",
+               event.campaign_id, event.sequence, LORA_SENDER_ADDRESS,
+               LORA_RECEIVER_ADDRESS);
+      updi_role_log(role, line);
+    }
+  }
 }
 
 }  // namespace radio_diagnostics

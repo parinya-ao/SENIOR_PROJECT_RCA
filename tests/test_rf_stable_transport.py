@@ -388,6 +388,8 @@ class StableTransportProofTests(unittest.TestCase):
                 role = "GATEWAY" if self.key == "gateway" else "RECEIVER"
                 if command == "?":
                     self._line(f"[{role}] RADIO_READY")
+                elif command == "B":
+                    self._line("[RECEIVER] BENCH_READY")
                 elif command == "R":
                     self._line("[RECEIVER] RX_READY")
                 elif command == "S":
@@ -397,7 +399,7 @@ class StableTransportProofTests(unittest.TestCase):
                             self.output.put(
                                 (item["role"].lower(), "stdout", (item["line"] + "\n").encode())
                             )
-                elif command == "P":
+                elif command in ("P", "E"):
                     self._line(f"[{role}] PARKED E=0")
                 return len(data)
 
@@ -434,6 +436,7 @@ class StableTransportProofTests(unittest.TestCase):
                     patch.object(rf_proof, "stop_rf_monitor", return_value=0),
                     patch.object(rf_proof, "check_port_owners", return_value=[]),
                     patch.object(rf_proof, "RF_COMPLETION_LOG_SETTLE_SECONDS", 0),
+                    patch.object(rf_proof, "RF_SINGLE_PACKET_TIMEOUT_SECONDS", 3),
                 ):
                     status = rf_proof.run_stable_ack_rf_test(
                         cast(rf_proof.ProofRun, proof),
@@ -449,18 +452,45 @@ class StableTransportProofTests(unittest.TestCase):
                     if row["role"].startswith("HOST_")
                 ]
                 expected = [
-                    ("HOST_RECEIVER", "?"),
+                    ("HOST_RECEIVER", "B"),
                     ("HOST_RECEIVER", "R"),
+                    ("HOST_RECEIVER", "?"),
+                    ("HOST_RECEIVER", "T"),
                     ("HOST_GATEWAY", "R"),
                     ("HOST_GATEWAY", "?"),
                     ("HOST_GATEWAY", "S"),
-                    ("HOST_RECEIVER", "P"),
+                    ("HOST_RECEIVER", "E"),
                     ("HOST_GATEWAY", "P"),
                 ]
                 if test_id == "T02":
-                    expected.insert(1, ("HOST_RECEIVER", "N"))
+                    expected.insert(4, ("HOST_RECEIVER", "N"))
                 self.assertEqual(commands, expected)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InstalledRadioEvidenceTests(unittest.TestCase):
+    """Require matched two-sided RF evidence even after capture reconnects."""
+
+    def test_correlates_controls_by_role_type_sequence_and_campaign(self) -> None:
+        """Reject absent ACK acceptance, wrong NACK sequence and unexpected controls."""
+        rows = [
+            "[GATEWAY] DATA_TX_DONE SID=3516 T=100 TYPE=8 Q=1 E=0",
+            "[RECEIVER] NACK_TX_DONE SID=3516 T=120 TYPE=9 Q=1 E=0",
+            "[GATEWAY] NACK_RX SID=3516 T=150 TYPE=9 Q=1 E=0",
+            "[GATEWAY] DATA_TX_DONE SID=3516 T=175 TYPE=8 Q=1 E=0",
+            "[RECEIVER] DATA_VALIDATED SID=3516 T=178 TYPE=8 Q=1 E=0",
+            (
+                "[RECEIVER] PAYLOAD_BYTES C=3516 S=01 LEN=11 "
+                "HEX=68656C6C6F20776F726C64 ASCII=hello world"
+            ),
+            "[RECEIVER] ACK_TX_DONE SID=3516 T=220 TYPE=3 Q=1 E=0",
+            "[GATEWAY] ACK_ACCEPTED SID=3516 T=225 TYPE=3 Q=1 E=0",
+        ]
+        assess = rf_proof.assess_installed_exchange
+        self.assertIsNotNone(assess(rows, True))
+        self.assertIsNone(assess(rows[:-1], True))
+        self.assertIsNone(assess([line.replace("TYPE=9 Q=1", "TYPE=9 Q=2") for line in rows], True))
+        self.assertIsNone(assess(rows, False))

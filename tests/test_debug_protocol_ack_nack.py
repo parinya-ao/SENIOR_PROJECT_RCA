@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 
 from tests.test_rf_stable_transport import image_evidence, journal
 from tools import debug_protocol_ack_nack as debug
+from tools import production_bench as bench
 from tools import rf_proof
 
 
@@ -36,6 +37,80 @@ class DebugConsoleTests(unittest.TestCase):
         task = config["tasks"]["debug_protocol_ACK_NACK"]
         self.assertIn("-m tools.debug_protocol_ack_nack", task["run"])
         self.assertNotIn("upload", task["run"])
+
+    def test_matching_live_readback_does_not_require_a_receipt(self) -> None:
+        hardware = debug.Hardware(self.log)
+        images = {role: {"verified": True} for role in ("GATEWAY", "RECEIVER")}
+        with (
+            patch.object(hardware, "_read_images", return_value=images) as read,
+            patch.object(hardware, "_prepare_images") as prepare,
+        ):
+            self.assertEqual(hardware._verify_or_prepare(), images)
+        read.assert_called_once()
+        prepare.assert_not_called()
+
+    def test_mismatched_images_enter_preparation_once(self) -> None:
+        hardware = debug.Hardware(self.log)
+        images = {role: {"verified": False} for role in ("GATEWAY", "RECEIVER")}
+        verified = {role: {"verified": True} for role in images}
+        with (
+            patch.object(hardware, "_read_images", side_effect=[images, verified]),
+            patch.object(hardware, "_prepare_images") as prepare,
+        ):
+            self.assertEqual(hardware._verify_or_prepare(), verified)
+        prepare.assert_called_once_with(images)
+
+    def test_bootsize_zero_excludes_every_write_even_with_exact_approval(self) -> None:
+        mismatch = {
+            "GATEWAY": {
+                "serial_number": "serial",
+                "firmware_sha256": "hash",
+                "start": 0,
+                "end": 512,
+            }
+        }
+        approval = self.log.path / "approval.json"
+        approval.write_text(json.dumps(mismatch))
+        with self.assertRaisesRegex(bench.BenchBlockedError, "BOOTSIZE=0x00"):
+            bench.approve_writes(mismatch, {"GATEWAY": {"bootsize": 0, "codesize": 0}}, approval)
+        self.assertTrue(bench.write_span_is_application(512, 1024, 1, 2))
+        self.assertFalse(bench.write_span_is_application(512, 1536, 1, 2))
+
+    def test_interrupted_preparation_never_opens_monitors_or_publishes_receipt(self) -> None:
+        hardware = debug.Hardware(self.log)
+        with (
+            patch.object(bench, "build", return_value=("", {})),
+            patch.object(bench, "read_layouts", return_value={}),
+            patch.object(hardware, "_read_images", return_value={"GATEWAY": {"verified": False}}),
+            patch.object(hardware, "_prepare_images", side_effect=KeyboardInterrupt),
+            patch.object(bench, "publish_receipt") as publish,
+            patch.object(rf_proof, "start_rf_monitor") as open_monitor,
+            self.assertRaises(KeyboardInterrupt),
+        ):
+            hardware._connect_verified()
+        publish.assert_not_called()
+        open_monitor.assert_not_called()
+
+    def test_swapped_port_overrides_never_reach_live_identification(self) -> None:
+        hardware = debug.Hardware(self.log)
+        hardware.port_overrides = {"gateway": rf_proof.PORTS["receiver"]}
+        with (
+            patch.object(debug, "discover_ports", return_value=list(rf_proof.PORTS.values())),
+            patch.object(hardware, "_connect_verified") as connect,
+            self.assertRaisesRegex(bench.BenchBlockedError, "enrolled USB adapter"),
+        ):
+            hardware.connect()
+        connect.assert_not_called()
+
+    def test_dry_run_builds_without_opening_serial(self) -> None:
+        with (
+            patch.object(debug, "ROOT", Path(self.temp.name)),
+            patch.object(bench, "build") as build,
+            patch.object(debug, "Hardware") as hardware,
+        ):
+            self.assertEqual(debug.main(["--dry-run"]), 0)
+        build.assert_called_once()
+        hardware.assert_not_called()
 
     def test_enter_executes_one_checkpoint_and_quit_cleans_up(self) -> None:
         console, hardware, output = self.console(["", "q"])
@@ -84,13 +159,13 @@ class DebugConsoleTests(unittest.TestCase):
         console, _, _ = self.console(["", "", "b", "r", "q"])
         self.assertNotIn("2", console.log.results)
 
-    def test_full_loop_stops_on_first_failed_transaction(self) -> None:
+    def test_trial_group_stops_on_first_failed_transaction(self) -> None:
         hardware = debug.Hardware(self.log)
         hardware.monitors = {"gateway": {}, "receiver": {}}
         with patch.object(
             hardware, "exchange", return_value={"status": "FAIL", "detail": "no ACK"}
         ) as exchange:
-            self.assertEqual(hardware.step(7)["status"], "FAIL")
+            self.assertEqual(hardware.step(5)["status"], "FAIL")
         exchange.assert_called_once()
 
     def test_intentional_exhaustion_must_have_exact_bounded_attempt_count(self) -> None:
@@ -128,13 +203,43 @@ class DebugConsoleTests(unittest.TestCase):
         self.log.record("RECEIVER", "[RECEIVER] HEX=00 ASCII=bad")
         self.assertIsNone(self.log.snapshot()[-1]["sequence"])
 
-    def test_optional_timeout_menu_does_not_send_on_quit(self) -> None:
-        hardware = debug.Hardware(self.log, read=lambda: "q", out=io.StringIO())
+    def test_rf_authorization_gate_does_not_send_commands(self) -> None:
+        hardware = debug.Hardware(self.log, out=io.StringIO())
         hardware.monitors = {"gateway": {}, "receiver": {}}
-        with patch.object(hardware, "exchange") as exchange:
-            with self.assertRaises(KeyboardInterrupt):
-                hardware.step(6)
-        exchange.assert_not_called()
+        with patch.object(hardware, "command") as command:
+            with self.assertRaisesRegex(bench.BenchBlockedError, "authorize-rf-test"):
+                hardware.exchange()
+        command.assert_not_called()
+
+    def test_standby_timeout_does_not_mask_ctrl_c(self) -> None:
+        hardware = debug.Hardware(self.log)
+        hardware.authorize_rf = True
+        hardware.monitors = {"gateway": {}, "receiver": {}}
+        with (
+            patch.object(hardware, "_arm_radio", side_effect=KeyboardInterrupt),
+            patch.object(hardware, "_park", side_effect=TimeoutError("standby timed out")),
+            patch.object(hardware, "close") as close,
+        ):
+            console = debug.Console(hardware, self.log, read=lambda: "", out=io.StringIO())
+            console.index = 2
+            self.log.results = {str(i): {"status": "PASS", "detail": "verified"} for i in (1, 2)}
+            self.assertEqual(console.run(), 130)
+        close.assert_called_once()
+        self.assertTrue(any(row["line"] == "standby timed out" for row in self.log.snapshot()))
+
+    def test_wrong_destination_requires_correlated_discard_and_no_reply_attempt(self) -> None:
+        protocol = debug.Hardware(self.log).config["protocol"]
+        rows = [
+            {"role": "GATEWAY", "line": "[GATEWAY] BENCH_PROBE_BEGIN SID=1234 Q=1 DST=2 APP=11"},
+            {"role": "GATEWAY", "line": "[GATEWAY] BENCH_PROBE_DONE E=1"},
+            {"role": "RECEIVER", "line": "[RECEIVER] RX_DISCARD_DEST SID=1234 T=1 TYPE=8 Q=1 E=0"},
+        ]
+        self.assertEqual(debug.assess_probe(rows, protocol, 1, malformed=False)["status"], "PASS")
+        self.assertEqual(debug.assess_probe(rows, protocol, 2, malformed=False)["status"], "FAIL")
+        rows.append(
+            {"role": "RECEIVER", "line": "[RECEIVER] NACK_TX_BEGIN SID=1234 T=2 TYPE=9 Q=1 E=0"}
+        )
+        self.assertEqual(debug.assess_probe(rows, protocol, 1, malformed=False)["status"], "FAIL")
 
     def test_logs_have_structured_fields_and_files(self) -> None:
         self.log.record(
@@ -217,16 +322,16 @@ class DebugConsoleTests(unittest.TestCase):
     def test_payload_checkpoint_displays_actual_bytes(self) -> None:
         hardware = debug.Hardware(self.log)
         hardware.monitors = {"gateway": {}, "receiver": {}}
-        hardware.exchange_rows = journal()
-        hardware.last = debug.assess(hardware.exchange_rows, image_evidence(), "run-1")
+        hardware.first_rows = journal()
+        hardware.first_exchange = debug.assess(hardware.first_rows, image_evidence(), "run-1")
         result = hardware.step(3)
         self.assertIn("hello world", result["detail"])
         self.assertIn("11/11", result["detail"])
-        hardware.exchange_rows = []
-        hardware.last = {"status": "FAIL", "detail": "missing payload"}
+        hardware.first_rows = []
+        hardware.first_exchange = {"status": "FAIL", "detail": "missing payload"}
         result = hardware.step(3)
         self.assertNotIn("11/11", result["detail"])
-        self.assertIn("NOT OBSERVED", result["detail"])
+        self.assertIn("missing", result["detail"])
 
     def test_summary_explicitly_records_unexecuted_steps(self) -> None:
         self.log.finish()
@@ -254,6 +359,8 @@ class DebugConsoleTests(unittest.TestCase):
         for nack in (False, True):
             with self.subTest(nack=nack):
                 hardware = debug.Hardware(self.log)
+                hardware.authorize_rf = True
+                hardware.manifest = json.loads(bench.MANIFEST.read_text())
                 hardware.images = image_evidence(hardware.run_id)
                 hardware.monitors = {"receiver": {}, "gateway": {}}
                 commands: list[tuple[str, str]] = []
@@ -267,6 +374,8 @@ class DebugConsoleTests(unittest.TestCase):
                     commands.append((role, value))
                     self.log.record("HOST_" + role.upper(), value)
                     if value == "?":
+                        if role == "receiver":
+                            self.log.record("RECEIVER", "[RECEIVER] TRACKER_GPIO LORA_EN=0 SD_CS=1")
                         identity = (
                             " BUILD_ID=",
                             " CONFIG_FINGERPRINT=",
@@ -283,8 +392,21 @@ class DebugConsoleTests(unittest.TestCase):
                                 marker in row["line"] for marker in identity
                             ):
                                 self.log.record(role.upper(), row["line"])
-                    elif value == "R":
-                        self.log.record(role.upper(), f"[{role.upper()}] RX_READY")
+                        self.log.record(
+                            role.upper(),
+                            f"[{role.upper()}] RADIO_POWER VERSIONS=3 PA=F0 OCP=37 LNA=23 DAC=84",
+                        )
+                        self.log.record(
+                            role.upper(),
+                            f"[{role.upper()}] RADIO_REG MODE=85 FRF=E4C000 MC=727404 PRE=8 "
+                            "IQ=27 SYNC=12 DIO=00 MASK=00",
+                        )
+                    elif marker := {
+                        "R": "RX_READY" if role == "receiver" else "RADIO_READY",
+                        "T": "BENCH_TX_READY",
+                        "P": "PARKED E=0",
+                    }.get(value):
+                        self.log.record(role.upper(), f"[{role.upper()}] {marker}")
                     elif value == "S":
                         for row in journal(nack):
                             if (
@@ -293,8 +415,17 @@ class DebugConsoleTests(unittest.TestCase):
                                 or "DATA_TX_REQUESTED" in row["line"]
                             ):
                                 self.log.record(row["role"], row["line"])
-                    elif value == "P":
-                        self.log.record(role.upper(), f"[{role.upper()}] PARKED E=0")
+                                if "PAYLOAD_BYTES" in row["line"]:
+                                    self.log.record(
+                                        "RECEIVER",
+                                        "[RECEIVER] DATA_ADDRESS SID=1234 Q=1 SRC=0 DST=1 CRC=OK",
+                                    )
+                                for old, new in (
+                                    ("DATA_TX_DONE", "RX_REARMED"),
+                                    ("ACK_ACCEPTED", "ACK_RX"),
+                                ):
+                                    if old in row["line"]:
+                                        self.log.record(row["role"], row["line"].replace(old, new))
 
                 with (
                     patch.object(hardware, "command", side_effect=wire),
