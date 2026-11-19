@@ -1,7 +1,7 @@
 // Exercises the reverse raw application and its bounded diagnostic commands.
 #include <assert.h>
 
-#include "../stable_lib/arq/src/arq/diagnostics.cpp"
+#include "../stable_lib/arq/diagnostics.cpp"
 #include "../stable_lib/reverse_raw_app/reverse_raw_app.cpp"
 
 using namespace reverse_raw_app;

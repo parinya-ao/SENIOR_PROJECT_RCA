@@ -2,7 +2,7 @@
   "name": "arq",
   "version": "1.0.0",
   "build": {
-    "srcDir": "src",
-    "includeDir": "src"
+    "srcDir": ".",
+    "includeDir": "."
   }
 }

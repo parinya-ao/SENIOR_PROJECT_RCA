@@ -6,10 +6,10 @@
 
 // Load the implementation in this fixture to observe private foreground state.
 // NOLINTBEGIN(bugprone-suspicious-include)
-#include "../../stable_lib/arq/src/arq/application.cpp"
-#include "../../stable_lib/arq/src/arq/board_ssot.c"
-#include "../../stable_lib/arq/src/arq/commands.cpp"
-#include "../../stable_lib/arq/src/arq/diagnostics.cpp"
+#include "../../stable_lib/arq/application.cpp"
+#include "../../stable_lib/arq/board_ssot.c"
+#include "../../stable_lib/arq/commands.cpp"
+#include "../../stable_lib/arq/diagnostics.cpp"
 // NOLINTEND(bugprone-suspicious-include)
 #include "diagnostics_test_access.h"
 using namespace arq::app;

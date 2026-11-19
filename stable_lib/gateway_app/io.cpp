@@ -4,7 +4,7 @@
 
 #include <Arduino.h>
 
-#include "iw/avr128da28/device.h"
+#include "avr128da28_device.h"
 
 /************************************************************
  * Enable pull-up on all pins to lower power

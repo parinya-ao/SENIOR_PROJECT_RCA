@@ -12,6 +12,17 @@ class RadioOnlyTests(unittest.TestCase):
     def test_radio_only_images_resolve_to_the_existing_role_application_ranges(self) -> None:
         from tools import rf_proof
 
+        for environment in ("sender_arq_radio_only", "receiver_arq_radio_only"):
+            result = subprocess.run(
+                ["pio", "run", "-e", environment],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
         config = subprocess.check_output(
             ["pio", "project", "config", "--json-output"], cwd=ROOT, text=True
         )
@@ -58,11 +69,11 @@ int main(void) {
                     "-std=c++17",
                     "-DARQ_RADIO_ONLY_DIAGNOSTIC=1",
                     "-Iinclude",
-                    "-Istable_lib/arq/src", "-Istable_lib/arq/src/arq",
+                    "-Istable_lib/arq",
                     str(source),
-                    "stable_lib/arq/src/arq/codec.cpp",
-                    "stable_lib/arq/src/arq/sender.cpp",
-                    "stable_lib/arq/src/arq/receiver.cpp",
+                    "stable_lib/arq/codec.cpp",
+                    "stable_lib/arq/sender.cpp",
+                    "stable_lib/arq/receiver.cpp",
                     "-o",
                     str(binary),
                 ],
@@ -83,10 +94,10 @@ int main(void) {
                         "--driver-mode=g++",
                     "-std=c++17",
                         "-DARQ_RADIO_ONLY_DIAGNOSTIC=1",
-                        "-Istable_lib/arq/src", "-Istable_lib/arq/src/arq",
+                        "-Istable_lib/arq",
                         "-Iinclude",
                         "-c",
-                        f"stable_lib/arq/src/arq/{source}.cpp",
+                        f"stable_lib/arq/{source}.cpp",
                         "-o",
                         obj,
                     ],
@@ -108,7 +119,7 @@ int main(void) {
                         "-Itests/arq/stub",
                         "-Itests/raw_mvp_stub",
                         "-Iinclude",
-                        "-Istable_lib/arq/src", "-Istable_lib/arq/src/arq",
+                        "-Istable_lib/arq",
                         "-DLORA_ROLE_" + role,
                         "-DARQ_TEST_MODE",
                         "-DARQ_RADIO_ONLY_DIAGNOSTIC=1",

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ssot/ssot.h"
+#include "ssot.h"
 
 static_assert(sizeof(ssot::CampaignState) == sizeof(int),
               "Preserve campaign state layout");

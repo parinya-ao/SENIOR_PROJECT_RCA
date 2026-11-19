@@ -160,7 +160,7 @@ class ReverseRawTests(unittest.TestCase):
                         "-Itests/arq/stub",
                         "-Itests/raw_mvp_stub",
                         "-Iinclude",
-                        "-Istable_lib/arq/src",
+                        "-Istable_lib/arq",
                         "-DLORA_ROLE_" + role,
                         '-DLORA_BUILD_ID="host-test"',
                         "tests/reverse_raw_test.cpp",

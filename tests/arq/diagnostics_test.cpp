@@ -1,7 +1,7 @@
 // Checks real queue behavior against the UPDI mailbox stub.
 // Load the implementation in this fixture to observe private foreground state.
 // NOLINTBEGIN(bugprone-suspicious-include)
-#include "../../stable_lib/arq/src/arq/diagnostics.cpp"
+#include "../../stable_lib/arq/diagnostics.cpp"
 // NOLINTEND(bugprone-suspicious-include)
 
 #include <assert.h>

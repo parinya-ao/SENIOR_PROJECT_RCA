@@ -8,6 +8,8 @@
 void onPreMain() { firmware_app::PreMain(); }
 #endif
 
+/// @brief Runs the selected firmware application's startup sequence.
 void setup() { firmware_app::Initialize(); }
 
+/// @brief Runs one foreground step of the selected firmware application.
 void loop() { firmware_app::Poll(); }

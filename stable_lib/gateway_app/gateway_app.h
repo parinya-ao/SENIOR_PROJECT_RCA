@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include "application_config.h"
-#include "iw/core/ring_buffer.h"
+#include "ring_buffer.h"
 #include "task.h"
 
 // Owns Gateway startup and foreground scheduling state for the selected image.

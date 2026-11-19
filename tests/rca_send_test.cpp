@@ -1,7 +1,7 @@
 // Offline execution of the actual SEND parser against existing fake SPI/radio.
 #include <assert.h>
 
-#include "../stable_lib/arq/src/arq/diagnostics.cpp"
+#include "../stable_lib/arq/diagnostics.cpp"
 #include "../stable_lib/reverse_raw_app/reverse_raw_app.cpp"
 
 using namespace reverse_raw_app;

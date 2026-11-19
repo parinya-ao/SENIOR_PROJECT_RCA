@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / "tools/config"))
 
 class ArqTests(unittest.TestCase):
     def test_adapter(self) -> None:
-        self.assertTrue((ROOT / "stable_lib/arq/src/arq/application.cpp").exists(), "ARQ adapter missing")
+        self.assertTrue((ROOT / "stable_lib/arq/application.cpp").exists(), "ARQ adapter missing")
         with tempfile.TemporaryDirectory() as directory:
             objects = []
             for source in ("codec", "sender", "receiver"):
@@ -27,10 +27,10 @@ class ArqTests(unittest.TestCase):
                         "clang",
                         "--driver-mode=g++",
                     "-std=c++17",
-                        "-Istable_lib/arq/src", "-Istable_lib/arq/src/arq",
+                        "-Istable_lib/arq",
                         "-Iinclude",
                         "-c",
-                        f"stable_lib/arq/src/arq/{source}.cpp",
+                        f"stable_lib/arq/{source}.cpp",
                         "-o",
                         obj,
                     ],
@@ -55,7 +55,7 @@ class ArqTests(unittest.TestCase):
                         "-Itests/arq/stub",
                         "-Itests/raw_mvp_stub",
                         "-Iinclude",
-                        "-Istable_lib/arq/src", "-Istable_lib/arq/src/arq",
+                        "-Istable_lib/arq",
                         "-DLORA_ROLE_" + role,
                         "-DARQ_TEST_MODE",
                         '-DLORA_BUILD_ID="host-test"',
@@ -75,7 +75,7 @@ class ArqTests(unittest.TestCase):
                     subprocess.run([binary, failure], check=True)
 
     def test_portable_core(self) -> None:
-        self.assertTrue((ROOT / "stable_lib/arq/src/arq/arq.h").exists(), "ARQ core missing")
+        self.assertTrue((ROOT / "stable_lib/arq/arq.h").exists(), "ARQ core missing")
         with tempfile.TemporaryDirectory() as directory:
             binary = Path(directory) / "core"
             subprocess.run(
@@ -90,12 +90,12 @@ class ArqTests(unittest.TestCase):
                     "-g",
                     "-fsanitize=address,undefined",
                     "-fno-omit-frame-pointer",
-                    "-Istable_lib/arq/src", "-Istable_lib/arq/src/arq",
+                    "-Istable_lib/arq",
                     "-Iinclude",
                     "tests/arq/core_test.cpp",
-                    "stable_lib/arq/src/arq/codec.cpp",
-                    "stable_lib/arq/src/arq/sender.cpp",
-                    "stable_lib/arq/src/arq/receiver.cpp",
+                    "stable_lib/arq/codec.cpp",
+                    "stable_lib/arq/sender.cpp",
+                    "stable_lib/arq/receiver.cpp",
                     "-o",
                     str(binary),
                 ],
@@ -133,9 +133,9 @@ class ArqTests(unittest.TestCase):
         board = load(ROOT / "config/lora_system.json")
         outputs = arq_artifacts(cfg, radio, board, "test-source")
         self.assertEqual(outputs, arq_artifacts(cfg, radio, board, "test-source"))
-        self.assertIn("PIN_PD0", outputs["stable_lib/arq/src/arq/board_ssot.c"])
+        self.assertIn("PIN_PD0", outputs["stable_lib/arq/board_ssot.c"])
         self.assertIn("SPI1_SWAP_DEFAULT", outputs["include/generated/board_ssot.h"])
-        self.assertNotIn("SPI1_SWAP_DEFAULT", outputs["stable_lib/arq/src/arq/board_ssot.c"])
+        self.assertNotIn("SPI1_SWAP_DEFAULT", outputs["stable_lib/arq/board_ssot.c"])
         manifest_radio = json.loads(outputs["generated/arq_manifest.json"])["radio"]
         self.assertEqual(manifest_radio["frequency_hz"], 915_000_000)
         self.assertEqual(manifest_radio["tx_power_dbm"], 2)

@@ -19,7 +19,7 @@ ROOT = Path.cwd()
 REPORT = Path(os.environ.get("CPP_QUALITY_REPORT_DIR", "reports/static_analysis")).resolve()
 DOCS = Path(os.environ.get("CPP_QUALITY_DOCS_DIR", "docs/generated")).resolve()
 TARGETS = ("sender_hello", "receiver", "sender", "sender_arq_test", "receiver_arq_test")
-SOURCE_DIRS = ("src", "stable_lib/ssot/src/ssot", "stable_lib/arq/src/arq")
+SOURCE_DIRS = ("src", "stable_lib/ssot", "stable_lib/arq")
 SOURCES = sorted(
     str(path)
     for directory in SOURCE_DIRS
@@ -34,16 +34,16 @@ RESULTS = []
 # Keep the existing ARQ adapter's coordinated IRQ and timing decisions intact.
 # A new function over 15, or growth in an existing exception, fails the gate.
 COMPLEXITY_LIMITS = {
-    ("stable_lib/arq/src/arq/application.cpp", "arq::app::FlushStatus"): 21,
-    ("stable_lib/arq/src/arq/application.cpp", "arq::app::ExecuteCommand"): 28,
-    ("stable_lib/arq/src/arq/application.cpp", "arq::app::Initialize"): 16,
-    ("stable_lib/arq/src/arq/application.cpp", "arq::app::HandleReceive"): 30,
+    ("stable_lib/arq/application.cpp", "arq::app::FlushStatus"): 21,
+    ("stable_lib/arq/application.cpp", "arq::app::ExecuteCommand"): 28,
+    ("stable_lib/arq/application.cpp", "arq::app::Initialize"): 16,
+    ("stable_lib/arq/application.cpp", "arq::app::HandleReceive"): 30,
     # Lizard counts both role branches. Each still calls RestoreReceive once.
-    ("stable_lib/arq/src/arq/application.cpp", "arq::app::Poll"): 49,
+    ("stable_lib/arq/application.cpp", "arq::app::Poll"): 49,
     # The checked FAULT parser also rejects trailing non-whitespace input.
-    ("stable_lib/arq/src/arq/commands.cpp", "arq::ParseCommand"): 22,
-    ("stable_lib/arq/src/arq/receiver.cpp", "arq::HandleDataFrame"): 17,
-    ("stable_lib/arq/src/arq/sender.cpp", "arq::HandleControlFrame"): 20,
+    ("stable_lib/arq/commands.cpp", "arq::ParseCommand"): 22,
+    ("stable_lib/arq/receiver.cpp", "arq::HandleDataFrame"): 17,
+    ("stable_lib/arq/sender.cpp", "arq::HandleControlFrame"): 20,
 }
 
 

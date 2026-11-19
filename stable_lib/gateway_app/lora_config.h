@@ -1,5 +1,6 @@
-// Validates the legacy eight-byte I2C radio configuration against generated
-// PHY.
+/// @file
+/// Validates the legacy eight-byte I2C radio configuration against generated
+/// PHY.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_SENDER_LIB_LORA_CONFIG_H_
 #define SENIOR_PROJECT_RCA_SRC_SENDER_LIB_LORA_CONFIG_H_
@@ -10,15 +11,20 @@
 
 #include "espcomm.h"
 
-// Holds the accepted local address; PHY values remain fixed by generated SSOT.
+/// Holds the accepted local address after generated-PHY validation.
 struct LoraConfig {
-  uint8_t addr;
+  uint8_t addr;  ///< Local wire address accepted from the I2C frame.
 };
 
-// Decodes address/IEEE-754 frequency/power/range after the caller selects
-// CONFIG. Null or wrong-length input fails without modifying config; input may
-// be volatile because the Wire callback owns the source mailbox. Does not alter
-// hardware.
+/// Validates the I2C radio profile and copies its local address.
+///
+/// The caller selects the CONFIG command first. Frequency, power and range
+/// must match generated SSOT values; this function does not configure hardware.
+///
+/// @param input Borrowed I2C mailbox bytes; may be volatile.
+/// @param length Number of available bytes, which must equal the frame size.
+/// @param config Non-null output updated only after validation succeeds.
+/// @return True when the frame has the expected shape and generated PHY.
 static bool DecodeLoraConfig(const volatile uint8_t* input, uint8_t length,
                              LoraConfig* config) {
   if (input == nullptr || config == nullptr || length != kI2cConfigFrameBytes)

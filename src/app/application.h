@@ -5,14 +5,16 @@
 // LORA_APP_* implementation.
 namespace firmware_app {
 
-// Initializes the single application selected by the active LORA_APP_* define.
-// Runs during Arduino setup and owns role-specific startup side effects.
+/// @brief Initializes the application selected by the active LORA_APP_* define.
+/// @post Runs during Arduino setup and performs role-specific startup work.
 void Initialize();
 
-// Advances the selected application once from the foreground Arduino loop.
+/// @brief Advances the selected application once from the foreground loop.
+/// @post Performs one bounded scheduler or application poll.
 void Poll();
 
-// Applies the role-specific early interrupt-routing workaround before setup.
+/// @brief Applies role-specific interrupt routing before Arduino setup.
+/// @post Preserves the selected board's early interrupt workaround.
 void PreMain();
 
 }  // namespace firmware_app

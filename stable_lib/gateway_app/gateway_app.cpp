@@ -1,4 +1,5 @@
-// Owns the gateway scheduler, ADC sampling and Arduino application lifecycle.
+/// @file
+/// Owns the gateway scheduler, ADC sampling and Arduino application lifecycle.
 
 #include "gateway_app.h"
 
@@ -7,31 +8,31 @@
 #include <stdlib.h>
 
 #include "application_config.h"
+#include "avr128da28_adc.h"
+#include "avr128da28_provisioning.h"
 #include "debug.h"
 #include "espcomm.h"
 #include "hello_config.h"
 #include "io.h"
-#include "iw/avr128da28/adc.h"
-#include "iw/avr128da28/provisioning.h"
-#include "iw/core/ring_buffer.h"
-#include "iw/tracker/radio/packets.h"
 #include "lora_rx.h"
+#include "ring_buffer.h"
 #include "role_log.h"
 #include "status_leds.h"
 #include "task.h"
+#include "tracker_radio_packets.h"
 
 namespace gateway_app {
 
 using namespace iw::tracker::radio;
 
-// Result storage is static and bounded; host communication borrows it.
+/// Bounded result storage borrowed by the host communication task.
 iw::core::RingBuffer<GatewaySSOT::Memory::SHARED_RINGBUF_BYTES> ringbuf;
 
-// Borrows static tasks and advances them from the Arduino foreground loop.
+/// Scheduler invoked by the Arduino foreground loop; task objects are borrowed.
 TaskScheduler scheduler;
-// Foreground ADC result exposed to the I2C command task in degrees Celsius.
+/// Latest foreground temperature sample in degrees Celsius.
 int16_t current_temperature;
-// Emits build identity once after a monitor becomes available.
+/// Latches whether the build identity has been emitted to the monitor.
 static bool role_identity_logged = false;
 static status_leds::Controller led_status(
     GatewaySSOT::Pins::LED1, GatewaySSOT::Pins::LED2,
@@ -39,9 +40,8 @@ static status_leds::Controller led_status(
     GatewaySSOT::Tasks::LED1_TOGGLE_INTERVAL_MS,
     GatewaySSOT::Tasks::LORA_TX_LED_TOGGLE_INTERVAL_MS);
 
-/***********************************************
- *
- */
+/// Reads the calibrated internal temperature sensor.
+/// @return Temperature in degrees Celsius, or zero when ADC sampling fails.
 int16_t ReadTemperatureCelsius() {
   uint16_t raw_sample = 0U;
   if (iw::avr128da28::ReadTemperatureAdc(&raw_sample) !=
@@ -60,17 +60,17 @@ int16_t ReadTemperatureCelsius() {
   return static_cast<int16_t>(temp) - GatewaySSOT::AdcTemp::KELVIN_TO_CELSIUS;
 }
 
-/***********************************************
- *
- */
-// Retains the disabled legacy LED task and its continuation timestamp.
+/// Retains the disabled legacy heartbeat task and its continuation timestamp.
 class HeartbeatTask : public virtual Task {
  private:
-  uint32_t timestamp_ms_;
+  uint32_t timestamp_ms_;  ///< Timestamp reused by the two heartbeat delays.
 
  public:
+  /// @return Stable scheduler diagnostic name.
   virtual const char* GetName() { return GatewaySSOT::Tasks::HEARTBEAT_NAME; }
 
+  /// Defines one bounded step of the legacy heartbeat sequence.
+  /// @return Continuation status defined by the vendored PT_* macros.
   virtual TASK(Run()) {
     TASK_BEGIN();
 
@@ -82,9 +82,10 @@ class HeartbeatTask : public virtual Task {
     }
     TASK_END();
   }
-} heartbeat_task;
+} heartbeat_task;  ///< Disabled legacy heartbeat task retained for
+                   ///< compatibility.
 
-// Initializes GPIO and ADC before registering communication/radio tasks.
+/// Initializes GPIO and ADC before registering enabled application tasks.
 void Initialize() {
   InitializeGpio();
   led_status.Begin(millis());
@@ -103,8 +104,7 @@ void Initialize() {
 #endif
 }
 
-// Samples temperature and runs each cooperative task once; no new scheduling
-// layer.
+/// Samples temperature, advances the scheduler and updates status LEDs.
 void Poll() {
   if (!role_identity_logged && updi_uart_enabled()) {
 #if HELLO_TEST_MODE

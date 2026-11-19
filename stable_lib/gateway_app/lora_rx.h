@@ -5,21 +5,26 @@
 
 #include <lora.h>
 
-// Registers the static foreground radio task with the application scheduler.
+/// @brief Registers the static foreground radio task with the scheduler.
+/// @post The task is available for subsequent scheduler polls.
 void RegisterRadioTask();
-// Selects SPI once and arms the configured PHY for this local address.
-// Failure leaves the radio task unready; does not transmit DATA.
+/// @brief Selects SPI and arms the configured PHY for this local address.
+/// @param my_addr Local wire address.
+/// @post Failure leaves the radio task unready; no DATA is transmitted.
 void InitializeRadio(Address my_addr);
-// Cancels requested work and parks the radio after invalid host configuration.
+/// @brief Cancels queued work and parks the radio after invalid host settings.
 void RejectRadioConfiguration();
-// Requests one foreground reliable transfer; repeated starts while busy do
-// nothing.
+/// @brief Requests one foreground reliable transfer.
+/// @post Repeated starts while the transport is busy do nothing.
 void StartRadioTransaction();
-// Cancels queued work and parks the transport; does not reset sequence history.
+/// @brief Cancels queued work and parks the transport.
+/// @post Existing sequence history is preserved.
 void StopRadio();
-// Requests the configured hello transfer only in an explicit Hello test build.
+/// @brief Requests the hello transfer in an explicit Hello test build.
+/// @post Other builds do not queue an application transmission.
 void StartHelloTestIfEnabled();
-// Reports only active DATA/ACK/NACK radio transmission, not ACK waiting.
+/// @brief Reports whether a DATA, ACK, or NACK transmission is active.
+/// @return False while merely waiting for an ACK.
 bool IsRadioTransmitting();
 
 #endif  // SENIOR_PROJECT_RCA_SRC_SENDER_LIB_LORA_RX_H_

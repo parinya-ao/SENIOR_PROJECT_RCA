@@ -6,7 +6,7 @@
 #include <Arduino.h>
 #include <RadioLib.h>
 #include <SPI.h>
-#include <arq/diagnostics.h>
+#include <arq_diagnostics.h>
 #include <stdio.h>
 #include <string.h>
 #include <updi_uart.h>

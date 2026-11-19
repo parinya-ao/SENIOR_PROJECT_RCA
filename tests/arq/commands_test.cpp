@@ -1,8 +1,8 @@
 // Tests accepted, rejected, and truncated ARQ serial command lines.
-#include "commands.h"
-
 #include <assert.h>
 #include <string.h>
+
+#include "arq_commands.h"
 
 int main() {
   arq::Command command{};

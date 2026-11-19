@@ -119,8 +119,14 @@ class LoRa {
 
  private:
   static LoRa* _active;
+  /// @brief Latches completion from the RadioLib transmit callback.
+  /// @note Runs in interrupt context and performs no SPI or logging.
   static void _sent_action();
+  /// @brief Latches packet availability from the RadioLib receive callback.
+  /// @note Runs in interrupt context and performs no SPI or packet parsing.
   static void _received_action();
+  /// @brief Rearms continuous RX after a completed radio operation.
+  /// @return RadioLib status from the receive-mode transition.
   int16_t receive_start();
   Module _hardware;
   SX1276 _module;

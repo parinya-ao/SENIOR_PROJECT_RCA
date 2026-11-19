@@ -31,8 +31,9 @@
     delay(off_duration);                                \
   } while (0)
 
-// Establishes safe output levels, pull-ups and the existing TWI route.
-// Call before registering communication tasks or initializing the radio.
+/// @brief Configures gateway GPIO levels, pull-ups, and the existing TWI route.
+/// @pre The selected board pin configuration has been generated.
+/// @post Call before communication tasks or radio initialization.
 void InitializeGpio();
 
 #endif  // SENIOR_PROJECT_RCA_SRC_SENDER_LIB_IO_H_

@@ -4,24 +4,32 @@
 
 #include <stdint.h>
 
-#include "iw/avr128da28/device.h"
+#include "avr128da28_device.h"
 
-// Initializes the RTC and standby-sleep policy state.
+/// @brief Initializes RTC hardware and foreground sleep policy state.
+/// @post The wall clock starts from its configured initial timestamp.
 void InitializeSleep();
 
-// Sleeps for up to seconds, returning earlier when ForceWakeup() is requested.
+/// @brief Sleeps for the requested duration unless woken early.
+/// @param seconds Maximum sleep duration in seconds.
+/// @post ForceWakeup ends sleep on the next RTC cycle, at most one second
+/// later.
 void SleepFor(uint32_t seconds);
 
-// Advances wall-clock state from RTC ticks and returns the current tick count.
+/// @brief Updates wall-clock state from RTC ticks and reads the counter.
+/// @return Current RTC tick count.
 [[nodiscard]] uint32_t SleepRtcTicks();
 
-// Returns the current wall-clock timestamp in Unix seconds.
+/// @brief Reads the current wall-clock timestamp.
+/// @return Unix timestamp in seconds.
 [[nodiscard]] uint32_t GetUnixTime();
 
-// Sets the wall-clock timestamp while preserving the interrupt state.
+/// @brief Sets wall-clock time without changing interrupt enable state.
+/// @param timestamp New Unix timestamp in seconds.
 void SetUnixTime(uint32_t timestamp);
 
-// Requests SleepFor() to wake on its next RTC cycle (at most one second).
+/// @brief Requests an active SleepFor() call to wake early.
+/// @post The request is consumed by the next RTC wake cycle.
 void ForceWakeup();
 
 #endif  // IW_SLEEP_POLICY_SLEEP_H_

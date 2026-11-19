@@ -4,7 +4,7 @@
 #define SENIOR_PROJECT_RCA_SRC_FEATURES_RELIABLE_TRANSFER_RELIABLE_TRANSPORT_H_
 
 #include <RadioLib.h>
-#include <ssot/ssot.h>
+#include <ssot.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -209,13 +209,22 @@ class Transport {
   }
 
  private:
-  // Reports an observation without owning the callback or its context.
+  /// @brief Emits an event synchronously without taking callback ownership.
+  /// @param event Stable event name.
+  /// @param type Wire message type.
+  /// @param sequence Wire sequence number.
+  /// @param error Driver status or zero.
   void EmitEvent(const char* event, uint8_t type, uint8_t sequence,
                  int16_t error = 0) {
     if (event_) event_(event_context_, event, type, sequence, error);
   }
 
-  // Preserves the cause while parking hardware and requiring explicit rearming.
+  /// @brief Stops the radio and records a terminal transaction failure.
+  /// @param result Transaction outcome to retain.
+  /// @param type Wire type associated with the failure event.
+  /// @param sequence Sequence associated with the failure event.
+  /// @param error Original error code, when available.
+  /// @post The transport is failed and must be armed again before reuse.
   void Fail(Result result, uint8_t type, uint8_t sequence, int16_t error = -1) {
     const int16_t stopped = radio_.sleep();
     state_ = State::kFailed;
@@ -226,8 +235,10 @@ class Transport {
     EmitEvent("TRANSACTION_FAILED", type, sequence, error_);
   }
 
-  // Starts the immutable request and increments attempts only after driver
-  // acceptance.
+  /// @brief Starts a retry using the transport-owned DATA bytes.
+  /// @param now Current wrapping millisecond counter.
+  /// @return True if the radio accepted the transmission request.
+  /// @post Attempts increase only after driver acceptance.
   bool TransmitData(uint32_t now) {
     const int16_t error = radio_.send(peer_, campaign_id_, wire_, wire_size_);
     if (error < 0) {
@@ -241,8 +252,10 @@ class Transport {
     return true;
   }
 
-  // Starts the ACK clock only after the driver has completed TX and restored
-  // RX. A response transmission returns directly to the receive state.
+  /// @brief Polls completion of the current asynchronous transmission.
+  /// @param now Current wrapping millisecond counter.
+  /// @post DATA TX completion starts its response timeout; response TX returns
+  ///   to receive state.
   void PollTransmit(uint32_t now) {
     const int16_t status = radio_.send_done();
     if (status < 0) {
@@ -262,8 +275,8 @@ class Transport {
     }
   }
 
-  // Schedules a retry of the encoded DATA without granting a new absolute
-  // transaction deadline.
+  /// @brief Schedules a retry or fails when the configured attempt budget ends.
+  /// @post The original absolute transaction deadline is unchanged.
   void HandleAckTimeout() {
     if (attempts_ >= ssot::kMaxAttempts) {
       Fail(Result::kAckTimeout, ssot::kDataType, sequence_);
@@ -273,8 +286,9 @@ class Transport {
     EmitEvent("RETRY_SCHEDULED", ssot::kDataType, sequence_);
   }
 
-  // Validates peers, packet bounds and response deadline before state
-  // transitions. ACK replay does not redeliver already accepted payload bytes.
+  /// @brief Reads and classifies one available radio packet.
+  /// @param now Current wrapping millisecond counter.
+  /// @post Invalid packets cannot advance transaction or application state.
   void HandleReceive(uint32_t now) {
     uint8_t source = 0, destination = 0, size = 0;
     uint16_t campaign_id = 0;
@@ -308,15 +322,21 @@ class Transport {
     }
   }
 
-  // Only a fully consumed receive sequence permits in-band rollover.
+  /// @brief Checks whether the expected DATA frame may advance the campaign.
+  /// @param campaign_id Campaign identifier from the received header.
+  /// @param size Received payload size.
+  /// @return True only at sequence rollover for the immediate successor
+  ///   campaign and its first DATA sequence.
   bool CanRollCampaign(uint16_t campaign_id, uint8_t size) const {
     return next_rx_ == 0 && rx_[0] == ssot::kDataType && size >= 3 &&
            rx_[1] == ssot::kSequence &&
            campaign_id == ssot::NextCampaignId(campaign_id_);
   }
 
-  // HandleReceive has already checked the peer and campaign. Only the exact
-  // two-byte control for the outstanding sequence can finish or retry it.
+  /// @brief Applies an ACK or NACK to the outstanding transaction.
+  /// @param size Control payload size.
+  /// @pre HandleReceive has validated peer, destination, and campaign.
+  /// @post Only an exact two-byte matching sequence can change the transaction.
   void HandleControl(uint8_t size) {
     const uint8_t type = rx_[0], sequence = rx_[1];
     if (size != 2 || sequence != sequence_ || state_ != State::kWaitResponse)
@@ -334,8 +354,11 @@ class Transport {
       state_ = State::kRetryPending;
   }
 
-  // Adopt the first eligible DATA campaign or the successor admitted by
-  // CanRollCampaign. Reset the sequence high-water mark on campaign change.
+  /// @brief Validates an incoming DATA packet and schedules its response.
+  /// @param campaign_id Campaign identifier from the radio header.
+  /// @param size Received payload size.
+  /// @param now Current wrapping millisecond counter.
+  /// @post A changed campaign resets receive-sequence state before validation.
   void HandleData(uint16_t campaign_id, uint8_t size, uint32_t now) {
     const uint8_t type = rx_[0], sequence = rx_[1];
     if (type != ssot::kDataType || IsActive() || size < 3) {
@@ -355,8 +378,12 @@ class Transport {
     SendResponse(sequence, accepted, now);
   }
 
-  // Remember accepted bytes before replying so a lost ACK can be replayed
-  // without invoking the application again. Zero marks an exhausted campaign.
+  /// @brief Checks duplicates and invokes the application DATA validator.
+  /// @param sequence Received DATA sequence.
+  /// @param data_size Application payload length.
+  /// @return True for accepted data or an exact duplicate of accepted data.
+  /// @post Accepted payload bytes are saved before the ACK is sent; sequence
+  ///   zero marks an exhausted receive campaign.
   bool ValidatePayload(uint8_t sequence, uint8_t data_size) {
     if (have_accepted_ && campaign_id_ == last_campaign_id_ &&
         sequence == last_sequence_ && data_size == last_size_ &&
@@ -381,8 +408,11 @@ class Transport {
     return true;
   }
 
-  // Keep the two-byte reply in transport-owned storage while TX is pending.
-  // Diagnostic suppression leaves the accepted sequence available for replay.
+  /// @brief Sends the ACK/NACK response or drops it for explicit diagnostics.
+  /// @param sequence DATA sequence being acknowledged or rejected.
+  /// @param accepted Whether application validation accepted the payload.
+  /// @param now Current wrapping millisecond counter.
+  /// @post The reply remains in owned storage until asynchronous TX completes.
   void SendResponse(uint8_t sequence, bool accepted, uint32_t now) {
     reply_[0] = accepted ? ssot::kAckType : ssot::kNackType;
     reply_[1] = sequence;

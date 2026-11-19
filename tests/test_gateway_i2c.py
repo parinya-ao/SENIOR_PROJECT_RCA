@@ -17,11 +17,11 @@ class GatewayI2cTests(unittest.TestCase):
                  "-ffunction-sections", "-Wl,--gc-sections",
                  "-Itests/gateway_stub", "-Itests/mvp_stub", "-Itests/radio_stub",
                  "-Iinclude", "-Itests/avr_stub", "-Istable_lib/shared", "-Istable_lib/task",
-                 "-Istable_lib/iw_core/src", "-Istable_lib/iw_tracker_radio_protocol/src",
-                 "-Istable_lib/updi_uart/src", "-Istable_lib/lora", "-Isrc",
-                 "-Istable_lib/ssot/src", "-DLORA_ROLE_SENDER=1",
+                 "-Istable_lib/iw_core", "-Istable_lib/iw_tracker_radio_protocol",
+                 "-Istable_lib/updi_uart", "-Istable_lib/lora", "-Isrc",
+                 "-Istable_lib/ssot", "-DLORA_ROLE_SENDER=1",
                  "tests/gateway_i2c_test.cpp", "stable_lib/task/task.cpp",
-                 "stable_lib/iw_core/src/byte_codec.cpp", "-o", binary],
+                 "stable_lib/iw_core/byte_codec.cpp", "-o", binary],
                 cwd=ROOT, capture_output=True, text=True,
             )
             self.assertEqual(result.returncode, 0, result.stderr)

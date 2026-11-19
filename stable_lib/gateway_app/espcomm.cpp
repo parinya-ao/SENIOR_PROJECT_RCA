@@ -5,13 +5,13 @@
 
 #include <Wire.h>
 
+#include "byte_codec.h"
 #include "debug.h"
 #include "gateway_app.h"
 #include "io.h"
-#include "iw/core/byte_codec.h"
-#include "iw/tracker/radio/packets.h"
 #include "lora_config.h"
 #include "lora_rx.h"
+#include "tracker_radio_packets.h"
 
 namespace {
 constexpr uint32_t kI2cResetIntervalMs =

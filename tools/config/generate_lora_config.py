@@ -129,7 +129,7 @@ def source_fingerprint() -> str:
             if path.is_file()
             and path.suffix in (".h", ".c", ".cpp", ".py", ".ini")
             and not path.is_relative_to(ROOT / "include/generated")
-            and path != ROOT / "stable_lib/arq/src/arq/board_ssot.c"
+            and path != ROOT / "stable_lib/arq/board_ssot.c"
         }
     )
 

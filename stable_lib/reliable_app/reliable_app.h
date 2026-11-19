@@ -4,9 +4,11 @@
 // Declares the feature-owned reliable DATA/ACK application lifecycle.
 namespace reliable_app {
 
-// Initializes role-specific pins, radio, transport, and diagnostic state.
+/// @brief Initializes role-specific pins, radio, transport, and diagnostics.
+/// @post Performs hardware setup once during the selected app's startup.
 void Initialize();
-// Advances one nonblocking foreground transport and command step.
+/// @brief Advances one nonblocking foreground transport and command step.
+/// @post Does not wait for radio completion or host input.
 void Poll();
 
 }  // namespace reliable_app

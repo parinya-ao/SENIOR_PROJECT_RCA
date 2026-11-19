@@ -907,7 +907,7 @@ def run_gate1(
         "tools/rca/gate1_live.py",
         "tools/rf_proof.py",
         "tools/device_detection/updi_probe.py",
-        "stable_lib/arq/src/arq/application.cpp",
+        "stable_lib/arq/application.cpp",
         "config/current_hardware.json",
         "generated/arq_manifest.json",
         "artifacts/arq/20261113T123837Z-standby/independent-verification.json",

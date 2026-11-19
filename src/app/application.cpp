@@ -16,7 +16,7 @@
 #elif defined(LORA_APP_RELIABLE)
 #include <reliable_app.h>
 #elif defined(LORA_APP_ARQ)
-#include <arq/application.h>
+#include <arq_application.h>
 #elif defined(LORA_APP_MVP)
 #include <mvp_app.h>
 #elif defined(LORA_APP_REVERSE_RAW)

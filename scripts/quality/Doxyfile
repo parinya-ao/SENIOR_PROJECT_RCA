@@ -1,5 +1,20 @@
 PROJECT_NAME = "LoRa Gateway Tracker"
-INPUT = src stable_lib/ssot/src/ssot stable_lib/arq/src/arq
+INPUT = src stable_lib/ssot stable_lib/arq
+INPUT += stable_lib/gateway_app stable_lib/reliable_app stable_lib/shared
+INPUT += stable_lib/task/task.h stable_lib/task/task.cpp
+INPUT += stable_lib/time-utils stable_lib/sleep
+INPUT += stable_lib/iw_core
+INPUT += stable_lib/iw_tracker_radio_protocol
+INPUT += stable_lib/iw_avr128da28/adc.cpp
+INPUT += stable_lib/iw_avr128da28/provisioning.cpp
+INPUT += stable_lib/iw_avr128da28/routing.cpp
+INPUT += stable_lib/iw_avr128da28/avr128da28_device.h
+INPUT += stable_lib/iw_avr128da28/avr128da28_memory_layout.h
+INPUT += stable_lib/iw_avr128da28/avr128da28_adc.h
+INPUT += stable_lib/iw_avr128da28/avr128da28_provisioning.h
+INPUT += stable_lib/iw_avr128da28/avr128da28_sleep.h
+EXCLUDE_PATTERNS = */avr128da28_generated_layout.h stable_lib/task/pt/*
+EXCLUDE_SYMBOLS = *__attribute__*
 RECURSIVE = YES
 FILE_PATTERNS = *.cpp *.h
 EXTRACT_ALL = NO
@@ -12,4 +27,4 @@ GENERATE_LATEX = NO
 GENERATE_XML = YES
 QUIET = YES
 ENABLE_PREPROCESSING = YES
-PREDEFINED = LORA_APP_RELIABLE=1 LORA_APP_GATEWAY=1
+PREDEFINED = LORA_APP_RELIABLE=1 LORA_APP_GATEWAY=1 "TASK(name)=char name"

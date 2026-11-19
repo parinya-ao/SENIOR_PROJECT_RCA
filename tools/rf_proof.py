@@ -1047,7 +1047,7 @@ def host_tests(proof: ProofRun, effective_config: str) -> int:
                 "-Wall",
                 "-Wextra",
                 "-Werror",
-                "-Istable_lib/updi_uart/src",
+                "-Istable_lib/updi_uart",
                 "tests/role_log_test.cpp",
                 "-o",
                 role_binary,

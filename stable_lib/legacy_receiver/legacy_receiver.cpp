@@ -5,7 +5,7 @@
 #include "legacy_receiver.h"
 
 #include <Arduino.h>
-#include <ssot/ssot.h>
+#include <ssot.h>
 #include <string.h>
 
 #include "application_config.h"

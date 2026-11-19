@@ -15,7 +15,7 @@ class ReliableTransportTests(unittest.TestCase):
             binary = Path(directory) / "test"
             ssot = Path(directory) / "ssot.o"
             subprocess.run(
-                ["clang", "--driver-mode=g++", "-std=c++17", "-Istable_lib/ssot/src", "-Iinclude", "-c", "stable_lib/ssot/src/ssot/codec.cpp", "-o", str(ssot)],
+                ["clang", "--driver-mode=g++", "-std=c++17", "-Istable_lib/ssot", "-Iinclude", "-c", "stable_lib/ssot/ssot_codec.cpp", "-o", str(ssot)],
                 cwd=ROOT,
                 check=True,
             )
@@ -39,16 +39,16 @@ class ReliableTransportTests(unittest.TestCase):
                 "-Itests/radio_stub",
                 "-Istable_lib/shared",
                 "-Isrc",
-                "-Istable_lib/ssot/src",
+                "-Istable_lib/ssot",
                 "-Iinclude",
                 "-Istable_lib/lora",
                 "-Istable_lib/reliable_app",
-                "-Istable_lib/updi_uart/src",
+                "-Istable_lib/updi_uart",
                 source,
                 *extra,
                 str(ssot),
-                "stable_lib/ssot/src/ssot/session.cpp",
-                "stable_lib/ssot/src/ssot/control_input.cpp",
+                "stable_lib/ssot/ssot_session.cpp",
+                "stable_lib/ssot/ssot_control_input.cpp",
                 "-o",
                 str(binary),
             ]

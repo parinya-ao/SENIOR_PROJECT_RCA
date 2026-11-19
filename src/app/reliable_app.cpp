@@ -1,4 +1,5 @@
-// Coordinates the symmetric SSOT transport for Gateway and Tracker variants.
+/// @file
+/// @brief Coordinates the SSOT transport for Gateway and Tracker variants.
 
 #if defined(LORA_APP_RELIABLE)
 
@@ -77,14 +78,20 @@ static uint8_t accepted_payload[ssot::kHelloPayloadSize];
 // Event storage is bounded; dropped diagnostics never change delivery state.
 static radio_diagnostics::EventQueue event_queue;
 
-// Queues one observation or records overflow without blocking radio work.
+/// @brief Queues one event observation without blocking radio work.
+/// @param event Event name, type, sequence, and driver status from Transport.
+/// @param type Wire message type.
+/// @param sequence Wire sequence number.
+/// @param error Radio driver status, or zero.
+/// @post Queue overflow is counted by EventQueue and does not change delivery.
 static void RecordTransportEvent(void*, const char* event, uint8_t type,
                                  uint8_t sequence, int16_t error) {
   event_queue.Push(
       {event, millis(), error, type, sequence, transport.campaign_id()});
 }
 
-// Formats one queued event; defers output while the transport is active.
+/// @brief Formats and emits one queued event when radio work permits.
+/// @post Removes at most one event from the bounded queue.
 static void FlushTransportEvent() {
   if (!event_queue.size() || !updi_uart_enabled()) return;
   radio_diagnostics::Event event{};
@@ -101,8 +108,12 @@ static void FlushTransportEvent() {
 }
 
 #if !HELLO_RF_DIAGNOSTIC_ONLY
-// Copies only the exact generated application payload; rejection sends a real
-// NACK.
+/// @brief Accepts only the configured application payload.
+/// @param sequence Received DATA sequence used for diagnostic correlation.
+/// @param data Borrowed payload bytes, valid only for this callback.
+/// @param length Number of readable payload bytes.
+/// @return True only when the full configured payload matches.
+/// @post Rejection is returned to Transport, which sends the protocol NACK.
 static bool AcceptData(void*, uint8_t sequence, const uint8_t* data,
                        uint8_t length) {
   if (reject_data) {
@@ -122,7 +133,8 @@ static bool AcceptData(void*, uint8_t sequence, const uint8_t* data,
 }
 #endif
 
-// Isolates Tracker peripherals before enabling the radio and shared SPI pins.
+/// @brief Configures role-specific GPIO and applies Tracker power sequencing.
+/// @post Tracker peripherals are isolated before radio SPI is enabled.
 static void InitializeGpio() {
 #if defined(LORA_ROLE_RECEIVER)
   digitalWriteFast(LORA_PIN_ENABLE, !LORA_POWER_ACTIVE_LEVEL);
@@ -148,7 +160,9 @@ static void InitializeGpio() {
 }
 
 #if !HELLO_RF_DIAGNOSTIC_ONLY
-// Selects SPI once, then reinitializes the configured radio/transport session.
+/// @brief Selects SPI once and arms the configured radio session.
+/// @return True when Transport has initialized and armed the radio.
+/// @post Receiver adopts its first DATA campaign; sender creates a new one.
 static bool ArmRadio() {
   if (!spi_selected) {
     if (!SPI.swap(LORA_SPI_ROUTE)) return false;
@@ -163,7 +177,8 @@ static bool ArmRadio() {
 }
 #endif
 
-// Registers observations before board power sequencing and initial RX arming.
+/// @brief Registers event reporting, initializes the board, and arms the role.
+/// @post Receiver logs RX_READY only after successful radio arming.
 void Initialize() {
   transport.SetEventCallback(RecordTransportEvent, nullptr);
   InitializeGpio();
@@ -178,7 +193,8 @@ void Initialize() {
 #endif
 }
 
-// Reports readiness and diagnostic loss without changing radio state.
+/// @brief Emits current radio configuration and diagnostic queue status.
+/// @post Does not change radio or transport state.
 static void ReportStatus() {
   updi_role_log(kRole, radio_ready ? "RADIO_INIT_OK" : "RADIO_INIT_FAILED");
   updi_role_log(kRole, "BUILD_ID=" LORA_BUILD_ID);
@@ -201,8 +217,8 @@ static void ReportStatus() {
   }
 }
 
-// Emits startup identity when a monitor first attaches. Subsequent status
-// queries use ReportStatus and leave this one-time marker alone.
+/// @brief Emits startup identity once after a serial monitor becomes available.
+/// @post Later status requests do not clear the one-time boot marker.
 static void ReportBoot() {
   if (boot_logged || !updi_uart_enabled()) return;
   updi_role_log_identity(kRole, kFirmware, __DATE__, __TIME__);
@@ -233,7 +249,9 @@ static void ReportBoot() {
 
 #if !HELLO_RF_DIAGNOSTIC_ONLY
 #if !defined(LORA_ROLE_RECEIVER) && HELLO_TEST_MODE
-// Completes or parks the diagnostic TX using the regular unsigned TX budget.
+/// @brief Polls the wrong-destination diagnostic transmission.
+/// @param now Wrapping millisecond counter used for the TX timeout.
+/// @post Timeout or driver failure parks the radio and marks it unready.
 static void PollWrongDestination(uint32_t now) {
   const int16_t status = lora.send_done();
   if (status == 1) {
@@ -252,8 +270,8 @@ static void PollWrongDestination(uint32_t now) {
   }
 }
 
-// Uses the real PHY and frame shape while deliberately selecting a different
-// destination. The diagnostic does not open an ACK window or schedule retries.
+/// @brief Starts the test DATA frame with a deliberately wrong destination.
+/// @post Uses the configured PHY but does not open an ACK window or retry.
 static void SendWrongDestination() {
   if (!radio_ready || transport.IsActive()) return;
   uint8_t packet[2 + ssot::kHelloPayloadSize] = {ssot::kDataType,
@@ -278,8 +296,8 @@ static void SendWrongDestination() {
 }
 #endif
 
-// Gives the pending diagnostic exclusive use of the radio. Advance the normal
-// DATA sequence once, after the transport reports a matching ACK.
+/// @brief Polls radio work and advances the sender sequence on matching ACK.
+/// @param now Wrapping millisecond counter used by the transport deadlines.
 static void PollRadio(uint32_t now) {
 #if !defined(LORA_ROLE_RECEIVER) && HELLO_TEST_MODE
   if (wrong_destination_tx_pending)
@@ -298,8 +316,8 @@ static void PollRadio(uint32_t now) {
 }
 
 #if !defined(LORA_ROLE_RECEIVER)
-// Starts one bounded DATA transaction. Rearm into a new campaign before
-// starting another sequence cycle, because zero is reserved on the wire.
+/// @brief Starts one bounded DATA transaction from the configured payload.
+/// @post Starts a new campaign before sequence zero could be sent on the wire.
 static void RequestData() {
   if (!radio_ready || transport.IsActive()) return;
   if (tx_sequence == 0) {
@@ -316,8 +334,9 @@ static void RequestData() {
 }
 #endif
 
-// Handles one foreground command. Drop and reject controls modify only the
-// next response or payload decision for the physical fault tests.
+/// @brief Applies one foreground diagnostic command.
+/// @param command Command byte polled from the host UART.
+/// @post Fault-injection controls affect only their documented next operation.
 static void HandleRadioCommand(char command) {
   switch (command) {
     case 'P': {
@@ -357,7 +376,9 @@ static void HandleRadioCommand(char command) {
 }
 #endif
 
-// Services transport before host commands, then drains diagnostics while idle.
+/// @brief Services transport, host commands, and deferred events once.
+/// @post Radio polling precedes commands and event output remains deferred
+///   while a transaction is active.
 void Poll() {
 #if defined(LORA_NONBLOCKING_LOG) && LORA_NONBLOCKING_LOG
   if (!transport.IsActive()) updi_role_log_service();

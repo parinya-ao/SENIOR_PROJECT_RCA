@@ -2,16 +2,18 @@
 #define SENIOR_PROJECT_RCA_SRC_APP_CAMPAIGN_ID_H_
 
 #include <Arduino.h>
-#include <ssot/ssot.h>
+#include <ssot.h>
 #include <stdint.h>
 
-// Creates the runtime correlation identifier carried by reliable DATA/ACK.
+/// @file
+/// @brief Generates runtime correlation identifiers for reliable DATA/ACK.
 namespace lora_app {
 
-// Seeds the foreground campaign counter from the build identity and timer.
-// Subsequent calls advance the counter, skipping zero.
-// shortcut: 16-bit IDs can collide across resets or counter wrap, upgrade
-// with retained state or a wider field when reset-safe uniqueness is needed.
+/// @brief Generates the next runtime campaign identifier.
+/// @param build_marker Null-terminated build marker used for initial seeding.
+/// @return A nonzero 16-bit identifier that advances and skips zero.
+/// @note The counter is foreground static state and is not reset-safe; IDs may
+///   collide after a reset or full counter wrap.
 inline uint16_t NextCampaignId(const char* build_marker) {
   static uint16_t previous = 0;
   if (previous == 0) {

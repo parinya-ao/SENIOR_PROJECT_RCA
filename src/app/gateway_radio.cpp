@@ -6,7 +6,7 @@
 #include <Arduino.h>
 #include <features/reliable_transfer/reliable_transport.h>
 #include <lora.h>
-#include <ssot/ssot.h>
+#include <ssot.h>
 #include <string.h>
 
 #include "campaign_id.h"

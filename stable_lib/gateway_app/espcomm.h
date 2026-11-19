@@ -61,9 +61,10 @@ inline constexpr uint8_t kI2cStopLora = 0x06;
 // signed int representing the temperature in degrees celsius
 inline constexpr uint8_t kI2cReadTemperature = 0x07;
 
-// Reads hardware address straps, registers callbacks and schedules command
-// work. Call once from setup after GPIO initialization; callbacks never run
-// radio work.
+/// @brief Initializes the gateway I2C command interface.
+/// @pre GPIO and TWI pins are initialized.
+/// @post Registers callbacks and schedules command work; callbacks do not run
+///   radio operations directly.
 void InitializeEspCommunication();
 
 #endif  // SENIOR_PROJECT_RCA_SRC_SENDER_LIB_ESPCOMM_H_
