@@ -160,6 +160,32 @@ class DebugConsoleTests(unittest.TestCase):
         self.assertEqual(sequences, [*range(1, 256), 1])
         start.assert_called_once()
 
+    def test_echo_fault_is_armed_after_both_radios_are_ready(self) -> None:
+        """The optional one-shot Tracker fault is sent before the first DATA."""
+        hardware = debug.Hardware(self.log)
+        commands = []
+
+        def send(role: str, command: str, _marker: str, _timeout: float) -> None:
+            commands.append((role, command))
+            self.log.record(role.upper(), f"[{role.upper()}] INTERACTIVE_READY MAX_DATA=1 ECHO=1")
+
+        def send_data(role: str, command: str) -> None:
+            commands.append((role, command))
+            self.log.record("GATEWAY", "[GATEWAY] DATA_TX_BEGIN SID=1234 T=1 TYPE=8 Q=1 E=0")
+
+        with (
+            patch.object(hardware, "_require_rf"),
+            patch.object(hardware, "_arm_radio"),
+            patch.object(hardware, "_park"),
+            patch.object(hardware, "send_and_wait", side_effect=send),
+            patch.object(hardware, "command", side_effect=send_data),
+            patch.object(hardware, "wait"),
+            patch.object(debug, "verify_round_trip", return_value=True),
+        ):
+            hardware.exchange_interactive_message((b"x",), 1, tracker_fault="J")
+
+        self.assertEqual(commands[-3:], [("gateway", "I"), ("receiver", "J"), ("gateway", "X0178")])
+
     def test_dry_run_builds_without_opening_serial(self) -> None:
         with (
             patch.object(debug, "ROOT", Path(self.temp.name)),

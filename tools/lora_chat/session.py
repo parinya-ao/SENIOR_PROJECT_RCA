@@ -7,6 +7,7 @@ from collections import deque
 from collections.abc import Hashable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
+from hashlib import sha256
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -25,7 +26,7 @@ from tools.lora_chat.protocol import (
     echo_fragment_latency_ms,
     encode_interactive_message,
     matches_ack,
-    verify_round_trip,
+    verified_echo_payload,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -115,6 +116,7 @@ class ChatStats:
     retry_count: int = 0
     timeout_count: int = 0
     round_trip_successes: int = 0
+    echo_failures: int = 0
     legacy_data_ack_successes: int = 0
     failed_transactions: int = 0
     blocked_transactions: int = 0
@@ -344,11 +346,13 @@ class ChatSession:
             )
             for campaign, transaction_sequence in transaction_keys
         )
-        round_trip = bool(
+        received_payload = None
+        if (
             result.status == ExchangeStatus.SUCCESS
             and campaign_id is not None
             and sequence is not None
-            and verify_round_trip(
+        ):
+            received_payload = verified_echo_payload(
                 list(result.events),
                 RoundTripContext(
                     campaign_id=campaign_id,
@@ -361,8 +365,8 @@ class ChatSession:
                     sequence_bits=self.profile.sequence_bits,
                 ),
             )
-        )
-        received_text = message.text if round_trip else None
+        round_trip = received_payload is not None
+        received_text = received_payload.decode("utf-8") if received_payload is not None else None
         if round_trip:
             status = "SUCCESS"
             self.stats.round_trip_successes += 1
@@ -379,6 +383,8 @@ class ChatSession:
         else:
             status = "TIMEOUT" if result.status == ExchangeStatus.TIMEOUT else "FAILED"
             self.stats.failed_transactions += 1
+        if self.echo_supported is True and status in {"ACK_ONLY", "TIMEOUT", "FAILED"}:
+            self.stats.echo_failures += 1
 
         transmitted = transmit is not None
         total_retries = max(0, result.retries) + (self.manual_retries if transmitted else 0)
@@ -393,7 +399,7 @@ class ChatSession:
             received_text=received_text,
             ack_accepted=ack_accepted,
             detail=(
-                "ACK accepted; installed Tracker firmware has no application DATA echo."
+                "Forward ACK accepted; matching Echo was not verified."
                 if status == "ACK_ONLY"
                 else result.detail
             ),
@@ -417,7 +423,7 @@ class ChatSession:
                 else ()
             ),
         )
-        self._append_message(self._message_record(completed))
+        self._append_message(self._message_record(completed, result.events, received_payload))
         self.last_retryable = message if status in {"FAILED", "TIMEOUT", "ACK_ONLY"} else None
         if self._retry_message_id != message.message_id:
             self.manual_retries = 0
@@ -517,12 +523,17 @@ class ChatSession:
         temporary.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
         temporary.replace(self.session_path)
 
-    def _message_record(self, completed: CompletedMessage) -> dict[str, Any]:
+    def _message_record(
+        self, completed: CompletedMessage, events: tuple[DeviceEvent, ...], echo: bytes | None
+    ) -> dict[str, Any]:
         """Build the requested per-message evidence record from observed events."""
         return {
+            "run_id": self.messages_path.parent.name,
             "message_id": completed.message.message_id,
             "original_text": completed.message.text,
             "received_text": completed.received_text,
+            "payload_sha256": sha256(completed.message.payload).hexdigest(),
+            "echo_sha256": sha256(echo).hexdigest() if echo is not None else None,
             "direction": "gateway_to_tracker_and_back",
             "campaign": completed.campaign_id,
             "sequence": completed.sequence,
@@ -534,11 +545,27 @@ class ChatSession:
             "retries": completed.retries,
             "timeouts": completed.timeouts,
             "transaction_result": completed.status,
+            "verification_status": (
+                "ECHO_PAYLOAD_VERIFIED"
+                if echo is not None
+                else "LEGACY_DATA_ACK_VERIFIED"
+                if completed.status == "DATA_ACK_VERIFIED"
+                else None
+            ),
             "host_timestamp": completed.message.created_at,
             "host_elapsed_ms": completed.host_elapsed_ms,
             "echo_fragment_latency_ms": completed.echo_fragment_latency_ms,
             "firmware_timestamps_ms": completed.firmware_timestamps_ms,
             "detail": completed.detail,
+            "events": [
+                {
+                    "role": event.role.value,
+                    "name": event.name,
+                    "received_utc": event.host_timestamp,
+                    "line": event.line,
+                }
+                for event in events
+            ],
         }
 
     def _append_message(self, record: dict[str, Any]) -> None:

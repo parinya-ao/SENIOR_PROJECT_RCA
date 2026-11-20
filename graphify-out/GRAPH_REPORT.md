@@ -1,17 +1,17 @@
 # Graph Report - SENIOR_PROJECT_RCA  (2026-11-20)
 
 ## Corpus Check
-- 335 files · ~207,106 words
+- 338 files · ~209,742 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 26 file(s) not represented in the graph (top: (none) 10, .toml 7, .css 4)
 
 ## Summary
-- 4542 nodes · 9117 edges · 310 communities (168 shown, 142 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 607 edges (avg confidence: 0.86)
+- 4582 nodes · 9285 edges · 305 communities (176 shown, 129 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 637 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `413b3d4b`
+- Built from commit: `2b5a31cb`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -35,33 +35,33 @@
 - RadioBringupTests
 - arq_trial.py
 - updi_role_log
-- rf_test
+- Hardware
 - mvp_stub/Arduino.h
-- session.py
+- ._arm_radio
 - Transport
 - Gate1Tests
 - HardwareGateTests
 - load
 - gateway_radio.cpp
 - ReaderFreeH01SummaryTests
-- ._run_capture
+- validate_live_proof
 - Campaign
 - ring_buffer.h
-- build_case_plan
+- raw_mvp_stub/Arduino.h
 - tracker_radio_codec.cpp
 - os
-- firmware_image_bounds_for_environment
+- rf_proof.py
 - EventId
 - SX1276
-- Hardware
+- .exchange
 - reverse_raw_app.cpp
-- main
+- runner.py
 - image_evidence
 - DeviceLayout
 - Bus
 - require
 - TracePort
-- directional_test.cpp
+- production_bench.py
 - AGENTS.md — AVR128DA28 / LoRa Embedded Engineering
 - arduino
 - upditerm.py
@@ -70,7 +70,7 @@
 - reliable_transport_test.cpp
 - ReceiveTests
 - Sender
-- FlashSafetyTests
+- receiver_boot.py
 - PlatformResult
 - sender/appcode/reliable.cpp
 - MvpRoundtripTests
@@ -82,43 +82,43 @@
 - .EmitEvent
 - Tracker Hardware SSOT — LoRa Tracker RFM
 - application_authorization_fixture
-- Event
+- EventQueue
 - Command
 - Port
 - role_log_test.cpp
 - LoRa
-- InteractiveConsole
+- make_error
 - 915 MHz LoRa bench procedure
 - role_detector.py
 - Receiver
 - BenchTransport
 - Json
-- .connect
+- installed_rf.py
 - ExcludedSx1262Experiment
 - stdint
 - Controller
 - cli.py
-- string
+- gateway_app.cpp
 - firmware_identity.py
 - complete_campaign_logs
-- RCATests
+- ring_buffer.h
 - ErrataDiagnosticsTests
-- PIN_MAPPING_AUDIT.md
+- Receiver APPCODE
 - core_test.cpp
-- runner.py
+- RCATests
 - test_lora_chat_protocol.py
 - Pins
 - mvp_app.cpp
 - HexDataCommandDecoder
-- application_config.h
+- ssot_codec.cpp
 - ReportEntry
-- SD.h
+- ReverseRawTests
 - BenchStatus
 - Result
 - tracker_config.h
 - State
 - gate1_live.py
-- result_to_json
+- AdcTemp
 - State
 - test_lora_chat_session.py
 - receiver/appcode/reliable.cpp
@@ -139,88 +139,94 @@
 - SdFile
 - Logger
 - Radio915ValidationTests
-- replay_bundle
+- test_firmware_identity.py
 - spec_timeout.py
-- payload_generator.py
+- DebugConsoleTests
+- task.h
 - Connect to a virtual UART on an AVR via UPDI
 - check_cpp.sh
 - gate1.py
 - C++ Refactoring Results
 - Gateway-to-Receiver SF7 Hello World
-- compare_snapshots
-- test_arq.py
-- load_bench_profile
+- ControlInput
+- gateway_ssot.hpp
+- ExchangeResult
 - LoRa ACK/NACK analysis and verification
 - TaskScheduler
 - SPIClass
 - AVR128DA28 LoRa Board Pin Audit
 - detect_devices.py
 - usb_inventory.py
-- stub/Arduino.h
-- commands.cpp
-- receiver_boot.py
+- .exchange_interactive_message
+- symmetric_fixture
+- install
 - PacketMaintenanceAck
 - SenderStableTransportTests
 - Gate1Audit
 - ScanResult
 - protocol_adapter.py
-- BuildIdentityImagesTests
+- normalize_ihex_region
 - TraceBus
 - Logger
 - spec_protocol.py
 - AVR128DA28 LoRa firmware
-- .test_no_meter_identity_uses_live_unique_serial_without_checklist
-- shared/README.md
+- compare_snapshots
+- Console
+- RESULTS.md
 - LORA_ACK_NACK.md
 - avr128da28_memory_layout.h
 - ResponseFault
-- stub/SPI.h
-- EventContext
+- ReceiverBootTests
 - spec_payload.py
 - raw_mvp_stub/SPI.h
-- parse_raw_mvp_logs
+- trace_stub
 - CppInterfaceTests
 - Frame
-- arq_sender.h
+- _build_handoff
 - SsotProtocolTests
 - install_cpp_quality_tools.sh
-- _legacy_keyboard_mode
-- start_udev_monitor
-- Shared Logic and Duplication Audit
+- .test_runner_uses_receiver_ready_then_one_gateway_start
+- DeviceRole
 - Library Skills
 - Revision
 - Library Skills
 - RestartTask
-- .test_unsafe_image_makes_build_stage_fail
+- effective_platformio_config
+- Tasks
 - MonitorConsole
-- PacketReportWithAck
+- PacketReport
 - SingleFirmwareEntryTests
 - Final LoRa firmware architecture
-- C++ Refactoring Baseline
+- Comm
 - Offline regression matrix
 - PacketMaintenance
 - LoRa Chat Firmware and Installed-Image Requirements
-- FaultName
+- match_flash_fingerprint
 - InstalledRadioEvidenceTests
-- main
+- parse_raw_mvp_logs
+- rf_test
 - EventField
 - ExcludedSx1262Experiment
 - RadioTransactionTask
-- Json
-- ProfileValue
+- identify_mcu
+- stdio
+- Source and documentation deletion audit
 - HeartbeatTask
+- main
 - LORA_RF_STRESS_SPECIAL.md
 - PacketAck
 - PacketAdvertise
-- _base_platformio_sections
-- checked_cpp
+- _remember_bounded
+- _event_style
+- _event_summary
 - check_cpp.py
-- Capture
+- Sender APPCODE
 - GatewayI2cTests
-- TaskRestartTests
-- I2cRadioConfigTests
-- RadioDiagnosticsTests
-- RadioLibHalTests
+- echo_trials.py
+- Real-radio verification evidence
+- Firmware source map
+- .connect
+- _legacy_keyboard_mode
 - sleep.cpp
 - lora
 - lora/library.json
@@ -230,15 +236,15 @@
 
 ## God Nodes (most connected - your core abstractions)
 1. `Transport` - 72 edges
-2. `Hardware` - 64 edges
-3. `SystemConstants` - 46 edges
-4. `error()` - 46 edges
-5. `State` - 45 edges
-6. `Gate1Tests` - 45 edges
-7. `make_error()` - 42 edges
-8. `BenchTransport` - 40 edges
+2. `Hardware` - 66 edges
+3. `BenchTransport` - 49 edges
+4. `error()` - 47 edges
+5. `SystemConstants` - 46 edges
+6. `State` - 45 edges
+7. `Gate1Tests` - 45 edges
+8. `make_error()` - 43 edges
 9. `LoRa` - 40 edges
-10. `ProofRun` - 38 edges
+10. `ProofRun` - 40 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Radio SPI and interrupt contract` --references--> `ExcludedSx1262Experiment`  [INFERRED]
@@ -255,15 +261,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (310 total, 142 thin omitted)
+## Communities (305 total, 129 thin omitted)
 
 ### Community 0 - "pathlib"
 Cohesion: 0.06
-Nodes (4): bootstrap(), create_temp_dir(), main(), assess_control_fault()
+Nodes (5): TaskRestartTests, I2cRadioConfigTests, RadioDiagnosticsTests, RadioLibHalTests, ihex_record()
 
 ### Community 1 - "ProofRun"
-Cohesion: 0.09
-Nodes (39): RfTestContinuationTests, build(), inspect_image(), read_layouts(), authorized_application_pages(), capture_usb_topology(), check_port_owners(), clean_builds() (+31 more)
+Cohesion: 0.12
+Nodes (29): main(), package_target(), build(), inspect_image(), read_layouts(), authorized_application_pages(), capture_usb_topology(), check_port_owners() (+21 more)
 
 ### Community 2 - "Storage"
 Cohesion: 0.09
@@ -290,8 +296,8 @@ Cohesion: 0.06
 Nodes (3): CaptureTests, command(), monotonic()
 
 ### Community 8 - "error"
-Cohesion: 0.15
-Nodes (21): error(), campaign(), progress(), run_one(), Capture, complete(), park_reverse(), prepare() (+13 more)
+Cohesion: 0.16
+Nodes (18): error(), campaign(), progress(), run_one(), Capture, complete(), prepare(), radio_only_bringup() (+10 more)
 
 ### Community 9 - "State"
 Cohesion: 0.04
@@ -306,112 +312,112 @@ Cohesion: 0.04
 Nodes (45): SystemConstants, ADC_RESOLUTION_STEPS, ADC_VREF_MV, BOOT_DELAY_MS, BOOT_SENTINEL_COORD, BOOT_SENTINEL_VBAT_MV, DEBUG_SERIAL_BAUD, DEVICE_MODEL (+37 more)
 
 ### Community 12 - "ArqSoakPlanTests"
-Cohesion: 0.09
-Nodes (16): ArqSoakPlanTests, fake_campaign(), fake_campaign(), fake_campaign(), fake_campaign(), fake_campaign(), confirmed_rf_preflight(), dynamic_attr() (+8 more)
+Cohesion: 0.10
+Nodes (15): ArqSoakPlanTests, fake_campaign(), fake_campaign(), fake_campaign(), fake_campaign(), fake_campaign(), confirmed_rf_preflight(), dynamic_attr() (+7 more)
 
 ### Community 13 - "generate_lora_config.py"
-Cohesion: 0.07
-Nodes (15): SourceFingerprintTests, artifacts(), canonical(), digest(), load_radio_profile(), main(), prepare_build_inputs(), _profile_python() (+7 more)
+Cohesion: 0.09
+Nodes (16): SourceFingerprintTests, arq_artifacts(), load_arq(), validate_arq(), artifacts(), canonical(), digest(), load_radio_profile() (+8 more)
 
 ### Community 15 - "appcode/arq/receiver.cpp"
 Cohesion: 0.32
 Nodes (17): ArmSession(), CurrentSession(), ExecuteCommand(), FailAdapter(), FeedCommandByte(), FlushStatus(), GetEventContext(), HandleReceive() (+9 more)
 
 ### Community 16 - "RadioBringupTests"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (7): DirectionalHostTests, RadioBringupTests, acquire(), command(), audit_radio_configuration(), read_radio(), validate_hello_exchange()
 
 ### Community 17 - "arq_trial.py"
-Cohesion: 0.10
-Nodes (22): ArqTests, capture_tracker_diagnostics(), checked_events(), close_updi_without_recovery(), drain_updi_messages(), hello_airtime_budget(), lora_time_on_air_us(), missing_soak_prerequisites() (+14 more)
+Cohesion: 0.11
+Nodes (28): build_soak_plan(), capture_tracker_diagnostics(), checked_events(), close_updi_without_recovery(), drain_updi_messages(), hardware_gate_errors(), hello_airtime_budget(), lora_time_on_air_us() (+20 more)
 
 ### Community 18 - "updi_role_log"
-Cohesion: 0.12
-Nodes (31): EventQueue, count_, events_, head_, kCapacity, FlushEvent(), InteractivePayloadLimit(), ReportConfig() (+23 more)
+Cohesion: 0.17
+Nodes (28): ReportBoot(), ReportBoot(), FlushEvent(), InteractivePayloadLimit(), ReportConfig(), ReportIdentity(), ReportInteractiveCapability(), ReportPhy() (+20 more)
 
-### Community 19 - "rf_test"
-Cohesion: 0.08
-Nodes (24): assess_installed_exchange(), boot_fuses_match(), capture_radio_spi_log(), expected_signature_hex(), host_tests(), parse_radio_spi_log(), parse_rf_campaign(), parse_role_log_count() (+16 more)
+### Community 19 - "Hardware"
+Cohesion: 0.07
+Nodes (3): Hardware, hardware_output(), BenchBlockedError
 
 ### Community 22 - "mvp_stub/Arduino.h"
 Cohesion: 0.22
 Nodes (4): CPUINT(), digitalReadFast(), digitalWrite(), digitalWriteFast()
 
-### Community 23 - "session.py"
-Cohesion: 0.05
-Nodes (12): test_interactive_encoder_accepts_bounded_utf8_messages(), encode_interactive_message(), ChatStats, CompletedMessage, ExchangeStatus, QueueFullError, _remember_bounded(), SessionConfigError (+4 more)
+### Community 23 - "._arm_radio"
+Cohesion: 0.13
+Nodes (6): approve_writes(), BenchFailedError, phy_matches(), power_matches(), publish_receipt(), write_span_is_application()
 
 ### Community 24 - "Transport"
 Cohesion: 0.05
 Nodes (35): Transport, armed_, confirming_ack_, context_, error_, event_context_, frequency_, have_accepted_ (+27 more)
 
 ### Community 26 - "Gate1Tests"
-Cohesion: 0.09
+Cohesion: 0.10
 Nodes (4): Gate1Tests, rows(), transaction(), verify_hashes()
 
 ### Community 27 - "HardwareGateTests"
-Cohesion: 0.11
-Nodes (3): dynamic_attr(), effective_platformio_config(), HardwareGateTests
+Cohesion: 0.05
+Nodes (6): dynamic_attr(), FlashSafetyTests, HardwareGateTests, command(), hardware_blockers(), upload_config_preserves_flash()
 
 ### Community 28 - "load"
-Cohesion: 0.09
-Nodes (8): ConfigurationTests, RawMvpTests, ReceiverHardwareTests, load(), main(), unique_object(), validate(), shape()
+Cohesion: 0.08
+Nodes (9): ConfigurationTests, RawMvpTests, ReceiverHardwareTests, checked_cpp(), load(), main(), unique_object(), validate() (+1 more)
 
 ### Community 29 - "gateway_radio.cpp"
-Cohesion: 0.06
-Nodes (31): I2cCommandTask, command_, command_length_, I2cResetTask, timestamp_ms_, InitializeEspCommunication(), StoreI2c16(), Initialize() (+23 more)
+Cohesion: 0.13
+Nodes (25): I2cCommandTask, command_, command_length_, StoreI2c16(), ArmRadio(), InitializeRadio(), IsRadioBenchActive(), IsRadioTransmitting() (+17 more)
 
 ### Community 30 - "ReaderFreeH01SummaryTests"
-Cohesion: 0.10
-Nodes (5): ReaderFreeH01SummaryTests, hardware_gate_errors(), main(), open_reader_free_h01_session(), reader_free_rx_idle_summary()
+Cohesion: 0.08
+Nodes (4): ArqTests, ReaderFreeH01SummaryTests, main(), reader_free_rx_idle_summary()
 
-### Community 31 - "._run_capture"
-Cohesion: 0.09
-Nodes (10): fixture(), add(), LiveProofTests, emit(), start(), write(), symmetric_fixture(), add() (+2 more)
+### Community 31 - "validate_live_proof"
+Cohesion: 0.07
+Nodes (16): fixture(), add(), LiveProofTests, emit(), start(), write(), expected_signature_hex(), parse_rf_campaign() (+8 more)
 
 ### Community 32 - "Campaign"
 Cohesion: 0.08
 Nodes (32): Campaign, attempts, campaign_id, destination, sequence, single_packet, source, state (+24 more)
 
 ### Community 34 - "ring_buffer.h"
-Cohesion: 0.09
-Nodes (11): RingBuffer, buffer_, RingBuffer<Capacity>::Read(), RingBuffer<Capacity>::ReadByte(), RingBuffer<Capacity>::Write(), RingBuffer<Capacity>::WriteByte(), RingBuffer<Capacity>::WriteFrame(), first_free_ (+3 more)
+Cohesion: 0.13
+Nodes (6): RingBuffer, buffer_, RingBuffer<Capacity>::Read(), RingBuffer<Capacity>::ReadByte(), RingBuffer<Capacity>::WriteByte(), first_free_
 
-### Community 35 - "build_case_plan"
-Cohesion: 0.19
-Nodes (5): _add_direction_cases(), build_case_plan(), _prepare_run(), radio_configuration(), _validate_profiles()
+### Community 35 - "raw_mvp_stub/Arduino.h"
+Cohesion: 0.27
+Nodes (5): begin(), digitalWrite(), end(), ltoa(), push_back()
 
 ### Community 36 - "tracker_radio_codec.cpp"
-Cohesion: 0.15
-Nodes (22): DecodePacketReport(), DecodePacketReportWithAck(), DecodeReportEntry(), EncodeConfig(), EncodePacketAck(), EncodePacketAdvertise(), EncodePacketBoot(), EncodePacketMaintenance() (+14 more)
+Cohesion: 0.24
+Nodes (16): DecodeConfig(), DecodePacketBoot(), EncodeConfig(), EncodePacketAck(), EncodePacketAdvertise(), EncodePacketBoot(), EncodePacketMaintenance(), EncodePacketMaintenanceAck() (+8 more)
 
 ### Community 37 - "os"
-Cohesion: 0.18
-Nodes (14): bootstrap(), create_temp_dir(), main(), _check_config(), _check_symlink(), _inside(), _items(), _label() (+6 more)
+Cohesion: 0.29
+Nodes (11): _check_config(), _check_symlink(), _inside(), _items(), _label(), _local_dependency(), main(), _resolved() (+3 more)
 
-### Community 38 - "firmware_image_bounds_for_environment"
-Cohesion: 0.09
-Nodes (16): DirectionalTests, RadioOnlyTests, application_bounds_for_environment(), application_layout_verified(), build_flag_defines(), _config_int(), device_profile_for_role(), effective_project_sections() (+8 more)
+### Community 38 - "rf_proof.py"
+Cohesion: 0.07
+Nodes (24): DirectionalTests, RadioOnlyTests, TargetLayoutTests, application_bounds_for_environment(), application_layout_verified(), boot_fuses_match(), build_flag_defines(), _config_int() (+16 more)
 
 ### Community 39 - "EventId"
 Cohesion: 0.05
 Nodes (41): Component, kApplication, kBoot, kHil, kNvm, Event(), EventId, kAuthenticationStarted (+33 more)
 
-### Community 41 - "Hardware"
-Cohesion: 0.03
-Nodes (7): DebugConsoleTests, discover_ports(), Hardware, chunk_complete(), parked(), BenchBlockedError, BenchFailedError
+### Community 41 - ".exchange"
+Cohesion: 0.06
+Nodes (3): assess_exhaustion(), firmware_role(), parked()
 
 ### Community 42 - "reverse_raw_app.cpp"
-Cohesion: 0.37
-Nodes (10): ExecuteCommand(), FeedCommandByte(), IsPayloadCommand(), ParkRadio(), Poll(), ReadStableCounter(), RecordConfiguration(), RecordEvent() (+2 more)
+Cohesion: 0.23
+Nodes (13): arq_board, board_ssot_init(), ExecuteCommand(), FeedCommandByte(), Initialize(), IsPayloadCommand(), ParkRadio(), Poll() (+5 more)
 
-### Community 43 - "main"
-Cohesion: 0.13
-Nodes (7): build_parser(), _display_run(), main(), RunOptions, RunPlan, _validated_options(), _write_run_bundle()
+### Community 43 - "runner.py"
+Cohesion: 0.04
+Nodes (32): load_event_journal(), calculate_metrics(), _percentile(), generate_payload(), split_payload(), _add_direction_cases(), _append_case(), build_case_plan() (+24 more)
 
 ### Community 44 - "image_evidence"
-Cohesion: 0.10
-Nodes (11): wire(), event(), image_evidence(), journal(), StableTransportProofTests, _line(), write(), wrong_destination_journal() (+3 more)
+Cohesion: 0.16
+Nodes (8): wire(), event(), image_evidence(), journal(), StableTransportProofTests, wrong_destination_journal(), assess(), validate_stable_transport()
 
 ### Community 45 - "DeviceLayout"
 Cohesion: 0.12
@@ -425,17 +431,21 @@ Nodes (6): Bus, fifo, finish_delay, regs, reset_mode, ticks
 Cohesion: 0.11
 Nodes (4): DetectionIntegrationTests, pio(), runner(), require()
 
-### Community 50 - "directional_test.cpp"
-Cohesion: 0.21
-Nodes (12): drain_status(), main(), send_command(), QueuedLogLine(), ResetLog(), clear_log(), cmd(), logged() (+4 more)
+### Community 49 - "TracePort"
+Cohesion: 0.09
+Nodes (3): instrument(), open_exclusive(), TracePort
+
+### Community 50 - "production_bench.py"
+Cohesion: 0.23
+Nodes (6): bootstrap(), create_temp_dir(), main(), bootstrap(), create_temp_dir(), main()
 
 ### Community 52 - "AGENTS.md — AVR128DA28 / LoRa Embedded Engineering"
 Cohesion: 0.09
 Nodes (21): 10. Logging, measurement, and evidence, 11. Decision and intervention policy, 12. Response contract, 13. Technical references (read when relevant; do not substitute for active SSOT), 1. Mission and current MVP, 2. Operating philosophy, 3. Project truth and protected files, 4. Target architecture (+13 more)
 
 ### Community 53 - "arduino"
-Cohesion: 0.07
-Nodes (17): Memory, I2C_MAILBOX_BYTES, SHARED_RINGBUF_BYTES, System, ENABLE_ESPCOMM, ENABLE_LORA_RX, ENABLE_WATCHDOG, WDT_TIMEOUT_PERIOD (+9 more)
+Cohesion: 0.09
+Nodes (6): PrepareTrackerForRadioOnly(), Initialize(), InitializeRadio(), InitializeReceiverGpio(), main(), reset_radio()
 
 ### Community 54 - "upditerm.py"
 Cohesion: 0.07
@@ -446,7 +456,7 @@ Cohesion: 0.10
 Nodes (18): TrackerConfig, ack_timeout, collect_interval_day, collect_interval_night, day_end_hour, day_start_hour, gps_max_wait_for_fix, long_range (+10 more)
 
 ### Community 57 - "Task"
-Cohesion: 0.20
+Cohesion: 0.21
 Nodes (6): Task::Task(), Task, is_paused_, pt_, wakeup_time_, main()
 
 ### Community 58 - "reliable_transport_test.cpp"
@@ -458,32 +468,32 @@ Cohesion: 0.13
 Nodes (3): ReceiveTests, wait(), wait()
 
 ### Community 60 - "Sender"
-Cohesion: 0.05
-Nodes (44): Result, kOk, kPending, kProtocolError, kRadioError, kRejected, kTimeoutExhausted, Sender (+36 more)
+Cohesion: 0.07
+Nodes (37): Result, kOk, kPending, kProtocolError, kRadioError, kRejected, kTimeoutExhausted, Sender (+29 more)
 
-### Community 61 - "FlashSafetyTests"
-Cohesion: 0.12
-Nodes (3): FlashSafetyTests, ihex_record(), hardware_blockers()
+### Community 61 - "receiver_boot.py"
+Cohesion: 0.19
+Nodes (6): Laboratory deployment and recovery, enrolled_port(), read_snapshot(), read_snapshot_command(), require_preserved(), verify_live_receipt()
 
 ### Community 62 - "PlatformResult"
 Cohesion: 0.13
 Nodes (18): InitializeAdc(), ReadBatteryAdc(), ReadSample(), ReadTemperatureAdc(), WaitForConversion(), PlatformResult, kBusy, kForbidden (+10 more)
 
 ### Community 63 - "sender/appcode/reliable.cpp"
-Cohesion: 0.28
-Nodes (14): AcceptData(), ArmRadio(), HandleRadioCommand(), Initialize(), InitializeGpio(), InitializeRoleGpio(), Poll(), PollRoleRadio() (+6 more)
+Cohesion: 0.18
+Nodes (18): Poll(), AcceptData(), ArmRadio(), HandleRadioCommand(), Initialize(), InitializeGpio(), InitializeRoleGpio(), Poll() (+10 more)
 
 ### Community 64 - "MvpRoundtripTests"
 Cohesion: 0.21
 Nodes (3): Board, frames(), MvpRoundtripTests
 
 ### Community 65 - "test_application_config.py"
-Cohesion: 0.08
-Nodes (12): ApplicationConfigTests, ReverseRawTests, audit_raw_configuration(), diagnostic_case(), reverse_exchange(), status(), validate_reverse(), load() (+4 more)
+Cohesion: 0.11
+Nodes (7): ApplicationConfigTests, diagnostic_case(), load(), raw_payload(), raw_send_command(), render(), validate()
 
 ### Community 66 - "LoRa Recovery Repository Audit"
-Cohesion: 0.08
-Nodes (23): A — การดำเนินการ, Hardware readback และ RF, R — ผลการตรวจสอบ, S — สถานการณ์, Software และ firmware build, T — งานที่ต้องทำ, การตัดสินใจ, ขั้นตอนถัดไป (+15 more)
+Cohesion: 0.09
+Nodes (21): A — การดำเนินการ, Hardware readback และ RF, R — ผลการตรวจสอบ, S — สถานการณ์, Software และ firmware build, T — งานที่ต้องทำ, การตัดสินใจ, ขั้นตอนถัดไป (+13 more)
 
 ### Community 67 - "require"
 Cohesion: 0.14
@@ -501,132 +511,132 @@ Nodes (18): Config, ack_timeout, collect_interval_day, collect_interval_night, d
 Cohesion: 0.22
 Nodes (9): 1. Board identity and components, 2. AVR128DA28 pin and net SSOT, 3. Power and startup contract, 4. Minimal firmware implementation contract, 5. Acceptance criteria / physical evidence, 6. Firmware configuration, Exact LoRa RFM95W signal map, Sources (+1 more)
 
-### Community 73 - "Event"
-Cohesion: 0.20
-Nodes (9): Event, campaign_id, error, name, sequence, time_ms, type, radio_diagnostics::EventQueue::Pop() (+1 more)
+### Community 73 - "EventQueue"
+Cohesion: 0.11
+Nodes (15): Event, campaign_id, error, name, sequence, time_ms, type, EventQueue (+7 more)
 
 ### Community 74 - "Command"
-Cohesion: 0.15
-Nodes (13): Command, budget, kind, payload, payload_length, session, stride, CommandKind (+5 more)
+Cohesion: 0.07
+Nodes (26): Command, budget, kind, payload, payload_length, session, stride, CommandInput (+18 more)
 
 ### Community 75 - "Port"
 Cohesion: 0.21
 Nodes (4): Port, require(), USBInventoryTests, run()
 
 ### Community 76 - "role_log_test.cpp"
-Cohesion: 0.09
+Cohesion: 0.10
 Nodes (6): DecodeLoraConfig(), EepromSpy, reads, writes, main(), clear_capture()
 
 ### Community 77 - "LoRa"
 Cohesion: 0.08
-Nodes (19): Application and dependency audit, Firmware matrix, Historical BOOT and deployment status, Offline LoRa firmware refactor, Verification, Wire and host evidence, ReportRegisters(), Address (+11 more)
+Nodes (20): Application and dependency audit, Firmware matrix, Historical BOOT and deployment status, Offline LoRa firmware refactor, Verification, Wire and host evidence, ReportRegisters(), Address (+12 more)
 
-### Community 78 - "InteractiveConsole"
-Cohesion: 0.05
-Nodes (10): test_csi_u_keyboard_sequence_is_rejected_as_a_message(), test_prompt_admits_utf8_when_both_endpoints_support_echo(), ConsoleRuntime, InteractiveConsole, _parse_event(), make_error(), ChatSession, InputDisposition (+2 more)
+### Community 78 - "make_error"
+Cohesion: 0.04
+Nodes (11): test_csi_u_keyboard_sequence_is_rejected_as_a_message(), test_prompt_admits_utf8_when_both_endpoints_support_echo(), ConsoleRuntime, _help_panel(), InteractiveConsole, _parse_event(), make_error(), ChatSession (+3 more)
 
 ### Community 80 - "915 MHz LoRa bench procedure"
 Cohesion: 0.29
 Nodes (6): 915 MHz LoRa bench procedure, App-only programming after exact write approval, Hardware results, Refactor verification, RF conditions and acceptance, Verified candidates
 
 ### Community 81 - "role_detector.py"
-Cohesion: 0.22
-Nodes (8): ProbeEvidence, USBDevice, classify_devices(), diff_device_presence(), _identity_role(), _probe_for(), _registry_hint(), _registry_record()
+Cohesion: 0.15
+Nodes (10): DetectedDevice, FirmwareIdentity, ProbeEvidence, USBDevice, classify_devices(), diff_device_presence(), _identity_role(), _probe_for() (+2 more)
 
 ### Community 82 - "Receiver"
-Cohesion: 0.11
-Nodes (18): Receiver, accepted, armed, deliveries, duplicates, expected, last_sequence, session (+10 more)
+Cohesion: 0.06
+Nodes (30): Source ownership and dependency map, IsDeadlineDue(), Receiver, accepted, armed, deliveries, duplicates, expected (+22 more)
 
 ### Community 83 - "BenchTransport"
 Cohesion: 0.05
-Nodes (10): test_archived_gateway_names_and_full_fresh_readback(), test_connect_read_only_with_a_current_build_mismatch(), test_dry_run_creates_empty_event_log_and_disables_transmission(), test_post_rf_tracker_monitor_reopens_without_reissuing_data(), test_rf_authorization_requires_separate_setup_confirmation(), test_run_directory_is_created_once_by_the_transport(), test_verified_current_pair_takes_precedence_over_saved_legacy_receipt(), ExchangeResult (+2 more)
+Nodes (9): test_plain_chat_uses_only_the_configured_bench_defaults(), test_archived_gateway_names_and_full_fresh_readback(), test_connect_read_only_with_a_current_build_mismatch(), test_dry_run_creates_empty_event_log_and_disables_transmission(), test_post_rf_tracker_monitor_reopens_without_reissuing_data(), test_rf_authorization_requires_separate_setup_confirmation(), test_verified_current_pair_takes_precedence_over_saved_legacy_receipt(), main() (+1 more)
 
 ### Community 84 - "Json"
 Cohesion: 0.14
 Nodes (13): _fault_bundle(), _run_replay(), test_cancel_fault_is_not_passed_by_a_normal_ack_exchange(), test_cancel_is_passed_only_after_both_radios_park_and_ports_release(), test_cancel_requires_park_after_the_cancel_request(), test_controlled_nack_retries_the_same_session_and_sequence(), test_crc_rejection_uses_timeout_recovery_without_application_nack(), test_duplicate_is_not_passed_without_single_delivery_evidence() (+5 more)
 
+### Community 85 - "installed_rf.py"
+Cohesion: 0.06
+Nodes (17): test_capture_journal_marks_buffered_lines_until_a_fresh_readiness_barrier(), test_capture_metrics_preserve_radio_errors_irq_and_missing_rf_metrics(), test_planned_transaction_failure_is_not_counted_as_background(), test_unplanned_transaction_failure_is_retained_in_run_summary(), test_lost_or_reset_legacy_monitor_cannot_trigger_data(), main(), assess_control_fault(), assess_probe() (+9 more)
+
 ### Community 86 - "ExcludedSx1262Experiment"
 Cohesion: 0.20
 Nodes (10): ExcludedSx1262Experiment, BUSY_PIN, DIO1_PIN, ERROR_RETRY_DELAY_MS, NSS_PIN, PACKET_BYTES, PACKET_COUNT, PACKET_GAP_MS (+2 more)
-
-### Community 87 - "stdint"
-Cohesion: 0.07
-Nodes (8): begin(), digitalWrite(), end(), ltoa(), push_back(), main(), main(), test_interactive_command()
 
 ### Community 90 - "Controller"
 Cohesion: 0.13
 Nodes (12): Controller, last_led1_toggle_, last_tx_toggle_, led1_interval_ms_, led1_on_, led1_pin_, led2_pin_, led_off_level_ (+4 more)
 
 ### Community 91 - "cli.py"
-Cohesion: 0.04
-Nodes (12): test_plain_chat_uses_only_the_configured_bench_defaults(), test_terminal_output_preserves_rich_ansi_in_prompt_toolkit(), test_typer_app_exposes_help_for_supported_options(), ConsoleCommand, ConsoleStateError, _create_run_directory(), _event_style(), _event_summary() (+4 more)
+Cohesion: 0.03
+Nodes (22): test_terminal_output_preserves_rich_ansi_in_prompt_toolkit(), test_typer_app_exposes_help_for_supported_options(), test_current_profile_exposes_fixed_payload_and_unresolved_rf_inventory(), test_profile_rejects_wrong_numeric_types(), test_run_directory_is_created_once_by_the_transport(), ConsoleCommand, ConsoleStateError, _create_run_directory() (+14 more)
 
-### Community 94 - "string"
-Cohesion: 0.09
-Nodes (3): InitializeRadio(), main(), reset_radio()
+### Community 94 - "gateway_app.cpp"
+Cohesion: 0.07
+Nodes (7): I2cResetTask, timestamp_ms_, InitializeEspCommunication(), Initialize(), Poll(), ReadTemperatureCelsius(), RegisterRadioTask()
 
 ### Community 95 - "firmware_identity.py"
-Cohesion: 0.08
-Nodes (16): _hex_image(), _record(), test_flash_comparison_rejects_hex_data_outside_the_authorized_region(), test_flash_comparison_reports_exact_sparse_image_match(), test_flash_comparison_reports_first_actual_mismatch_address(), FirmwareIdentity, compare_flash_region(), crc8() (+8 more)
+Cohesion: 0.22
+Nodes (6): crc8(), IdentityParseResult, parse_identity_stream(), _valid_build(), _valid_timestamp(), _is_access_error()
 
 ### Community 96 - "complete_campaign_logs"
 Cohesion: 0.38
 Nodes (4): complete_campaign_logs(), packet_event(), payload_event(), RfEvidenceTests
 
+### Community 97 - "ring_buffer.h"
+Cohesion: 0.16
+Nodes (5): RingBuffer<Capacity>::Write(), RingBuffer<Capacity>::WriteFrame(), RingBufferPart, data, length
+
 ### Community 98 - "ErrataDiagnosticsTests"
 Cohesion: 0.13
 Nodes (5): ErrataDiagnosticsTests, decode_snapshot(), interpret_rx(), link_budget(), main()
 
-### Community 99 - "PIN_MAPPING_AUDIT.md"
-Cohesion: 0.20
-Nodes (8): Data and protocol boundaries, Firmware source map, Hardware and power, Receiver APPCODE, Source path, Builds and hardware, Sender APPCODE, Source path
+### Community 99 - "Receiver APPCODE"
+Cohesion: 0.67
+Nodes (3): Hardware and power, Receiver APPCODE, Source path
 
 ### Community 101 - "core_test.cpp"
 Cohesion: 0.38
 Nodes (12): absolute_deadline(), ack_matrix(), codec(), control(), data(), fault_harness(), fresh(), main() (+4 more)
 
-### Community 102 - "runner.py"
-Cohesion: 0.09
-Nodes (8): load_event_journal(), calculate_metrics(), _percentile(), RadioProfile, real_rf_blockers(), RunMode, RunProfile, ResultStatus
-
 ### Community 103 - "test_lora_chat_protocol.py"
 Cohesion: 0.04
-Nodes (43): _chunk_events(), test_ack_alone_never_counts_as_a_tracker_echo(), test_ack_matching_requires_campaign_sequence_and_type(), test_echo_latency_uses_the_gateway_clock_and_first_attempt(), test_encodes_supported_utf8_bytes_exactly(), test_fragmentation_preserves_exact_bytes_at_the_negotiated_packet_limit(), test_interactive_boundaries_reject_empty_oversize_and_invalid_utf8(), test_interactive_capability_requires_echo_support_from_both_endpoints() (+35 more)
+Nodes (42): _chunk_events(), test_ack_alone_never_counts_as_a_tracker_echo(), test_ack_matching_requires_campaign_sequence_and_type(), test_echo_latency_uses_the_gateway_clock_and_first_attempt(), test_encodes_supported_utf8_bytes_exactly(), test_interactive_boundaries_reject_empty_oversize_and_invalid_utf8(), test_interactive_capability_requires_echo_support_from_both_endpoints(), test_interactive_host_command_encodes_payload_length_and_bytes() (+34 more)
 
 ### Community 105 - "Pins"
-Cohesion: 0.04
-Nodes (43): AdcTemp, ADC_MAX_COUNTS, CTRLA_ENABLE_12BIT, FIXED_POINT_SHIFT, INIT_DELAY_SETTING, KELVIN_TO_CELSIUS, MUX_TEMP_CHANNEL, PRESCALER_SETTING (+35 more)
+Cohesion: 0.14
+Nodes (14): Pins, ANALOG_IN_0, ANALOG_IN_1, DEBUG_RX, DEBUG_TX, HOST_INT, LED1, LED2 (+6 more)
 
 ### Community 106 - "mvp_app.cpp"
-Cohesion: 0.21
-Nodes (18): debug_init(), debug_write(), debug_write_float(), debug_write_hex(), debug_write_int(), Initialize(), Poll(), RecordStartupStage() (+10 more)
+Cohesion: 0.37
+Nodes (12): debug_init(), debug_write(), debug_write_float(), debug_write_hex(), debug_write_int(), Initialize(), Poll(), RecordStartupStage() (+4 more)
 
 ### Community 107 - "HexDataCommandDecoder"
 Cohesion: 0.08
 Nodes (20): HexDataCommandDecoder, high_nibble_, length_, received_, state_, Result, kComplete, kInvalidBuffer (+12 more)
 
-### Community 110 - "application_config.h"
-Cohesion: 0.07
-Nodes (30): DecodePayloadFields(), EncodeControlPayload(), Frame, campaign_id, destination, sequence, source, type (+22 more)
+### Community 110 - "ssot_codec.cpp"
+Cohesion: 0.18
+Nodes (15): DecodePayloadFields(), EncodeControlPayload(), ssot::AckMatches(), ssot::DecodeFrame(), ssot::DecodePayload(), ssot::EncodeAckFrame(), ssot::EncodeAckPayload(), ssot::EncodeDataFrame() (+7 more)
 
 ### Community 111 - "ReportEntry"
-Cohesion: 0.14
+Cohesion: 0.13
 Nodes (22): ReportEntry, day, hour, latitude, longitude, minute, month, quality (+14 more)
 
-### Community 112 - "SD.h"
-Cohesion: 0.25
-Nodes (8): mbr_t, mbrSig0, mbrSig1, part, SdPartition, firstSector, totalSectors, type
+### Community 112 - "ReverseRawTests"
+Cohesion: 0.16
+Nodes (4): ReverseRawTests, audit_raw_configuration(), reverse_exchange(), status()
 
 ### Community 113 - "BenchStatus"
-Cohesion: 0.12
-Nodes (17): BenchStatus, attempted, completed, control_rejects, crc_errors, decode_errors, deliveries, duplicates (+9 more)
+Cohesion: 0.07
+Nodes (35): BenchStatus, attempted, completed, control_rejects, crc_errors, decode_errors, deliveries, duplicates (+27 more)
 
 ### Community 114 - "Result"
 Cohesion: 0.22
 Nodes (8): Result, kAccepted, kAckTimeout, kInvalidArgument, kPending, kRadioError, kRejected, kTxTimeout
 
 ### Community 115 - "tracker_config.h"
-Cohesion: 0.33
+Cohesion: 0.29
 Nodes (6): Checkpoint, INVALID_GNSS_DATE, SPI_CTRL_BEFORE_LORA, SPI_CTRL_BEFORE_PWR_ON, TRACKER_AFTER_GNSS_ON, TRACKER_BEFORE_GNSS_ON
 
 ### Community 117 - "State"
@@ -634,44 +644,44 @@ Cohesion: 0.17
 Nodes (12): State, begin_count, cs_high_seen, cs_low_seen, cs_pin, initialized, route, swap_count (+4 more)
 
 ### Community 119 - "gate1_live.py"
-Cohesion: 0.15
-Nodes (25): controlled_cpu_reset(), firmware_identity_from_events(), gpr_roundtrip_succeeded(), halted_gpr_roundtrip(), mailbox_snapshot(), main(), _parse_block(), part_from_signature() (+17 more)
+Cohesion: 0.18
+Nodes (22): controlled_cpu_reset(), firmware_identity_from_events(), gpr_roundtrip_succeeded(), halted_gpr_roundtrip(), mailbox_snapshot(), main(), _parse_block(), part_from_signature() (+14 more)
+
+### Community 120 - "AdcTemp"
+Cohesion: 0.17
+Nodes (12): AdcTemp, ADC_MAX_COUNTS, CTRLA_ENABLE_12BIT, FIXED_POINT_SHIFT, INIT_DELAY_SETTING, KELVIN_TO_CELSIUS, MUX_TEMP_CHANNEL, PRESCALER_SETTING (+4 more)
 
 ### Community 121 - "State"
 Cohesion: 0.22
 Nodes (8): State, kComplete, kFailed, kRetryPending, kRxWait, kTxData, kTxResponse, kWaitResponse
 
 ### Community 122 - "test_lora_chat_session.py"
-Cohesion: 0.09
-Nodes (18): _event(), _session(), test_ack_matching_deduplicates_replayed_event_counts(), test_ack_without_real_echo_is_not_round_trip_success(), test_captured_echo_timeout_counts_once(), test_chat_settings_allow_zero_manual_retries(), test_chat_settings_enforce_memory_and_refresh_caps(), test_chat_settings_reject_unknown_keys_and_invalid_limits() (+10 more)
+Cohesion: 0.08
+Nodes (19): _event(), _session(), test_ack_matching_deduplicates_replayed_event_counts(), test_ack_without_real_echo_is_not_round_trip_success(), test_captured_echo_timeout_counts_once(), test_chat_settings_allow_zero_manual_retries(), test_chat_settings_enforce_memory_and_refresh_caps(), test_chat_settings_reject_unknown_keys_and_invalid_limits() (+11 more)
 
 ### Community 123 - "receiver/appcode/reliable.cpp"
-Cohesion: 0.14
-Nodes (16): AcceptData(), ArmRadio(), HandleRadioCommand(), Initialize(), InitializeGpio(), InitializeRoleGpio(), Poll(), RecordTransportEvent() (+8 more)
+Cohesion: 0.11
+Nodes (14): AcceptData(), ArmRadio(), HandleRadioCommand(), Initialize(), InitializeGpio(), InitializeRoleGpio(), RecordTransportEvent(), updi_role_log_dropped() (+6 more)
 
 ### Community 124 - "diagnostics.cpp"
-Cohesion: 0.11
-Nodes (15): CommandInput, buffer_, length_, overflow_, AcquireLine(), FlushByte(), OverflowCount(), PendingLineCount() (+7 more)
+Cohesion: 0.10
+Nodes (22): AcquireLine(), FlushByte(), OverflowCount(), PendingLineCount(), RecordDiscard(), RecordEvent(), RecordFrame(), drain_status() (+14 more)
 
 ### Community 125 - "avr128da28_device.h"
 Cohesion: 0.15
 Nodes (12): IsAppCodeRange(), PORT_struct, PORT_t, SPI_struct, SPI_t, TWI_struct, TWI_t, TwiHold (+4 more)
 
 ### Community 126 - "spec_runner.py"
-Cohesion: 0.13
-Nodes (9): test_default_cli_writes_a_zero_transmission_dry_run(), test_real_rf_requires_explicit_profile_and_saved_readback(), test_stress_config_rejects_unknown_settings(), test_torture_config_must_keep_one_thousand_transaction_minimum(), test_torture_plan_has_at_least_one_thousand_cases_and_a_bounded_runtime(), test_torture_profile_requires_long_duration_opt_in(), load_config(), _validate_installed_pair() (+1 more)
+Cohesion: 0.18
+Nodes (6): test_default_cli_writes_a_zero_transmission_dry_run(), test_real_rf_requires_explicit_profile_and_saved_readback(), test_stress_config_rejects_unknown_settings(), test_torture_config_must_keep_one_thousand_transaction_minimum(), test_torture_plan_has_at_least_one_thousand_cases_and_a_bounded_runtime(), test_torture_profile_requires_long_duration_opt_in()
 
 ### Community 128 - "updi_probe.py"
-Cohesion: 0.20
-Nodes (9): firmware_fingerprint_evidence(), identify_mcu(), _is_access_error(), _port_busy(), probe_firmware_identity(), probe_target_sib(), read_firmware_flash(), _require_safe() (+1 more)
-
-### Community 130 - "re"
-Cohesion: 0.15
-Nodes (5): BootAnalysisTests, analyze(), main(), assess_exhaustion(), assess_probe()
+Cohesion: 0.31
+Nodes (6): _port_busy(), probe_firmware_identity(), probe_target_sib(), read_firmware_flash(), _require_safe(), _run_bounded()
 
 ### Community 131 - "PacketBoot"
-Cohesion: 0.18
-Nodes (10): DecodeConfig(), DecodePacketBoot(), LoadFloat(), PacketBoot, checkpoint, config, device_model, firmware (+2 more)
+Cohesion: 0.25
+Nodes (7): PacketBoot, checkpoint, config, device_model, firmware, reset_flags, type
 
 ### Community 132 - "LoRa source ownership V2"
 Cohesion: 0.22
@@ -686,36 +696,32 @@ Cohesion: 0.25
 Nodes (9): ProvisioningResult, kInvalidArgument, kOk, kUnprovisioned, kUnsupported, IsHmacKeyProvisioned(), ReadDeviceUid(), ReadHmacKey() (+1 more)
 
 ### Community 135 - "Session"
-Cohesion: 0.08
-Nodes (4): Console, hardware_output(), main(), Session
+Cohesion: 0.09
+Nodes (3): discover_ports(), main(), Session
 
 ### Community 137 - "Fixed settings and checks"
 Cohesion: 0.40
 Nodes (4): Fixed settings and checks, Runtime settings, Scope, Tracker Configuration SSOT
 
 ### Community 138 - "SdFile"
-Cohesion: 0.14
-Nodes (9): get_data_and_log_partitions(), open_file_in_root(), read_line(), SdFile, data_, length_, position_, SdVolume (+1 more)
+Cohesion: 0.10
+Nodes (16): open_file_in_root(), read_line(), mbr_t, mbrSig0, mbrSig1, part, SdFile, data_ (+8 more)
 
 ### Community 139 - "Logger"
-Cohesion: 0.31
+Cohesion: 0.27
 Nodes (5): Logger, _capacity, _cursor, _raw, _start_block
 
 ### Community 140 - "Radio915ValidationTests"
 Cohesion: 0.17
 Nodes (3): Radio915ValidationTests, valid_profile(), write_toml()
 
-### Community 141 - "replay_bundle"
-Cohesion: 0.31
-Nodes (4): _output_directory(), _read_case_journal(), replay_bundle(), _write_replay_bundle()
+### Community 141 - "test_firmware_identity.py"
+Cohesion: 0.16
+Nodes (8): _hex_image(), _record(), test_flash_comparison_rejects_hex_data_outside_the_authorized_region(), test_flash_comparison_reports_exact_sparse_image_match(), test_flash_comparison_reports_first_actual_mismatch_address(), compare_flash_region(), FlashComparison, parse_ihex_image()
 
 ### Community 143 - "spec_timeout.py"
 Cohesion: 0.19
 Nodes (9): _replay(), test_gateway_accepting_wrong_sequence_is_a_false_ack_failure(), test_latency_wraps_the_same_device_millisecond_counter(), test_retry_limit_excess_is_a_failure(), test_timeout_recovery_keeps_the_same_session_and_sequence(), test_wrong_campaign_is_explicitly_rejected(), test_wrong_destination_must_be_ignored_until_timeout(), test_wrong_sequence_is_explicitly_rejected_before_correct_ack() (+1 more)
-
-### Community 144 - "payload_generator.py"
-Cohesion: 0.20
-Nodes (5): generate_payload(), split_payload(), _append_case(), add(), CaseSpec
 
 ### Community 148 - "Connect to a virtual UART on an AVR via UPDI"
 Cohesion: 0.22
@@ -730,76 +736,84 @@ Cohesion: 0.28
 Nodes (3): assess(), response(), _status()
 
 ### Community 151 - "C++ Refactoring Results"
-Cohesion: 0.20
-Nodes (9): A — Action, C++ Refactoring Results, Current follow-up verification — 2026-11-19, R — Result, S — Situation, T — Task, Trade-offs and limits, SleepFor() (+1 more)
+Cohesion: 0.29
+Nodes (7): A — Action, C++ Refactoring Results, Current follow-up verification — 2026-11-19, R — Result, S — Situation, T — Task, Trade-offs and limits
 
 ### Community 152 - "Gateway-to-Receiver SF7 Hello World"
 Cohesion: 0.25
 Nodes (7): Current result — Receiver installed, normal startup unresolved, Gateway-to-Receiver SF7 Hello World, No-meter read-only hardware verified; Receiver write wiring unconfirmed, Receiver boot incompatibility, Remaining physical prerequisites, Single-packet behavior and identities, Verified software result
 
-### Community 154 - "compare_snapshots"
-Cohesion: 0.15
-Nodes (3): classify(), compare_snapshots(), delta()
+### Community 154 - "ControlInput"
+Cohesion: 0.20
+Nodes (9): ControlInput, command, digits, last_ms, reading, triggered, value, ssot::ControlInputFeed() (+1 more)
 
-### Community 155 - "test_arq.py"
-Cohesion: 0.30
-Nodes (3): arq_artifacts(), load_arq(), validate_arq()
+### Community 155 - "gateway_ssot.hpp"
+Cohesion: 0.20
+Nodes (8): Memory, I2C_MAILBOX_BYTES, SHARED_RINGBUF_BYTES, System, ENABLE_ESPCOMM, ENABLE_LORA_RX, ENABLE_WATCHDOG, WDT_TIMEOUT_PERIOD
 
-### Community 156 - "load_bench_profile"
-Cohesion: 0.17
-Nodes (6): test_current_profile_exposes_fixed_payload_and_unresolved_rf_inventory(), test_profile_rejects_wrong_numeric_types(), BenchProfile, load_bench_profile(), _optional_inventory(), _required_int()
+### Community 156 - "ExchangeResult"
+Cohesion: 0.11
+Nodes (6): test_fragmentation_preserves_exact_bytes_at_the_negotiated_packet_limit(), test_interactive_encoder_accepts_bounded_utf8_messages(), encode_interactive_message(), fragment_message(), ExchangeResult, _result_count()
 
 ### Community 157 - "LoRa ACK/NACK analysis and verification"
-Cohesion: 0.12
-Nodes (16): Current continuation, Earlier source-ownership migration, Markdown inventory and references, Source and documentation deletion audit, Bench ARQ protocol, Documentation audit, Historical baseline evidence, Historical hardware trial requirements and result (+8 more)
+Cohesion: 0.20
+Nodes (10): Bench ARQ protocol, Documentation audit, Historical baseline evidence, Historical hardware trial requirements and result, Installed SRAM-only pair, LoRa ACK/NACK analysis and verification, Production bench repair report, Runbook (+2 more)
 
 ### Community 158 - "TaskScheduler"
-Cohesion: 0.25
+Cohesion: 0.22
 Nodes (4): TaskScheduler::GetTaskCount(), TaskScheduler, task_count_, tasks_
+
+### Community 159 - "SPIClass"
+Cohesion: 0.18
+Nodes (3): beginTransaction(), SPIClass, SPISettings
 
 ### Community 162 - "AVR128DA28 LoRa Board Pin Audit"
 Cohesion: 0.29
 Nodes (7): AVR128DA28 LoRa Board Pin Audit, AVR128DA28 package pins, Evidence basis, Gateway LoRa daughterboard, Radio profile and serial identity, Read the table, Tracker
 
 ### Community 164 - "detect_devices.py"
-Cohesion: 0.20
+Cohesion: 0.19
 Nodes (10): build_parser(), _load_registry(), main(), _probe_device(), _run_self_test(), SafetyArgumentParser, _scan(), _watch() (+2 more)
 
 ### Community 165 - "usb_inventory.py"
 Cohesion: 0.16
 Nodes (7): _print_result(), discover_usb_devices(), InventoryResult, _normalize_hex(), parse_udev_properties(), _run_command(), _usb_instance()
 
-### Community 167 - "commands.cpp"
-Cohesion: 0.24
-Nodes (8): InputResult, kComplete, kOverflow, kPending, CommandInput::Feed(), DecodeHexDigit(), ParseCommand(), ReadFaultValue()
+### Community 167 - "symmetric_fixture"
+Cohesion: 0.21
+Nodes (4): symmetric_fixture(), add(), event(), SymmetricProofTests
 
-### Community 169 - "receiver_boot.py"
-Cohesion: 0.05
-Nodes (25): boot(), ApplicationPageWriteTests, BootPackageTests, CompiledHandoffTests, ReceiverBootTests, recording_command(), command(), normalize_ihex_region() (+17 more)
+### Community 169 - "install"
+Cohesion: 0.24
+Nodes (6): boot(), BootPackageTests, recording_command(), install(), load_package(), sha()
 
 ### Community 170 - "PacketMaintenanceAck"
 Cohesion: 0.40
 Nodes (4): DecodePacketMaintenanceAck(), PacketMaintenanceAck, response, type
 
 ### Community 172 - "Gate1Audit"
-Cohesion: 0.18
-Nodes (3): Gate1Audit, instrument(), open_exclusive()
+Cohesion: 0.23
+Nodes (4): Gate1Audit, _read_block(), _readline(), utc()
 
 ### Community 173 - "ScanResult"
-Cohesion: 0.23
-Nodes (3): DetectedDevice, ScanResult, format_text()
+Cohesion: 0.16
+Nodes (4): ScanResult, exit_code_for(), format_text(), result_to_json()
 
 ### Community 174 - "protocol_adapter.py"
-Cohesion: 0.20
-Nodes (6): _assess_cancellation(), assess_case(), _assess_sequence_rollover(), FirmwareEvent, parse_event_row(), _result()
+Cohesion: 0.13
+Nodes (9): _assess_cancellation(), assess_case(), _assess_sequence_rollover(), CaptureStream, FaultName, FirmwareEvent, parse_event_row(), _result() (+1 more)
+
+### Community 175 - "normalize_ihex_region"
+Cohesion: 0.18
+Nodes (4): BuildIdentityImagesTests, normalize_ihex_region(), _parse_ihex(), prepare()
 
 ### Community 176 - "TraceBus"
-Cohesion: 0.24
+Cohesion: 0.22
 Nodes (4): main(), TraceBus, sensitivity_writes, stage
 
 ### Community 178 - "Logger"
 Cohesion: 0.21
-Nodes (6): ui64toa(), RawStorage, _cached_block, _cached_pos, Storage<T>::_save_state(), Sd2Card
+Nodes (7): ui64toa(), RawStorage, _cached_block, _cached_pos, Storage<T>::_save_state(), get_data_and_log_partitions(), Sd2Card
 
 ### Community 179 - "spec_protocol.py"
 Cohesion: 0.23
@@ -809,41 +823,41 @@ Nodes (6): _replay(), test_nonzero_radio_status_code_is_reported_as_failure(), t
 Cohesion: 0.33
 Nodes (6): Application configuration, AVR128DA28 LoRa firmware, Build, Host tests, Preserved boundaries, Static analysis and formatting
 
-### Community 186 - "shared/README.md"
-Cohesion: 0.40
-Nodes (3): Shared firmware modules, Adding and checking libraries, `stable_lib`
+### Community 181 - "compare_snapshots"
+Cohesion: 0.15
+Nodes (3): classify(), compare_snapshots(), delta()
 
-### Community 188 - "LORA_ACK_NACK.md"
-Cohesion: 0.27
-Nodes (4): Source ownership baseline, Real-radio verification evidence, Status: BLOCKED, no physical trials run, Receiver BOOT boundary
+### Community 186 - "RESULTS.md"
+Cohesion: 0.15
+Nodes (9): C++ Refactoring Baseline, Parent-revision measurements, Production and analysis scope, Repository snapshot, Toolchain and limits, Source ownership baseline, Shared firmware modules, Adding and checking libraries (+1 more)
 
 ### Community 190 - "ResponseFault"
 Cohesion: 0.25
 Nodes (6): ResponseFault, kCampaign, kDrop, kDuplicate, kNone, kSequence
 
-### Community 196 - "EventContext"
-Cohesion: 0.15
-Nodes (16): FlushBenchStatus(), RecordRadioRegisters(), RecordReceiveDiagnostics(), RecordStatusCounters(), RecordStatusTiming(), FrameRead, kDiscard, kRadioError (+8 more)
-
 ### Community 199 - "spec_payload.py"
 Cohesion: 0.23
 Nodes (6): _run_smoke_plan(), test_full_fifty_two_letter_alphabet_is_split_without_byte_loss(), test_random_ascii_changes_with_seed_and_boundary_patterns_stay_frame_bounded(), test_seed_reproduces_bounded_payloads_and_both_direction_character_coverage(), test_smoke_fault_cases_are_ten_total_and_cover_each_direction(), test_stress_plan_contains_sequence_255_to_zero_rollover_case()
+
+### Community 201 - "trace_stub"
+Cohesion: 0.22
+Nodes (3): CompiledHandoffTests, reset_target(), trace_stub()
 
 ### Community 203 - "Frame"
 Cohesion: 0.22
 Nodes (9): Frame, dst, length, payload, reason, sequence, session, src (+1 more)
 
-### Community 204 - "arq_sender.h"
+### Community 204 - "_build_handoff"
 Cohesion: 0.24
-Nodes (3): arq::DecodeFrame(), arq::EncodeFrame(), arq::IsValidFrame()
+Nodes (3): build_fixture(), _build_handoff(), page_write_command()
 
 ### Community 206 - "install_cpp_quality_tools.sh"
 Cohesion: 0.50
 Nodes (3): find_tool(), PATH, install_cpp_quality_tools.sh script
 
-### Community 212 - "Shared Logic and Duplication Audit"
-Cohesion: 0.33
-Nodes (5): Kept separate deliberately, Outcome, Regression coverage, Responsibilities and migration, Shared Logic and Duplication Audit
+### Community 212 - "DeviceRole"
+Cohesion: 0.14
+Nodes (7): Kept separate deliberately, Outcome, Regression coverage, Responsibilities and migration, Shared Logic and Duplication Audit, DeviceRole, _latest_event()
 
 ### Community 213 - "Library Skills"
 Cohesion: 0.40
@@ -861,17 +875,25 @@ Nodes (4): Commands, First-Time Setup, Library Skills, Safety
 Cohesion: 0.29
 Nodes (3): RestartTask, completions, entries
 
-### Community 223 - "PacketReportWithAck"
-Cohesion: 0.40
-Nodes (4): PacketReportWithAck, report, seq, type
+### Community 218 - "effective_platformio_config"
+Cohesion: 0.11
+Nodes (7): BuildAcceptanceTests, ApplicationPageWriteTests, command(), appcode_platformio_config(), _base_platformio_sections(), effective_platformio_config(), ihex()
+
+### Community 221 - "Tasks"
+Cohesion: 0.22
+Nodes (9): Tasks, ENABLE_HEARTBEAT_TASK, HEARTBEAT_NAME, HEARTBEAT_OFF_MS, HEARTBEAT_ON_MS, HEARTBEAT_PERIOD_MS, I2C_RESET_SETTLE_MS, LED1_TOGGLE_INTERVAL_MS (+1 more)
+
+### Community 223 - "PacketReport"
+Cohesion: 0.13
+Nodes (13): DecodePacketReport(), DecodePacketReportWithAck(), DecodeReportEntry(), LoadSigned16(), LoadSigned32(), PacketReport, report, seq (+5 more)
 
 ### Community 225 - "Final LoRa firmware architecture"
 Cohesion: 0.40
 Nodes (5): Board roles and source ownership, Build and safety boundary, Final LoRa firmware architecture, Protocol boundaries, Status
 
-### Community 226 - "C++ Refactoring Baseline"
-Cohesion: 0.40
-Nodes (5): C++ Refactoring Baseline, Parent-revision measurements, Production and analysis scope, Repository snapshot, Toolchain and limits
+### Community 226 - "Comm"
+Cohesion: 0.25
+Nodes (8): Comm, AIR_CONFIG_NODE_ADDR, DEBUG_BAUD_RATE, ENABLE_I2C_WIRE, GATEWAY_ANYCAST_ADDR, GATEWAY_DEFAULT_ADDR, I2C_ADDRESS_BASE, I2C_ADDRESS_STRAP_SHIFT
 
 ### Community 227 - "Offline regression matrix"
 Cohesion: 0.40
@@ -885,17 +907,29 @@ Nodes (4): DecodePacketMaintenance(), PacketMaintenance, command, type
 Cohesion: 0.40
 Nodes (4): Connecting to the installed boards, Installed Flash layout, LoRa Chat Firmware and Installed-Image Requirements, Source-level interactive protocol
 
-### Community 231 - "FaultName"
-Cohesion: 0.29
-Nodes (3): CaptureStream, FaultName, ScenarioDirection
+### Community 231 - "match_flash_fingerprint"
+Cohesion: 0.33
+Nodes (3): FingerprintResult, match_flash_fingerprint(), firmware_fingerprint_evidence()
+
+### Community 234 - "rf_test"
+Cohesion: 0.09
+Nodes (18): RfTestContinuationTests, assess_installed_exchange(), capture_radio_spi_log(), parse_radio_spi_log(), rf_test(), command(), record(), run_mvp_acceptance() (+10 more)
 
 ### Community 237 - "ExcludedSx1262Experiment"
 Cohesion: 0.18
 Nodes (11): 1. System topology, 2. Daughterboard MCU and RFM95W SSOT, 3. Daughterboard external connectors, 4. Four module slot mappings from Main Board, 5. Power, RF and hardware safety, 6. Minimal validation gates, Gateway Hardware SSOT — Rudolph Gateway, H1 (10-pin; only pins 1–5 used in the source schematic) (+3 more)
 
-### Community 240 - "Json"
-Cohesion: 0.18
-Nodes (5): approve_writes(), phy_matches(), power_matches(), publish_receipt(), write_span_is_application()
+### Community 240 - "identify_mcu"
+Cohesion: 0.50
+Nodes (3): First failing boundary in the current real startup, LoRa Recovery Root Cause Analysis, identify_mcu()
+
+### Community 241 - "stdio"
+Cohesion: 0.09
+Nodes (9): Frame, campaign_id, destination, sequence, source, type, main(), main() (+1 more)
+
+### Community 242 - "Source and documentation deletion audit"
+Cohesion: 0.50
+Nodes (4): Current continuation, Earlier source-ownership migration, Markdown inventory and references, Source and documentation deletion audit
 
 ### Community 246 - "PacketAck"
 Cohesion: 0.40
@@ -909,13 +943,17 @@ Nodes (4): DecodePacketAdvertise(), PacketAdvertise, seq, type
 Cohesion: 0.34
 Nodes (9): capture_host_commands(), check(), complexity_check(), firmware_checks(), main(), record(), resolve_tools(), run() (+1 more)
 
-### Community 257 - "Capture"
-Cohesion: 0.09
-Nodes (12): test_capture_journal_marks_buffered_lines_until_a_fresh_readiness_barrier(), test_capture_metrics_preserve_radio_errors_irq_and_missing_rf_metrics(), test_planned_transaction_failure_is_not_counted_as_background(), test_unplanned_transaction_failure_is_retained_in_run_summary(), test_lost_or_reset_legacy_monitor_cannot_trigger_data(), Capture, capture_diagnostics(), exchange_once() (+4 more)
+### Community 254 - "Sender APPCODE"
+Cohesion: 0.67
+Nodes (3): Builds and hardware, Sender APPCODE, Source path
+
+### Community 277 - "echo_trials.py"
+Cohesion: 0.13
+Nodes (8): test_legacy_pair_blocks_acceptance_without_sending(), test_missing_echo_trial_requires_matching_ack_and_timeout(), test_trial_list_has_utf8_boundary_and_command_like_payloads(), main(), messages(), run_trials(), suppressed_echo_observed(), _write_json()
 
 ### Community 299 - "sleep.cpp"
-Cohesion: 0.14
-Nodes (9): SetUnixTime(), SleepState, force_wakeup, is_sleeping, last_rtc_ticks, unix_time, GetTotalSeconds(), InitializeTime() (+1 more)
+Cohesion: 0.13
+Nodes (10): SetUnixTime(), SleepFor(), SleepState, force_wakeup, is_sleeping, last_rtc_ticks, unix_time, GetTotalSeconds() (+2 more)
 
 ### Community 313 - "lora/library.json"
 Cohesion: 0.25
@@ -931,23 +969,23 @@ Nodes (6): ค่าคลื่นวิทยุที่ตั้งไว้
 
 ## Knowledge Gaps
 - **600 isolated node(s):** `day`, `fixquality`, `_gga_received`, `hour`, `latitude` (+595 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2110 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **142 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2135 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **129 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Transport` connect `Transport` to `State`, `.IsActive`, `.EmitEvent`, `Event`, `Result`, `string`, `ResponseFault`?**
+- **Why does `Transport` connect `Transport` to `.EmitEvent`, `EventQueue`, `Result`, `State`, `receiver/appcode/reliable.cpp`, `ResponseFault`?**
   _High betweenness centrality (0.038) - this node is a cross-community bridge._
-- **Are the 2 inferred relationships involving `Hardware` (e.g. with `DeviceEvent` and `RoundTripContext`) actually correct?**
-  _`Hardware` has 2 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 3 inferred relationships involving `Hardware` (e.g. with `DeviceEvent` and `RoundTripContext`) actually correct?**
+  _`Hardware` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `day`, `fixquality`, `_gga_received` to the rest of the system?**
   _600 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `pathlib` be split into smaller, more focused modules?**
-  _Cohesion score 0.06460044809559373 - nodes in this community are weakly interconnected._
-- **Why does `SystemConstants` connect `SystemConstants` to `Fixed settings and checks`, `arduino`?**
-  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+  _Cohesion score 0.06378865979381443 - nodes in this community are weakly interconnected._
+- **Why does `error()` connect `error` to `pathlib`, `analyze`, `Session`, `test_lora_chat_protocol.py`, `.exchange`, `rf_test`, `runner.py`, `ArqSoakPlanTests`, `make_error`, `arq_trial.py`, `Hardware`, `BenchTransport`, `echo_trials.py`, `upditerm.py`, `Console`, `ReceiveTests`, `ExchangeResult`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
 - **Should `ProofRun` be split into smaller, more focused modules?**
-  _Cohesion score 0.09201480698043363 - nodes in this community are weakly interconnected._
-- **Should `Storage` be split into smaller, more focused modules?**
-  _Cohesion score 0.09401709401709402 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.11510204081632654 - nodes in this community are weakly interconnected._
+- **Why does `Board` connect `MvpRoundtripTests` to `pathlib`?**
+  _High betweenness centrality (0.030) - this node is a cross-community bridge._

@@ -53,6 +53,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import TextIO
 
+    from tools.lora_chat.session import CompletedMessage
+
 
 ROOT = Path(__file__).resolve().parents[2]
 EVENT_FAILURE_MARKERS = ("NACK", "FAIL", "ERROR")
@@ -80,6 +82,10 @@ class ConsoleCommand(StrEnum):
 
     HELP = "/help"
     STATUS = "/status"
+    DEVICES = "/devices"
+    RADIO = "/radio"
+    MODE = "/mode"
+    METRICS = "/metrics"
     CLEAR = "/clear"
     LOGS = "/logs"
     RETRY = "/retry"
@@ -110,6 +116,7 @@ class InteractiveConsole:
         self.stop_events = asyncio.Event()
         self.accepting_messages = True
         self.startup_row_count = 0
+        self.last_completed: CompletedMessage | None = None
 
     async def run(self) -> None:
         """Run until /quit, EOF, or Ctrl-C, then park and release device ports."""
@@ -213,8 +220,12 @@ class InteractiveConsole:
         keep_running = True
         if command == ConsoleCommand.HELP:
             self.console.print(_help_panel())
-        elif command == ConsoleCommand.STATUS:
+        elif command in {ConsoleCommand.STATUS, ConsoleCommand.METRICS}:
             self._render_dashboard()
+        elif command in {ConsoleCommand.DEVICES, ConsoleCommand.RADIO}:
+            self.console.print(Columns([self._device_panel(role) for role in DeviceRole]))
+        elif command == ConsoleCommand.MODE:
+            self.console.print(Text(self.transport.interactive_state))
         elif command == ConsoleCommand.CLEAR:
             self.console.clear()
             self._render_dashboard()
@@ -306,6 +317,7 @@ class InteractiveConsole:
             except (TransportError, TimeoutError, ValueError) as error:
                 result = ExchangeResult("FAILED", str(error), (), 0, 0, 0, 0.0)
             completed, next_message = self.chat.finish_current(result)
+            self.last_completed = completed
             if completed.ack_accepted and completed.campaign_id is not None:
                 self.console.print(
                     f"[green]ACK accepted[/] — SEQ={completed.sequence} "
@@ -317,6 +329,7 @@ class InteractiveConsole:
                 self.console.print(f"[red]{completed.status}[/] — {completed.detail}")
             if completed.received_text is not None:
                 self.console.print(Text(f"Tracker > {completed.received_text}", style="cyan"))
+                self.console.print("[green]Payload Match: PASS[/]")
                 self.console.print("[green]Status > SUCCESS[/]")
             elif completed.status == "DATA_ACK_VERIFIED":
                 self.console.print("[green]Status > Verified legacy DATA/ACK[/]")
@@ -461,6 +474,8 @@ class InteractiveConsole:
         counters.add_column(style="dim")
         counters.add_column()
         values = self.chat.stats
+        latest = self.last_completed
+        rtt = latest.echo_fragment_latency_ms if latest is not None else ()
         for label, value in (
             ("Messages sent", values.messages_sent),
             ("Messages received", values.messages_received),
@@ -469,12 +484,18 @@ class InteractiveConsole:
             ("Retries", values.retry_count),
             ("Timeouts", values.timeout_count),
             ("Interactive Echo round trips", values.round_trip_successes),
+            ("Failed Echo transactions", values.echo_failures),
             ("Verified legacy DATA/ACK", values.legacy_data_ack_successes),
             ("Failed transactions", values.failed_transactions),
             ("Blocked transactions", values.blocked_transactions),
             ("State", self.chat.state),
             ("Connection stage", self.transport.connection_stage),
             ("Payload capability", self.transport.interactive_state),
+            ("Payload match", "PASS" if latest and latest.received_text is not None else "—"),
+            (
+                "Echo round-trip latency",
+                f"{sum(rtt)} ms across {len(rtt)} packet(s)" if rtt else "—",
+            ),
             ("Last error", self.transport.connection_error or "—"),
         ):
             counters.add_row(label, str(value))
@@ -494,16 +515,20 @@ class InteractiveConsole:
         if role is DeviceRole.GATEWAY:
             event_fields = [
                 ("DATA TX", {"DATA_TX_BEGIN", "DATA_TX_DONE"}),
-                ("DATA RX", {"DATA_RX", "PAYLOAD_BYTES"}),
+                ("ECHO RX", {"DATA_RX", "PAYLOAD_BYTES"}),
+                ("ACK TX", {"ACK_TX_BEGIN", "ACK_TX_DONE", "ACK_DUP_TX_DONE"}),
                 ("ACK RX", {"ACK_RX", "ACK_ACCEPTED"}),
+                ("NACK TX", {"NACK_TX_BEGIN", "NACK_TX_DONE"}),
                 ("NACK RX", {"NACK_RX"}),
             ]
         else:
             event_fields = [
                 ("DATA RX", {"DATA_RX", "PAYLOAD_BYTES"}),
-                ("DATA TX", {"DATA_TX_BEGIN", "DATA_TX_DONE"}),
+                ("ECHO TX", {"DATA_TX_BEGIN", "DATA_TX_DONE"}),
                 ("ACK TX", {"ACK_TX_BEGIN", "ACK_TX_DONE", "ACK_DUP_TX_DONE"}),
+                ("ACK RX", {"ACK_RX", "ACK_ACCEPTED"}),
                 ("NACK TX", {"NACK_TX_BEGIN", "NACK_TX_DONE"}),
+                ("NACK RX", {"NACK_RX"}),
                 (
                     "Validation",
                     {"DATA_VALIDATED", "DATA_REJECTED_PAYLOAD", "DATA_REJECTED_TEST"},
@@ -643,7 +668,8 @@ def _help_panel() -> Panel:
     return Panel(
         "Type a message directly. Echo-capable pairs accept UTF-8. The reviewed legacy pair "
         "accepts hello world. Use /send <text> to send text that starts with /.\n\n"
-        "/help  /status  /clear  /logs  /retry  /park  /quit",
+        "/help  /status  /devices  /radio  /mode  /metrics\n"
+        "/clear  /logs  /retry  /park  /quit",
         title="Commands",
         border_style="cyan",
     )

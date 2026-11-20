@@ -152,6 +152,7 @@ class BenchTransport:
         self.interactive_checked = False
         self.interactive_max_data_bytes: int | None = None
         self.interactive_capability_error: str | None = None
+        self.incompatible_capabilities = False
         self.authorize_rf_test = authorize_rf_test
         self.confirm_rf_setup = confirm_rf_setup
         self.historical_receipt = historical_receipt
@@ -204,6 +205,7 @@ class BenchTransport:
         self.interactive_checked = False
         self.interactive_max_data_bytes = None
         self.interactive_capability_error = None
+        self.incompatible_capabilities = False
         self.capture = None
         self.legacy_images = {}
         self.trusted_roles.clear()
@@ -361,13 +363,26 @@ class BenchTransport:
         fragments = fragment_message(payload, max_data_bytes)
         return self._run_exchange(lambda: self._hardware_exchange(fragments, max_data_bytes))
 
+    def echo_fault_trial(self, text: str, fault: str) -> ExchangeResult:
+        """Run an explicit diagnostic fault against live, verified Echo firmware only."""
+        self._require_transmit()
+        max_data_bytes = self.interactive_max_data_bytes
+        if max_data_bytes is None:
+            raise make_error(TransportError, "fault trials require verified Echo firmware")
+        payload = encode_interactive_message(text, self.max_message_bytes)
+        return self._run_exchange(
+            lambda: self._hardware_exchange((payload,), max_data_bytes, tracker_fault=fault)
+        )
+
     def _hardware_exchange(
-        self, fragments: tuple[bytes, ...], max_data_bytes: int
+        self, fragments: tuple[bytes, ...], max_data_bytes: int, *, tracker_fault: str | None = None
     ) -> dict[str, Any]:
         """Run the current firmware exchange and invalidate its parked readiness."""
         assert self.hardware is not None
         try:
-            return self.hardware.exchange_interactive_message(fragments, max_data_bytes)
+            return self.hardware.exchange_interactive_message(
+                fragments, max_data_bytes, tracker_fault=tracker_fault
+            )
         finally:
             self.ready_roles.clear()
 
@@ -416,6 +431,7 @@ class BenchTransport:
             ]
             self.interactive_max_data_bytes = negotiated_payload_limit(events)
             if self.interactive_max_data_bytes is None:
+                self.incompatible_capabilities = True
                 self.interactive_capability_error = (
                     "Gateway and Tracker lack matching interactive DATA/Echo capabilities"
                 )
@@ -562,10 +578,19 @@ class BenchTransport:
     def interactive_state(self) -> str:
         """Report negotiated payload support from the verified pair."""
         if self.legacy_images:
-            return "Legacy DATA/ACK · hello world"
+            return "LEGACY_ONLY · Legacy DATA/ACK · Echo not installed"
         if self.interactive_max_data_bytes is None:
-            return "Echo unverified"
-        return f"Echo enabled · {self.interactive_max_data_bytes} bytes per DATA packet"
+            return (
+                "PROTOCOL_INCOMPATIBLE · Echo unavailable"
+                if self.incompatible_capabilities
+                else "RUNTIME_UNVERIFIED · Echo unverified"
+            )
+        state = (
+            "ECHO_READY"
+            if self.is_connected and self.transmit_blocker() is None
+            else "ECHO_SUPPORTED"
+        )
+        return f"{state} · Interactive Echo · {self.interactive_max_data_bytes} bytes per packet"
 
     def _monitor_live(self, role: str) -> bool:
         if self.capture is not None:

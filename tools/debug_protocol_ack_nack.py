@@ -412,7 +412,8 @@ class Hardware:
         self.images = {}
         ports = {Path(port).resolve() for port in discover_ports()}
         self.usb_present = {
-            role for role, port in hardware_ports(ROOT / "config/current_hardware.json").items()
+            role
+            for role, port in hardware_ports(ROOT / "config/current_hardware.json").items()
             if Path(port).resolve() in ports
         }
         self.proof = rf.ProofRun(self.log.path / f"preparation-{time.monotonic_ns()}")
@@ -710,8 +711,10 @@ class Hardware:
         if not self.authorize_rf:
             msg = "Step 3 requires --authorize-rf-test for the verified 915 MHz RF arrangement."
             raise bench.BenchBlockedError(msg)
-        if len(self.monitors) != BOARD_COUNT or self.fault or any(
-            monitor["process"].poll() is not None for monitor in self.monitors.values()
+        if (
+            len(self.monitors) != BOARD_COUNT
+            or self.fault
+            or any(monitor["process"].poll() is not None for monitor in self.monitors.values())
         ):
             msg = "Both verified production monitors must be responsive before any transmission."
             raise bench.BenchBlockedError(msg)
@@ -858,11 +861,15 @@ class Hardware:
             for event in events
         )
 
-    def exchange_interactive_message(self, chunks: tuple[bytes, ...], max_data_bytes: int) -> Json:
+    def exchange_interactive_message(
+        self, chunks: tuple[bytes, ...], max_data_bytes: int, *, tracker_fault: str | None = None
+    ) -> Json:
         """Send and Echo bounded chunks sequentially over the existing reliable transport."""
         self._require_rf()
         if not chunks or any(not chunk or len(chunk) > max_data_bytes for chunk in chunks):
             raise bench.BenchBlockedError("interactive message contains an invalid DATA fragment")
+        if tracker_fault is not None and (tracker_fault not in {"N", "J"} or len(chunks) != 1):
+            raise bench.BenchBlockedError("Echo fault trials require one fragment and fault N or J")
 
         start = len(self.log.snapshot())
         ack_ms = self.config["timeouts"]["ack_ms"]
@@ -882,9 +889,8 @@ class Hardware:
                 ready_events = self._events_since(ready_start)
                 if not any(
                     event.name == ChatEventName.INTERACTIVE_READY
-                    and event.role is (
-                        ChatDeviceRole.TRACKER if role == "receiver" else ChatDeviceRole.GATEWAY
-                    )
+                    and event.role
+                    is (ChatDeviceRole.TRACKER if role == "receiver" else ChatDeviceRole.GATEWAY)
                     and event.max_data_bytes is not None
                     and event.max_data_bytes >= max_data_bytes
                     and event.echo_supported is True
@@ -894,6 +900,8 @@ class Hardware:
                         f"{role.upper()} did not confirm interactive Echo MAX_DATA={max_data_bytes}"
                     )
 
+            if tracker_fault is not None:
+                self.send_and_wait("receiver", tracker_fault, "ECHO_FAULT_ARMED", 5)
             self.transmitting = True
             for chunk in chunks:
                 sequence = self.sequence

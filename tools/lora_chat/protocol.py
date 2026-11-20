@@ -263,10 +263,15 @@ def matches_ack(
 
 
 def verify_round_trip(events: list[DeviceEvent], context: RoundTripContext) -> bool:
+    """Check that both directions delivered the exact application message."""
+    return verified_echo_payload(events, context) is not None
+
+
+def verified_echo_payload(events: list[DeviceEvent], context: RoundTripContext) -> bytes | None:
     """Require two DATA/ACK legs for every ordered fragment and exact reassembly."""
     keys = _gateway_transactions(events, context)
     if not keys or not _sequential_transactions(keys, context):
-        return False
+        return None
     expected = set(keys)
     unexpected_control = any(
         event.name in {EventName.ACK_ACCEPTED, EventName.ACK_TX_DONE}
@@ -276,9 +281,8 @@ def verify_round_trip(events: list[DeviceEvent], context: RoundTripContext) -> b
         for event in events
     )
     if unexpected_control:
-        return False
+        return None
 
-    tracker_chunks: list[bytes] = []
     gateway_chunks: list[bytes] = []
     for identity in keys:
         original = _verified_payload(
@@ -286,16 +290,13 @@ def verify_round_trip(events: list[DeviceEvent], context: RoundTripContext) -> b
         )
         echo = _verified_payload(events, DeviceRole.TRACKER, DeviceRole.GATEWAY, identity, context)
         if original is None or echo is None or original != echo:
-            return False
+            return None
         if not _has_ack_confirmation(events, identity, context.ack_type):
-            return False
-        tracker_chunks.append(original)
+            return None
         gateway_chunks.append(echo)
 
-    return (
-        b"".join(tracker_chunks) == context.original_payload
-        and b"".join(gateway_chunks) == context.original_payload
-    )
+    payload = b"".join(gateway_chunks)
+    return payload if payload == context.original_payload else None
 
 
 def echo_fragment_latency_ms(

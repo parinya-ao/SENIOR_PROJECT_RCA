@@ -38,6 +38,7 @@ static bool fresh_campaign = false;
 static bool interactive_mode = false;
 static bool echo_pending = false;
 static bool echo_confirmed = false;
+static bool suppress_echo_once = false;
 static uint8_t echo_sequence = 0U;
 static uint16_t echo_campaign = 0U;
 static uint32_t echo_wait_started = 0U;
@@ -202,6 +203,7 @@ static void HandleRadioCommand(char command) {
         fresh_campaign = true;
         interactive_mode = false;
         echo_pending = echo_confirmed = false;
+        suppress_echo_once = false;
         accepted_payload_size = 0U;
         event_queue.Clear();
         updi_role_log(kRole, "BENCH_READY");
@@ -215,6 +217,7 @@ static void HandleRadioCommand(char command) {
       reject_data = false;
       interactive_mode = false;
       echo_pending = echo_confirmed = false;
+      suppress_echo_once = false;
       accepted_payload_size = 0U;
       transport.SetResponseFault(Fault::kNone);
       break;
@@ -237,7 +240,16 @@ static void HandleRadioCommand(char command) {
       }
       break;
     case 'N':
-      if (bench && !park_requested) reject_data = true;
+      if (bench && !park_requested) {
+        reject_data = true;
+        if (interactive_mode) updi_role_log(kRole, "ECHO_FAULT_ARMED");
+      }
+      break;
+    case 'J':
+      if (bench && interactive_mode && !park_requested && !echo_pending) {
+        suppress_echo_once = true;
+        updi_role_log(kRole, "ECHO_FAULT_ARMED");
+      }
       break;
     case 'A':
       reject_data = false;
@@ -301,7 +313,11 @@ void Poll() {
       transport.state() == decltype(transport)::State::kRxWait &&
       !transport.IsActive()) {
     echo_pending = false;
-    if (!transport.SendReliableData(echo_sequence, accepted_payload,
+    if (suppress_echo_once) {
+      suppress_echo_once = false;
+      event_queue.Push({"ECHO_SUPPRESSED_TEST", now, 0, ssot::kDataType,
+                        echo_sequence, echo_campaign});
+    } else if (!transport.SendReliableData(echo_sequence, accepted_payload,
                                     accepted_payload_size, now)) {
       radio_ready = false;
       updi_role_log(kRole, "ECHO_DATA_START_FAILED");

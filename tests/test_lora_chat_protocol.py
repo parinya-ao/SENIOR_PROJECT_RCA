@@ -185,7 +185,7 @@ def test_ack_alone_never_counts_as_a_tracker_echo() -> None:
 def _chunk_events(campaign: int, sequence: int, payload: bytes) -> list[DeviceEvent]:
     """Build one complete bidirectional event sequence with no host-synthesized RF rows."""
     campaign_hex = f"{campaign:04X}"
-    ascii_payload = payload.decode("ascii")
+    ascii_payload = payload.decode("ascii", errors="replace")
     payload_hex = payload.hex().upper()
     lines = (
         ("GATEWAY", f"[GATEWAY] DATA_TX_BEGIN SID={campaign_hex} TYPE=08 Q={sequence}"),
@@ -246,6 +246,18 @@ def test_round_trip_reassembles_fragments_across_sequence_rollover() -> None:
     context = RoundTripContext(0xFFFF, 255, b"abcde", 8, 3, 0, 1)
 
     assert verify_round_trip(events, context)
+
+
+def test_verified_echo_bytes_preserve_utf8_split_across_packets() -> None:
+    """Return actual captured Echo bytes after verifying both DATA/ACK legs."""
+    from tools.lora_chat import protocol
+
+    payload = "สวัสดีครับ, ls".encode()
+    events = _chunk_events(0x351C, 1, payload[:5]) + _chunk_events(0x351C, 2, payload[5:])
+    context = RoundTripContext(0x351C, 1, payload, 8, 3, 0, 1)
+
+    assert protocol.verified_echo_payload(events, context) == payload
+    assert protocol.verified_echo_payload(events[:-1], context) is None
 
 
 def test_echo_latency_uses_the_gateway_clock_and_first_attempt() -> None:

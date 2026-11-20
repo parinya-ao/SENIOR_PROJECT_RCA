@@ -71,6 +71,7 @@ def test_session_accepts_arbitrary_utf8_message_with_exact_bytes(tmp_path: Path)
 def test_ack_without_real_echo_is_not_round_trip_success(tmp_path: Path) -> None:
     """A correlated ACK updates ACK counters but cannot claim a Tracker echo."""
     session = _session(tmp_path, max_pending=2, retry_limit=1)
+    session.echo_supported = True
     request, queued = session.submit("hello world")
     assert not queued
     ack = _event("GATEWAY", "[GATEWAY] ACK_ACCEPTED SID=351C TYPE=03 Q=1 E=0")
@@ -91,6 +92,14 @@ def test_ack_without_real_echo_is_not_round_trip_success(tmp_path: Path) -> None
     assert session.stats.ack_count == 1
     assert session.stats.round_trip_successes == 0
     assert session.stats.failed_transactions == 1
+    assert session.stats.echo_failures == 1
+    assert completed.detail == "Forward ACK accepted; matching Echo was not verified."
+    evidence = json.loads(session.messages_path.read_text().splitlines()[-1])
+    assert evidence["payload_sha256"] == (
+        "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+    )
+    assert evidence["echo_sha256"] is None
+    assert [event["name"] for event in evidence["events"]] == ["DATA_TX_DONE", "ACK_ACCEPTED"]
 
 
 def test_ack_matching_deduplicates_replayed_event_counts(tmp_path: Path) -> None:

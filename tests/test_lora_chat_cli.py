@@ -201,3 +201,7 @@ def test_prompt_admits_utf8_when_both_endpoints_support_echo(
 
     asyncio.run(console._handle_line("/send   /quit  "))
     assert [message.payload for message in chat.pending] == [b"  /quit  "]
+
+    asyncio.run(console._handle_line("/mode"))
+    assert [message.payload for message in chat.pending] == [b"  /quit  "]
+    assert "ECHO_SUPPORTED" in console.console.file.getvalue()
