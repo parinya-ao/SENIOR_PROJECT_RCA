@@ -28,8 +28,27 @@ if TYPE_CHECKING:
 Json = Any
 
 ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = ROOT
 sys.path.insert(0, str(ROOT))
 from tools.config.application_config import raw_payload
+from tools.device_detection.firmware_identity import (
+    RUNTIME_IDENTITY_UNVERIFIED,
+    parse_ihex_image,
+)
+from tools.device_detection.flash_layout import (
+    FlashLayout,
+    FotaStatus,
+    LayoutStatus,
+    Section,
+    calculate_flash_layout,
+    page_write_range,
+    validate_image_range,
+)
+from tools.device_detection.evidence import DeviceRole
+from tools.device_detection.hardware_registry import hardware_ports, load_hardware_registry
+from tools.device_detection.updi_probe import identify_mcu
+from tools.device_detection.usb_inventory import discover_usb_devices
+
 ARTIFACTS = ROOT / "artifacts" / "rf-proof"
 ENVIRONMENTS = ("sender", "sender_hello", "receiver", "sender_hello_spi", "receiver_spi")
 # Covers bounded SF7 airtime pacing across all four attempts per sequence.
@@ -37,10 +56,11 @@ RF_TEST_TIMEOUT_SECONDS = 6 * 60 * 60
 RF_SINGLE_PACKET_TIMEOUT_SECONDS = 5 * 60
 RF_COMPLETION_LOG_SETTLE_SECONDS = 2.0
 RADIO_SPI_TIMEOUT_SECONDS = 10
-PORTS = {
-    "gateway": "/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.0-port0",
-    "receiver": "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0",
-}
+
+
+def enrolled_ports() -> Mapping[str, str]:
+    """Load stable Gateway/Tracker port hints from this repository's hardware registry."""
+    return hardware_ports(ROOT / "config" / "current_hardware.json")
 
 
 def hardware_blockers(
@@ -103,7 +123,7 @@ def parse_raw_mvp_logs(sender_text: str, receiver_text: str) -> dict[str, object
                 and bytes.fromhex(fields["bytes"]) == payload
             ):
                 packets.append({"rssi": float(fields["rssi"]), "snr": float(fields["snr"])})
-        except (ValueError, KeyError):
+        except ValueError, KeyError:
             continue
     return {
         "passed": bool(ready and completed and packets),
@@ -270,9 +290,7 @@ def parse_rf_campaign(gateway_text: str, receiver_text: str) -> dict[str, Json]:
         issues.append("multiple campaign IDs")
     campaign_id = next(iter(campaign_ids)) if len(campaign_ids) == 1 else None
 
-    def matching(
-        role: str, name: str, sequence: int | None = None
-    ) -> list[dict[str, Json]]:
+    def matching(role: str, name: str, sequence: int | None = None) -> list[dict[str, Json]]:
         return [
             record
             for record in records
@@ -463,7 +481,7 @@ def unavailable_ports(results: list[tuple[str, int]]) -> list[str]:
 def check_port_owners(proof: ProofRun, stage: str) -> list[str]:
     results = [
         (role, proof.command(f"{stage}-{role}-owners", ["fuser", port])[0])
-        for role, port in PORTS.items()
+        for role, port in enrolled_ports().items()
     ]
     return unavailable_ports(results)
 
@@ -494,7 +512,7 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
 
     path_results = [
         (role, proof.command(f"identify-{role}-path", ["readlink", "-e", port])[0])
-        for role, port in PORTS.items()
+        for role, port in enrolled_ports().items()
     ]
     unavailable_paths = unresolved_adapter_paths(path_results)
     unavailable_owners = check_port_owners(proof, "identify-preflight")
@@ -511,9 +529,13 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
     core_dir = Path(os.environ.get("PLATFORMIO_CORE_DIR", str(Path.home() / ".platformio")))
     avrdude = core_dir / "packages" / "tool-avrdude" / "avrdude"
     avrdude_conf = core_dir / "packages" / "tool-avrdude" / "avrdude.conf"
-    expected_fuses = {role: target_fuses(effective_config, role) for role in PORTS}
+    expected_fuses = {role: target_fuses(effective_config, role) for role in enrolled_ports()}
+    expected_profiles = {
+        role: device_profile_for_role(effective_config, role) for role in enrolled_ports()
+    }
     if (
         any(values is None for values in expected_fuses.values())
+        or any(profile is None for profile in expected_profiles.values())
         or not avrdude.is_file()
         or not avrdude_conf.is_file()
     ):
@@ -525,7 +547,8 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
         return 2
 
     all_ok = True
-    for role, port in PORTS.items():
+    registry = load_hardware_registry(ROOT / "config" / "current_hardware.json")
+    for role, port in enrolled_ports().items():
         sib_code, sib_out, _ = proof.command(
             f"target-{role}-sib",
             [
@@ -544,6 +567,20 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
         if sib_code != 0 or not sib_out.strip():
             all_ok = False
             continue
+        profile = expected_profiles[role]
+        observed_model = identify_mcu(sib_out.decode("ascii", errors="replace"))
+        if profile is None or (observed_model is not None and observed_model != profile["model"]):
+            all_ok = False
+            proof.note(
+                "target-identification.log",
+                f"BLOCKED: {role} SIB does not match its configured MCU profile; no writes performed.\n",
+            )
+            continue
+        if observed_model is None:
+            proof.note(
+                f"target-{role}-sib.log",
+                "SIB returned no exact MCU part number; UPDI signature readback will decide.\n",
+            )
 
         bootsize_path = proof.run_dir / f"target-{role}-bootsize.bin"
         codesize_path = proof.run_dir / f"target-{role}-codesize.bin"
@@ -554,7 +591,7 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
             str(avrdude),
             "-N",
             "-p",
-            "avr128da28",
+            cast(str, profile["model"]).lower(),
             "-C",
             str(avrdude_conf),
             "-c",
@@ -585,24 +622,36 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
                 "codesize": codesize_path.read_bytes()[0],
                 "bodcfg": bodcfg_path.read_bytes()[0],
             }
-        except (OSError, IndexError):
+        except OSError, IndexError:
             observed = None
         (proof.run_dir / f"target-{role}-layout.json").write_text(
-            json.dumps({"expected": expected_fuses[role], "observed": observed}, indent=2) + "\n"
+            json.dumps(
+                {
+                    "expected": expected_fuses[role],
+                    "observed": observed,
+                    "profile": profile,
+                },
+                indent=2,
+            )
+            + "\n"
         )
         if not boot_fuses_match(observed, expected_fuses[role]):
             all_ok = False
         try:
-            identity = json.loads((ROOT / "config/current_hardware.json").read_text())[role]
-            expected_serial = bytes.fromhex(identity["device_serial_hex"])
-            if identity["port_path"] != port:
-                all_ok = False
+            canonical_role = DeviceRole.GATEWAY if role == "gateway" else DeviceRole.TRACKER
+            enrolled = registry[canonical_role]
             if (
-                signature_path.read_bytes() != bytes.fromhex("1e970a")
-                or serial_path.read_bytes() != expected_serial
+                signature_path.read_bytes() != bytes.fromhex(cast(str, profile["signature_hex"]))
+                or serial_path.read_bytes() != enrolled.serial_number
             ):
                 all_ok = False
-        except (OSError, ValueError, KeyError):
+            if enrolled.port_path != port:
+                proof.note(
+                    f"target-{role}-locator.log",
+                    f"PORT_LOCATOR_CHANGED expected={enrolled.port_path} observed={port}; "
+                    "MCU serial matched the enrolled identity.\n",
+                )
+        except OSError, ValueError, KeyError:
             all_ok = False
 
     ports_after = check_port_owners(proof, "identify-postflight")
@@ -611,8 +660,8 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
     if all_ok:
         proof.note(
             "target-identification.log",
-            "PASS: both UPDI targets match AVR128DA28 and their configured BOOT/APPCODE/BOD "
-            "fuses; no writes performed.\n",
+            "PASS: both UPDI targets match their configured MCU identities and "
+            "BOOT/CODESIZE/BOD fuses; no writes performed.\n",
         )
         return 0
     proof.note(
@@ -625,7 +674,7 @@ def identify_targets(proof: ProofRun, args: argparse.Namespace, effective_config
 def effective_project_sections(config_text: str) -> dict[str, dict[str, object]] | None:
     try:
         configuration = json.loads(config_text)
-    except (TypeError, json.JSONDecodeError):
+    except TypeError, json.JSONDecodeError:
         return None
     if not isinstance(configuration, list):
         return None
@@ -711,13 +760,13 @@ def shared_rf_profile(config_text: str) -> dict[str, object] | None:
     ):
         return None
     try:
-        sys.path.insert(0, str(ROOT / "tools/config"))
+        sys.path.insert(0, str(PROJECT_ROOT / "tools/config"))
         from generate_lora_config import generate  # type: ignore[import-not-found]
 
         generate(check=True)
         manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
         return dict(manifest["shared"]["radio"])
-    except (KeyError, OSError, ValueError):
+    except KeyError, OSError, ValueError:
         return None
 
 
@@ -741,7 +790,7 @@ def radio_profile_compile_flags(config_text: str) -> list[str] | None:
         if role not in ("sender", "receiver"):
             return None
         return [f"-DLORA_ROLE_{role.upper()}=1"]
-    except (KeyError, OSError, ValueError):
+    except KeyError, OSError, ValueError:
         return None
 
 
@@ -810,11 +859,11 @@ def upload_ports_match(config_text: str) -> bool:
     if sections is None:
         return False
     expected = {
-        "sender": PORTS["gateway"],
-        "sender_hello": PORTS["gateway"],
-        "receiver": PORTS["receiver"],
-        "sender_hello_spi": PORTS["gateway"],
-        "receiver_spi": PORTS["receiver"],
+        "sender": enrolled_ports()["gateway"],
+        "sender_hello": enrolled_ports()["gateway"],
+        "receiver": enrolled_ports()["receiver"],
+        "sender_hello_spi": enrolled_ports()["gateway"],
+        "receiver_spi": enrolled_ports()["receiver"],
     }
     return all(
         sections.get(f"env:{environment}", {}).get("upload_port") == port
@@ -823,50 +872,19 @@ def upload_ports_match(config_text: str) -> bool:
 
 
 def parse_ihex_range(data: bytes) -> dict[str, int]:
-    base = 0
-    lowest: int | None = None
-    highest_exclusive = 0
-    data_bytes = 0
-    eof = False
-    for raw_line in data.splitlines():
-        if not raw_line:
-            continue
-        if eof or not raw_line.startswith(b":"):
-            msg = "invalid Intel HEX record order or prefix"
-            raise ValueError(msg)
-        try:
-            record = bytes.fromhex(raw_line[1:].decode("ascii"))
-        except (UnicodeDecodeError, ValueError) as exc:
-            msg = "invalid Intel HEX encoding"
-            raise ValueError(msg) from exc
-        if len(record) < 5 or len(record) != record[0] + 5 or sum(record) & 0xFF:
-            msg = "invalid Intel HEX length or checksum"
-            raise ValueError(msg)
-        length = record[0]
-        address = int.from_bytes(record[1:3], "big")
-        record_type = record[3]
-        payload = record[4:-1]
-        if record_type == 0:
-            if length:
-                start = base + address
-                lowest = start if lowest is None else min(lowest, start)
-                highest_exclusive = max(highest_exclusive, start + length)
-                data_bytes += length
-        elif record_type == 1 and length == 0:
-            eof = True
-        elif record_type == 2 and length == 2:
-            base = int.from_bytes(payload, "big") << 4
-        elif record_type == 4 and length == 2:
-            base = int.from_bytes(payload, "big") << 16
-        elif record_type in (3, 5) and length == 4:
-            continue
-        else:
-            msg = f"unsupported Intel HEX record type {record_type}"
-            raise ValueError(msg)
-    if not eof or lowest is None:
+    try:
+        memory = parse_ihex_image(data.decode("ascii"))
+    except UnicodeDecodeError as error:
+        raise ValueError("invalid Intel HEX encoding") from error
+    if not memory:
         msg = "Intel HEX is missing data or EOF record"
         raise ValueError(msg)
-    return {"start": lowest, "end_exclusive": highest_exclusive, "data_bytes": data_bytes}
+    addresses = memory.keys()
+    return {
+        "start": min(addresses),
+        "end_exclusive": max(addresses) + 1,
+        "data_bytes": len(memory),
+    }
 
 
 def _config_int(value: object) -> int | None:
@@ -882,10 +900,44 @@ def _config_int(value: object) -> int | None:
     return None
 
 
+def device_profile_for_role(config_text: str, role: str) -> dict[str, Json] | None:
+    """Return generated MCU geometry and signature for one configured board role."""
+    sections = effective_project_sections(config_text)
+    layout = sections.get("target_layout") if sections else None
+    if role not in ("gateway", "receiver") or not layout:
+        return None
+    model = layout.get(f"{role}_mcu")
+    signature = layout.get(f"{role}_signature_hex")
+    values = {
+        name: _config_int(layout.get(f"{role}_{name}"))
+        for name in ("flash_bytes", "page_bytes", "eeprom_bytes")
+    }
+    fuse_offsets = {
+        name: _config_int(layout.get(f"{role}_{name}_fuse_offset"))
+        for name in ("bootsize", "codesize", "bodcfg")
+    }
+    if (
+        not isinstance(model, str)
+        or not isinstance(signature, str)
+        or len(signature) != 6
+        or any(value is None for value in values.values())
+        or any(value is None for value in fuse_offsets.values())
+    ):
+        return None
+    return {
+        "model": model,
+        "signature_hex": signature,
+        "flash_bytes": cast(int, values["flash_bytes"]),
+        "page_bytes": cast(int, values["page_bytes"]),
+        "eeprom_bytes": cast(int, values["eeprom_bytes"]),
+        "fuse_offsets": cast("dict[str, int]", fuse_offsets),
+    }
+
+
 def target_fuses(config_text: str, role: str) -> dict[str, int] | None:
     sections = effective_project_sections(config_text)
     layout = sections.get("target_layout") if sections else None
-    if role not in PORTS or not layout:
+    if role not in ("gateway", "receiver") or not layout:
         return None
     values = {
         name: _config_int(layout.get(f"{role}_{name}"))
@@ -898,56 +950,87 @@ def target_fuses(config_text: str, role: str) -> dict[str, int] | None:
     )
 
 
+def flash_layout_for_role(config_text: str, role: str) -> FlashLayout | None:
+    """Calculate one target's physical sections from effective config and live fuses."""
+    sections = effective_project_sections(config_text)
+    if sections is None:
+        return None
+    fuses = target_fuses(config_text, role)
+    profile = device_profile_for_role(config_text, role)
+    if not fuses or profile is None:
+        return None
+    return calculate_flash_layout(
+        device_model=cast(str, profile["model"]),
+        flash_bytes=cast(int, profile["flash_bytes"]),
+        page_bytes=cast(int, profile["page_bytes"]),
+        bootsize_pages=fuses["bootsize"],
+        codesize_pages=fuses["codesize"],
+        protection_state="READBACK_ACCESSIBLE",
+    )
+
+
+def _role_for_environment(environment: str) -> str | None:
+    """Resolve a PlatformIO environment through its generated build manifest."""
+    try:
+        manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
+        role = manifest["environments"][environment]["role"]
+    except OSError, json.JSONDecodeError, KeyError, TypeError:
+        return None
+    return {"sender": "gateway", "receiver": "receiver"}.get(role)
+
+
+def firmware_image_bounds_for_environment(
+    config_text: str, environment: str
+) -> tuple[FlashLayout, Section, int, int] | None:
+    """Return the declared image section and allowed half-open span for one build."""
+    sections = effective_project_sections(config_text)
+    if sections is None:
+        return None
+    role = _role_for_environment(environment)
+    if role is None:
+        return None
+    target_layout = sections.get("target_layout", {})
+    layout = flash_layout_for_role(config_text, role)
+    section_text = target_layout.get(f"{role}_image_section")
+    image_start = _config_int(target_layout.get(f"{role}_app_start"))
+    image_end = _config_int(target_layout.get(f"{role}_image_end"))
+    environment_start = _config_int(
+        sections.get(f"env:{environment}", {}).get("board_build.text_section_start")
+    )
+    if (
+        layout is None
+        or layout.fuse_status is not LayoutStatus.VALID
+        or not isinstance(section_text, str)
+        or image_start is None
+        or image_end is None
+        or environment_start != image_start
+    ):
+        return None
+    try:
+        section = Section(section_text)
+    except ValueError:
+        return None
+    region = layout.region(section)
+    if (
+        region is None
+        or region.start != image_start
+        or not region.contains(image_start, image_end)
+        or page_write_range(layout, section, image_start, image_end) != (image_start, image_end)
+    ):
+        return None
+    return layout, section, image_start, image_end
+
+
 def application_bounds_for_environment(
     config_text: str,
     environment: str,
 ) -> tuple[int, int] | None:
-    sections = effective_project_sections(config_text)
-    role = {
-        "sender": "gateway",
-        "sender_hello": "gateway",
-        "sender_hello_spi": "gateway",
-        "receiver": "receiver",
-        "receiver_spi": "receiver",
-        "sender_mvp": "gateway",
-        "receiver_mvp": "receiver",
-        "sender_arq": "gateway",
-        "receiver_arq": "receiver",
-        "sender_arq_test": "gateway",
-        "receiver_arq_test": "receiver",
-        "sender_arq_radio_only": "gateway",
-        "receiver_arq_radio_only": "receiver",
-        "sender_arq_radio_only_reverse": "gateway",
-        "receiver_arq_radio_only_reverse": "receiver",
-        "sender_reverse_raw": "gateway",
-        "receiver_reverse_raw": "receiver",
-    }.get(environment)
-    if not sections or role is None:
-        return None
-    layout = sections.get("target_layout", {})
-    geometry = sections.get("flash_geometry", {})
-    expected_fuses = target_fuses(config_text, role)
-    app_start = _config_int(layout.get(f"{role}_app_start"))
-    env_start = _config_int(
-        sections.get(f"env:{environment}", {}).get("board_build.text_section_start")
+    """Return real APPCODE bounds; a BOOT-resident image is never APPCODE."""
+    role = _role_for_environment(environment)
+    layout = flash_layout_for_role(config_text, role) if role else None
+    return (
+        (layout.appcode.start, layout.appcode.end_exclusive) if layout and layout.appcode else None
     )
-    app_end = _config_int(geometry.get("application_end"))
-    flash_end = _config_int(geometry.get("total_bytes"))
-    if (
-        not expected_fuses
-        or app_start is None
-        or env_start is None
-        or app_end is None
-        or flash_end is None
-    ):
-        return None
-    # These targets use a full-BOOT Gateway and an APPCODE-only Receiver.
-    if expected_fuses["codesize"] != 0:
-        return None
-    fuse_start = expected_fuses["bootsize"] * 512
-    if app_start != fuse_start or env_start != fuse_start or not fuse_start < app_end <= flash_end:
-        return None
-    return fuse_start, app_end
 
 
 def image_fits_application(
@@ -961,6 +1044,29 @@ def image_fits_application(
     )
 
 
+def firmware_image_layout_verified(environments: tuple[str, ...], effective_config: str) -> bool:
+    """Verify every role image fits its declared, fuse-derived executable section."""
+    for environment in environments:
+        expected = firmware_image_bounds_for_environment(effective_config, environment)
+        if expected is None:
+            return False
+        layout, section, image_start, image_end = expected
+        try:
+            image_range = parse_ihex_range(
+                (ROOT / ".pio" / "build" / environment / "firmware.hex").read_bytes()
+            )
+        except OSError, ValueError:
+            return False
+        if (
+            image_range["start"] != image_start
+            or image_range["end_exclusive"] > image_end
+            or page_write_range(layout, section, image_range["start"], image_range["end_exclusive"])
+            is None
+        ):
+            return False
+    return True
+
+
 def boot_fuses_match(actual: dict[str, int] | None, expected: dict[str, int] | None) -> bool:
     return bool(
         actual
@@ -970,18 +1076,15 @@ def boot_fuses_match(actual: dict[str, int] | None, expected: dict[str, int] | N
 
 
 def application_layout_verified(environments: tuple[str, ...], effective_config: str) -> bool:
+    """Retain the APPCODE-only check for callers that specifically require FOTA layout."""
     for env in environments:
-        bounds = application_bounds_for_environment(effective_config, env)
-        if bounds is None:
+        expected = firmware_image_bounds_for_environment(effective_config, env)
+        if expected is None:
             return False
-        hex_path = ROOT / ".pio" / "build" / env / "firmware.hex"
-        try:
-            image_range = parse_ihex_range(hex_path.read_bytes())
-        except (OSError, ValueError):
+        layout, section, _, _ = expected
+        if section is not Section.APPCODE:
             return False
-        if not image_fits_application(image_range, bounds):
-            return False
-    return True
+    return firmware_image_layout_verified(environments, effective_config)
 
 
 class ProofRun:
@@ -1234,17 +1337,20 @@ def clean_builds(proof: ProofRun, effective_config: str = "") -> int:
         measurements.append(firmware_measurement(env, stdout + stderr))
     for env, measurement in zip(ENVIRONMENTS, measurements, strict=False):
         hex_info = measurement.get("hex", {})
-        address_range = hex_info.get("address_range")
-        measurement["application_layout_safe"] = image_fits_application(
-            address_range, application_bounds_for_environment(effective_config, env)
-        )
+        measurement["image_layout_safe"] = firmware_image_layout_verified((env,), effective_config)
+        image_layout = firmware_image_bounds_for_environment(effective_config, env)
+        if image_layout is not None:
+            flash_layout, section, _, _ = image_layout
+            measurement["image_section"] = section.value
+            measurement["fuse_layout_status"] = flash_layout.fuse_status.value
+            measurement["fota_layout_status"] = flash_layout.fota_status.value
         measurement["reset_vector_safe"] = hex_info.get("reset_target_inside_image", False)
     layout = (
-        "SAFE: all HEX files start at their target fuse boundary and fit the application region.\n"
-        if all(item["application_layout_safe"] for item in measurements)
+        "SAFE: all HEX files fit their declared fuse-derived executable section.\n"
+        if all(item["image_layout_safe"] for item in measurements)
         else (
-            "BLOCKED: HEX range does not start at its target fuse boundary, exceeds the "
-            "application region, or target geometry is unavailable.\n"
+            "BLOCKED: HEX range does not fit its declared BOOT/APPCODE section or target geometry "
+            "is unavailable.\n"
         )
     )
     proof.note("application-layout.log", layout)
@@ -1253,28 +1359,23 @@ def clean_builds(proof: ProofRun, effective_config: str = "") -> int:
     )
     return (
         0
-        if all(
-            item["application_layout_safe"] and item["reset_vector_safe"] for item in measurements
-        )
+        if all(item["image_layout_safe"] and item["reset_vector_safe"] for item in measurements)
         else 1
     )
 
 
 def capture_usb_topology(proof: ProofRun) -> None:
+    inventory = discover_usb_devices()
+    proof.note("device-inventory.json", json.dumps(inventory.to_dict(), indent=2) + "\n")
     commands = [
-        ("usb-by-path-listing", ["ls", "-l", "/dev/serial/by-path/"]),
-        ("usb-gateway-path", ["readlink", "-e", PORTS["gateway"]]),
-        ("usb-receiver-path", ["readlink", "-e", PORTS["receiver"]]),
-        ("usb-ttyUSB0-udev", ["udevadm", "info", "--query=property", "--name=/dev/ttyUSB0"]),
-        ("usb-ttyUSB1-udev", ["udevadm", "info", "--query=property", "--name=/dev/ttyUSB1"]),
-        ("usb-tree", ["lsusb", "-t"]),
-        ("pio-device-list", ["pio", "device", "list"]),
-        ("usb-port-owners", ["fuser", "-v", "/dev/ttyUSB0", "/dev/ttyUSB1"]),
-        (
-            "usb-role-scan",
-            ["uv", "run", "--no-project", "python", "tools/detect_devices.py", "--scan", "--json"],
-        ),
+        (f"usb-{role}-path", ["readlink", "-e", port]) for role, port in enrolled_ports().items()
     ]
+    commands.extend(
+        [
+            ("usb-tree", ["lsusb", "-t"]),
+            ("pio-device-list", ["pio", "device", "list"]),
+        ]
+    )
     for name, argv in commands:
         proof.command(name, argv)
 
@@ -1294,7 +1395,7 @@ def read_only_preflight(
 ) -> int:
     path_results = [
         (role, proof.command(f"preflight-{role}-path", ["readlink", "-e", port])[0])
-        for role, port in PORTS.items()
+        for role, port in enrolled_ports().items()
     ]
     missing = unresolved_adapter_paths(path_results)
     unavailable = check_port_owners(proof, "preflight")
@@ -1302,8 +1403,8 @@ def read_only_preflight(
     missing.extend(physical_readiness_errors(args))
     if not profile_ok:
         missing.append("valid shared SF7 profile configuration")
-    if not application_layout_verified(("sender_hello", "receiver"), effective_config):
-        missing.append("firmware HEX not confined to the target executable region")
+    if not firmware_image_layout_verified(("sender_hello", "receiver"), effective_config):
+        missing.append("firmware HEX not confined to its declared BOOT/APPCODE region")
     if not args.boot_layout_verified:
         missing.append("BOOTSIZE/CODESIZE/BODCFG fuse verification")
     if not upload_config_preserves_flash(effective_config):
@@ -1315,9 +1416,7 @@ def read_only_preflight(
     return 0 if not missing else 2
 
 
-def physical_readiness_errors(
-    args: argparse.Namespace, require_rf: bool = False
-) -> list[str]:
+def physical_readiness_errors(args: argparse.Namespace, require_rf: bool = False) -> list[str]:
     errors = []
     if getattr(args, "physical_mapping_verified", False) is not True:
         errors.append("physical board mapping")
@@ -1343,16 +1442,22 @@ def receiver_boot_handoff_supported(
             from receiver_boot import verify_live_receipt  # type: ignore[import-not-found]
 
             return bool(verify_live_receipt(proof, receipt))
-        except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+        except OSError, ValueError, KeyError, subprocess.SubprocessError:
             return False
     if getattr(args, "boot_layout_verified", False) and effective_config is not None:
-        bounds = application_bounds_for_environment(effective_config, "receiver")
+        image = firmware_image_bounds_for_environment(effective_config, "receiver")
         fuses = target_fuses(effective_config, "receiver")
-        if bounds is not None and bounds[0] == 0 and fuses and fuses["bootsize"] == 0:
+        if (
+            image is not None
+            and image[1] is Section.BOOT
+            and image[2] == 0
+            and fuses
+            and fuses["bootsize"] == 0
+        ):
             proof.note(
                 "receiver-boot-audit.json",
-                "PASS: verified BOOTSIZE=0 and application entry at 0x0000; "
-                "no boot handoff required.\n",
+                "BOOT_APP: verified BOOTSIZE=0 and BOOT image entry at 0x0000; "
+                "no boot handoff required. FOTA_LAYOUT_NOT_READY.\n",
             )
             return True
     from boot_analysis import analyze  # type: ignore[import-not-found]
@@ -1376,7 +1481,7 @@ def receiver_boot_handoff_supported(
             )
             return False
         return audit["application_transfers"] == [0x5800] and not audit["unresolved"]
-    except (OSError, ValueError, subprocess.SubprocessError):
+    except OSError, ValueError, subprocess.SubprocessError:
         return False
 
 
@@ -1390,9 +1495,7 @@ def prepare_receiver_boot(proof: ProofRun) -> int:
         return 1
 
 
-def program_receiver_boot(
-    proof: ProofRun, args: argparse.Namespace, restore: bool = False
-) -> int:
+def program_receiver_boot(proof: ProofRun, args: argparse.Namespace, restore: bool = False) -> int:
     from receiver_boot import install
 
     if args.stage != ("receiver-boot-restore" if restore else "receiver-boot-install"):
@@ -1424,22 +1527,24 @@ def authorized_application_pages(
         identity = json.loads((ROOT / "config/current_hardware.json").read_text())[role]
         data = (ROOT / ".pio/build" / environment / "firmware.hex").read_bytes()
         region = parse_ihex_range(data)
-        bounds = application_bounds_for_environment(effective_config, environment)
-        pages = (region["start"], (region["end_exclusive"] + 511) // 512 * 512)
+        layout = firmware_image_bounds_for_environment(effective_config, environment)
+        if layout is None or layout[1] is not Section.APPCODE:
+            return None
+        flash_layout, section, image_start, image_end = layout
+        pages = page_write_range(flash_layout, section, region["start"], region["end_exclusive"])
         if (
-            identity["port_path"] != PORTS[role]
+            identity["port_path"] != enrolled_ports()[role]
             or identity["device_serial_hex"] != target_serial
             or not re.fullmatch(r"[0-9a-f]{64}", image_sha256 or "")
             or hashlib.sha256(data).hexdigest() != image_sha256
+            or pages is None
             or pages != (page_start, page_end)
-            or region["start"] % 512
-            or bounds is None
-            or not image_fits_application(region, bounds)
-            or pages[1] > bounds[1]
+            or region["start"] != image_start
+            or region["end_exclusive"] > image_end
         ):
             return None
         return pages
-    except (OSError, ValueError, KeyError, TypeError):
+    except OSError, ValueError, KeyError, TypeError:
         return None
 
 
@@ -1471,14 +1576,23 @@ def program_application(
         )
         return 2
     try:
+        device_profile = device_profile_for_role(effective_config, role)
+        if device_profile is None:
+            msg = "target device memory/fuse profile is unavailable"
+            raise ValueError(msg)
         data = (ROOT / ".pio/build" / environment / "firmware.hex").read_bytes()
         region = parse_ihex_range(data)
-        bounds = application_bounds_for_environment(effective_config, environment)
-        if bounds is None or not image_fits_application(region, bounds) or region["start"] % 512:
+        image_layout = firmware_image_bounds_for_environment(effective_config, environment)
+        if image_layout is None or image_layout[1] is not Section.APPCODE:
             msg = "application image does not fit target page boundaries"
             raise ValueError(msg)
-        start, end = region["start"], (region["end_exclusive"] + 511) // 512 * 512
-        if end > bounds[1]:
+        layout, section, image_start, image_end = image_layout
+        pages = page_write_range(layout, section, region["start"], region["end_exclusive"])
+        if pages is None or region["start"] != image_start or region["end_exclusive"] > image_end:
+            msg = "application image does not fit target APPCODE pages"
+            raise ValueError(msg)
+        start, end = pages
+        if end > image_end:
             msg = "last application page exceeds approved Flash region"
             raise ValueError(msg)
         if hashlib.sha256(data).hexdigest() != approved_sha or approved_pages != (start, end):
@@ -1497,12 +1611,30 @@ def program_application(
         if before["sernum"].hex() != approved_serial:
             msg = "live MCU serial differs from authorization"
             raise ValueError(msg)
-        if protect_boot:
-            boot_end = before["fuses"][8] * 512
-            code_end = before["fuses"][7] * 512 or len(before["flash"])
-            if not 0 < boot_end <= start < end <= code_end:
-                msg = "requested pages are outside live APPCODE"
-                raise ValueError(msg)
+        offsets = device_profile["fuse_offsets"]
+        expected_fuses = target_fuses(effective_config, role)
+        live_fuses = before["fuses"]
+        try:
+            observed_fuses = {name: live_fuses[offsets[name]] for name in offsets}
+        except (IndexError, KeyError, TypeError) as error:
+            raise ValueError("live fuse readback is incomplete") from error
+        if expected_fuses is None or any(
+            observed_fuses[name] != expected_fuses[name]
+            for name in ("bootsize", "codesize", "bodcfg")
+        ):
+            msg = "live fuse geometry differs from the verified target layout"
+            raise ValueError(msg)
+        live_layout = calculate_flash_layout(
+            device_model=cast(str, device_profile["model"]),
+            flash_bytes=cast(int, device_profile["flash_bytes"]),
+            page_bytes=cast(int, device_profile["page_bytes"]),
+            bootsize_pages=observed_fuses["bootsize"],
+            codesize_pages=observed_fuses["codesize"],
+            protection_state="READBACK_ACCESSIBLE",
+        )
+        if page_write_range(live_layout, Section.APPCODE, start, end) != (start, end):
+            msg = "requested pages are outside live APPCODE"
+            raise ValueError(msg)
         expected = normalize_ihex_region(data.decode("ascii"), start, end)
         if before["flash"][start:end] == expected:
             proof.note(
@@ -1518,11 +1650,11 @@ def program_application(
             "-C",
             str(AVRDUDE_CONF),
             "-p",
-            "avr128da28",
+            cast(str, device_profile["model"]).lower(),
             "-c",
             "serialupdi",
             "-P",
-            PORTS[role],
+            enrolled_ports()[role],
             "-b",
             "115200",
             "-D",
@@ -1558,9 +1690,7 @@ def program_application(
         return 1
 
 
-def tracker_app_upload(
-    proof: ProofRun, args: argparse.Namespace, effective_config: str
-) -> int:
+def tracker_app_upload(proof: ProofRun, args: argparse.Namespace, effective_config: str) -> int:
     try:
         pages = authorized_application_pages(
             "receiver",
@@ -1574,8 +1704,8 @@ def tracker_app_upload(
             msg = "target, image, page range, or authorization mismatch"
             raise ValueError(msg)
         if (
-            proof.command("tracker-path", ["readlink", "-e", PORTS["receiver"]])[0] != 0
-            or proof.command("tracker-owners", ["fuser", PORTS["receiver"]])[0] != 1
+            proof.command("tracker-path", ["readlink", "-e", enrolled_ports()["receiver"]])[0] != 0
+            or proof.command("tracker-owners", ["fuser", enrolled_ports()["receiver"]])[0] != 1
         ):
             msg = "Tracker port is missing or occupied"
             raise ValueError(msg)
@@ -1842,7 +1972,7 @@ def radio_spi_smoke(proof: ProofRun, args: argparse.Namespace, effective_config:
             "no upload or serial ports opened.\n",
         )
         return 2
-    if not application_layout_verified(("sender_hello_spi", "receiver_spi"), effective_config):
+    if not firmware_image_layout_verified(("sender_hello_spi", "receiver_spi"), effective_config):
         proof.note(
             "radio-spi-smoke.log",
             "BLOCKED: firmware HEX is not verified inside its target executable region; "
@@ -1958,8 +2088,8 @@ def radio_spi_smoke(proof: ProofRun, args: argparse.Namespace, effective_config:
             return 1
 
     results = {
-        "gateway": capture_radio_spi_log(proof, "GATEWAY", PORTS["gateway"]),
-        "receiver": capture_radio_spi_log(proof, "RECEIVER", PORTS["receiver"]),
+        "gateway": capture_radio_spi_log(proof, "GATEWAY", enrolled_ports()["gateway"]),
+        "receiver": capture_radio_spi_log(proof, "RECEIVER", enrolled_ports()["receiver"]),
     }
     ports_after = check_port_owners(proof, "radio-spi-postflight")
     report = {
@@ -2004,20 +2134,23 @@ def upload_evidence_matches(path: str | Path | None, manifest: Json) -> bool | N
             image = receipt["images"][role]
             if not isinstance(image, dict):
                 return False
+            signature = expected_signature_hex(manifest, role)
+            if signature is None:
+                return False
             current_hash = hashlib.sha256(
                 (ROOT / ".pio/build" / environment / "firmware.hex").read_bytes()
             ).hexdigest()
             if (
                 image.get("origin") != "PHYSICAL_UPDI"
                 or not image.get("verified")
-                or image.get("signature") != "1e970a"
-                or image.get("port") != PORTS[role.lower()]
+                or image.get("signature") != signature
+                or image.get("port") != enrolled_ports()[role.lower()]
                 or image.get("firmware_sha256") != current_hash
                 or image.get("build_id") != manifest["environments"][environment]["build_id"]
             ):
                 return False
         return True
-    except (OSError, ValueError, KeyError, TypeError):
+    except OSError, ValueError, KeyError, TypeError:
         return False
 
 
@@ -2036,9 +2169,7 @@ def radio_startup_matches(
         f"[{role}] RADIO_FRAME SW=12 PRE=8 CRC=1 HDR=E IQ=0",
     ]
     init_statuses = {
-        line
-        for line in lines
-        if line in (f"[{role}] RADIO_INIT_OK", f"[{role}] RADIO_INIT E=0")
+        line for line in lines if line in (f"[{role}] RADIO_INIT_OK", f"[{role}] RADIO_INIT E=0")
     }
     versions = [line for line in lines if line.startswith(f"[{role}] RADIO_SPI_VERSION=")]
     return (
@@ -2132,8 +2263,7 @@ def validate_symmetric_exchange(
             issues.append(f"{role}: incomplete, duplicate, or out-of-order radio events")
         times = [timestamp for _, timestamp, _ in events[role]]
         if any(
-            (right - left) & 0xFFFFFFFF >= 0x80000000
-            for left, right in itertools.pairwise(times)
+            (right - left) & 0xFFFFFFFF >= 0x80000000 for left, right in itertools.pairwise(times)
         ):
             issues.append(f"{role}: nonmonotonic device timestamps")
     for role, name in [(sender, "DATA_PAYLOAD")] + ([] if nack else [(receiver, "PAYLOAD_BYTES")]):
@@ -2170,11 +2300,13 @@ def validate_live_proof(
             issues.append(f"{role}: duplicate log line")
         image = images.get(role, {})
         expected_id = manifest["environments"][environment]["build_id"]
+        signature = expected_signature_hex(manifest, role)
         if (
             image.get("origin") != "PHYSICAL_UPDI"
             or image.get("run_id") != run_id
-            or image.get("signature") != "1e970a"
-            or image.get("port") != PORTS[role.lower()]
+            or signature is None
+            or image.get("signature") != signature
+            or image.get("port") != enrolled_ports()[role.lower()]
             or not image.get("verified")
             or not image.get("firmware_sha256")
             or image.get("build_id") != expected_id
@@ -2261,9 +2393,13 @@ def validate_live_proof(
             "SESSION_READY",
         }:
             issues.append("malformed protocol event")
-        if any(
-            marker in line for marker in ("FAILED", "TIMEOUT", "CAMPAIGN_CONTINUE", "WAIT_CAMPAIGN")
-        ) and "ACK_TIMEOUT C=" not in line:
+        if (
+            any(
+                marker in line
+                for marker in ("FAILED", "TIMEOUT", "CAMPAIGN_CONTINUE", "WAIT_CAMPAIGN")
+            )
+            and "ACK_TIMEOUT C=" not in line
+        ):
             # An ACK timeout may precede a bounded retransmission; TX/init failures cannot pass.
             issues.append("radio or protocol failure")
 
@@ -2353,22 +2489,20 @@ def validate_stable_transport(
     max_attempts = int(config["retries"]["max_retries"]) + 1
     roles = {"GATEWAY": "sender_hello", "RECEIVER": "receiver"}
     logs = {
-        role: [
-            (index, item["line"])
-            for index, item in enumerate(journal)
-            if item["role"] == role
-        ]
+        role: [(index, item["line"]) for index, item in enumerate(journal) if item["role"] == role]
         for role in roles
     }
     manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
 
     for role in roles:
         image = images.get(role, {})
+        signature = expected_signature_hex(manifest, role)
         if (
             image.get("origin") != "PHYSICAL_UPDI"
             or image.get("run_id") != run_id
-            or image.get("signature") != "1e970a"
-            or image.get("port") != PORTS[role.lower()]
+            or signature is None
+            or image.get("signature") != signature
+            or image.get("port") != enrolled_ports()[role.lower()]
             or not image.get("verified")
             or not image.get("firmware_sha256")
             or not image.get("build_id")
@@ -2434,31 +2568,48 @@ def validate_stable_transport(
     if actual_commands != expected_commands:
         issues.append("incorrect, repeated or out-of-order stable control commands")
 
-    if sum(role == "HOST_RECEIVER" and command == receiver_park for _, role, command in host_commands) != 1 or sum(
-        role == "HOST_GATEWAY" and command == "P" for _, role, command in host_commands
-    ) != 1:
+    if (
+        sum(
+            role == "HOST_RECEIVER" and command == receiver_park
+            for _, role, command in host_commands
+        )
+        != 1
+        or sum(role == "HOST_GATEWAY" and command == "P" for _, role, command in host_commands) != 1
+    ):
         issues.append("both radios were not explicitly parked")
 
-    receiver_ready = [
-        index for index, line in logs["RECEIVER"] if line == "[RECEIVER] RX_READY"
-    ]
-    sender_ready = [
-        index for index, line in logs["GATEWAY"] if line == "[GATEWAY] RADIO_READY"
-    ]
+    receiver_ready = [index for index, line in logs["RECEIVER"] if line == "[RECEIVER] RX_READY"]
+    sender_ready = [index for index, line in logs["GATEWAY"] if line == "[GATEWAY] RADIO_READY"]
     receiver_rearm = next(
-        (index for index, role, command in host_commands if role == "HOST_RECEIVER" and command == "R"),
+        (
+            index
+            for index, role, command in host_commands
+            if role == "HOST_RECEIVER" and command == "R"
+        ),
         -1,
     )
     gateway_rearm = next(
-        (index for index, role, command in host_commands if role == "HOST_GATEWAY" and command == "R"),
+        (
+            index
+            for index, role, command in host_commands
+            if role == "HOST_GATEWAY" and command == "R"
+        ),
         -1,
     )
     gateway_status = next(
-        (index for index, role, command in host_commands if role == "HOST_GATEWAY" and command == "?"),
+        (
+            index
+            for index, role, command in host_commands
+            if role == "HOST_GATEWAY" and command == "?"
+        ),
         -1,
     )
     command_s = next(
-        (index for index, role, command in host_commands if role == "HOST_GATEWAY" and command == "S"),
+        (
+            index
+            for index, role, command in host_commands
+            if role == "HOST_GATEWAY" and command == "S"
+        ),
         -1,
     )
     if not any(index > receiver_rearm and index < command_s for index in receiver_ready):
@@ -2471,8 +2622,11 @@ def validate_stable_transport(
         boots = [index for index, line in logs[role] if line.startswith(f"[{role}] BOOT ")]
         if len(boots) > 1 or any(index > command_s for index in boots):
             issues.append(f"{role}: unexpected reset during physical transaction")
-        if any(line.startswith(f"[{role}] BUILD_ID=") and line != f"[{role}] BUILD_ID={images.get(role, {}).get('build_id')}"
-               for _, line in logs[role]):
+        if any(
+            line.startswith(f"[{role}] BUILD_ID=")
+            and line != f"[{role}] BUILD_ID={images.get(role, {}).get('build_id')}"
+            for _, line in logs[role]
+        ):
             issues.append(f"{role}: running firmware identity differs from verified image")
     for role in roles:
         if not any(line == f"[{role}] PARKED E=0" for _, line in logs[role]):
@@ -2482,9 +2636,7 @@ def validate_stable_transport(
         r"^\[(GATEWAY|RECEIVER)\] ([A-Z_]+) SID=([0-9A-F]{4}) T=(\d+) "
         r"TYPE=(\d+) Q=(\d+) E=(-?\d+)$"
     )
-    events: dict[str, list[tuple[int, str, int, int, int, int, int]]] = {
-        role: [] for role in roles
-    }
+    events: dict[str, list[tuple[int, str, int, int, int, int, int]]] = {role: [] for role in roles}
     for index, item in enumerate(journal):
         line = item["line"]
         match = pattern.fullmatch(line)
@@ -2504,7 +2656,16 @@ def validate_stable_transport(
         elif "DATA_TX_REQUESTED" in line or any(
             line.startswith(f"[{role}] {name} ")
             for role in roles
-            for name in ("DATA_TX_BEGIN", "DATA_TX_DONE", "DATA_VALIDATED", "ACK_TX_", "NACK_TX_", "ACK_ACCEPTED", "NACK_RX", "TRANSACTION_FAILED")
+            for name in (
+                "DATA_TX_BEGIN",
+                "DATA_TX_DONE",
+                "DATA_VALIDATED",
+                "ACK_TX_",
+                "NACK_TX_",
+                "ACK_ACCEPTED",
+                "NACK_RX",
+                "TRANSACTION_FAILED",
+            )
         ):
             issues.append("malformed stable transport event")
 
@@ -2546,10 +2707,13 @@ def validate_stable_transport(
     for role_events in events.values():
         for event in role_events:
             expected_type = (
-                protocol["ack_type"] if event[1].startswith("ACK_") else
-                protocol["nack_type"] if event[1].startswith("NACK_") else
-                protocol["data_type"] if event[1].startswith("DATA_") or event[1] == "RETRY_SCHEDULED" else
-                None
+                protocol["ack_type"]
+                if event[1].startswith("ACK_")
+                else protocol["nack_type"]
+                if event[1].startswith("NACK_")
+                else protocol["data_type"]
+                if event[1].startswith("DATA_") or event[1] == "RETRY_SCHEDULED"
+                else None
             )
             if expected_type is not None and event[3] != expected_type:
                 issues.append("event name did not match its on-wire packet type")
@@ -2577,7 +2741,9 @@ def validate_stable_transport(
         issues.append("sender reported transaction failure")
     if diagnostic_test == "T01" and (nack_rx or nack_begin or nack_done):
         issues.append("unexpected NACK in ACK proof")
-    if diagnostic_test == "T02" and not (1 <= len(nack_begin) == len(nack_done) == len(nack_rx) < attempts):
+    if diagnostic_test == "T02" and not (
+        1 <= len(nack_begin) == len(nack_done) == len(nack_rx) < attempts
+    ):
         issues.append("controlled NACK must be received and followed by retry then ACK")
     retry_events = sorted(retries + nack_rx, key=lambda event: event[2])
     if len(retry_events) != attempts - 1:
@@ -2643,21 +2809,19 @@ def validate_wrong_destination_trials(
     issues: list[str] = []
     roles = {"GATEWAY": "sender_hello", "RECEIVER": "receiver"}
     logs = {
-        role: [
-            (index, item["line"])
-            for index, item in enumerate(journal)
-            if item["role"] == role
-        ]
+        role: [(index, item["line"]) for index, item in enumerate(journal) if item["role"] == role]
         for role in roles
     }
     manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
     for role, environment in roles.items():
         image = images.get(role, {})
+        signature = expected_signature_hex(manifest, role)
         if (
             image.get("origin") != "PHYSICAL_UPDI"
             or image.get("run_id") != run_id
-            or image.get("signature") != "1e970a"
-            or image.get("port") != PORTS[role.lower()]
+            or signature is None
+            or image.get("signature") != signature
+            or image.get("port") != enrolled_ports()[role.lower()]
             or not image.get("verified")
             or not image.get("firmware_sha256")
             or not image.get("build_id")
@@ -2719,9 +2883,7 @@ def validate_wrong_destination_trials(
     wrong_done = [
         index for index, line in logs["GATEWAY"] if line == "[GATEWAY] WRONG_DEST_TX_DONE"
     ]
-    discard_pattern = re.compile(
-        r"^\[RECEIVER\] RX_DISCARD_DEST SID=0000 T=\d+ TYPE=0 Q=0 E=0$"
-    )
+    discard_pattern = re.compile(r"^\[RECEIVER\] RX_DISCARD_DEST SID=0000 T=\d+ TYPE=0 Q=0 E=0$")
     destination_discards = [
         index for index, line in logs["RECEIVER"] if discard_pattern.fullmatch(line)
     ]
@@ -2730,7 +2892,9 @@ def validate_wrong_destination_trials(
     if len(destination_discards) != trials:
         issues.append("Receiver did not log ten destination-filter discards")
 
-    wrong_commands = [index for index, role, command in commands if role == "HOST_GATEWAY" and command == "W"]
+    wrong_commands = [
+        index for index, role, command in commands if role == "HOST_GATEWAY" and command == "W"
+    ]
     boundaries = [*wrong_commands[1:], len(journal)]
     for index, start in enumerate(wrong_commands[:trials]):
         end = boundaries[index]
@@ -2738,10 +2902,14 @@ def validate_wrong_destination_trials(
         done = [value for value in wrong_done if start < value < end]
         discards = [value for value in destination_discards if start < value < end]
         if not (len(starts) == len(done) == len(discards) == 1 and starts[0] < done[0]):
-            issues.append(f"wrong-destination trial {index + 1} lacks one TX and one address discard")
+            issues.append(
+                f"wrong-destination trial {index + 1} lacks one TX and one address discard"
+            )
 
-    if not any(index > receiver_rearm and index < (wrong_commands[0] if wrong_commands else -1)
-               for index in receiver_ready):
+    if not any(
+        index > receiver_rearm and index < (wrong_commands[0] if wrong_commands else -1)
+        for index in receiver_ready
+    ):
         issues.append("Receiver did not report fresh RX_READY before wrong-destination trials")
     if not gateway_rearm < gateway_status < (wrong_commands[0] if wrong_commands else -1):
         issues.append("Gateway was not rearmed and checked before wrong-destination trials")
@@ -2793,19 +2961,39 @@ def verify_installed_images(
     *,
     environments: tuple[str, str] = ("sender_hello", "receiver"),
     report_mismatches: bool = False,
+    diagnostic_roles: set[str] | None = None,
 ) -> dict[str, Json] | None:
-    """Read signature and Flash anew; compare image bytes before allowing any S command."""
-    from device_detection.firmware_identity import normalize_ihex_region
+    """Read identity and Flash anew; classify bytes separately from fuse and FOTA state."""
+    from tools.device_detection.firmware_identity import compare_flash_region
     from receiver_boot import read_snapshot_command
 
     core = Path(os.environ.get("PLATFORMIO_CORE_DIR", str(Path.home() / ".platformio")))
     executable = core / "packages/tool-avrdude/avrdude"
     configuration = core / "packages/tool-avrdude/avrdude.conf"
+    registry = load_hardware_registry(ROOT / "config" / "current_hardware.json")
+    ports = enrolled_ports()
     images: dict[str, Json] = {}
     for role, environment in zip(("GATEWAY", "RECEIVER"), environments, strict=True):
+        legacy_role = role.lower()
+        if diagnostic_roles is not None and legacy_role not in diagnostic_roles:
+            continue
+
+        def blocked(reason: str) -> None:
+            proof.note(f"{legacy_role}-image-verification.log", f"BLOCKED: {reason}\n")
+
+        canonical_role = DeviceRole.GATEWAY if role == "GATEWAY" else DeviceRole.TRACKER
+        device_profile = device_profile_for_role(effective_config, legacy_role)
+        if device_profile is None:
+            blocked("target MCU profile is unavailable")
+            if diagnostic_roles is not None:
+                continue
+            return None
+        enrolled = registry[canonical_role]
+        port = ports[legacy_role]
         image = ROOT / ".pio/build" / environment / "firmware.hex"
         signature_path = proof.run_dir / f"{role.lower()}-live-signature.bin"
         serial_path = proof.run_dir / f"{role.lower()}-live-serial.bin"
+        fuses_path = proof.run_dir / f"{role.lower()}-live-fuses.bin"
         flash_path = proof.run_dir / f"{role.lower()}-live-flash.bin"
         code = read_snapshot_command(
             proof,
@@ -2815,11 +3003,11 @@ def verify_installed_images(
                 "-C",
                 str(configuration),
                 "-p",
-                "avr128da28",
+                cast(str, device_profile["model"]).lower(),
                 "-c",
                 "serialupdi",
                 "-P",
-                PORTS[role.lower()],
+                port,
                 "-b",
                 "115200",
                 "-D",
@@ -2828,55 +3016,124 @@ def verify_installed_images(
                 "-U",
                 f"sernum:r:{serial_path}:r",
                 "-U",
+                f"fuses:r:{fuses_path}:r",
+                "-U",
                 f"flash:r:{flash_path}:r",
             ],
             60,
         )
         if code != 0:
+            blocked(f"UPDI identity/fuse/Flash readback exited {code}")
+            if diagnostic_roles is not None:
+                continue
             return None
         try:
             data = image.read_bytes()
             region = parse_ihex_range(data)
-            bounds = application_bounds_for_environment(effective_config, environment)
             flash = flash_path.read_bytes()
-            identity = json.loads((ROOT / "config/current_hardware.json").read_text())[role.lower()]
-            expected_serial = bytes.fromhex(identity["device_serial_hex"])
-            if identity["port_path"] != PORTS[role.lower()]:
-                return None
-            if (
-                signature_path.read_bytes().hex() != "1e970a"
-                or len(flash) != 131072
-                or serial_path.read_bytes() != expected_serial
-                or not image_fits_application(region, bounds)
+            live_fuses = fuses_path.read_bytes()
+            if diagnostic_roles is not None and (
+                len(flash) != device_profile["flash_bytes"] or len(live_fuses) != 16
             ):
+                blocked("incomplete Flash or fuse readback")
+                continue
+            expected_serial = enrolled.serial_number
+            image_layout = firmware_image_bounds_for_environment(effective_config, environment)
+            if image_layout is None:
+                blocked("build image does not fit its declared fuse-selected section")
+                if diagnostic_roles is not None:
+                    continue
                 return None
-            start, end = region["start"], region["end_exclusive"]
-            if report_mismatches:
-                end = (end + 511) // 512 * 512
-                if not bounds or start % 512 or end > bounds[1]:
-                    return None
-            expected = normalize_ihex_region(data.decode("ascii"), start, end)
+            layout, section, image_start, image_end = image_layout
+            if region["start"] != image_start or region["end_exclusive"] > image_end:
+                blocked("HEX address range differs from the declared firmware section")
+                if diagnostic_roles is not None:
+                    continue
+                return None
+            write_range = page_write_range(
+                layout, section, region["start"], region["end_exclusive"]
+            )
+            if write_range is None or write_range[0] != image_start or write_range[1] > image_end:
+                blocked("page-rounded image range crosses its declared Flash section")
+                if diagnostic_roles is not None:
+                    continue
+                return None
+            start, end = write_range
+            expected_signature = bytes.fromhex(cast(str, device_profile["signature_hex"]))
+            live_signature = signature_path.read_bytes()
+            live_serial = serial_path.read_bytes()
+            if live_signature != expected_signature or live_serial != expected_serial:
+                blocked("live MCU signature or serial does not match the enrolled target")
+                if diagnostic_roles is not None:
+                    continue
+                return None
+            fuse_offsets = cast(dict[str, int], device_profile["fuse_offsets"])
+            expected_fuses = target_fuses(effective_config, legacy_role)
+            observed_fuses = {name: live_fuses[offset] for name, offset in fuse_offsets.items()}
+            fuse_values_match = expected_fuses is not None and all(
+                observed_fuses.get(name) == value for name, value in expected_fuses.items()
+            )
+            actual_layout = calculate_flash_layout(
+                device_model=cast(str, device_profile["model"]),
+                flash_bytes=cast(int, device_profile["flash_bytes"]),
+                page_bytes=cast(int, device_profile["page_bytes"]),
+                bootsize_pages=observed_fuses["bootsize"],
+                codesize_pages=observed_fuses["codesize"],
+                protection_state="READBACK_ACCESSIBLE",
+            )
+            fuse_status = (
+                LayoutStatus.VALID
+                if actual_layout.fuse_status is LayoutStatus.VALID and fuse_values_match
+                else LayoutStatus.INCOMPATIBLE
+            )
+            comparison = compare_flash_region(
+                flash,
+                data.decode("ascii"),
+                flash_size=cast(int, device_profile["flash_bytes"]),
+                region_start=start,
+                region_end=end,
+            )
             build_id = manifest["environments"][environment]["build_id"]
-            if build_id.encode() not in expected:
-                return None
-            matches = flash[start:end] == expected
-            if not matches and not report_mismatches:
+            matches = comparison.status == "FLASH_BYTES_MATCH"
+            if (not matches or fuse_status is LayoutStatus.INCOMPATIBLE) and not report_mismatches:
+                blocked(
+                    f"{comparison.status}; {fuse_status.value}; {actual_layout.fota_status.value}"
+                )
+                if diagnostic_roles is not None:
+                    continue
                 return None
             images[role] = {
                 "origin": "PHYSICAL_UPDI",
                 "run_id": run_id,
                 "verified": matches,
-                "signature": "1e970a",
-                "port": PORTS[role.lower()],
+                "signature": live_signature.hex(),
+                "port": port,
                 "environment": environment,
-                "serial_number": serial_path.read_bytes().hex(),
+                "serial_number": live_serial.hex(),
                 "firmware_sha256": hashlib.sha256(data).hexdigest(),
-                "readback_region_sha256": hashlib.sha256(flash[start:end]).hexdigest(),
+                "readback_region_sha256": comparison.readback_sha256,
+                "expected_region_sha256": comparison.expected_sha256,
                 "build_id": build_id,
                 "start": start,
                 "end": end,
+                "image_section": section.value,
+                "flash_bytes_status": comparison.status,
+                "first_mismatch_address": comparison.first_mismatch_address,
+                "differing_bytes": comparison.differing_bytes,
+                "live_fuses_hex": live_fuses.hex(),
+                "fuse_layout_status": fuse_status.value,
+                "fota_layout_status": (
+                    FotaStatus.READY.value
+                    if actual_layout.fota_status is FotaStatus.READY
+                    else FotaStatus.NOT_READY.value
+                ),
+                "runtime_identity_status": RUNTIME_IDENTITY_UNVERIFIED,
+                "device_identity_status": "DEVICE_IDENTITY_MATCH",
             }
-        except OSError, ValueError, KeyError:
+        except (OSError, ValueError, KeyError, IndexError) as error:
+            blocked(f"verification input could not be parsed: {error}")
+            if diagnostic_roles is not None:
+                continue
             return None
     proof.note("live-image-identities.json", json.dumps(images, indent=2) + "\n")
     return images
@@ -2894,6 +3151,20 @@ def shared_identity_matches(
         if versions != [f"[{role}] PROTOCOL_VERSION={protocol_version}"]:
             return False
     return True
+
+
+def expected_signature_hex(manifest: Mapping[str, Any], log_role: str) -> str | None:
+    """Read a role's expected MCU signature from the generated device profile."""
+    board_role = {"GATEWAY": "sender", "RECEIVER": "receiver"}.get(log_role)
+    if board_role is None:
+        return None
+    try:
+        board = manifest["boards"][board_role]
+        memory = board["device_memory"]
+        signature = memory["signature_hex"]
+    except KeyError, TypeError:
+        return None
+    return signature if isinstance(signature, str) else None
 
 
 def reserve_session(proof: ProofRun, run_id: str) -> int:
@@ -3011,14 +3282,17 @@ def run_stable_ack_rf_test(
 
     try:
         monitors["receiver"] = start_rf_monitor(
-            proof, "receiver", PORTS["receiver"], output_queue
+            proof, "receiver", enrolled_ports()["receiver"], output_queue
         )
         command("receiver", "B")
         while time.monotonic() < deadline:
             try:
                 key, stream, raw = output_queue.get(timeout=0.1)
             except queue.Empty:
-                if terminal_at is not None and time.monotonic() - terminal_at >= RF_COMPLETION_LOG_SETTLE_SECONDS:
+                if (
+                    terminal_at is not None
+                    and time.monotonic() - terminal_at >= RF_COMPLETION_LOG_SETTLE_SECONDS
+                ):
                     stop_reason = "single-packet capture settled"
                     break
                 if any(monitor["process"].poll() is not None for monitor in monitors.values()):
@@ -3034,7 +3308,9 @@ def run_stable_ack_rf_test(
                 continue
             record(role, line)
 
-            if "LOG_OVERFLOW" in line or (line.endswith("RADIO_NOT_READY") and not (key == "receiver" and not rearmed)):
+            if "LOG_OVERFLOW" in line or (
+                line.endswith("RADIO_NOT_READY") and not (key == "receiver" and not rearmed)
+            ):
                 stop_reason = line
                 break
             if key == "receiver" and line == "[RECEIVER] BENCH_READY":
@@ -3044,14 +3320,19 @@ def run_stable_ack_rf_test(
                     continue
                 command("receiver", "?")
                 rearmed = True
-            elif key == "receiver" and rearmed and line == "[RECEIVER] RADIO_READY" and "gateway" not in monitors:
+            elif (
+                key == "receiver"
+                and rearmed
+                and line == "[RECEIVER] RADIO_READY"
+                and "gateway" not in monitors
+            ):
                 command("receiver", "T")
                 if nack:
                     command("receiver", "N")
                 if getattr(args, "drop_response_once", False):
                     command("receiver", "D")
                 monitors["gateway"] = start_rf_monitor(
-                    proof, "gateway", PORTS["gateway"], output_queue
+                    proof, "gateway", enrolled_ports()["gateway"], output_queue
                 )
                 command("gateway", "R")
                 command("gateway", "?")
@@ -3129,9 +3410,7 @@ def run_stable_ack_rf_test(
     return 0 if passed else 1
 
 
-def run_wrong_destination_rf_test(
-    proof: ProofRun, run_id: str, images: Mapping[str, Json]
-) -> int:
+def run_wrong_destination_rf_test(proof: ProofRun, run_id: str, images: Mapping[str, Json]) -> int:
     """Transmit ten test DATA frames to a nonlocal address and require RX discard only."""
     output_queue: queue.Queue[tuple[str, str, bytes | None]] = queue.Queue()
     journal: list[dict[str, Json]] = []
@@ -3185,7 +3464,7 @@ def run_wrong_destination_rf_test(
 
     try:
         monitors["receiver"] = start_rf_monitor(
-            proof, "receiver", PORTS["receiver"], output_queue
+            proof, "receiver", enrolled_ports()["receiver"], output_queue
         )
         status_at = len(journal)
         command("receiver", "?")
@@ -3207,7 +3486,7 @@ def run_wrong_destination_rf_test(
         ):
             raise OSError(stop_reason or "fresh Receiver RX_READY was not observed")
         monitors["gateway"] = start_rf_monitor(
-            proof, "gateway", PORTS["gateway"], output_queue
+            proof, "gateway", enrolled_ports()["gateway"], output_queue
         )
         command("gateway", "R")
         gateway_ready_at = len(journal)
@@ -3312,9 +3591,7 @@ def run_wrong_destination_rf_test(
     return 0 if passed else 1
 
 
-def run_mvp_acceptance(
-    proof: ProofRun, run_id: str, images: Mapping[str, Json]
-) -> int:
+def run_mvp_acceptance(proof: ProofRun, run_id: str, images: Mapping[str, Json]) -> int:
     """Require ten one-shot DATA/ACK successes followed by ten destination drops."""
     normal = []
     for trial in range(1, 11):
@@ -3323,7 +3600,7 @@ def run_mvp_acceptance(
         code = run_stable_ack_rf_test(child, options, run_id, images)
         try:
             result = json.loads((child.run_dir / "rf-test.json").read_text())
-        except (OSError, ValueError):
+        except OSError, ValueError:
             result = {"valid": False, "issues": ["single-packet result is missing"]}
         normal.append({"trial": trial, "exit_code": code, "result": result})
         if code != 0:
@@ -3334,10 +3611,8 @@ def run_mvp_acceptance(
         child = ProofRun(proof.run_dir / "wrong-destination")
         code = run_wrong_destination_rf_test(child, run_id, images)
         try:
-            wrong_destination = json.loads(
-                (child.run_dir / "wrong-destination.json").read_text()
-            )
-        except (OSError, ValueError):
+            wrong_destination = json.loads((child.run_dir / "wrong-destination.json").read_text())
+        except OSError, ValueError:
             wrong_destination = {"passed": False, "issues": ["destination result is missing"]}
         wrong_destination["exit_code"] = code
 
@@ -3361,12 +3636,16 @@ def run_mvp_acceptance(
     return 0 if passed else 1
 
 
-def run_stable_campaign(proof: ProofRun, args: argparse.Namespace,
-                        run_id: str, images: Mapping[str, Json]) -> int:
+def run_stable_campaign(
+    proof: ProofRun, args: argparse.Namespace, run_id: str, images: Mapping[str, Json]
+) -> int:
     """Gate physical NACK, lost-ACK and 10/100/1000 cases on each preceding result."""
     cases = [("T01", "T01", False), ("T02", "T02", False), ("lost-ACK", "T01", True)]
-    cases += [(f"normal-{count}-{i + 1:04}", "T01", False)
-              for count in (10, 100, 1000) for i in range(count)]
+    cases += [
+        (f"normal-{count}-{i + 1:04}", "T01", False)
+        for count in (10, 100, 1000)
+        for i in range(count)
+    ]
     results: list[Json] = []
     status = 0
     for name, test, drop in cases:
@@ -3391,15 +3670,24 @@ def run_stable_campaign(proof: ProofRun, args: argparse.Namespace,
         "cases": results,
     }
     summary["successful"] = sum(row["exit_code"] == 0 for row in results)
-    for field, source in (("data_tx", "attempts"), ("ack_tx", "ack_tx"),
-                          ("nack_tx", "nack_tx"), ("retries", "retries"),
-                          ("timeouts", "timeouts")):
+    for field, source in (
+        ("data_tx", "attempts"),
+        ("ack_tx", "ack_tx"),
+        ("nack_tx", "nack_tx"),
+        ("retries", "retries"),
+        ("timeouts", "timeouts"),
+    ):
         summary[field] = sum(row.get("result", {}).get(source, 0) for row in results)
-    rtts = sorted(row["result"]["rtt_ms"] for row in results
-                  if row["exit_code"] == 0 and row.get("result", {}).get("rtt_ms") is not None)
+    rtts = sorted(
+        row["result"]["rtt_ms"]
+        for row in results
+        if row["exit_code"] == 0 and row.get("result", {}).get("rtt_ms") is not None
+    )
     summary["average_rtt_ms"] = sum(rtts) / len(rtts) if rtts else None
     for percentile in (95, 99):
-        summary[f"p{percentile}_rtt_ms"] = rtts[(len(rtts) * percentile + 99) // 100 - 1] if rtts else None
+        summary[f"p{percentile}_rtt_ms"] = (
+            rtts[(len(rtts) * percentile + 99) // 100 - 1] if rtts else None
+        )
     (proof.run_dir / "campaign.json").write_text(json.dumps(summary, indent=2) + "\n")
     return status
 
@@ -3410,7 +3698,7 @@ def rf_test(
     # T01/T02 drive the current transport's R/S/N/P controls and header campaign ID.
     if (
         not profile_ok
-        or not application_layout_verified(("sender_hello", "receiver"), effective_config)
+        or not firmware_image_layout_verified(("sender_hello", "receiver"), effective_config)
         or not upload_ports_match(effective_config)
     ):
         proof.note(
@@ -3461,7 +3749,8 @@ def rf_test(
         images = verify_installed_images(proof, effective_config, manifest, run_id)
         if images is None:
             proof.note(
-                "rf-test.log", "BLOCKED: installed images/signatures do not match current firmware.\n"
+                "rf-test.log",
+                "BLOCKED: installed images/signatures do not match current firmware.\n",
             )
             return 2
         if getattr(args, "mvp_acceptance", False):
@@ -3552,7 +3841,7 @@ def rf_test(
 
     try:
         monitors[receiver_key] = start_rf_monitor(
-            proof, receiver_key, PORTS[receiver_key], output_queue
+            proof, receiver_key, enrolled_ports()[receiver_key], output_queue
         )
         while time.monotonic() < deadline:
             try:
@@ -3579,9 +3868,11 @@ def rf_test(
             symmetric = symmetric or "TRANSPORT=SSOT_SYMMETRIC_V1" in line
             if line.startswith("[GATEWAY] TEST_COMPLETED C=") and completion_seen_at is None:
                 completion_seen_at = time.monotonic()
-            if symmetric and any(
-                name in line for name in ("TRANSACTION_COMPLETE ", "NACK_ACCEPTED ")
-            ) and completion_seen_at is None:
+            if (
+                symmetric
+                and any(name in line for name in ("TRANSACTION_COMPLETE ", "NACK_ACCEPTED "))
+                and completion_seen_at is None
+            ):
                 completion_seen_at = time.monotonic()
             expected_rejection = (
                 nack and "TRANSACTION_FAILED " in line and "TYPE=09" in line and " E=0 " in line
@@ -3607,7 +3898,7 @@ def rf_test(
                     stop_reason = "Receiver readiness is not fresh"
                     break
                 monitors[sender_key] = start_rf_monitor(
-                    proof, sender_key, PORTS[sender_key], output_queue
+                    proof, sender_key, enrolled_ports()[sender_key], output_queue
                 )
             if role == sender_key and line == waiting_line:
                 if started or not identity(sender_role, environments[sender_role]):
@@ -3743,10 +4034,14 @@ def main() -> int:
     parser.add_argument("--target-role", choices=("receiver",))
     parser.add_argument("--target-serial", help="Tracker MCU serial to authorize")
     parser.add_argument("--image-sha256", help="Tracker application HEX SHA-256 to authorize")
-    parser.add_argument("--page-start", type=lambda value: int(value, 0), help="Tracker app page start")
+    parser.add_argument(
+        "--page-start", type=lambda value: int(value, 0), help="Tracker app page start"
+    )
     parser.add_argument("--page-end", type=lambda value: int(value, 0), help="Tracker app page end")
     parser.add_argument("--gateway-target-serial", help="Gateway MCU serial to authorize")
-    parser.add_argument("--gateway-image-sha256", help="Gateway application HEX SHA-256 to authorize")
+    parser.add_argument(
+        "--gateway-image-sha256", help="Gateway application HEX SHA-256 to authorize"
+    )
     parser.add_argument(
         "--gateway-page-start", type=lambda value: int(value, 0), help="Gateway app page start"
     )
@@ -3785,15 +4080,21 @@ def main() -> int:
         action="store_true",
         help="use current R/S/N/P stable-library firmware controls and logs",
     )
-    parser.add_argument("--stable-campaign", action="store_true",
-                        help="gate T01, T02, lost ACK and 10/100/1000 physical exchanges")
+    parser.add_argument(
+        "--stable-campaign",
+        action="store_true",
+        help="gate T01, T02, lost ACK and 10/100/1000 physical exchanges",
+    )
     parser.add_argument(
         "--mvp-acceptance",
         action="store_true",
         help="run ten intended DATA/ACK and ten wrong-destination trials",
     )
-    parser.add_argument("--drop-response-once", action="store_true",
-                        help="suppress one Receiver response for a stable transport timeout test")
+    parser.add_argument(
+        "--drop-response-once",
+        action="store_true",
+        help="suppress one Receiver response for a stable transport timeout test",
+    )
     parser.add_argument(
         "--transport-test",
         choices=("T01", "T02", "T03", "T04"),

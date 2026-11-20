@@ -254,7 +254,7 @@ class ArqTests(unittest.TestCase):
             arq_trial.main()
             campaign.assert_called_once_with((("H01", 1), ("H02", 1), ("H03", 1), ("H04", 10)))
 
-    def test_application_bounds_include_arq(self) -> None:
+    def test_unregistered_arq_environments_have_no_flash_write_bounds(self) -> None:
         from tools.rf_proof import application_bounds_for_environment
 
         config = subprocess.check_output(
@@ -262,8 +262,8 @@ class ArqTests(unittest.TestCase):
         )
         for role in ("sender", "receiver"):
             for suffix in ("", "_test"):
-                self.assertEqual(
-                    application_bounds_for_environment(config, role + "_arq" + suffix), (0, 130048)
+                self.assertIsNone(
+                    application_bounds_for_environment(config, role + "_arq" + suffix)
                 )
 
 

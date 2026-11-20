@@ -22,6 +22,19 @@ if TYPE_CHECKING:
 from tools import production_bench as bench
 from tools import rf_proof as rf
 from tools.config.application_config import load as load_application_config
+from tools.device_detection.firmware_identity import RUNTIME_IDENTITY_MATCH
+from tools.device_detection.hardware_registry import hardware_ports
+from tools.lora_chat.protocol import (
+    RETRY_EVENTS,
+    TIMEOUT_EVENTS,
+    DeviceRole as ChatDeviceRole,
+    DeviceEvent as ChatDeviceEvent,
+    EventName as ChatEventName,
+    RoundTripContext,
+    encode_interactive_command,
+    parse_firmware_event,
+    verify_round_trip,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "tools") not in sys.path:
@@ -352,6 +365,7 @@ class Hardware:
         self.proof: rf.ProofRun | None = None
         self.transmitting = False
         self.closing = False
+        self.bench_active = False
         self.port_overrides: dict[str, str | None] = {}
         self.no_flash = True
         self.write_approval: Path | None = None
@@ -361,29 +375,55 @@ class Hardware:
         self.effective = ""
         self.manifest: Json = {}
         self.layouts: dict[str, Json] = {}
+        self.usb_present: set[str] = set()
+        self.stage = "NOT_STARTED"
+        self.stage_error: str | None = None
 
     def connect(self) -> Json:
         """Verify devices and installed images before opening firmware consoles."""
         self.close()
         self.first_exchange = None
         self.first_rows = []
-        self._select_ports()
-        return self._connect_verified()
+        self.stage = "DEVICE_DISCOVERY"
+        self.stage_error = None
+        try:
+            self._select_ports()
+            return self._connect_verified()
+        except (OSError, ValueError, KeyError, RuntimeError) as error:
+            self.stage_error = str(error)
+            raise
 
     def _select_ports(self) -> None:
         """Accept aliases of both enrolled adapters; live serial confirms the role."""
         ports = {Path(port).resolve() for port in discover_ports()}
-        if len(ports) < len(rf.PORTS):
+        enrolled_ports = hardware_ports(ROOT / "config" / "current_hardware.json")
+        if len(ports) < len(enrolled_ports):
             msg = f"Need two available serial devices; found {len(ports)}"
             raise bench.BenchBlockedError(msg)
-        for role, configured in rf.PORTS.items():
+        for role, configured in enrolled_ports.items():
             enrolled = Path(configured).resolve()
             selected = Path(self.port_overrides.get(role) or configured).resolve()
             if selected != enrolled or selected not in ports:
                 msg = f"{role} override does not resolve to its enrolled USB adapter."
                 raise bench.BenchBlockedError(msg)
 
-    def _read_images(self) -> dict[str, Json]:
+    def read_chat_images(self) -> dict[str, Json]:
+        """Gather read-only diagnostics independently on available enrolled ports."""
+        self.images = {}
+        ports = {Path(port).resolve() for port in discover_ports()}
+        self.usb_present = {
+            role for role, port in hardware_ports(ROOT / "config/current_hardware.json").items()
+            if Path(port).resolve() in ports
+        }
+        self.proof = rf.ProofRun(self.log.path / f"preparation-{time.monotonic_ns()}")
+        self.stage = "FIRMWARE_BUILD"
+        with hardware_output(self.log, verbose=self.verbose):
+            self.effective, self.manifest = bench.build(self.proof)
+        self.stage = "FLASH_READBACK"
+        busy = set(rf.check_port_owners(self.proof, "chat-preflight"))
+        return self._read_images(diagnostic_roles=self.usb_present - busy)
+
+    def _read_images(self, *, diagnostic_roles: set[str] | None = None) -> dict[str, Json]:
         """Read both complete image spans and report mismatches without using receipts."""
         if self.proof is None:
             msg = "Run production preparation before accessing the bench."
@@ -396,10 +436,12 @@ class Hardware:
                 self.run_id,
                 environments=bench.ENVIRONMENTS,
                 report_mismatches=True,
+                diagnostic_roles=diagnostic_roles,
             )
         if images is None:
             msg = "A fresh Flash readback or image identity check failed."
             raise bench.BenchBlockedError(msg)
+        self.images = images
         return images
 
     def _prepare_images(self, images: dict[str, Json]) -> None:
@@ -411,6 +453,7 @@ class Hardware:
         if len(mismatches) > 1:
             self.log.record("HOST", "Both production image spans differ from installed Flash.")
         approval = None if self.no_flash else self.write_approval
+        self.stage = "APPLICATION_WRITE_PREFLIGHT"
         approved = bench.approve_writes(mismatches, self.layouts, approval)
         for role, write in approved.items():
             with hardware_output(self.log, verbose=self.verbose):
@@ -429,6 +472,7 @@ class Hardware:
 
     def _verify_or_prepare(self) -> dict[str, Json]:
         """Read first, attempt preparation at most once, then require two fresh matches."""
+        self.stage = "FLASH_READBACK"
         images = self._read_images()
         if all(image["verified"] for image in images.values()):
             return images
@@ -443,10 +487,13 @@ class Hardware:
         """Build and inspect the images, then verify the live targets before UPDI monitors."""
         self.proof = rf.ProofRun(self.log.path / f"preparation-{time.monotonic_ns()}")
         with hardware_output(self.log, verbose=self.verbose):
+            self.stage = "FIRMWARE_BUILD"
             self.effective, self.manifest = bench.build(self.proof)
+            self.stage = "FUSE_LAYOUT"
             self.layouts = bench.read_layouts(self.proof, self.effective)
         self.images = self._verify_or_prepare()
         bench.publish_receipt(self.proof, self.images, self.layouts, self.manifest)
+        self.stage = "IMAGE_VERIFIED"
         return {
             "status": "PASS",
             "detail": "Both production images match fresh full-page readback.",
@@ -461,9 +508,10 @@ class Hardware:
         self.closing = False
         self.stop.clear()
         self.incoming = queue.Queue()
+        self.stage = "SERIAL_MONITORS"
         start = len(self.log.snapshot())
         try:
-            for role, port in rf.PORTS.items():
+            for role, port in hardware_ports(ROOT / "config" / "current_hardware.json").items():
                 self.monitors[role] = rf.start_rf_monitor(
                     self.proof, role, port, self.incoming, reset=reset
                 )
@@ -471,6 +519,7 @@ class Hardware:
             self.reader.start()
             for role in self.monitors:
                 self.command(role, "?")
+            self.stage = "RUNTIME_IDENTITY"
             self.wait(
                 lambda: all(
                     firmware_role(self.text(role, start), self.images) == role
@@ -479,6 +528,9 @@ class Hardware:
                 12,
                 "both running production build IDs",
             )
+            for image in self.images.values():
+                if isinstance(image, dict):
+                    image["runtime_identity_status"] = RUNTIME_IDENTITY_MATCH
             if reset:
                 self.wait(
                     lambda: all(
@@ -488,7 +540,9 @@ class Hardware:
                     "both new MCU boot markers after UPDI reset",
                 )
             for role in self.monitors:
+                self.stage = "BENCH_CONTROL"
                 self.send_and_wait(role, "B", "BENCH_READY", 5)
+            self.bench_active = True
         except BaseException:
             self.close()
             raise
@@ -513,11 +567,8 @@ class Hardware:
                 self.log.record(role, line)
                 if self.verbose:
                     print(line, file=self.out, flush=True)
-                if self.transmitting and " BOOT " in line:
-                    self.fault = (
-                        f"{role} restarted during the RF transaction; "
-                        "reset flags unavailable on this UART"
-                    )
+                if (self.bench_active or self.transmitting) and line.startswith(f"[{role}] BOOT "):
+                    self.fault = f"{role} restarted after bench readiness"
                 if stream == "stderr" and any(
                     x in line.lower()
                     for x in ("mismatch", "transporterror", "cannot open", "short read")
@@ -527,6 +578,14 @@ class Hardware:
     def text(self, role: str, start: int = 0) -> str:
         """Return actual observations from one endpoint."""
         return "\n".join(row["line"] for row in self.log.snapshot(start) if row["role"] == role)
+
+    def _events_since(self, start: int) -> list[ChatDeviceEvent]:
+        """Parse only actual device events captured after one host marker."""
+        return [
+            event
+            for row in self.log.snapshot(start)
+            if (event := parse_firmware_event(row)) is not None
+        ]
 
     def command(self, role: str, value: str) -> None:
         """Send a supported firmware byte and record its request."""
@@ -543,9 +602,11 @@ class Hardware:
     def wait(self, condition: Callable[[], bool], seconds: float, description: str) -> None:
         """Wait for hardware evidence with a finite deadline."""
         deadline = time.monotonic() + seconds
-        while not condition():
+        while True:
             if self.fault:
                 raise OSError(self.diagnostic(self.fault))
+            if condition():
+                return
             if time.monotonic() >= deadline:
                 raise TimeoutError(f"Waiting for {description}; last event: " + self.last_event())
             time.sleep(0.02)
@@ -582,7 +643,7 @@ class Hardware:
         marker = "RX_READY" if role == "receiver" else "RADIO_READY"
         self.send_and_wait(role, "R", marker, 5)
         start = len(self.log.snapshot())
-        self.send_and_wait(role, "?", "RADIO_REG ", 5)
+        self.send_and_wait(role, "?", "RADIO_REG ", 12)
         text = self.text(label, start)
         radio = self.manifest["shared"]["radio"]
         if not bench.phy_matches(text, label, radio) or not bench.power_matches(
@@ -598,11 +659,18 @@ class Hardware:
 
     def ready(self) -> Json:
         """Open both verified builds and prove fresh Tracker RX readiness."""
-        if not self.monitors:
-            self._open_monitors()
-        for role in ("receiver", "gateway"):
-            self._arm_radio(role)
-        return {"status": "PASS", "detail": "Both build IDs and live RX registers verified."}
+        try:
+            if not self.monitors:
+                self._open_monitors()
+            self.stage = "RADIO_READINESS"
+            for role in ("receiver", "gateway"):
+                self._arm_radio(role)
+            self.stage = "READY"
+            self.stage_error = None
+            return {"status": "PASS", "detail": "Both build IDs and live RX registers verified."}
+        except (OSError, TimeoutError, ValueError, KeyError, RuntimeError) as error:
+            self.stage_error = str(error)
+            raise
 
     def _park(self, *, release: bool = False) -> None:
         """Stop both endpoints and require fresh standby readback from each."""
@@ -614,7 +682,11 @@ class Hardware:
                 continue
             try:
                 sent[role] = len(self.log.snapshot())
-                self.command(role, "E" if release else "P")
+                command = "E" if release else "P"
+                if release and role == "gateway":
+                    # Exit on a command boundary even after a truncated X frame.
+                    command = "\nE"
+                self.command(role, command)
             except OSError as error:
                 sent.pop(role, None)
                 errors.append(str(error))
@@ -630,29 +702,33 @@ class Hardware:
                 errors.append(str(error))
         if errors:
             raise OSError("; ".join(errors))
+        if release:
+            self.bench_active = False
 
     def _require_rf(self) -> None:
         """Keep the first transmission behind explicit 915 MHz bench authorization."""
         if not self.authorize_rf:
             msg = "Step 3 requires --authorize-rf-test for the verified 915 MHz RF arrangement."
             raise bench.BenchBlockedError(msg)
-        if len(self.monitors) != BOARD_COUNT or self.fault:
+        if len(self.monitors) != BOARD_COUNT or self.fault or any(
+            monitor["process"].poll() is not None for monitor in self.monitors.values()
+        ):
             msg = "Both verified production monitors must be responsive before any transmission."
             raise bench.BenchBlockedError(msg)
 
     @contextlib.contextmanager
-    def _capture_transaction(self, start: int) -> Iterator[None]:
+    def _capture_transaction(self, start: int, *, release: bool = False) -> Iterator[None]:
         """Attempt standby while preserving the primary failure or cancellation."""
         try:
             yield
         except BaseException:
             try:
-                self._park()
+                self._park(release=release)
             except OSError as error:
                 self.log.record("HOST", str(error), "FAIL", str(error))
             raise
         else:
-            self._park()
+            self._park(release=release)
         finally:
             self.exchange_rows = self.log.snapshot(start)
             self.transmitting = False
@@ -703,6 +779,7 @@ class Hardware:
             self._arm_radio("gateway")
             self.transmitting = True
             sent = len(self.log.snapshot())
+            self._require_rf()
             self.command("gateway", "S")
             self.wait(
                 lambda: any(
@@ -727,6 +804,155 @@ class Hardware:
         if not exhaust and result["status"] == "PASS":
             self.sequence = sequence % 255 + 1
         return {**result, "events": self.protocol_events()}
+
+    def retry_legacy_message(self) -> Json:
+        """Retry the fixed payload on a fresh campaign, then use existing bounded ARQ."""
+        self._require_rf()
+        self._start_interactive_campaign()
+        return self.exchange()
+
+    def _start_interactive_campaign(self) -> None:
+        """Start a fresh campaign so queued messages cannot reuse an old ACK identity."""
+        if self.bench_active:
+            self._park(release=True)
+        for role in ("receiver", "gateway"):
+            self.send_and_wait(role, "B", "BENCH_READY", 5)
+        self.bench_active = True
+        self.sequence = self.config["protocol"]["sequence"]
+
+    def _interactive_chunk_complete(self, start: int, sequence: int) -> bool:
+        """Wait for both Gateway completion and Tracker acceptance of one Echo ACK."""
+        events = self._events_since(start)
+        completed = next(
+            (
+                event
+                for event in events
+                if event.role is ChatDeviceRole.GATEWAY
+                and event.name == ChatEventName.ROUND_TRIP_DONE
+                and event.sequence == sequence
+                and event.campaign_id is not None
+            ),
+            None,
+        )
+        if completed is not None and any(
+            event.role is ChatDeviceRole.TRACKER
+            and event.name == ChatEventName.ACK_ACCEPTED
+            and event.campaign_id == completed.campaign_id
+            and event.sequence == sequence
+            and event.packet_type == self.config["protocol"]["ack_type"]
+            for event in events
+        ):
+            return True
+        return any(
+            event.name
+            in {
+                "TRANSACTION_FAILED",
+                ChatEventName.ACK_CONFIRM_TIMEOUT,
+                ChatEventName.ECHO_TIMEOUT,
+                "DATA_START_FAILED",
+                "ACK_CONFIRM_START_FAILED",
+                "ECHO_DATA_START_FAILED",
+                "HOST_DATA_REJECTED",
+            }
+            and event.sequence in {None, sequence}
+            for event in events
+        )
+
+    def exchange_interactive_message(self, chunks: tuple[bytes, ...], max_data_bytes: int) -> Json:
+        """Send and Echo bounded chunks sequentially over the existing reliable transport."""
+        self._require_rf()
+        if not chunks or any(not chunk or len(chunk) > max_data_bytes for chunk in chunks):
+            raise bench.BenchBlockedError("interactive message contains an invalid DATA fragment")
+
+        start = len(self.log.snapshot())
+        ack_ms = self.config["timeouts"]["ack_ms"]
+        tx_ms = self.config["timeouts"]["tx_ms"]
+        attempts = self.config["retries"]["max_retries"] + 1
+        # Both DATA directions and the tagged handoff have bounded attempts.
+        timeout = 3 * attempts * (ack_ms + tx_ms) / 1000 + 5
+        max_sequence = (1 << self.config["protocol"]["sequence_bits"]) - 1
+        with self._capture_transaction(start, release=True):
+            self._start_interactive_campaign()
+            self._arm_radio("receiver")
+            self.send_and_wait("receiver", "T", "BENCH_TX_READY", 5)
+            self._arm_radio("gateway")
+            for role in ("receiver", "gateway"):
+                ready_start = len(self.log.snapshot())
+                self.send_and_wait(role, "I", "INTERACTIVE_READY", 5)
+                ready_events = self._events_since(ready_start)
+                if not any(
+                    event.name == ChatEventName.INTERACTIVE_READY
+                    and event.role is (
+                        ChatDeviceRole.TRACKER if role == "receiver" else ChatDeviceRole.GATEWAY
+                    )
+                    and event.max_data_bytes is not None
+                    and event.max_data_bytes >= max_data_bytes
+                    and event.echo_supported is True
+                    for event in ready_events
+                ):
+                    raise bench.BenchBlockedError(
+                        f"{role.upper()} did not confirm interactive Echo MAX_DATA={max_data_bytes}"
+                    )
+
+            self.transmitting = True
+            for chunk in chunks:
+                sequence = self.sequence
+                chunk_start = len(self.log.snapshot())
+                command = encode_interactive_command(chunk, max_data_bytes)
+                self._require_rf()
+                self.command("gateway", command)
+
+                def chunk_complete() -> bool:
+                    return self._interactive_chunk_complete(chunk_start, sequence)
+
+                self.wait(
+                    chunk_complete,
+                    timeout,
+                    f"DATA/ACK/Echo/ACK sequence {sequence}",
+                )
+                events = self._events_since(chunk_start)
+                first_data = next(
+                    (
+                        event
+                        for event in events
+                        if event.role is ChatDeviceRole.GATEWAY
+                        and event.name == ChatEventName.DATA_TX_BEGIN
+                        and event.sequence == sequence
+                        and event.campaign_id is not None
+                    ),
+                    None,
+                )
+                if first_data is None or first_data.campaign_id is None:
+                    raise bench.BenchFailedError(
+                        f"sequence {sequence} has no Gateway DATA transaction identity"
+                    )
+                if not verify_round_trip(
+                    events,
+                    RoundTripContext(
+                        campaign_id=first_data.campaign_id,
+                        sequence=sequence,
+                        original_payload=chunk,
+                        data_type=self.config["protocol"]["data_type"],
+                        ack_type=self.config["protocol"]["ack_type"],
+                        gateway_address=self.config["protocol"]["sender_address"],
+                        tracker_address=self.config["protocol"]["receiver_address"],
+                        sequence_bits=self.config["protocol"]["sequence_bits"],
+                    ),
+                ):
+                    raise bench.BenchFailedError(
+                        f"sequence {sequence} lacks complete matching DATA/Echo/ACK evidence"
+                    )
+                self.sequence = sequence % max_sequence + 1
+
+        events = self._events_since(start)
+        return {
+            "status": "PASS",
+            "detail": f"{len(chunks)} RF fragment(s) completed in both directions",
+            "attempts": sum(event.name == ChatEventName.DATA_TX_BEGIN for event in events),
+            "retries": sum(event.name in RETRY_EVENTS for event in events),
+            "timeouts": sum(event.name in TIMEOUT_EVENTS for event in events),
+            "events": self.protocol_events(),
+        }
 
     def step(self, index: int) -> Json:
         """Run the requested checkpoint in dependency order."""

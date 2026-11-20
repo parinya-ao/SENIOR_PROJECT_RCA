@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any
 
+from tools.rf_stress.status import ResultStatus
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -26,11 +28,12 @@ def _percentile(values: Sequence[float], fraction: float) -> float | None:
 def calculate_metrics(results: Sequence[dict[str, Any]]) -> dict[str, Any]:
     """Summarize rates with scheduled cases as the explicit denominator."""
     total = len(results)
-    passed = sum(result["status"] == "PASS" for result in results)
-    failed = sum(result["status"] == "FAIL" for result in results)
-    unverified = sum(result["status"] == "UNVERIFIED" for result in results)
+    passed = sum(result["status"] == ResultStatus.SUCCESS for result in results)
+    failed = sum(result["status"] == ResultStatus.FAILURE for result in results)
+    unverified = sum(result["status"] == ResultStatus.UNVERIFIED for result in results)
     first_attempt = sum(
-        result["status"] == "PASS" and result["retry_count"] == 0 for result in results
+        result["status"] == ResultStatus.SUCCESS and result["retry_count"] == 0
+        for result in results
     )
     retry_cases = [result for result in results if result["retry_count"] > 0]
     timeout_cases = [result for result in results if result["timeout_count"] > 0]
@@ -57,12 +60,14 @@ def calculate_metrics(results: Sequence[dict[str, Any]]) -> dict[str, Any]:
         "first_attempt_successes": first_attempt,
         "first_attempt_success_rate": first_attempt / total if total else None,
         "recovery_after_retry_rate": (
-            sum(result["status"] == "PASS" for result in retry_cases) / len(retry_cases)
+            sum(result["status"] == ResultStatus.SUCCESS for result in retry_cases)
+            / len(retry_cases)
             if retry_cases
             else None
         ),
         "recovery_after_timeout_rate": (
-            sum(result["status"] == "PASS" for result in timeout_cases) / len(timeout_cases)
+            sum(result["status"] == ResultStatus.SUCCESS for result in timeout_cases)
+            / len(timeout_cases)
             if timeout_cases
             else None
         ),

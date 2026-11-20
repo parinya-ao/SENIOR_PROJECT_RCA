@@ -384,12 +384,18 @@ class RadioBringupTests(unittest.TestCase):
 
     def test_live_image_verifier_accepts_current_tracker_and_rejects_other_device(self) -> None:
         from tools.receiver_boot import ihex
+        from tests.test_rf_proof import effective_platformio_config
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "config").mkdir()
+            (root / "generated").mkdir()
             hardware = json.loads((rf.ROOT / "config/current_hardware.json").read_text())
             (root / "config/current_hardware.json").write_text(json.dumps(hardware))
+            (root / "generated/lora_manifest.json").write_text(
+                (rf.ROOT / "generated/lora_manifest.json").read_text()
+            )
+            effective_config = effective_platformio_config()
             manifest = {
                 "environments": {
                     env: {"build_id": "a" * 64} for env in ("sender_hello", "receiver")
@@ -402,15 +408,18 @@ class RadioBringupTests(unittest.TestCase):
                 (build / "firmware.hex").write_text(ihex(payload, 0))
             proof: Any = SimpleNamespace(run_dir=root, note=Mock())
             wrong = False
+            commands: list[str] = []
 
             def command(name: Any, argv: Any, *_: Any) -> Any:
+                commands.append(name)
                 role = "receiver" if name.startswith("receiver") else "gateway"
                 memories = {
                     "signature": bytes.fromhex("1e970a"),
+                    "fuses": bytes.fromhex(hardware[role]["fuses_hex"]),
                     "sernum": bytes(16)
                     if wrong
                     else bytes.fromhex(hardware[role]["device_serial_hex"]),
-                    "flash": payload + bytes(131072 - len(payload)),
+                    "flash": payload + b"\xff" * (131072 - len(payload)),
                 }
                 for i, value in enumerate(argv):
                     if value == "-U":
@@ -421,11 +430,20 @@ class RadioBringupTests(unittest.TestCase):
             proof.command = command
             with (
                 patch.object(rf, "ROOT", root),
-                patch.object(rf, "application_bounds_for_environment", return_value=(0, 130048)),
             ):
-                self.assertIsNotNone(rf.verify_installed_images(proof, "", manifest, "run"))
+                result = rf.verify_installed_images(
+                    proof, effective_config, manifest, "run", report_mismatches=True
+                )
+                self.assertIsNotNone(result, (commands, proof.note.call_args_list))
+                assert result is not None
+                for image in result.values():
+                    self.assertEqual(image["flash_bytes_status"], "FLASH_BYTES_MATCH")
+                    self.assertEqual(image["fuse_layout_status"], "FUSE_LAYOUT_VALID")
+                    self.assertEqual(image["fota_layout_status"], "FOTA_LAYOUT_NOT_READY")
                 wrong = True
-                self.assertIsNone(rf.verify_installed_images(proof, "", manifest, "run"))
+                self.assertIsNone(
+                    rf.verify_installed_images(proof, effective_config, manifest, "run")
+                )
 
 
 if __name__ == "__main__":

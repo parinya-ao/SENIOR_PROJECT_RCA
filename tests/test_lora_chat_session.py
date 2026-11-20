@@ -25,7 +25,13 @@ def _session(
 ) -> ChatSession:
     """Construct a session with explicit protocol and runtime limits."""
     profile = MessageProtocol(b"hello world", 8, 3, 9, 1, 0, 1)
-    settings = ChatSettings(max_pending, event_limit, 100, retry_limit)
+    settings = ChatSettings(
+        max_pending_messages=max_pending,
+        max_message_bytes=4096,
+        event_history_limit=event_limit,
+        refresh_interval_ms=100,
+        manual_retry_limit=retry_limit,
+    )
     return ChatSession(run_dir, profile, settings)
 
 
@@ -49,6 +55,17 @@ def test_message_queue_keeps_one_active_transaction_and_is_bounded(tmp_path: Pat
     assert completed.message.message_id == current.message_id
     assert next_message == second
     assert session.active == second
+
+
+def test_session_accepts_arbitrary_utf8_message_with_exact_bytes(tmp_path: Path) -> None:
+    """Interactive submission stores exact UTF-8 bytes instead of enforcing the legacy text."""
+    session = _session(tmp_path, max_pending=1, retry_limit=1)
+
+    message, queued = session.submit("test café")
+
+    assert not queued
+    assert message.text == "test café"
+    assert message.payload == "test café".encode()
 
 
 def test_ack_without_real_echo_is_not_round_trip_success(tmp_path: Path) -> None:
@@ -125,6 +142,16 @@ def test_timeout_without_ack_is_a_terminal_failed_transaction(tmp_path: Path) ->
     assert session.stats.failed_transactions == 1
 
 
+def test_captured_echo_timeout_counts_once(tmp_path: Path) -> None:
+    """Do not add the runner's timeout summary to the same captured device event."""
+    session = _session(tmp_path, max_pending=1, retry_limit=0)
+    session.submit("test")
+    event = _event("GATEWAY", "[GATEWAY] ECHO_TIMEOUT SID=351C T=42 TYPE=8 Q=1")
+    assert event is not None
+    session.finish_current(ExchangeResult("TIMEOUT", "Echo timeout", (event,), 1, 0, 1, 42.0))
+    assert session.stats.timeout_count == 1
+
+
 def test_rf_blocked_message_is_not_logged_as_unsupported(tmp_path: Path) -> None:
     """A valid configured message blocked by RF setup remains a distinct result."""
     session = _session(tmp_path, max_pending=1, retry_limit=0)
@@ -155,6 +182,7 @@ def test_chat_settings_reject_unknown_keys_and_invalid_limits(tmp_path: Path) ->
         json.dumps(
             {
                 "max_pending_messages": 2,
+                "max_message_bytes": 4096,
                 "event_history_limit": 10,
                 "refresh_interval_ms": 100,
                 "manual_retry_limit": 1,
@@ -174,6 +202,7 @@ def test_chat_settings_allow_zero_manual_retries(tmp_path: Path) -> None:
         json.dumps(
             {
                 "max_pending_messages": 1,
+                "max_message_bytes": 4096,
                 "event_history_limit": 1,
                 "refresh_interval_ms": 100,
                 "manual_retry_limit": 0,
@@ -191,6 +220,7 @@ def test_chat_settings_enforce_memory_and_refresh_caps(tmp_path: Path) -> None:
         json.dumps(
             {
                 "max_pending_messages": 65,
+                "max_message_bytes": 4096,
                 "event_history_limit": 10,
                 "refresh_interval_ms": 100,
                 "manual_retry_limit": 1,

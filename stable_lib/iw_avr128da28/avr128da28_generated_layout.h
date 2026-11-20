@@ -10,22 +10,41 @@
 #endif
 
 namespace iw::avr128da28::generated {
-inline constexpr uint32_t kFlashBytes = 0x20000UL;
-inline constexpr uint16_t kFlashPageBytes = 512U;
-inline constexpr uint16_t kEepromBytes = 512U;
+inline constexpr uint32_t kFlashBytes = LORA_FLASH_BYTES;
+inline constexpr uint16_t kFlashPageBytes = LORA_FLASH_PAGE_BYTES;
+inline constexpr uint16_t kEepromBytes = LORA_EEPROM_BYTES;
+inline constexpr uint16_t kProductionBootSizePages = LORA_BOOTSIZE_PAGES;
+inline constexpr uint16_t kProductionCodeSizePages = LORA_CODESIZE_PAGES;
 inline constexpr uint32_t kBootStart = 0U;
-inline constexpr uint32_t kBootEnd = LORA_IMAGE_START;
-inline constexpr uint32_t kBootCapacityBytes = LORA_IMAGE_START;
-inline constexpr uint32_t kApplicationStart = LORA_IMAGE_START;
-inline constexpr uint32_t kApplicationEnd = LORA_IMAGE_END;
+inline constexpr uint32_t kBootEnd =
+    kProductionBootSizePages == 0U
+        ? kFlashBytes
+        : static_cast<uint32_t>(kProductionBootSizePages) * kFlashPageBytes;
+inline constexpr uint32_t kBootCapacityBytes = kBootEnd - kBootStart;
+inline constexpr bool kHasApplicationCode =
+    kProductionBootSizePages > 0U &&
+    (kProductionCodeSizePages == 0U ||
+     kProductionCodeSizePages > kProductionBootSizePages);
+inline constexpr uint32_t kApplicationStart =
+    kHasApplicationCode ? kBootEnd : kFlashBytes;
+inline constexpr uint32_t kApplicationEnd =
+    !kHasApplicationCode
+        ? kFlashBytes
+        : (kProductionCodeSizePages == 0U
+               ? kFlashBytes
+               : static_cast<uint32_t>(kProductionCodeSizePages) *
+                     kFlashPageBytes);
 inline constexpr uint32_t kApplicationCapacityBytes =
-    LORA_IMAGE_END - LORA_IMAGE_START;
-inline constexpr uint32_t kAppdataStart = kFlashBytes;
+    kApplicationEnd - kApplicationStart;
+inline constexpr uint32_t kAppdataStart =
+    kProductionBootSizePages == 0U || kProductionCodeSizePages == 0U
+        ? kFlashBytes
+        : (kProductionCodeSizePages <= kProductionBootSizePages
+               ? kBootEnd
+               : static_cast<uint32_t>(kProductionCodeSizePages) *
+                     kFlashPageBytes);
 inline constexpr uint32_t kAppdataEnd = kFlashBytes;
 inline constexpr uint32_t kPageCount = kFlashBytes / kFlashPageBytes;
-inline constexpr uint16_t kProductionBootSizePages =
-    LORA_IMAGE_START / kFlashPageBytes;
-inline constexpr uint16_t kProductionCodeSizePages = 0U;
 }  // namespace iw::avr128da28::generated
 
 #endif  // IW_AVR128DA28_GENERATED_LAYOUT_H_

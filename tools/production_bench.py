@@ -12,10 +12,11 @@ from pathlib import Path
 from typing import Any
 
 from tools import rf_proof as rf
+from tools.device_detection.flash_layout import page_write_range, validate_image_range
+from tools.device_detection.hardware_registry import hardware_ports
 
 ENVIRONMENTS = ("sender", "receiver")
 MANIFEST = rf.ROOT / "generated/lora_manifest.json"
-PAGE_BYTES = 512
 SX1276_LORA_HF_RX = 0x85
 SX1276_BW_125_KHZ = 7
 PROFILE_BANDWIDTH_KHZ = 125
@@ -51,7 +52,7 @@ def build(proof: rf.ProofRun) -> tuple[str, Json]:
         code
         or not rf.valid_rf_profile_config(effective)
         or not rf.upload_ports_match(effective)
-        or not rf.application_layout_verified(ENVIRONMENTS, effective)
+        or not rf.firmware_image_layout_verified(ENVIRONMENTS, effective)
     ):
         msg = "Production PlatformIO profile, linked ranges, or enrolled ports are invalid."
         raise BenchFailedError(msg)
@@ -77,9 +78,21 @@ def inspect_image(proof: rf.ProofRun, effective: str, environment: str, output: 
         raise BenchFailedError(msg)
     region = hex_info["address_range"]
     start, end = region["start"], region["end_exclusive"]
-    bounds = rf.application_bounds_for_environment(effective, environment)
-    if bounds is None or start != bounds[0] or round_up_page(end) > bounds[1]:
-        msg = f"{environment} HEX exceeds its configured rounded Flash span."
+    image_layout = rf.firmware_image_bounds_for_environment(effective, environment)
+    if image_layout is None:
+        msg = f"{environment} has no validated fuse-derived firmware image section."
+        raise BenchFailedError(msg)
+    layout, section, expected_start, expected_end = image_layout
+    valid_range, detail = validate_image_range(layout, section, start, end)
+    rounded_span = page_write_range(layout, section, start, end)
+    if (
+        not valid_range
+        or start != expected_start
+        or rounded_span is None
+        or rounded_span[0] != start
+        or rounded_span[1] > expected_end
+    ):
+        msg = f"{environment} HEX does not fit its declared {section.value} section: {detail}."
         raise BenchFailedError(msg)
     core = Path(os.getenv("PLATFORMIO_CORE_DIR", str(Path.home() / ".platformio")))
     elf = rf.ROOT / ".pio/build" / environment / "firmware.elf"
@@ -107,12 +120,14 @@ def inspect_image(proof: rf.ProofRun, effective: str, environment: str, output: 
     ):
         msg = f"{environment} ELF vectors or load sections disagree with the HEX image."
         raise BenchFailedError(msg)
-    return {**measurement, "elf_loads": loads, "rounded_span": [start, round_up_page(end)]}
-
-
-def round_up_page(address: int) -> int:
-    """Round an exclusive address to the next AVR DA Flash page boundary."""
-    return (address + PAGE_BYTES - 1) // PAGE_BYTES * PAGE_BYTES
+    return {
+        **measurement,
+        "elf_loads": loads,
+        "image_section": section.value,
+        "fuse_layout_status": layout.fuse_status.value,
+        "fota_layout_status": layout.fota_status.value,
+        "rounded_span": list(rounded_span),
+    }
 
 
 def read_layouts(proof: rf.ProofRun, effective: str) -> dict[str, Json]:
@@ -121,23 +136,43 @@ def read_layouts(proof: rf.ProofRun, effective: str) -> dict[str, Json]:
     if rf.identify_targets(proof, args, effective):
         msg = "MCU signature, enrolled serial, port ownership or fuses failed verification."
         raise BenchBlockedError(msg)
-    return {
-        role.upper(): json.loads((proof.run_dir / f"target-{role}-layout.json").read_text())[
-            "observed"
-        ]
-        for role in rf.PORTS
-    }
+    layouts = {}
+    for role in hardware_ports(rf.ROOT / "config" / "current_hardware.json"):
+        observed = json.loads(
+            (proof.run_dir / f"target-{role}-layout.json").read_text(encoding="utf-8")
+        )["observed"]
+        geometry = rf.flash_layout_for_role(effective, role)
+        if geometry is None:
+            raise BenchBlockedError(f"{role}: fuse-derived memory geometry is invalid")
+        row = {**observed, "calculated_layout": geometry.to_dict()}
+        layouts[role.upper()] = row
+    proof.note("flash-layout.json", json.dumps(layouts, indent=2) + "\n")
+    return layouts
 
 
-def write_span_is_application(start: int, end: int, bootsize: int, codesize: int) -> bool:
-    """Require an entire page-aligned span inside live APPCODE and below protected Flash."""
-    boot_end = bootsize * PAGE_BYTES
-    code_end = codesize * PAGE_BYTES if codesize else 131072
-    return (
-        bootsize > 0
-        and start % PAGE_BYTES == end % PAGE_BYTES == 0
-        and boot_end <= start < end <= min(code_end, 131072)
-    )
+def write_span_is_application(start: int, end: int, layout: Json) -> bool:
+    """Allow only a page-aligned APPCODE span in the independently read fuse layout."""
+    calculated = layout.get("calculated_layout")
+    if not isinstance(calculated, dict):
+        return False
+    sections = calculated.get("sections")
+    page_bytes = calculated.get("page_bytes")
+    appcode = sections.get("APPCODE") if isinstance(sections, dict) else None
+    start_address = appcode.get("start") if isinstance(appcode, dict) else None
+    end_address = appcode.get("end_exclusive") if isinstance(appcode, dict) else None
+    if (
+        not isinstance(appcode, dict)
+        or type(page_bytes) is not int
+        or type(start) is not int
+        or type(end) is not int
+        or type(start_address) is not int
+        or type(end_address) is not int
+        or start % page_bytes
+        or end % page_bytes
+        or not start < end
+    ):
+        return False
+    return start_address <= start < end <= end_address
 
 
 def approve_writes(
@@ -146,13 +181,14 @@ def approve_writes(
     """Check all mismatches against live bounds and exact authorization before any write."""
     for role, image in mismatches.items():
         layout = layouts[role]
-        if not write_span_is_application(
-            image["start"], image["end"], layout["bootsize"], layout["codesize"]
-        ):
-            msg = (
-                f"{role} production image differs. Live BOOTSIZE=0x{layout['bootsize']:02X}, "
-                f"CODESIZE=0x{layout['codesize']:02X} excludes its pages from APPCODE."
-            )
+        if not write_span_is_application(image["start"], image["end"], layout):
+            calculated = layout.get("calculated_layout", {})
+            appcode = calculated.get("sections", {}).get("APPCODE")
+            if appcode is None:
+                detail = calculated.get("detail", "APPCODE is absent in the observed fuse layout")
+            else:
+                detail = "image pages are outside APPCODE or not page aligned"
+            msg = f"{role} image mismatch cannot be prepared safely: {detail}. No write performed."
             raise BenchBlockedError(msg)
     expected = {
         role: {

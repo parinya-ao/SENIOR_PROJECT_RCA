@@ -2,25 +2,69 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
+from enum import StrEnum
+from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import cast
+
+from tools.config.validate_lora_ssot import load as load_lora_system
+from tools.device_detection.firmware_events import (
+    FirmwareEventName,
+    parse_firmware_event_line,
+)
+
+EventName = FirmwareEventName
 
 if TYPE_CHECKING:
     from typing import Any
 
-EVENT_PATTERN = re.compile(r"^\[(GATEWAY|TRACKER|RECEIVER)\]\s+([A-Z][A-Z0-9_]*)\s*(.*)$")
-FIELD_PATTERN = re.compile(r"([A-Z][A-Z0-9_]*)=([^\s]+)")
-ROLE_NAMES = {"GATEWAY": "gateway", "TRACKER": "tracker", "RECEIVER": "tracker"}
-DATA_PACKET_TYPE = 8
-ACK_PACKET_TYPE = 3
-NACK_PACKET_TYPE = 9
-SEQUENCE_MASK = 0xFF
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROTOCOL = load_lora_system(PROJECT_ROOT / "config/lora_system.json")["protocol"]
+DATA_PACKET_TYPE = cast(int, PROTOCOL["data_type"])
+ACK_PACKET_TYPE = cast(int, PROTOCOL["ack_type"])
+NACK_PACKET_TYPE = cast(int, PROTOCOL["nack_type"])
+SEQUENCE_MASK = (1 << cast(int, PROTOCOL["sequence_bits"])) - 1
 UINT32_MASK = 0xFFFFFFFF
 UINT32_HALF_RANGE = 0x80000000
 SEQUENCE_ROLLOVER_WINDOW = (SEQUENCE_MASK, 0)
 SINGLE_EVENT = 1
 DUPLICATE_TRANSMISSIONS = 2
+
+
+class CaptureStream(StrEnum):
+    """Host capture stream names in the event journal."""
+
+    STDOUT = "stdout"
+    CONTROL = "control"
+    PORT_RELEASE = "port_release"
+
+
+class FaultName(StrEnum):
+    """Named stress scenarios interpreted from the case manifest."""
+
+    CANCEL_UNDER_LOAD = "CANCEL_UNDER_LOAD"
+    DELAYED_RESPONSE = "DELAYED_RESPONSE"
+    DUPLICATE_DATA = "DUPLICATE_DATA"
+    FORCE_NACK_TWICE = "FORCE_NACK_TWICE"
+    INVALID_APP_PAYLOAD = "INVALID_APP_PAYLOAD"
+    NO_FAULT = "NO_FAULT"
+    PHY_CRC_CORRUPT = "PHY_CRC_CORRUPT"
+    RECEIVER_RESET = "RECEIVER_RESET"
+    SEQUENCE_ROLLOVER = "SEQUENCE_ROLLOVER"
+    SUPPRESS_ACK_ONCE = "SUPPRESS_ACK_ONCE"
+    WRONG_DESTINATION = "WRONG_DESTINATION"
+    WRONG_SEQUENCE = "WRONG_SEQUENCE"
+
+
+class ScenarioDirection(StrEnum):
+    """Message direction identifiers used in case manifests."""
+
+    GATEWAY_TO_TRACKER = "gateway_to_tracker"
+
+
+SESSION_ID_FIELD = "SID"
+AFTER_RF_REOPEN = "after_rf_reopen"
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,31 +82,24 @@ class FirmwareEvent:
         if value is None:
             return None
         try:
-            return int(value, 16 if key == "SID" else 10)
+            return int(value, 16 if key == SESSION_ID_FIELD else 10)
         except ValueError:
             return None
 
 
 def parse_event_row(row: dict[str, Any]) -> FirmwareEvent | None:
     """Parse a captured UART line and reject role labels that disagree with the line."""
-    if row["stream"] != "stdout":
+    if row["stream"] != CaptureStream.STDOUT:
         return None
-    match = EVENT_PATTERN.match(row["line"])
-    if match is None:
+    parsed = parse_firmware_event_line(row["line"])
+    if parsed is None:
         return None
-    line_role, name, text = match.groups()
-    role = ROLE_NAMES[line_role]
+    role = parsed.role.value.lower()
     captured_role = "tracker" if row["role"] in {"tracker", "receiver"} else row["role"]
     if role != captured_role:
         msg = "captured role does not match firmware event role"
         raise ValueError(msg)
-    fields: dict[str, str] = {}
-    for key, value in FIELD_PATTERN.findall(text):
-        if key in fields:
-            msg = f"duplicate firmware event field {key}"
-            raise ValueError(msg)
-        fields[key] = value
-    return FirmwareEvent(role, name, fields, row["line"])
+    return FirmwareEvent(role, parsed.name, parsed.fields, parsed.raw)
 
 
 def _result(case: dict[str, Any], status: str, reason: str, **values: object) -> dict[str, Any]:
@@ -102,7 +139,7 @@ def _assess_sequence_rollover(  # noqa: C901, PLR0911
         event
         for event in session_events
         if event.role == source
-        and event.name == "DATA_TX_DONE"
+        and event.name == EventName.DATA_TX_DONE
         and event.number("TYPE") == DATA_PACKET_TYPE
     ]
     ordered_sequences = list(dict.fromkeys(event.number("Q") for event in data_tx))
@@ -115,7 +152,7 @@ def _assess_sequence_rollover(  # noqa: C901, PLR0911
             event
             for event in session_events
             if event.role == receiver
-            and event.name == "DATA_VALIDATED"
+            and event.name == EventName.DATA_VALIDATED
             and event.number("TYPE") == DATA_PACKET_TYPE
             and event.number("Q") == sequence
         ]
@@ -136,14 +173,14 @@ def _assess_sequence_rollover(  # noqa: C901, PLR0911
             )
         ack_tx = any(
             event.role == receiver
-            and event.name == "ACK_TX_DONE"
+            and event.name == EventName.ACK_TX_DONE
             and event.number("TYPE") == ACK_PACKET_TYPE
             and event.number("Q") == sequence
             for event in session_events
         )
         ack_rx = any(
             event.role == source
-            and event.name == "ACK_ACCEPTED"
+            and event.name == EventName.ACK_ACCEPTED
             and event.number("TYPE") == ACK_PACKET_TYPE
             and event.number("Q") == sequence
             for event in session_events
@@ -153,7 +190,9 @@ def _assess_sequence_rollover(  # noqa: C901, PLR0911
                 case, "UNVERIFIED", f"missing matching ACK at rollover sequence {sequence}"
             )
     wrong_ack = any(
-        event.role == source and event.name == "ACK_ACCEPTED" and event.number("Q") not in sequences
+        event.role == source
+        and event.name == EventName.ACK_ACCEPTED
+        and event.number("Q") not in sequences
         for event in session_events
     )
     if wrong_ack:
@@ -197,7 +236,7 @@ def _assess_cancellation(  # noqa: PLR0911
     cancel_indices = [
         index
         for index, row in enumerate(rows)
-        if row["stream"] == "control" and row["line"].startswith("CANCEL_REQUESTED")
+        if row["stream"] == CaptureStream.CONTROL and row["line"].startswith("CANCEL_REQUESTED")
     ]
     if not cancel_indices:
         return _result(case, "UNVERIFIED", "missing host cancellation request evidence")
@@ -214,7 +253,7 @@ def _assess_cancellation(  # noqa: PLR0911
     released_roles = {
         row["role"]
         for row in rows[cancel_index + 1 :]
-        if row["stream"] == "port_release" and row["line"] == "PORT_RELEASED"
+        if row["stream"] == CaptureStream.PORT_RELEASE and row["line"] == EventName.PORT_RELEASED
     }
     if released_roles != {"gateway", "receiver"}:
         return _result(
@@ -222,9 +261,9 @@ def _assess_cancellation(  # noqa: PLR0911
         )
     for row in rows[cancel_index + 1 :]:
         event = parse_event_row(row)
-        if event is None or event.name != "DATA_TX_DONE":
+        if event is None or event.name != EventName.DATA_TX_DONE:
             continue
-        if row.get("delivery") == "after_rf_reopen" or type(cancel_clock) is not int:
+        if row.get("delivery") == AFTER_RF_REOPEN or type(cancel_clock) is not int:
             return _result(
                 case, "UNVERIFIED", "buffered DATA evidence cannot be ordered against cancellation"
             )
@@ -242,14 +281,14 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
 ) -> dict[str, Any]:
     """Require two-sided, session/sequence-matched byte evidence for an RF PASS."""
     events = [event for row in rows if (event := parse_event_row(row)) is not None]
-    if case["fault"] == "CANCEL_UNDER_LOAD":
+    if case["fault"] == FaultName.CANCEL_UNDER_LOAD:
         return _assess_cancellation(case, rows)
     source, receiver = (
         ("gateway", "tracker")
-        if case["direction"] == "gateway_to_tracker"
+        if case["direction"] == ScenarioDirection.GATEWAY_TO_TRACKER
         else ("tracker", "gateway")
     )
-    if case["fault"] == "SEQUENCE_ROLLOVER":
+    if case["fault"] == FaultName.SEQUENCE_ROLLOVER:
         return _assess_sequence_rollover(case, events, source, receiver)
     session_id = int(case["session_id"])
     sequence = int(case["sequence"])
@@ -258,7 +297,7 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
         event
         for event in matching_session
         if event.role == source
-        and event.name == "DATA_TX_DONE"
+        and event.name == EventName.DATA_TX_DONE
         and event.number("TYPE") == DATA_PACKET_TYPE
     ]
     if not tx_events:
@@ -280,12 +319,14 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
     receiver_data = [
         event
         for event in matching_session
-        if event.role == receiver and event.name == "DATA_VALIDATED"
+        if event.role == receiver and event.name == EventName.DATA_VALIDATED
     ]
     timeouts = [
-        event for event in matching_session if event.role == source and event.name == "TIMEOUT"
+        event
+        for event in matching_session
+        if event.role == source and event.name == EventName.TIMEOUT
     ]
-    if fault == "RECEIVER_RESET":
+    if fault == FaultName.RECEIVER_RESET:
         reset_events = [
             event
             for event in matching_session
@@ -301,14 +342,16 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
         receiver_ready = [
             event
             for event in matching_session
-            if event.role == receiver and event.name == "RX_READY" and event.number("T") is not None
+            if event.role == receiver
+            and event.name == EventName.RX_READY
+            and event.number("T") is not None
         ]
         if reset_tick is None or not any(
             0 < (((event.number("T") or 0) - reset_tick) & UINT32_MASK) < UINT32_HALF_RANGE
             for event in receiver_ready
         ):
             return _result(case, "UNVERIFIED", "receiver did not confirm RX readiness after reset")
-    if fault == "PHY_CRC_CORRUPT":
+    if fault == FaultName.PHY_CRC_CORRUPT:
         crc_errors = [
             event
             for event in matching_session
@@ -343,7 +386,7 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
             ]
             or None,
         )
-    if fault == "WRONG_DESTINATION":
+    if fault == FaultName.WRONG_DESTINATION:
         replies = [
             event
             for event in matching_session
@@ -374,13 +417,13 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
             timeout_count=len(timeouts),
         )
 
-    invalid_application_data = fault == "INVALID_APP_PAYLOAD"
+    invalid_application_data = fault == FaultName.INVALID_APP_PAYLOAD
     payload_events = receiver_data
     if invalid_application_data:
         payload_events = [
             event
             for event in matching_session
-            if event.role == receiver and event.name == "DATA_REJECTED"
+            if event.role == receiver and event.name == EventName.DATA_REJECTED
         ]
     matching_data = [event for event in payload_events if event.number("Q") == sequence]
     if not matching_data:
@@ -424,14 +467,16 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
     nack_tx: list[FirmwareEvent] = []
     nack_rx: list[FirmwareEvent] = []
     if fault.startswith("FORCE_NACK"):
-        expected_nacks = 2 if fault == "FORCE_NACK_TWICE" else 1
+        expected_nacks = 2 if fault == FaultName.FORCE_NACK_TWICE else 1
         nack_tx = [
             event
             for event in matching_session
-            if event.role == receiver and event.name == "NACK_TX_DONE"
+            if event.role == receiver and event.name == EventName.NACK_TX_DONE
         ]
         nack_rx = [
-            event for event in matching_session if event.role == source and event.name == "NACK_RX"
+            event
+            for event in matching_session
+            if event.role == source and event.name == EventName.NACK_RX
         ]
         if len(nack_tx) != expected_nacks or len(nack_rx) != expected_nacks:
             return _result(
@@ -455,11 +500,11 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
                 retry_count=retry_count,
             )
 
-    if fault == "DUPLICATE_DATA":
+    if fault == FaultName.DUPLICATE_DATA:
         duplicate = [
             event
             for event in matching_session
-            if event.role == receiver and event.name == "DUPLICATE_IGNORED"
+            if event.role == receiver and event.name == EventName.DUPLICATE_IGNORED
         ]
         delivery_counts = [event.number("DELIVERY_COUNT") for event in duplicate]
         if (
@@ -476,28 +521,31 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
                 retry_count=retry_count,
             )
 
-    if fault == "SUPPRESS_ACK_ONCE":
+    if fault == FaultName.SUPPRESS_ACK_ONCE:
         suppressed = any(
-            event.role == receiver and event.name == "ACK_SUPPRESSED" for event in matching_session
+            event.role == receiver and event.name == EventName.ACK_SUPPRESSED
+            for event in matching_session
         )
         duplicate = [
             event
             for event in matching_session
-            if event.role == receiver and event.name == "DUPLICATE_IGNORED"
+            if event.role == receiver and event.name == EventName.DUPLICATE_IGNORED
         ]
         if not suppressed or not timeouts or len(tx_events) < DUPLICATE_TRANSMISSIONS:
             return _result(case, "UNVERIFIED", "missing suppressed-ACK timeout and retry evidence")
         if len(duplicate) != SINGLE_EVENT or duplicate[0].number("DELIVERY_COUNT") != SINGLE_EVENT:
             return _result(case, "FAIL", "suppressed ACK caused duplicate application delivery")
 
-    if fault == "DELAYED_RESPONSE" and (not timeouts or len(tx_events) < DUPLICATE_TRANSMISSIONS):
+    if fault == FaultName.DELAYED_RESPONSE and (
+        not timeouts or len(tx_events) < DUPLICATE_TRANSMISSIONS
+    ):
         return _result(case, "UNVERIFIED", "delayed response case did not show timeout recovery")
 
     accepted_wrong_ack = [
         event
         for event in matching_session
         if event.role == source
-        and event.name == "ACK_ACCEPTED"
+        and event.name == EventName.ACK_ACCEPTED
         and event.number("TYPE") == ACK_PACKET_TYPE
         and event.number("Q") != sequence
     ]
@@ -510,10 +558,10 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
             false_ack_acceptance=1,
         )
 
-    if fault == "WRONG_SEQUENCE":
+    if fault == FaultName.WRONG_SEQUENCE:
         rejected_wrong_sequence = any(
             event.role == source
-            and event.name == "ACK_REJECTED"
+            and event.name == EventName.ACK_REJECTED
             and event.number("GOT_Q") not in {None, sequence}
             for event in matching_session
         )
@@ -523,7 +571,7 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
     if fault in {"WRONG_CAMPAIGN", "STALE_ACK"}:
         rejected_wrong_session = any(
             event.role == source
-            and event.name == "ACK_REJECTED"
+            and event.name == EventName.ACK_REJECTED
             and event.number("GOT_SID") not in {None, session_id}
             for event in matching_session
         )
@@ -533,11 +581,11 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
     evidence_events = tx_events + matching_data + response_tx + response_rx
     if fault.startswith("FORCE_NACK"):
         evidence_events.extend(nack_tx + nack_rx)
-    if fault == "DUPLICATE_DATA":
+    if fault == FaultName.DUPLICATE_DATA:
         evidence_events.extend(
             event
             for event in matching_session
-            if event.role == receiver and event.name == "DUPLICATE_IGNORED"
+            if event.role == receiver and event.name == EventName.DUPLICATE_IGNORED
         )
     if any(event.number("E") is None for event in evidence_events):
         return _result(case, "UNVERIFIED", "one or more packet events lack a RadioLib status code")
@@ -588,7 +636,7 @@ def assess_case(  # noqa: C901, PLR0911, PLR0912, PLR0915
         f"exact payload and matching {response_name} evidence",
         retry_count=retry_count,
         timeout_count=sum(
-            event.name == "TIMEOUT" and event.role == source for event in matching_session
+            event.name == EventName.TIMEOUT and event.role == source for event in matching_session
         ),
         latency_ms=latency,
         rssi_dbm=rssi_values[0] if rssi_values else None,

@@ -8,7 +8,7 @@ from pathlib import Path
 
 def _run_smoke_plan(output: Path, seed: int, profile: str = "smoke") -> list[dict[str, object]]:
     """Run the public dry-run interface and load its reproducible case rows."""
-    completed = subprocess.run(
+    completed = subprocess.run(  # noqa: S603 - fixed argv invokes the local planning CLI.
         [
             sys.executable,
             "-m",
@@ -81,7 +81,7 @@ def test_random_ascii_changes_with_seed_and_boundary_patterns_stay_frame_bounded
             for row in first
             if row["direction"] == direction and row["scenario"] == "alternating_case"
         ]
-        alternating.sort(key=lambda row: int(row["part_index"]))
+        alternating.sort(key=lambda row: int(str(row["part_index"])))
         assert [len(bytes.fromhex(str(row["payload_hex"]))) for row in alternating] == [32, 20]
         combined = b"".join(bytes.fromhex(str(row["payload_hex"])) for row in alternating)
         expected = "".join(chr(65 + index) + chr(97 + index) for index in range(26)).encode("ascii")
@@ -115,7 +115,7 @@ def test_full_fifty_two_letter_alphabet_is_split_without_byte_loss(tmp_path: Pat
             for row in cases
             if row["direction"] == direction and row["scenario"] == "full_alphabet"
         ]
-        frames.sort(key=lambda row: int(row["part_index"]))
+        frames.sort(key=lambda row: int(str(row["part_index"])))
         assert [len(bytes.fromhex(str(row["payload_hex"]))) for row in frames] == [32, 20]
         assert b"".join(bytes.fromhex(str(row["payload_hex"])) for row in frames) == (
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".encode("ascii")
@@ -133,4 +133,5 @@ def test_stress_plan_contains_sequence_255_to_zero_rollover_case(tmp_path: Path)
     assert len(rollover) == 1
     assert rollover[0].get("expected_sequences") == [255, 0]
     payloads = rollover[0].get("payloads_hex", [])
+    assert isinstance(payloads, list)
     assert [bytes.fromhex(str(value)) for value in payloads] == [b"R", b"0"]

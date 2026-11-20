@@ -23,9 +23,9 @@ static const char kFirmware[] = "receiver";
 /// Addressed LoRa adapter owned by the active reliable application.
 static LoRa lora(LORA_PIN_CS, LORA_PIN_IRQ, LORA_PIN_RST, LORA_PIN_DIO1);
 /// Shared transaction engine configured with the existing radio profile.
-static reliable::Transport<LoRa> transport(lora, HELLO_RF_FREQUENCY_MHZ,
-                                           HELLO_RF_TX_POWER_DBM,
-                                           HELLO_RF_LONG_RANGE);
+using Transport = reliable::Transport<LoRa>;
+static Transport transport(lora, HELLO_RF_FREQUENCY_MHZ, HELLO_RF_TX_POWER_DBM,
+                           HELLO_RF_LONG_RANGE);
 /// Foreground readiness latch shared with the role-specific commands.
 static bool radio_ready = false;
 static bool boot_logged = false;
@@ -35,9 +35,16 @@ static bool reject_data = false, spi_selected = false;
 static bool bench = false, park_requested = false, leave_bench = false;
 static bool bench_reply_enabled = false;
 static bool fresh_campaign = false;
+static bool interactive_mode = false;
+static bool echo_pending = false;
+static bool echo_confirmed = false;
+static uint8_t echo_sequence = 0U;
+static uint16_t echo_campaign = 0U;
+static uint32_t echo_wait_started = 0U;
 #endif
 // Retains the last accepted bytes until their queued diagnostic is flushed.
-static uint8_t accepted_payload[ssot::kHelloPayloadSize];
+static uint8_t accepted_payload[Transport::kMaxData];
+static uint8_t accepted_payload_size = 0U;
 // Event storage is bounded; dropped diagnostics never change delivery state.
 static radio_diagnostics::EventQueue event_queue;
 
@@ -51,14 +58,20 @@ static void RecordTransportEvent(void*, const char* event, uint8_t type,
                                  uint8_t sequence, int16_t error) {
   event_queue.Push(
       {event, millis(), error, type, sequence, transport.event_campaign_id()});
+#if !HELLO_RF_DIAGNOSTIC_ONLY
+  if (interactive_mode && echo_pending &&
+      strcmp(event, "ACK_CONFIRM_RX") == 0 && type == ssot::kAckType &&
+      sequence == echo_sequence && transport.event_campaign_id() == echo_campaign)
+    echo_confirmed = true;
+#endif
 }
 
 #if !HELLO_RF_DIAGNOSTIC_ONLY
-/// @brief Accepts only the configured application payload.
+/// @brief Accepts the legacy payload or one bounded interactive message chunk.
 /// @param sequence Received DATA sequence used for diagnostic correlation.
 /// @param data Borrowed payload bytes, valid only for this callback.
 /// @param length Number of readable payload bytes.
-/// @return True only when the full configured payload matches.
+/// @return True only for a supported, nonempty payload within the log evidence bound.
 /// @post Rejection is returned to Transport, which sends the protocol NACK.
 static bool AcceptData(void*, uint8_t sequence, const uint8_t* data,
                        uint8_t length) {
@@ -68,15 +81,28 @@ static bool AcceptData(void*, uint8_t sequence, const uint8_t* data,
                          sequence, 0);
     return false;
   }
-  if (length != ssot::kHelloPayloadSize || !data ||
-      memcmp(data, LORA_HELLO_PAYLOAD, length) != 0) {
+  const uint8_t log_limit =
+      radio_diagnostics::InteractivePayloadLimit(Transport::kMaxData);
+  if (!data || !length || length > log_limit || (interactive_mode && echo_pending) ||
+      (!interactive_mode &&
+       (length != ssot::kHelloPayloadSize ||
+        memcmp(data, LORA_HELLO_PAYLOAD, ssot::kHelloPayloadSize) != 0))) {
     RecordTransportEvent(nullptr, "DATA_REJECTED_PAYLOAD", ssot::kDataType,
                          sequence, 0);
     return false;
   }
   memcpy(accepted_payload, data, length);
+  accepted_payload_size = length;
+  if (interactive_mode) {
+    echo_pending = true;
+    echo_confirmed = false;
+    echo_sequence = sequence;
+    echo_campaign = transport.event_campaign_id();
+    echo_wait_started = millis();
+  }
   return true;
 }
+
 #endif
 
 static status_leds::Controller led_status(
@@ -167,13 +193,16 @@ static void ReportBoot() {
 /// @post Fault-injection controls affect only their documented next operation.
 static void HandleRadioCommand(char command) {
   using Fault = decltype(transport)::ResponseFault;
-  if (transport.IsTransmitting() && command != 'P' && command != 'E') return;
+  if (transport.IsActive() && command != 'P' && command != 'E') return;
   switch (command) {
     case 'B':
       if (!bench) {
         bench = true;
         bench_reply_enabled = false;
         fresh_campaign = true;
+        interactive_mode = false;
+        echo_pending = echo_confirmed = false;
+        accepted_payload_size = 0U;
         event_queue.Clear();
         updi_role_log(kRole, "BENCH_READY");
       }
@@ -184,7 +213,22 @@ static void HandleRadioCommand(char command) {
       bench_reply_enabled = false;
       leave_bench = command == 'E';
       reject_data = false;
+      interactive_mode = false;
+      echo_pending = echo_confirmed = false;
+      accepted_payload_size = 0U;
       transport.SetResponseFault(Fault::kNone);
+      break;
+    case 'V':
+      if (bench && !park_requested)
+        radio_diagnostics::ReportInteractiveCapability(
+            kRole, "INTERACTIVE_CAPS", Transport::kMaxData);
+      break;
+    case 'I':
+      if (bench && radio_ready && !park_requested && !echo_pending) {
+        interactive_mode = true;
+        radio_diagnostics::ReportInteractiveCapability(
+            kRole, "INTERACTIVE_READY", Transport::kMaxData);
+      }
       break;
     case 'T':
       if (bench && radio_ready && !park_requested) {
@@ -225,11 +269,14 @@ static void HandleRadioCommand(char command) {
 #endif
 
 /// @brief Services transport, host commands, and deferred events once.
-/// @post Radio polling precedes commands and event output remains deferred
-///   while a transaction is active.
+/// @post Radio polling precedes commands; Echo diagnostics can drain in RX.
 void Poll() {
 #if defined(LORA_NONBLOCKING_LOG) && LORA_NONBLOCKING_LOG
-  if (!transport.IsActive()) updi_role_log_service();
+  bool service_log = !transport.IsActive();
+#if !HELLO_RF_DIAGNOSTIC_ONLY
+  service_log |= interactive_mode && !transport.IsTransmitting();
+#endif
+  if (service_log) updi_role_log_service();
 #endif
   ReportBoot();
 #if HELLO_RF_DIAGNOSTIC_ONLY
@@ -239,6 +286,27 @@ void Poll() {
   transport.Poll(now, !bench || bench_reply_enabled);
   if (transport.state() == decltype(transport)::State::kFailed)
     radio_ready = false;
+  // Keep the validated bytes through the forward ARQ and confirmation budgets.
+  if (echo_pending && !echo_confirmed &&
+      now - echo_wait_started >= 2U * Transport::kTransactionTimeoutMs) {
+    char line[72];
+    snprintf(line, sizeof line,
+             "ACK_CONFIRM_TIMEOUT SID=%04X T=%lu TYPE=%u Q=%u E=-1",
+             echo_campaign, static_cast<unsigned long>(now), ssot::kAckType,
+             echo_sequence);
+    updi_role_log(kRole, line);
+    echo_pending = false;
+  }
+  if (interactive_mode && echo_pending && echo_confirmed &&
+      transport.state() == decltype(transport)::State::kRxWait &&
+      !transport.IsActive()) {
+    echo_pending = false;
+    if (!transport.SendReliableData(echo_sequence, accepted_payload,
+                                    accepted_payload_size, now)) {
+      radio_ready = false;
+      updi_role_log(kRole, "ECHO_DATA_START_FAILED");
+    }
+  }
   led_status.Poll(now, transport.IsTransmitting());
 #endif
   while (updi_uart_rx_poll()) {
@@ -269,12 +337,21 @@ void Poll() {
     radio_ready = false;
     park_requested = false;
     if (leave_bench) bench = false;
+    interactive_mode = false;
+    echo_pending = echo_confirmed = false;
+    accepted_payload_size = 0U;
     updi_role_log_status(kRole, "PARKED",
                          spi_selected ? lora.park() : RADIOLIB_ERR_WRONG_MODEM);
   }
 #endif
-  if (!transport.IsActive())
-    radio_diagnostics::FlushEvent(event_queue, kRole, accepted_payload, true);
+  bool flush_events = !transport.IsActive();
+#if !HELLO_RF_DIAGNOSTIC_ONLY
+  flush_events |= interactive_mode && !transport.IsTransmitting();
+#endif
+  if (flush_events)
+    radio_diagnostics::FlushEvent(event_queue, kRole, accepted_payload,
+                                  accepted_payload_size, LORA_RECEIVER_ADDRESS,
+                                  LORA_SENDER_ADDRESS);
 }
 
 }  // namespace reliable_app

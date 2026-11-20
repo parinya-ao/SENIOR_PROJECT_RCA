@@ -1,8 +1,6 @@
 """Run the LoRa interactive console as a Python module."""
 
-import typer
-
-from tools.lora_chat.cli import main
+from tools.lora_chat.cli import app
 
 if __name__ == "__main__":
-    typer.run(main)
+    app()

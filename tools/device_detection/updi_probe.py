@@ -31,7 +31,7 @@ def _port_busy(port: str, runner: Callable[..., Any]) -> bool:
         result = runner(
             ["fuser", "-v", port], capture_output=True, text=True, timeout=1.0, check=False
         )
-    except (OSError, subprocess.SubprocessError, TypeError):
+    except OSError, subprocess.SubprocessError, TypeError:
         return False
     return result.returncode == 0 and bool((result.stdout or "") + (result.stderr or ""))
 
@@ -70,7 +70,7 @@ def _run_bounded(
         try:
             process.send_signal(signal.SIGINT)
             stdout, stderr = process.communicate(timeout=1.0)
-        except (OSError, subprocess.TimeoutExpired):
+        except OSError, subprocess.TimeoutExpired:
             process.kill()
             stdout, stderr = process.communicate()
         return process.returncode, stdout or "", stderr or "", True
@@ -79,9 +79,9 @@ def _run_bounded(
 
 
 def identify_mcu(sib: str) -> str | None:
-    """Return an exact part only when the SIB text actually contains it."""
-    compact = re.sub(r"[^A-Z0-9]", "", sib.upper())
-    return "AVR128DA28" if "AVR128DA28" in compact else None
+    """Return an explicit AVR part number, or None for a generic UPDI SIB."""
+    match = re.search(r"\b(AVR\d{2,3}[A-Z]{2}\d{2})\b", sib.upper())
+    return match.group(1) if match else None
 
 
 def probe_target_sib(
@@ -183,14 +183,11 @@ def read_firmware_flash(
     """Read flash only under explicit authorization and known target geometry."""
     if not (hardware_safe and authorize_flash_read and boot_layout_verified):
         msg = (
-            "flash read requires --hardware-safe, --authorize-flash-read, "
-            "and verified BOOT layout"
+            "flash read requires --hardware-safe, --authorize-flash-read, and verified BOOT layout"
         )
-        raise PermissionError(
-            msg
-        )
-    if mcu_identity != "AVR128DA28":
-        msg = "flash read requires an identified AVR128DA28 target"
+        raise PermissionError(msg)
+    if not isinstance(mcu_identity, str) or not mcu_identity:
+        msg = "flash read requires an identified MCU model"
         raise PermissionError(msg)
     if flash_size <= 0:
         msg = "flash_size must be positive"
@@ -203,7 +200,7 @@ def read_firmware_flash(
         argv = [
             avrdude,
             "-p",
-            "avr128da28",
+            mcu_identity.lower(),
             "-c",
             "serialupdi",
             "-P",
@@ -215,7 +212,7 @@ def read_firmware_flash(
             completed = command_runner(
                 argv, capture_output=True, text=True, timeout=timeout, check=False
             )
-        except (OSError, subprocess.SubprocessError):
+        except OSError, subprocess.SubprocessError:
             return None
         if completed.returncode != 0 or not raw_path.is_file():
             return None

@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RadioOnlyTests(unittest.TestCase):
-    def test_radio_only_images_resolve_to_the_existing_role_application_ranges(self) -> None:
+    def test_radio_only_images_do_not_claim_unregistered_appcode(self) -> None:
         from tools import rf_proof
 
         for environment in ("sender_arq_radio_only", "receiver_arq_radio_only"):
@@ -27,15 +27,13 @@ class RadioOnlyTests(unittest.TestCase):
             ["pio", "project", "config", "--json-output"], cwd=ROOT, text=True
         )
 
-        self.assertEqual(
-            rf_proof.application_bounds_for_environment(config, "sender_arq_radio_only"),
-            (0, 130048),
+        self.assertIsNone(
+            rf_proof.application_bounds_for_environment(config, "sender_arq_radio_only")
         )
-        self.assertEqual(
-            rf_proof.application_bounds_for_environment(config, "receiver_arq_radio_only"),
-            (0, 130048),
+        self.assertIsNone(
+            rf_proof.application_bounds_for_environment(config, "receiver_arq_radio_only")
         )
-        self.assertTrue(
+        self.assertFalse(
             rf_proof.application_layout_verified(
                 ("sender_arq_radio_only", "receiver_arq_radio_only"), config
             )

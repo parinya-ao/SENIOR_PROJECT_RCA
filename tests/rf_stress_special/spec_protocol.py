@@ -37,7 +37,7 @@ def _write_replay_bundle(root: Path, receiver_line: str) -> Path:
 
 def _replay(manifest: Path, output: Path) -> subprocess.CompletedProcess[str]:
     """Replay captured events through the public offline-only CLI."""
-    return subprocess.run(
+    return subprocess.run(  # noqa: S603 - fixed argv invokes the local replay CLI.
         [
             sys.executable,
             "-m",

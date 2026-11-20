@@ -9,11 +9,45 @@
 #include <string.h>
 
 #include "ssot.h"
+#if __has_include("shared/protocol/interactive_command.h")
+#include "shared/protocol/interactive_command.h"
+#define LORA_INTERACTIVE_COMMAND_AVAILABLE 1
+#endif
 
 static_assert(sizeof(ssot::CampaignState) == sizeof(int),
               "Preserve campaign state layout");
 
+static void test_interactive_command() {
+#if defined(LORA_INTERACTIVE_COMMAND_AVAILABLE)
+  reliable::HexDataCommandDecoder<8> decoder;
+  uint8_t payload[8] = {};
+  using Result = reliable::HexDataCommandDecoder<8>::Result;
+  assert(decoder.Feed('?', payload, sizeof payload) == Result::kNotCommand);
+  const char* command = "X03616263";
+  Result status = Result::kNotCommand;
+  for (const char* character = command; *character; ++character)
+    status = decoder.Feed(static_cast<uint8_t>(*character), payload, sizeof payload);
+  assert(status == Result::kComplete);
+  assert(decoder.size() == 3U);
+  assert(memcmp(payload, "abc", 3U) == 0);
+
+  decoder.Reset();
+  for (const char* character = "X09"; *character; ++character)
+    status = decoder.Feed(static_cast<uint8_t>(*character), payload, sizeof payload);
+  assert(status == Result::kInvalidLength);
+
+  decoder.Reset();
+  const char* malformed = "X01G";
+  for (const char* character = malformed; *character; ++character)
+    status = decoder.Feed(static_cast<uint8_t>(*character), payload, sizeof payload);
+  assert(status == Result::kInvalidHex);
+#else
+  assert(false && "interactive payload decoder is missing");
+#endif
+}
+
 int main(void) {
+  test_interactive_command();
   static const uint8_t expected[] = {0x01, 0x00, 0x34, 0x12, 0x08, 0x01,
                                      'h',  'e',  'l',  'l',  'o',  ' ',
                                      'w',  'o',  'r',  'l',  'd'};

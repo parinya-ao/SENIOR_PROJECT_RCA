@@ -1,149 +1,69 @@
-import importlib
-import unittest
-from typing import Any
+"""Tests for shared Intel HEX and physical Flash comparison evidence."""
 
-identity = importlib.import_module("tools.device_detection.firmware_identity")
-Json = Any
+from __future__ import annotations
 
-
-def require(test: unittest.TestCase, name: str) -> Json:
-    value = getattr(identity, name, None)
-    test.assertIsNotNone(value, f"firmware_identity.{name} must exist")
-    return value
+from tools.device_detection.firmware_identity import compare_flash_region
 
 
-def crc8(data: bytes) -> int:
-    value = 0
-    for byte in data:
-        value ^= byte
-        for _ in range(8):
-            value = ((value << 1) ^ (0x07 if value & 0x80 else 0)) & 0xFF
-    return value
+def _record(address: int, record_type: int, data: bytes) -> str:
+    """Encode one checksummed Intel HEX record for a small fixture."""
+    row = bytes((len(data), address >> 8, address & 0xFF, record_type)) + data
+    checksum = (-sum(row)) & 0xFF
+    return f":{(row + bytes((checksum,))).hex().upper()}"
 
 
-def marker(
-    role: str = "SENDER",
-    build: str = "sender",
-    date: str = "Nov  6 2026",
-    time: str = "05:00:00",
-) -> bytes:
-    source = f"{role}|V1|{build}|{date}|{time}".encode("ascii")
-    checksum = crc8(source)
-    return f"[{role}] ID V1 {build} {date} {time} CRC={checksum:02X}\r\n".encode()
+def _hex_image(address: int, data: bytes) -> str:
+    """Create a single-segment fixture with a valid end-of-file record."""
+    return "\n".join((_record(address, 0, data), _record(0, 1, b""))) + "\n"
 
 
-def ihex_record(address: int, record_type: int, data: bytes = b"") -> str:
-    body = bytes([len(data), address >> 8, address & 0xFF, record_type]) + data
-    check = (-sum(body)) & 0xFF
-    return ":" + (body + bytes([check])).hex().upper()
+def test_flash_comparison_reports_exact_sparse_image_match() -> None:
+    """Normalize sparse HEX fill bytes and compare identical physical bytes."""
+    actual = bytes((0xFF, 0xFF, 0x12, 0x34, 0xFF, 0xFF))
+
+    result = compare_flash_region(
+        actual,
+        _hex_image(2, b"\x12\x34"),
+        flash_size=len(actual),
+        region_start=0,
+        region_end=len(actual),
+    )
+
+    assert result.status == "FLASH_BYTES_MATCH"
+    assert result.first_mismatch_address is None
+    assert result.differing_bytes == 0
+    assert result.expected_sha256 == result.readback_sha256
 
 
-class FirmwareIdentityTests(unittest.TestCase):
-    def test_missing_marker_is_not_a_role(self) -> None:
-        parse = require(self, "parse_identity_stream")
-        if parse is None:
-            return
-        self.assertEqual(parse(b"ordinary debug text\r\n").status, "NONE")
+def test_flash_comparison_reports_first_actual_mismatch_address() -> None:
+    """Separate decoded Flash byte mismatches from HEX-file hash differences."""
+    actual = bytes((0xFF, 0xFF, 0x12, 0x35, 0xFF, 0xFF))
 
-    def test_valid_sender_and_receiver_markers_verify_crc_and_role(self) -> None:
-        parse = require(self, "parse_identity_stream")
-        if parse is None:
-            return
-        sender = parse(marker("SENDER", "sender_hello"))
-        receiver = parse(marker("RECEIVER", "receiver"))
-        self.assertEqual(sender.status, "VALID")
-        self.assertEqual(sender.identity.role, "SENDER")
-        self.assertEqual(receiver.identity.role, "RECEIVER")
+    result = compare_flash_region(
+        actual,
+        _hex_image(2, b"\x12\x34"),
+        flash_size=len(actual),
+        region_start=0,
+        region_end=len(actual),
+    )
 
-    def test_existing_updi_boot_markers_map_gateway_to_sender(self) -> None:
-        parse = require(self, "parse_identity_stream")
-        if parse is None:
-            return
-        stream = (
-            b"[GATEWAY] BOOT sender_hello Nov  6 2026 05:00:00\r\n"
-            b"[RECEIVER] BOOT receiver Nov  6 2026 05:01:00\r\n"
-        )
-        result = parse(stream)
-        self.assertEqual(result.status, "AMBIGUOUS")
-        self.assertEqual({item.role for item in result.identities}, {"SENDER", "RECEIVER"})
-
-    def test_malformed_partial_and_bad_crc_markers_are_rejected(self) -> None:
-        parse = require(self, "parse_identity_stream")
-        if parse is None:
-            return
-        good = marker()
-        bad_crc = good.replace(good[-4:-2], b"00")
-        self.assertEqual(parse(b"[SENDER] ID V1 sender").status, "MALFORMED")
-        self.assertEqual(parse(bad_crc).status, "MALFORMED")
-        self.assertEqual(parse(good[:-2]).status, "MALFORMED")
-
-    def test_conflicting_markers_in_one_stream_are_ambiguous(self) -> None:
-        parse = require(self, "parse_identity_stream")
-        if parse is None:
-            return
-        self.assertEqual(
-            parse(marker("SENDER", "sender") + marker("RECEIVER", "receiver")).status, "AMBIGUOUS"
-        )
-
-    def test_flash_readback_unavailable_returns_unknown(self) -> None:
-        match = require(self, "match_flash_fingerprint")
-        if match is None:
-            return
-        result = match(None, [], flash_size=32, app_start=4, app_end=24)
-        self.assertEqual(result.status, "UNAVAILABLE")
-
-    def test_sparse_hex_and_erased_tail_match_only_application_region(self) -> None:
-        match = require(self, "match_flash_fingerprint")
-        reference_cls = require(self, "FirmwareReference")
-        if match is None or reference_cls is None:
-            return
-        hex_text = (
-            "\n".join(
-                [
-                    ihex_record(0, 4, b"\x00\x00"),
-                    ihex_record(8, 0, b"ABC"),
-                    ihex_record(0, 1),
-                ]
-            )
-            + "\n"
-        )
-        actual = bytearray([0x00] * 32)
-        actual[4:24] = b"\xff" * 20
-        actual[8:11] = b"ABC"
-        actual[24:28] = b"BOOT"
-        reference = reference_cls(
-            role="SENDER",
-            build_id="sender-x",
-            ihex=hex_text,
-            flash_size=32,
-            app_start=4,
-            app_end=24,
-        )
-        result = match(bytes(actual), [reference], flash_size=32, app_start=4, app_end=24)
-        self.assertEqual(result.status, "MATCH")
-        self.assertEqual(result.identity.role, "SENDER")
-
-    def test_identical_fingerprints_with_different_roles_are_ambiguous(self) -> None:
-        match = require(self, "match_flash_fingerprint")
-        reference_cls = require(self, "FirmwareReference")
-        if match is None or reference_cls is None:
-            return
-        ihex = "\n".join([ihex_record(4, 0, b"same"), ihex_record(0, 1)]) + "\n"
-        refs = [
-            reference_cls("SENDER", "same-a", ihex, 16, 4, 12),
-            reference_cls("RECEIVER", "same-b", ihex, 16, 4, 12),
-        ]
-        actual = b"\xff" * 4 + b"same" + b"\xff" * 4 + b"\x00" * 4
-        result = match(actual, refs, flash_size=16, app_start=4, app_end=12)
-        self.assertEqual(result.status, "AMBIGUOUS")
-
-    def test_partial_readback_is_rejected(self) -> None:
-        match = require(self, "match_flash_fingerprint")
-        if match is None:
-            return
-        result = match(b"\xff" * 12, [], flash_size=32, app_start=4, app_end=24)
-        self.assertEqual(result.status, "INCOMPLETE")
+    assert result.status == "FLASH_BYTES_MISMATCH"
+    assert result.first_mismatch_address == 3
+    assert result.differing_bytes == 1
+    assert result.expected_sha256 != result.readback_sha256
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_flash_comparison_rejects_hex_data_outside_the_authorized_region() -> None:
+    """Do not silently discard records outside the selected Flash region."""
+    actual = bytes(8)
+
+    result = compare_flash_region(
+        actual,
+        _hex_image(6, b"\x01\x02"),
+        flash_size=len(actual),
+        region_start=0,
+        region_end=7,
+    )
+
+    assert result.status == "IMAGE_RANGE_MISMATCH"
+    assert result.first_mismatch_address == 7

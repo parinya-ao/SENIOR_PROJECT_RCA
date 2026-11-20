@@ -20,7 +20,7 @@ def _write_bundle(root: Path, case: dict[str, object], lines: list[tuple[str, st
 
 def _replay(manifest: Path, output: Path) -> subprocess.CompletedProcess[str]:
     """Analyze recorded events without opening the hardware transport."""
-    return subprocess.run(
+    return subprocess.run(  # noqa: S603 - fixed argv invokes the local replay CLI.
         [
             sys.executable,
             "-m",

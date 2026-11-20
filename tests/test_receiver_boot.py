@@ -11,6 +11,8 @@ from typing import Any, ClassVar
 from unittest.mock import patch
 
 import tools.receiver_boot as boot
+
+ROOT = Path(__file__).resolve().parents[1]
 from tools.device_detection.firmware_identity import normalize_ihex_region
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
@@ -434,17 +436,28 @@ class ApplicationPageWriteTests(unittest.TestCase):
 
     def test_guarded_app_writer_erases_only_its_page_with_installed_avrdude_dryrun(self) -> None:
         import tools.rf_proof as rf
-        from tests.test_rf_proof import effective_platformio_config
+        from tests.test_rf_proof import appcode_platformio_config
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             build = root / ".pio/build/receiver_spi"
             build.mkdir(parents=True)
+            (root / "config").mkdir()
+            (root / "generated").mkdir()
+            (root / "config/current_hardware.json").write_text(
+                (ROOT / "config/current_hardware.json").read_text()
+            )
+            (root / "generated/lora_manifest.json").write_text(
+                (ROOT / "generated/lora_manifest.json").read_text()
+            )
             payload = bytes.fromhex("52c00000")
             (build / "firmware.hex").write_text(boot.ihex(payload, boot.APP_START))
             original = bytes(range(256)) * 512
             approved_serial = "11" * 16
-            before = dict.fromkeys(("signature", "fuses", "eeprom", "lock"), b"unchanged")
+            fuses = bytearray(16)
+            fuses[8] = 44
+            before = dict.fromkeys(("signature", "eeprom", "lock"), b"unchanged")
+            before["fuses"] = bytes(fuses)
             before["sernum"] = bytes.fromhex(approved_serial)
             before["usersig"] = b"unchanged-userrow"
             before["flash"] = original
@@ -480,7 +493,7 @@ class ApplicationPageWriteTests(unittest.TestCase):
                     rf.program_application(
                         proof,
                         "receiver_spi",
-                        effective_platformio_config(),
+                        appcode_platformio_config(44),
                         approved_sha=hashlib.sha256(
                             (build / "firmware.hex").read_bytes()
                         ).hexdigest(),

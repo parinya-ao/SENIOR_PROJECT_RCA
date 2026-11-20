@@ -6,7 +6,7 @@ import json
 import re
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 try:
     from boot_analysis import analyze  # type: ignore[import-not-found]
@@ -14,9 +14,11 @@ try:
         _parse_ihex,
         normalize_ihex_region,
     )
+    from device_detection.hardware_registry import hardware_ports  # type: ignore[import-not-found]
 except ModuleNotFoundError:
     from tools.boot_analysis import analyze
     from tools.device_detection.firmware_identity import _parse_ihex, normalize_ihex_region
+    from tools.device_detection.hardware_registry import hardware_ports
 
 Json = Any
 
@@ -52,7 +54,6 @@ BACKUP = (
     ROOT / "artifacts/rf-proof/20261106T104722Z-target-backup/receiver-candidate-backup-flash.bin"
 )
 BACKUP_SHA = "a142fba14979cbc184d97c62cbfc8da75da01759b4cf6838f5b63aae36d4c943"
-PORT = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0"
 TOOLCHAIN = Path.home() / ".platformio/packages/toolchain-atmelavr/bin"
 AVRDUDE = Path.home() / ".platformio/packages/tool-avrdude/avrdude"
 AVRDUDE_CONF = AVRDUDE.with_name("avrdude.conf")
@@ -61,6 +62,11 @@ AVRDUDE_CONF = AVRDUDE.with_name("avrdude.conf")
 def sha(data: bytes) -> str:
     """Return the SHA-256 digest for one captured or generated image."""
     return hashlib.sha256(data).hexdigest()
+
+
+def enrolled_port(role: str = "receiver") -> str:
+    """Resolve the current stable UPDI locator from the hardware registry."""
+    return cast(str, hardware_ports(ROOT / "config/current_hardware.json")[role])
 
 
 def reset_target(entry: bytes, base: int) -> int:
@@ -299,9 +305,7 @@ def load_package(  # noqa: C901, PLR0912 -- validates the reviewed write scope b
             image = ROOT / ".pio/build" / environment / ("firmware." + extension)
             if sha(image.read_bytes()) != expected[extension + "_sha256"]:
                 msg = "application artifact changed since boot approval package was prepared"
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
     if check_apps:
         padded = (path.parent / "receiver-spi-full-pages.hex").read_bytes()
         memory = _parse_ihex(padded.decode())
@@ -322,15 +326,14 @@ def read_snapshot(
     include_usersig: bool = False,
 ) -> Json:
     """Capture and validate protected memories before or after an authorized write."""
-    import rf_proof  # type: ignore[import-not-found]  # noqa: PLC0415 -- avoids import cycle
-
-    if role not in rf_proof.PORTS:
+    ports = hardware_ports(ROOT / "config/current_hardware.json")
+    if role not in ports:
         msg = "unknown programming target"
         raise ValueError(msg)
     backup_name = "receiver" if role == "receiver" else "gateway"
     if current_target:
         identity = json.loads((ROOT / "config/current_hardware.json").read_text())[role]
-        if identity["port_path"] != rf_proof.PORTS[role]:
+        if identity["port_path"] != ports[role]:
             msg = "current target port differs from inventory"
             raise ValueError(msg)
     else:
@@ -350,7 +353,7 @@ def read_snapshot(
         "-c",
         "serialupdi",
         "-P",
-        rf_proof.PORTS[role],
+        ports[role],
         "-b",
         "115200",
         "-D",
@@ -428,7 +431,7 @@ def install(  # noqa: C901, PLR0915 -- keeps the authorized write sequence expli
     if token != expected_token:
         msg = "authorization hash does not match exact reviewed page image"
         raise ValueError(msg)
-    import rf_proof  # noqa: PLC0415 -- avoids a module cycle
+    from tools import rf_proof  # noqa: PLC0415 -- avoids a module cycle
 
     errors = rf_proof.physical_readiness_errors(args)
     if errors or rf_proof.check_port_owners(proof, "boot-preflight"):
@@ -481,7 +484,7 @@ def install(  # noqa: C901, PLR0915 -- keeps the authorized write sequence expli
             "-c",
             "serialupdi",
             "-P",
-            PORT,
+            enrolled_port(),
             "-b",
             "115200",
             "-D",
@@ -504,19 +507,16 @@ def install(  # noqa: C901, PLR0915 -- keeps the authorized write sequence expli
             raise ValueError(msg)
         before = after_app
         image = directory / "receiver-boot-page0.hex"
-    command = page_write_command(AVRDUDE, AVRDUDE_CONF, PORT, image)
+    command = page_write_command(AVRDUDE, AVRDUDE_CONF, enrolled_port(), image)
     proof.note("receiver-boot-program-command.json", json.dumps(command, indent=2) + "\n")
     code, _, _ = proof.command(
         "receiver-boot-page0-restore" if restore else "receiver-boot-page0-write", command, 60
     )
     if code:
         msg = (
-            "BOOT page write/verify failed; use the separately authorized page-0 "
-            "recovery procedure"
+            "BOOT page write/verify failed; use the separately authorized page-0 recovery procedure"
         )
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
     after = read_snapshot(proof, "boot-after")
     require_preserved(before, after, 0, PAGE_SIZE)
     if after["flash"][:PAGE_SIZE] != expected_page:
@@ -526,7 +526,7 @@ def install(  # noqa: C901, PLR0915 -- keeps the authorized write sequence expli
         "origin": "PHYSICAL_UPDI",
         "operation": "restore" if restore else "install",
         "package": str(Path(args.receiver_boot_package).resolve()),
-        "port": PORT,
+        "port": enrolled_port(),
         "page_hex_sha256": report["page_hex_sha256"],
         "boot_sha256": sha(after["flash"][:APP_START]),
         "serial": after["sernum"].hex(),
@@ -553,7 +553,10 @@ def verify_live_receipt(proof: Json, path: str | Path) -> bool:
     ):
         return False
     report = load_package(receipt["package"], check_apps=False)
-    if receipt.get("page_hex_sha256") != report["page_hex_sha256"] or receipt.get("port") != PORT:
+    if (
+        receipt.get("page_hex_sha256") != report["page_hex_sha256"]
+        or receipt.get("port") != enrolled_port()
+    ):
         return False
     current = read_snapshot(proof, "boot-live-check")
     page = normalize_ihex_region(
@@ -873,10 +876,13 @@ def prepare(proof: Json) -> int:  # noqa: C901, PLR0912, PLR0915 -- builds and v
         "physical_programming": "NOT_RUN",
         "physical_restore_test": "NOT_RUN",
         "write_command": page_write_command(
-            AVRDUDE, AVRDUDE_CONF, PORT, directory / "receiver-boot-page0.hex"
+            AVRDUDE, AVRDUDE_CONF, enrolled_port(), directory / "receiver-boot-page0.hex"
         ),
         "restore_command": page_write_command(
-            AVRDUDE, AVRDUDE_CONF, PORT, directory / "receiver-boot-page0.original.hex"
+            AVRDUDE,
+            AVRDUDE_CONF,
+            enrolled_port(),
+            directory / "receiver-boot-page0.original.hex",
         ),
     }
     report["application_write_command"] = [
@@ -889,7 +895,7 @@ def prepare(proof: Json) -> int:  # noqa: C901, PLR0912, PLR0915 -- builds and v
         "-c",
         "serialupdi",
         "-P",
-        PORT,
+        enrolled_port(),
         "-b",
         "115200",
         "-D",

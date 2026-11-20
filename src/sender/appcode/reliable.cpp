@@ -298,7 +298,9 @@ void Poll() {
 #endif
   }
   if (!transport.IsActive())
-    radio_diagnostics::FlushEvent(event_queue, kRole, accepted_payload);
+    radio_diagnostics::FlushEvent(
+        event_queue, kRole, accepted_payload, ssot::kHelloPayloadSize,
+        LORA_SENDER_ADDRESS, LORA_RECEIVER_ADDRESS);
 }
 
 }  // namespace reliable_app

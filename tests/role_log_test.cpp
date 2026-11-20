@@ -61,11 +61,23 @@ int main() {
   clear_capture();
   const uint8_t hello_payload[] = {'h', 'e', 'l', 'l', 'o', ' ',
                                    'w', 'o', 'r', 'l', 'd'};
-  updi_role_log_payload("RECEIVER", "PAYLOAD_BYTES", 0x1234, 1, hello_payload,
-                        sizeof(hello_payload));
+  updi_role_log_payload("RECEIVER", "PAYLOAD_BYTES", 0x1234, 305419896U, 8,
+                        1, hello_payload, sizeof(hello_payload));
   CHECK(std::strcmp(captured,
-                    "[RECEIVER] PAYLOAD_BYTES C=1234 S=01 LEN=11 "
-                    "HEX=68656C6C6F20776F726C64 ASCII=hello world\r\n") == 0);
+                    "[RECEIVER] PAYLOAD_BYTES SID=1234 T=305419896 TYPE=8 Q=1 "
+                    "LEN=11 HEX=68656C6C6F20776F726C64\r\n") == 0);
+  clear_capture();
+  uint8_t maximum_payload[UINT8_MAX] = {};
+  const uint8_t log_limit = updi_role_log_payload_limit();
+  CHECK(log_limit > 0U);
+  updi_role_log_payload("RECEIVER", "PAYLOAD_BYTES", 0x1234, 0U, 8, 1,
+                        maximum_payload, log_limit);
+  CHECK(std::strlen(captured) <= kUpdiRoleLogMessageLimit + 15U);
+  clear_capture();
+  updi_role_log_payload("RECEIVER", "PAYLOAD_BYTES", 0x1234, 0U, 8, 1,
+                        maximum_payload,
+                        static_cast<uint8_t>(log_limit + 1U));
+  CHECK(captured[0] == '\0');
   clear_capture();
   updi_role_log_campaign("GATEWAY", "TEST_COMPLETED", 0x1234);
   CHECK(std::strcmp(captured, "[GATEWAY] TEST_COMPLETED C=1234\r\n") == 0);

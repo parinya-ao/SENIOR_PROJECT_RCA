@@ -16,12 +16,16 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from tools import rf_proof as rf
+from tools.device_detection.evidence import DeviceRole
+from tools.device_detection.hardware_registry import hardware_ports, load_hardware_registry
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 TRIALS = 10
-AVR128DA28_FLASH_BYTES = 128 * 1024
+STDOUT_STREAM = "stdout"
+RX_READY_MARKER = "RX_READY"
+TRANSACTION_FAILED_MARKER = "TRANSACTION_FAILED"
 
 
 def capture_event_phase(*, after_rf_reopen: bool, ready_barrier_seen: bool) -> str:
@@ -36,18 +40,24 @@ def capture_event_phase(*, after_rf_reopen: bool, ready_barrier_seen: bool) -> s
 class Capture:
     """Own both UPDI monitors and retain the connection provenance of each line."""
 
-    def __init__(self, proof: rf.ProofRun) -> None:
+    def __init__(
+        self, proof: rf.ProofRun, *, observe: Callable[[str, str], None] | None = None
+    ) -> None:
         """Create a shared event stream without opening either adapter."""
         self.proof = proof
+        self.observe = observe
         self.incoming: queue.Queue[tuple[str, str, bytes | None]] = queue.Queue()
         self.monitors: dict[str, rf.Json] = {}
-        self.generations = dict.fromkeys(rf.PORTS, 0)
+        self.ports = hardware_ports(rf.ROOT / "config" / "current_hardware.json")
+        self.generations = dict.fromkeys(self.ports, 0)
         self.connections: dict[str, tuple[str, int]] = {}
         self.lines: list[str] = []
         self.line_segments: list[tuple[str, int, str]] = []
         self.records: list[rf.Json] = []
         self.after_rf: set[tuple[str, int]] = set()
         self.ready_barriers: set[tuple[str, int]] = set()
+        self.reset_connections: set[tuple[str, int]] = set()
+        self.verified_campaigns: set[str] = set()
 
     def record(self, role: str, stream: str, line: str, generation: int) -> None:
         """Journal host receipt time separately from embedded firmware time."""
@@ -70,7 +80,14 @@ class Capture:
         with (self.proof.run_dir / "events.jsonl").open("a") as out:
             out.write(json.dumps(row) + "\n")
         self.records.append(row)
-        if stream == "stdout":
+        if stream == STDOUT_STREAM and line.startswith(f"[{role.upper()}] "):
+            if line.startswith(f"[{role.upper()}] BOOT "):
+                segment = (role, generation)
+                if segment in self.ready_barriers or segment in self.after_rf:
+                    self.reset_connections.add(segment)
+                self.ready_barriers.discard(segment)
+            if self.observe is not None:
+                self.observe(role.upper(), line)
             self.lines.append(line)
             self.line_segments.append((role, generation, line))
 
@@ -83,15 +100,24 @@ class Capture:
         self.connections[label] = (role, generation)
         if after_rf:
             self.after_rf.add((role, generation))
-        self.monitors[role] = rf.start_rf_monitor(self.proof, label, rf.PORTS[role], self.incoming)
+        self.monitors[role] = rf.start_rf_monitor(
+            self.proof, label, self.ports[role], self.incoming
+        )
         self.record(role, "capture_open", label, generation)
 
-    def close(self, role: str) -> None:
+    def close(self, role: str) -> int | None:
         """Release a monitor while leaving already queued output attributable."""
+        generation = self.generations[role]
         monitor = self.monitors.pop(role, None)
-        if monitor is not None:
+        try:
+            if monitor is None:
+                return None
             code = rf.stop_rf_monitor(monitor)
-            self.record(role, "capture_close", str(code), self.generations[role])
+            self.drain_pending()
+            self.record(role, "capture_close", str(code), generation)
+            return code
+        finally:
+            self.ready_barriers.discard((role, generation))
 
     def disconnected(self, role: str) -> bool:
         """Return whether the active monitor can no longer take commands."""
@@ -99,8 +125,12 @@ class Capture:
 
     def send(self, role: str, command: str) -> int:
         """Queue one command once. A DATA command is never replayed on disconnect."""
+        self.drain_pending()
         if self.disconnected(role):
-            self.connect(role)
+            raise OSError(f"{role}: monitor disconnected before {command}")
+        segment = (role, self.generations[role])
+        if command == "S" and segment not in self.ready_barriers:
+            raise OSError(f"{role}: DATA requires fresh RX readiness")
         process = self.monitors[role]["process"]
         if process.stdin.write(command.encode("ascii")) != 1:
             msg = f"{role}: command {command} was not fully queued"
@@ -119,67 +149,146 @@ class Capture:
         if raw is not None:
             self.record(role, stream, raw.decode("ascii", errors="replace").strip(), generation)
 
-    def wait(self, predicate: Callable[[], object], timeout: float) -> bool:
-        """Poll until evidence arrives, with at most two reconnects per role per wait."""
+    def drain_pending(self) -> None:
+        """Journal queued records before indexing a new command's response."""
+        for _ in range(self.incoming.qsize()):
+            self.drain_one(0)
+
+    def fresh_lines(self, role: str, start: int) -> list[str]:
+        """Return addressed output from the current monitor generation."""
+        return [
+            line
+            for origin, generation, line in self.line_segments[start:]
+            if origin == role and generation == self.generations[role]
+        ]
+
+    def wait(
+        self,
+        predicate: Callable[[], object],
+        timeout: float,
+        *,
+        park_role: str | None = None,
+        recover_tracker: bool = False,
+    ) -> bool:
+        """Recover only the expected post-RF Tracker capture without sending commands."""
         deadline = time.monotonic() + timeout
-        start = self.generations.copy()
-        while time.monotonic() < deadline:
+        reconnects = 0
+        while True:
+            for role in (park_role,) if park_role else ("gateway", "receiver"):
+                if role not in self.monitors and role != park_role:
+                    continue
+                segment = (role, self.generations[role])
+                if not park_role and segment in self.reset_connections:
+                    raise OSError(f"{role}: MCU reset observed")
+                if self.disconnected(role):
+                    self.ready_barriers.discard(segment)
+                    if recover_tracker and role == "receiver" and reconnects < 2:
+                        self.connect(role, after_rf=True)
+                        if segment in self.reset_connections:
+                            raise OSError(f"{role}: MCU reset observed")
+                        reconnects += 1
+                    else:
+                        raise OSError(f"{role}: monitor disconnected")
             if predicate():
                 return True
+            if time.monotonic() >= deadline:
+                return False
             self.drain_one(0.1)
-            for role in tuple(self.monitors):
-                if self.disconnected(role) and self.generations[role] < start[role] + 2:
-                    self.connect(role)
-        return bool(predicate())
 
     def exchange(self, start: int, *, nack: bool) -> rf.Json | None:
-        """Assess only the lines received since the DATA trigger."""
-        return rf.assess_installed_exchange(self.lines[start:], nack)
+        """Assess current Gateway and post-RF Tracker evidence after the DATA trigger."""
+        lines = [
+            line
+            for role, generation, line in self.line_segments[start:]
+            if (role == "gateway" and generation == self.generations[role])
+            or (role, generation) in self.after_rf
+        ]
+        return rf.assess_installed_exchange(lines, nack)
+
+    def park(self, role: str) -> None:
+        """Use a fresh monitor for standby recovery if the current connection was lost."""
+        if self.disconnected(role):
+            self.connect(role)
+        self.marker(role, "P", "PARKED E=0")
 
     def marker(self, role: str, command: str, marker: str) -> None:
         """Send a control and require its role-specific completion."""
         start = self.send(role, command)
         expected_line = f"[{role.upper()}] {marker}"
-        if not self.wait(lambda: expected_line in self.lines[start:], 20):
-            msg = f"{role}: missing {marker} after {command}"
-            raise TimeoutError(msg)
-        generation = self.generations[role]
-        fresh_marker = any(
-            line.startswith(expected_line)
-            for line_role, line_generation, line in self.line_segments[start:]
-            if line_role == role and line_generation == generation
-        )
-        if not fresh_marker:
-            msg = f"{role}: {marker} came from an earlier monitor connection"
-            raise TimeoutError(msg)
-        if marker == "RX_READY":
-            self.ready_barriers.add((role, generation))
+        if not self.wait(
+            lambda: expected_line in self.fresh_lines(role, start),
+            20,
+            park_role=role if marker == "PARKED E=0" else None,
+        ):
+            raise TimeoutError(f"{role}: missing fresh {marker} after {command}")
+        segment = (role, self.generations[role])
+        if marker == RX_READY_MARKER:
+            self.ready_barriers.add(segment)
+        elif marker == "PARKED E=0":
+            self.ready_barriers.discard(segment)
 
 
 def verify_snapshots(snapshot: Path, receipt_path: Path) -> dict[str, rf.Json]:
     """Require enrolled serials and full saved Flash matching the known bench pair."""
-    images: dict[str, rf.Json] = json.loads(receipt_path.read_text())["images"]
-    inventory = json.loads((rf.ROOT / "config/current_hardware.json").read_text())
-    for role, environment in (("gateway", "sender_hello"), ("receiver", "receiver")):
-        image = images[role.upper()]
-        flash = (snapshot / f"{role}-flash.bin").read_bytes()
-        historical = (receipt_path.parent / f"{role}-live-flash.bin").read_bytes()
-        serial = (snapshot / f"{role}-sernum.bin").read_bytes().hex()
-        signature = (snapshot / f"{role}-signature.bin").read_bytes().hex()
-        digest = hashlib.sha256(flash[image["start"] : image["end"]]).hexdigest()
-        if (
-            len(flash) != AVR128DA28_FLASH_BYTES
-            or flash != historical
-            or serial != image["serial_number"]
-            or serial != inventory[role]["device_serial_hex"]
-            or signature != "1e970a"
-            or image["environment"] != environment
-            or image["port"] != rf.PORTS[role]
-            or not image["verified"]
-            or digest != image["readback_region_sha256"]
-        ):
-            msg = f"{role}: readback differs from the reviewed installed bench image"
-            raise ValueError(msg)
+    receipt = json.loads(receipt_path.read_text())
+    if (
+        not isinstance(receipt, dict)
+        or receipt.get("origin") != "PHYSICAL_UPDI"
+        or not isinstance(receipt.get("images"), dict)
+    ):
+        raise ValueError("Expected a physical UPDI upload receipt")
+    images: dict[str, rf.Json] = receipt["images"]
+    registry = load_hardware_registry(rf.ROOT / "config" / "current_hardware.json")
+    ports = hardware_ports(rf.ROOT / "config" / "current_hardware.json")
+    manifest = json.loads((rf.ROOT / "generated/lora_manifest.json").read_text())
+    archive = receipt_path.parent
+    for role, board_role, prefix, environment in (
+        (DeviceRole.GATEWAY, "sender", "gateway", "sender_hello"),
+        (DeviceRole.TRACKER, "receiver", "receiver", "receiver"),
+    ):
+        profile = manifest["device_profiles"][manifest["boards"][board_role]["mcu"]]
+        message = f"{role.value.title()}: readback differs from the reviewed installed bench image"
+        try:
+            image = images[prefix.upper()]
+            # Production readbacks and the standalone snapshot command use different names.
+            flash, serial, signature, fuses = (
+                (snapshot / live).read_bytes()
+                if (snapshot / live).exists()
+                else (snapshot / standalone).read_bytes()
+                for live, standalone in (
+                    (f"{prefix}-live-flash.bin", f"{board_role}-flash.bin"),
+                    (f"{prefix}-live-serial.bin", f"{board_role}-sernum.bin"),
+                    (f"{prefix}-live-signature.bin", f"{board_role}-signature.bin"),
+                    (f"{prefix}-live-fuses.bin", f"{board_role}-fuses.bin"),
+                )
+            )
+            fuse_archive = archive / f"{prefix}-live-fuses.bin"
+            if not fuse_archive.exists():
+                fuse_archive = archive / f"{environment}-after-page-write-fuses.bin"
+            start, end = image["start"], image["end"]
+            if (
+                len(flash) != profile["flash_bytes"]
+                or flash != (archive / f"{prefix}-live-flash.bin").read_bytes()
+                or serial != (archive / f"{prefix}-live-serial.bin").read_bytes()
+                or serial != registry[role].serial_number
+                or serial.hex() != image["serial_number"]
+                or signature != (archive / f"{prefix}-live-signature.bin").read_bytes()
+                or signature.hex() != image["signature"]
+                or signature.hex() != profile["signature_hex"]
+                or len(fuses) != 16
+                or fuses != fuse_archive.read_bytes()
+                or image["environment"] != environment
+                or image["port"] != ports[prefix]
+                or image["verified"] is not True
+                or type(start) is not int
+                or type(end) is not int
+                or not 0 <= start < end <= len(flash)
+                or hashlib.sha256(flash[start:end]).hexdigest() != image["readback_region_sha256"]
+                or not re.fullmatch(r"[0-9a-f]{64}", image["build_id"])
+            ):
+                raise ValueError(message)
+        except (OSError, KeyError, TypeError) as exc:
+            raise ValueError(message) from exc
     return images
 
 
@@ -190,9 +299,10 @@ def verify_console(capture: Capture, role: str, image: rf.Json, profile: rf.Json
 
     def matches() -> bool:
         """Check live build identity, protocol, silicon version and PHY together."""
-        lines = capture.lines[start:]
+        lines = capture.fresh_lines(role, start)
         return (
-            f"[{label}] BUILD_ID={image['build_id']}" in lines
+            {line for line in lines if line.startswith(f"[{label}] BUILD_ID=")}
+            == {f"[{label}] BUILD_ID={image['build_id']}"}
             and f"[{label}] PROTOCOL_VERSION=2" in lines
             and f"[{label}] RADIO_SPI_VERSION=0x12" in lines
             and rf.radio_startup_matches(lines, label, profile, allow_rearm=True)
@@ -207,7 +317,7 @@ def gateway_finished(capture: Capture, start: int) -> bool:
     """Wait for the observed Gateway terminal outcome before reopening Tracker UPDI."""
     return any(
         line.startswith(("[GATEWAY] ACK_ACCEPTED ", "[GATEWAY] TRANSACTION_FAILED "))
-        for line in capture.lines[start:]
+        for line in capture.fresh_lines("gateway", start)
     )
 
 
@@ -215,7 +325,7 @@ def unplanned_transaction_failures(lines: list[str], planned_campaigns: set[str]
     """Return transaction-failure events whose campaign is outside this run's cases."""
     failures = []
     for line in lines:
-        if "TRANSACTION_FAILED" not in line:
+        if TRANSACTION_FAILED_MARKER not in line:
             continue
         match = re.search(r"\bSID=([0-9A-Fa-f]+)\b", line)
         campaign = match.group(1).upper() if match is not None else None
@@ -250,6 +360,45 @@ def capture_diagnostics(lines: list[str]) -> dict[str, rf.Json]:
     }
 
 
+def exchange_once(
+    capture: Capture, images: dict[str, rf.Json], profile: rf.Json, *, nack: bool = False
+) -> rf.Json:
+    """Prove both radios ready, release Tracker UPDI for RF, then verify its buffered evidence."""
+    for role in ("receiver", "gateway"):
+        capture.marker(role, "R", RX_READY_MARKER)
+    capture.send("receiver", "N" if nack else "A")
+    for role in ("receiver", "gateway"):
+        verify_console(capture, role, images[role.upper()], profile)
+    capture.drain_pending()
+    for role in ("receiver", "gateway"):
+        if (role, capture.generations[role]) not in capture.ready_barriers or capture.disconnected(
+            role
+        ):
+            raise OSError(f"{role}: lost verified readiness before DATA")
+    receiver_segment = ("receiver", capture.generations["receiver"])
+    try:
+        clean_release = capture.close("receiver") == 0
+        capture.drain_pending()
+        if not clean_release or receiver_segment in capture.reset_connections:
+            raise OSError("Tracker monitor release failed or MCU reset before DATA")
+        start = capture.send("gateway", "S")
+        if not capture.wait(partial(gateway_finished, capture, start), 30):
+            raise TimeoutError("Gateway did not report a terminal DATA outcome")
+    finally:
+        capture.connect("receiver", after_rf=True)
+    expected_attempts = 2 if nack else 1
+    assess = partial(capture.exchange, start, nack=nack)
+    capture.wait(assess, 45, recover_tracker=True)
+    result = assess()
+    if result is None or result["attempts"] != expected_attempts:
+        raise TimeoutError("Incomplete two-sided DATA/ACK evidence or unexpected retry count")
+    campaign = str(result["campaign"])
+    if campaign in capture.verified_campaigns:
+        raise ValueError(f"Repeated RF campaign {campaign}")
+    capture.verified_campaigns.add(campaign)
+    return result
+
+
 def run(capture: Capture, images: dict[str, rf.Json], profile: rf.Json) -> int:
     """Run each bounded case sequentially and park both radios on exit."""
     outcomes: list[rf.Json] = []
@@ -259,29 +408,14 @@ def run(capture: Capture, images: dict[str, rf.Json], profile: rf.Json) -> int:
     unplanned_failure_events: list[rf.Json] = []
     try:
         for role in ("receiver", "gateway"):
-            capture.marker(role, "R", "RX_READY")
-            verify_console(capture, role, images[role.upper()], profile)
+            capture.connect(role)
         for nack in (False, True):
             for trial in range(1, TRIALS + 1):
-                capture.marker("receiver", "R", "RX_READY")
-                capture.marker("gateway", "R", "RX_READY")
-                capture.send("receiver", "N" if nack else "A")
-                if nack:
-                    verify_console(capture, "receiver", images["RECEIVER"], profile)
-                # Keep OCD traffic off the Tracker while it receives and replies.
-                capture.close("receiver")
-                start = capture.send("gateway", "S")
-                capture.wait(partial(gateway_finished, capture, start), 30)
-                capture.connect("receiver", after_rf=True)
-                assess = partial(capture.exchange, start, nack=nack)
-                capture.wait(assess, 45)
-                result = assess()
-                row = {"case": "NACK" if nack else "ACK", "trial": trial, "result": result}
-                outcomes.append(row)
+                result = exchange_once(capture, images, profile, nack=nack)
+                outcomes.append(
+                    {"case": "NACK" if nack else "ACK", "trial": trial, "result": result}
+                )
                 capture.proof.note("trials.json", json.dumps(outcomes, indent=2) + "\n")
-                if result is None:
-                    msg = f"{row['case']} {trial}/{TRIALS}: incomplete two-sided RF evidence"
-                    raise TimeoutError(msg)
     except (OSError, ValueError) as exc:
         error = str(exc)
     finally:
@@ -294,13 +428,13 @@ def run(capture: Capture, images: dict[str, rf.Json], profile: rf.Json) -> int:
         unplanned_failure_events = [
             row
             for row in capture.records
-            if row["line"] in unplanned_failures and "TRANSACTION_FAILED" in row["line"]
+            if row["line"] in unplanned_failures and TRANSACTION_FAILED_MARKER in row["line"]
         ]
         if unplanned_failures and error is None:
             error = "unplanned transaction failure outside the scheduled RF cases"
-        for role in rf.PORTS:
+        for role in capture.ports:
             try:
-                capture.marker(role, "P", "PARKED E=0")
+                capture.park(role)
                 parked[role] = True
             except OSError:
                 parked[role] = False

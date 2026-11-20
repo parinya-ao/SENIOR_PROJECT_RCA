@@ -136,6 +136,7 @@ class SymmetricProofTests(unittest.TestCase):
                 )
                 with (
                     patch.object(rf, "application_layout_verified", return_value=True),
+                    patch.object(rf, "firmware_image_layout_verified", return_value=True),
                     patch.object(rf, "upload_ports_match", return_value=True),
                     patch.object(rf, "check_port_owners", return_value=[]),
                     patch.object(rf, "physical_readiness_errors", return_value=[]),

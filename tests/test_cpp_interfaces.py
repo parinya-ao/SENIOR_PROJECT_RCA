@@ -8,6 +8,36 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class CppInterfaceTests(unittest.TestCase):
+    def test_role_log_payload_limit_and_directional_metadata(self) -> None:
+        """Keep payload evidence bounded, exact, and correlated by role/campaign."""
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            binary = str(Path(directory) / "role-log")
+            result = subprocess.run(
+                [
+                    "g++",
+                    "-std=c++17",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Istable_lib/updi_uart",
+                    "tests/role_log_test.cpp",
+                    "-o",
+                    binary,
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            completed = subprocess.run(
+                [binary], capture_output=True, text=True, timeout=10, check=False
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+
     def test_sd_line_reader_truncates_overlong_lines_without_losing_sync(self) -> None:
         """Recover after an overlong SD line without losing the next command."""
         import tempfile

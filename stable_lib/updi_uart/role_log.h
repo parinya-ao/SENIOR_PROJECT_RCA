@@ -8,6 +8,8 @@
 
 #include "updi_uart.h"
 
+inline constexpr uint8_t kUpdiRoleLogMessageLimit = 120U;
+
 // Version tag for the CRC-protected firmware identity line.
 #define UPDI_ROLE_LOG_IDENTITY_V1 1
 #ifndef LORA_DEBUG_OUTPUT
@@ -67,7 +69,8 @@ inline void updi_role_log(const char* role, const char* message) {
 #if defined(LORA_NONBLOCKING_LOG) && LORA_NONBLOCKING_LOG
   uint8_t role_len = 0, message_len = 0;
   while (role && role_len < 12 && role[role_len]) ++role_len;
-  while (message && message_len < 120 && message[message_len]) ++message_len;
+  while (message && message_len < kUpdiRoleLogMessageLimit && message[message_len])
+    ++message_len;
   if (sizeof(updi_log_queue) - updi_log_count < 5U + role_len + message_len) {
     if (updi_log_drops != UINT16_MAX) ++updi_log_drops;
     return;
@@ -87,7 +90,8 @@ inline void updi_role_log(const char* role, const char* message) {
   }
   updi_uart_tx(']');
   updi_uart_tx(' ');
-  for (uint8_t i = 0; message != nullptr && message[i] != '\0' && i < 120;
+  for (uint8_t i = 0; message != nullptr && message[i] != '\0' &&
+                       i < kUpdiRoleLogMessageLimit;
        ++i) {
     updi_uart_tx(static_cast<uint8_t>(message[i]));
   }
@@ -209,22 +213,39 @@ inline void updi_role_log_packet(const char* role, const char* event,
   updi_role_log(role, message);
 }
 
-// Logs exact payload bytes plus printable ASCII without retaining the payload.
-// The formatted line is bounded to 128 bytes; an oversized line is omitted.
+// Return the largest exact payload that fits one role-log record.
+inline uint8_t updi_role_log_payload_limit() {
+  char prefix[96];
+  const int prefix_size = snprintf(
+      prefix, sizeof(prefix),
+      "PAYLOAD_BYTES SID=FFFF T=%lu TYPE=%u Q=%u LEN=%u HEX=",
+      static_cast<unsigned long>(UINT32_MAX), static_cast<unsigned>(UINT8_MAX),
+      static_cast<unsigned>(UINT8_MAX), static_cast<unsigned>(UINT8_MAX));
+  if (prefix_size < 0 ||
+      static_cast<size_t>(prefix_size) >= kUpdiRoleLogMessageLimit)
+    return 0U;
+  return static_cast<uint8_t>(
+      (kUpdiRoleLogMessageLimit - static_cast<size_t>(prefix_size)) / 2U);
+}
+
+// Logs exact payload bytes as hex; printable text is decoded by the host.
 inline void updi_role_log_payload(const char* role, const char* event,
-                                  uint16_t campaign_id, uint8_t sequence,
+                                  uint16_t campaign_id, uint32_t time_ms,
+                                  uint8_t type, uint8_t sequence,
                                   const uint8_t* payload,
                                   uint8_t payload_size) {
-  if (!updi_uart_enabled() || event == nullptr || payload == nullptr) return;
+  if (!updi_uart_enabled() || event == nullptr || payload == nullptr ||
+      payload_size > updi_role_log_payload_limit())
+    return;
 
   char message[128];
   char campaign_hex[5];
-  char sequence_hex[3];
   updi_role_log_format_hex(campaign_hex, campaign_id, 4);
-  updi_role_log_format_hex(sequence_hex, sequence, 2);
-  const int prefix_length =
-      snprintf(message, sizeof(message), "%s C=%s S=%s LEN=%u HEX=", event,
-               campaign_hex, sequence_hex, static_cast<unsigned>(payload_size));
+  const int prefix_length = snprintf(
+      message, sizeof(message), "%s SID=%s T=%lu TYPE=%u Q=%u LEN=%u HEX=",
+      event, campaign_hex, static_cast<unsigned long>(time_ms),
+      static_cast<unsigned>(type), static_cast<unsigned>(sequence),
+      static_cast<unsigned>(payload_size));
   if (prefix_length < 0 ||
       static_cast<size_t>(prefix_length) >= sizeof(message)) {
     return;
@@ -236,18 +257,6 @@ inline void updi_role_log_payload(const char* role, const char* event,
     if (position + 2 >= sizeof(message)) return;
     message[position++] = hex[payload[i] >> 4];
     message[position++] = hex[payload[i] & 0x0fU];
-  }
-  constexpr char ascii_prefix[] = " ASCII=";
-  for (char character : ascii_prefix) {
-    if (character == '\0') break;
-    if (position + 1 >= sizeof(message)) return;
-    message[position++] = character;
-  }
-  for (uint8_t i = 0; i < payload_size; ++i) {
-    if (position + 1 >= sizeof(message)) return;
-    const uint8_t byte = payload[i];
-    message[position++] =
-        byte >= 0x20 && byte <= 0x7e ? static_cast<char>(byte) : '.';
   }
   message[position] = '\0';
   updi_role_log(role, message);

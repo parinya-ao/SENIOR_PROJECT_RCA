@@ -4,10 +4,12 @@ import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from tools import installed_rf
+from tools.rf_proof import ProofRun
 
 
 def test_unplanned_transaction_failure_is_retained_in_run_summary() -> None:
@@ -67,7 +69,7 @@ def test_capture_journal_marks_buffered_lines_until_a_fresh_readiness_barrier(
     tmp_path: Path,
 ) -> None:
     """Keep late Tracker output marked buffered until RX_READY on its new connection."""
-    capture = installed_rf.Capture(SimpleNamespace(run_dir=tmp_path))
+    capture = installed_rf.Capture(cast(ProofRun, SimpleNamespace(run_dir=tmp_path)))
     capture.generations["receiver"] = 2
     capture.after_rf.add(("receiver", 2))
     capture.record("receiver", "stdout", "[RECEIVER] DATA_VALIDATED SID=3536", 2)

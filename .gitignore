@@ -650,6 +650,9 @@ src/sender/*
 !src/shared/
 src/shared/*
 !src/shared/README.md
+!src/shared/protocol/
+src/shared/protocol/*
+!src/shared/protocol/interactive_command.h
 
 # Read-only installed LoRa bench runner.
 !tools/installed_rf.py

@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import sys
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
 from prompt_toolkit import PromptSession
@@ -21,8 +24,11 @@ from rich.text import Text
 
 from tools.lora_chat.errors import make_error
 from tools.lora_chat.protocol import (
+    RETRY_EVENTS,
+    TIMEOUT_EVENTS,
     DeviceEvent,
     DeviceRole,
+    EventName,
     UnsupportedPayloadError,
     parse_firmware_event,
 )
@@ -30,6 +36,7 @@ from tools.lora_chat.session import (
     ChatSession,
     ChatSettings,
     ExchangeResult,
+    ExchangeStatus,
     InputDisposition,
     QueueFullError,
     RetryUnavailableError,
@@ -43,9 +50,15 @@ from tools.lora_chat.transport import (
 
 if TYPE_CHECKING:
     from collections import deque
+    from collections.abc import Iterator
+    from typing import TextIO
 
 
 ROOT = Path(__file__).resolve().parents[2]
+EVENT_FAILURE_MARKERS = ("NACK", "FAIL", "ERROR")
+DATA_EVENT_MARKER = "DATA"
+CSI_U_KEY_SEQUENCE = re.compile(r"\x1b?\[(?:\d+)(?::\d+)*(?:;\d+(?::\d+)*)?u")
+app = typer.Typer()
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,10 +68,23 @@ class ConsoleRuntime:
     settings: ChatSettings
     dry_run: bool
     startup_error: str | None
+    verbose: bool = False
 
 
 class ConsoleStateError(RuntimeError):
     """Raised when the interactive console is used before its UI is initialized."""
+
+
+class ConsoleCommand(StrEnum):
+    """Slash commands accepted at the interactive prompt."""
+
+    HELP = "/help"
+    STATUS = "/status"
+    CLEAR = "/clear"
+    LOGS = "/logs"
+    RETRY = "/retry"
+    PARK = "/park"
+    QUIT = "/quit"
 
 
 class InteractiveConsole:
@@ -74,7 +100,7 @@ class InteractiveConsole:
         self.transport = transport
         self.chat = chat
         self.settings = runtime.settings
-        self.profile = transport.profile
+        self.verbose = runtime.verbose
         self.dry_run = runtime.dry_run
         self.startup_error = runtime.startup_error
         self.console: Console | None = None
@@ -87,10 +113,10 @@ class InteractiveConsole:
 
     async def run(self) -> None:
         """Run until /quit, EOF, or Ctrl-C, then park and release device ports."""
-        with patch_stdout():
+        with _legacy_keyboard_mode(sys.stdout), patch_stdout(raw=True):
             self.console = Console(file=sys.stdout, highlight=False, soft_wrap=True)
             self.prompt = PromptSession()
-            self.transport.attach_prompt_output(sys.stdout)
+            self.transport.attach_prompt_output(sys.stdout, verbose=self.verbose)
             initial_rows, self.startup_row_count = self.transport.events_since(0)
             self._render_dashboard()
             if self.startup_error:
@@ -162,11 +188,21 @@ class InteractiveConsole:
         """Dispatch console commands or queue one supported configured message."""
         if self.console is None:
             raise make_error(ConsoleStateError, "console renderer is not initialized")
-        command = line.strip().lower()
-        if command.startswith("/"):
-            return await self._handle_command(command, line)
+        if line.lower().startswith("/send "):
+            line = line[len("/send ") :]
+            if not line:
+                self._reject_input(line, "message is empty", InputDisposition.UNSUPPORTED)
+                return True
+        elif line.strip().startswith("/"):
+            return await self._handle_command(line.strip().lower(), line)
         if line:
-            self.console.print(Text(f"You > {line}", style="cyan"))
+            if CSI_U_KEY_SEQUENCE.search(line):
+                self._reject_input(
+                    line,
+                    "terminal emitted a CSI-u keyboard sequence; message not sent",
+                    InputDisposition.UNSUPPORTED,
+                )
+                return True
             await self._queue_message(line)
         return True
 
@@ -175,27 +211,27 @@ class InteractiveConsole:
         if self.console is None:
             raise make_error(ConsoleStateError, "console renderer is not initialized")
         keep_running = True
-        if command == "/help":
+        if command == ConsoleCommand.HELP:
             self.console.print(_help_panel())
-        elif command == "/status":
+        elif command == ConsoleCommand.STATUS:
             self._render_dashboard()
-        elif command == "/clear":
+        elif command == ConsoleCommand.CLEAR:
             self.console.clear()
             self._render_dashboard()
-        elif command == "/logs":
+        elif command == ConsoleCommand.LOGS:
             self.console.print(f"Logs: {self.transport.run_dir}")
-        elif command == "/retry":
+        elif command == ConsoleCommand.RETRY:
             await self._retry()
-        elif command == "/park":
+        elif command == ConsoleCommand.PARK:
             await self._park()
-        elif command == "/quit":
+        elif command == ConsoleCommand.QUIT:
             keep_running = False
         else:
             self.console.print(f"[yellow]Unknown command:[/] {original_line}")
         return keep_running
 
     async def _queue_message(self, text: str) -> None:
-        """Accept only the active firmware payload and keep one exchange in flight."""
+        """Admit input according to the connected pair and bound the queue."""
         if self.console is None:
             raise make_error(ConsoleStateError, "console renderer is not initialized")
         if not self.accepting_messages:
@@ -203,21 +239,14 @@ class InteractiveConsole:
             self.chat.reject_input(text, reason)
             self.console.print(f"[red]BLOCKED:[/] {reason}")
             return
-        try:
-            encoded = text.encode("utf-8")
-        except UnicodeEncodeError as error:
-            self._reject_input(text, str(error), InputDisposition.UNSUPPORTED)
-            return
-        if encoded != self.profile.payload:
-            reason = (
-                "installed firmware accepts only its configured payload: "
-                f"{self.profile.payload.decode('ascii')}"
-            )
-            self._reject_input(text, reason, InputDisposition.UNSUPPORTED)
-            return
         blocker = self.transport.transmit_blocker()
         if blocker:
             self._reject_input(text, blocker)
+            return
+        if self.transport.interactive_max_data_bytes is None and text != "hello world":
+            self._reject_input(
+                text, "legacy firmware accepts only hello world", InputDisposition.UNSUPPORTED
+            )
             return
         try:
             _, queued = self.chat.submit(text)
@@ -282,19 +311,26 @@ class InteractiveConsole:
                     f"[green]ACK accepted[/] — SEQ={completed.sequence} "
                     f"CAMPAIGN={completed.campaign_id:04X}"
                 )
-            else:
+            elif completed.status == ExchangeStatus.UNSUPPORTED:
+                self.console.print(f"[red]UNSUPPORTED; no DATA sent:[/] {completed.detail}")
+            elif not completed.ack_accepted:
                 self.console.print(f"[red]{completed.status}[/] — {completed.detail}")
             if completed.received_text is not None:
                 self.console.print(Text(f"Tracker > {completed.received_text}", style="cyan"))
                 self.console.print("[green]Status > SUCCESS[/]")
+            elif completed.status == "DATA_ACK_VERIFIED":
+                self.console.print("[green]Status > Verified legacy DATA/ACK[/]")
             elif completed.ack_accepted:
-                self.console.print(
-                    "[yellow]Status > ACK ONLY; Tracker application echo is unsupported.[/]"
-                )
+                self.console.print(f"[yellow]Status > {completed.status}[/] — {completed.detail}")
             self.console.print(
                 f"Attempts={completed.attempts} Retries={completed.retries} "
                 f"Timeouts={completed.timeouts} Host elapsed={completed.host_elapsed_ms:.1f} ms"
             )
+            if completed.echo_fragment_latency_ms:
+                rf_ms = sum(completed.echo_fragment_latency_ms)
+                self.console.print(
+                    f"Echo RF elapsed={rf_ms} ms across {completed.fragment_count} fragment(s)"
+                )
             if next_message is None:
                 return
             if not self.accepting_messages:
@@ -317,6 +353,8 @@ class InteractiveConsole:
             except (OSError, TimeoutError, ValueError, RuntimeError) as error:
                 self.console.print(f"[red]Reconnect failed:[/] {error}")
                 return
+            self.chat.echo_supported = self.transport.echo_supported
+            self.chat.persist_session()
             self.console.print("[green]Both devices reconnected and reverified.[/]")
             if self.chat.last_retryable is None:
                 return
@@ -396,7 +434,7 @@ class InteractiveConsole:
         prefix = "BUFFERED" if buffered else "LIVE"
         style = _event_style(event)
         stamp = event.host_timestamp or "host time unavailable"
-        role = "TRACKER" if event.role is DeviceRole.TRACKER else "GATEWAY"
+        role = event.role.value
         if not self.transport.verbose:
             self.console.print(
                 f"[dim]{stamp} {prefix}[/] [{style}]{role}[/] [{style}]{event.line}[/]"
@@ -416,7 +454,9 @@ class InteractiveConsole:
             border_style="cyan",
             box=box.ROUNDED,
         )
-        devices = Columns([self._device_panel("GATEWAY"), self._device_panel("TRACKER")])
+        devices = Columns(
+            [self._device_panel(DeviceRole.GATEWAY), self._device_panel(DeviceRole.TRACKER)]
+        )
         counters = Table.grid(padding=(0, 2))
         counters.add_column(style="dim")
         counters.add_column()
@@ -428,30 +468,30 @@ class InteractiveConsole:
             ("NACK received", values.nack_count),
             ("Retries", values.retry_count),
             ("Timeouts", values.timeout_count),
-            ("Successful round trips", values.round_trip_successes),
+            ("Interactive Echo round trips", values.round_trip_successes),
+            ("Verified legacy DATA/ACK", values.legacy_data_ack_successes),
             ("Failed transactions", values.failed_transactions),
+            ("Blocked transactions", values.blocked_transactions),
             ("State", self.chat.state),
+            ("Connection stage", self.transport.connection_stage),
+            ("Payload capability", self.transport.interactive_state),
+            ("Last error", self.transport.connection_error or "—"),
         ):
             counters.add_row(label, str(value))
         status = Panel(counters, title="Session status", border_style="blue")
         self.console.print(Group(header, devices, status))
 
-    def _device_panel(self, role: str) -> Panel:
+    def _device_panel(self, role: DeviceRole) -> Panel:
         """Show the latest actual event and identity for one endpoint."""
         if self.console is None:
             raise make_error(ConsoleStateError, "console renderer is not initialized")
         table = Table.grid(padding=(0, 1))
         table.add_column(style="dim", width=15)
         table.add_column()
-        if self.dry_run:
-            connection = "DRY RUN — not connected"
-        else:
-            connection = "CONNECTED" if self.transport.is_connected else "DISCONNECTED"
-        table.add_row("Connection", connection)
-        table.add_row("Firmware", self.transport.firmware_identity(role))
-        table.add_row("Radio", self.transport.radio_state(role))
+        for label, value in self.transport.board_status(role.value).items():
+            table.add_row(label, value)
         event_fields: list[tuple[str, set[str]]]
-        if role == "GATEWAY":
+        if role is DeviceRole.GATEWAY:
             event_fields = [
                 ("DATA TX", {"DATA_TX_BEGIN", "DATA_TX_DONE"}),
                 ("DATA RX", {"DATA_RX", "PAYLOAD_BYTES"}),
@@ -472,7 +512,7 @@ class InteractiveConsole:
         for label, names in event_fields:
             event = _latest_event(self.chat.visible_events, role, names)
             table.add_row(label, _event_summary(event) if event else "—")
-        if role == "TRACKER":
+        if role is DeviceRole.TRACKER:
             payload_event = _latest_event(self.chat.visible_events, role, {"PAYLOAD_BYTES"})
             payload_text = (
                 repr(payload_event.payload.decode("utf-8", errors="replace"))
@@ -487,14 +527,31 @@ class InteractiveConsole:
             "Campaign",
             f"{last.campaign_id:04X}" if last and last.campaign_id is not None else "—",
         )
-        return Panel(table, title=role, border_style="cyan" if role == "GATEWAY" else "blue")
+        border = "cyan" if role is DeviceRole.GATEWAY else "blue"
+        return Panel(table, title=role.value, border_style=border)
 
 
+@app.command()
 def main(
-    *,
-    dry_run: bool = False,
-    authorize_rf_test: bool = False,
-    verbose: bool = False,
+    dry_run: Annotated[bool, typer.Option(help="Disable all device and RF access.")] = False,
+    authorize_rf_test: Annotated[
+        bool | None,
+        typer.Option(
+            "--authorize-rf-test/--no-authorize-rf-test",
+            help="Override authorization saved for the configured RF bench.",
+        ),
+    ] = None,
+    verbose: Annotated[bool, typer.Option(help="Show unfiltered monitor output.")] = False,
+    confirm_rf_setup: Annotated[
+        bool | None,
+        typer.Option(
+            "--confirm-rf-setup/--no-confirm-rf-setup",
+            help="Override confirmation of the physical 915 MHz bench setup.",
+        ),
+    ] = None,
+    historical_receipt: Annotated[
+        Path | None, typer.Option(help="Reviewed installed pair's physical UPDI upload receipt.")
+    ] = None,
 ) -> None:
     """Launch the interactive console without flashing or transmitting on startup."""
     try:
@@ -503,17 +560,27 @@ def main(
     except (OSError, TypeError, ValueError) as error:
         Console(stderr=True).print(f"[red]Configuration error:[/] {error}")
         raise typer.Exit(code=2) from error
-    if dry_run and authorize_rf_test:
+    if dry_run and (authorize_rf_test or confirm_rf_setup):
         Console(stderr=True).print("[red]--dry-run cannot be combined with RF authorization.[/]")
         raise typer.Exit(code=2)
 
+    bench_receipt = None
+    if not dry_run and settings.confirmed_bench_receipt is not None:
+        candidate = ROOT / settings.confirmed_bench_receipt
+        if candidate.is_file() and (
+            historical_receipt is None or historical_receipt.resolve() == candidate.resolve()
+        ):
+            bench_receipt = candidate
+    use_confirmed_bench = bench_receipt is not None
     run_dir = _create_run_directory(ROOT / "artifacts" / "lora-chat")
     transport = BenchTransport(
         run_dir,
         profile,
-        authorize_rf_test=authorize_rf_test,
+        max_message_bytes=settings.max_message_bytes,
+        authorize_rf_test=use_confirmed_bench if authorize_rf_test is None else authorize_rf_test,
         dry_run=dry_run,
-        verbose=verbose,
+        confirm_rf_setup=use_confirmed_bench if confirm_rf_setup is None else confirm_rf_setup,
+        historical_receipt=historical_receipt or bench_receipt,
     )
     chat = ChatSession(
         run_dir,
@@ -527,8 +594,13 @@ def main(
         except (OSError, TimeoutError, ValueError, KeyError, RuntimeError) as error:
             startup_error = str(error)
             transport.close()
+    chat.echo_supported = transport.echo_supported
     chat.set_state(
-        "IDLE" if transport.is_connected or dry_run else "DISCONNECTED",
+        "IDLE"
+        if transport.is_connected or dry_run
+        else "BLOCKED"
+        if startup_error
+        else "DISCONNECTED",
         mode="DRY RUN" if dry_run else "REAL RF",
         connected=transport.is_connected,
     )
@@ -537,7 +609,7 @@ def main(
             InteractiveConsole(
                 transport,
                 chat,
-                ConsoleRuntime(settings, dry_run, startup_error),
+                ConsoleRuntime(settings, dry_run, startup_error, verbose),
             ).run()
         )
     except KeyboardInterrupt:
@@ -551,11 +623,26 @@ def _create_run_directory(root: Path) -> Path:
     return root / run_id
 
 
+@contextmanager
+def _legacy_keyboard_mode(output: TextIO) -> Iterator[None]:
+    """Temporarily use legacy key encoding and restore the terminal's prior mode."""
+    if not output.isatty():
+        yield
+        return
+    output.write("\x1b[>0u")
+    output.flush()
+    try:
+        yield
+    finally:
+        output.write("\x1b[<u")
+        output.flush()
+
+
 def _help_panel() -> Panel:
-    """Render supported commands and the installed-firmware payload constraint."""
+    """Render commands and both verified payload modes."""
     return Panel(
-        "Type the configured message directly. Installed firmware currently accepts only "
-        "its exact hello world payload.\n\n"
+        "Type a message directly. Echo-capable pairs accept UTF-8. The reviewed legacy pair "
+        "accepts hello world. Use /send <text> to send text that starts with /.\n\n"
         "/help  /status  /clear  /logs  /retry  /park  /quit",
         title="Commands",
         border_style="cyan",
@@ -567,7 +654,7 @@ def _parse_event(row: dict[str, Any]) -> DeviceEvent | None:
     try:
         return parse_firmware_event(row)
     except ValueError as error:
-        role = DeviceRole.GATEWAY if row.get("role") == "GATEWAY" else DeviceRole.TRACKER
+        role = DeviceRole.GATEWAY if row.get("role") == DeviceRole.GATEWAY else DeviceRole.TRACKER
         return DeviceEvent(
             role=role,
             name="MALFORMED_EVENT",
@@ -589,22 +676,25 @@ def _parse_event(row: dict[str, Any]) -> DeviceEvent | None:
 
 def _event_style(event: DeviceEvent) -> str:
     """Choose display color from the observed event name, not inferred success."""
-    if "NACK" in event.name or "FAIL" in event.name or "ERROR" in event.name:
+    if event.name in TIMEOUT_EVENTS or any(
+        marker in event.name for marker in EVENT_FAILURE_MARKERS
+    ):
         return "red"
+    if event.name in RETRY_EVENTS:
+        return "yellow"
     if event.name.startswith("ACK"):
         return "green"
-    if "DATA" in event.name or event.name == "PAYLOAD_BYTES":
+    if DATA_EVENT_MARKER in event.name or event.name == EventName.PAYLOAD_BYTES:
         return "cyan"
     return "bright_black"
 
 
 def _latest_event(
-    events: deque[DeviceEvent], role: str, names: set[str] | None
+    events: deque[DeviceEvent], role: DeviceRole, names: set[str] | None
 ) -> DeviceEvent | None:
     """Find the newest bounded-history event for one role and optional event set."""
-    desired = DeviceRole.TRACKER if role == "TRACKER" else DeviceRole.GATEWAY
     for event in reversed(events):
-        if event.role is desired and (names is None or event.name in names):
+        if event.role is role and (names is None or event.name in names):
             return event
     return None
 

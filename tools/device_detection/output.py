@@ -27,9 +27,7 @@ def exit_code_for(result: ScanResult) -> int:
     return 2
 
 
-def format_text(
-    result: ScanResult, *, explain: bool = False
-) -> str:
+def format_text(result: ScanResult, *, explain: bool = False) -> str:
     """Format the inventory and verified roles for human-readable output."""
     lines = ["DEVICE ROLE DETECTION", "", f"Detected devices: {len(result.devices)}", ""]
     labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

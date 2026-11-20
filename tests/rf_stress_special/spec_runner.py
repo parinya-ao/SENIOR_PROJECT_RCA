@@ -13,7 +13,7 @@ from tools.rf_stress.runner import CONFIG_PATH, load_config
 
 def test_default_cli_writes_a_zero_transmission_dry_run(tmp_path: Path) -> None:
     """Keep the default CLI safe and make its generated case plan inspectable."""
-    completed = subprocess.run(
+    completed = subprocess.run(  # noqa: S603 - fixed argv invokes the local planning CLI.
         [
             sys.executable,
             "-m",
@@ -41,7 +41,7 @@ def test_default_cli_writes_a_zero_transmission_dry_run(tmp_path: Path) -> None:
 
 def test_real_rf_requires_explicit_profile_and_saved_readback(tmp_path: Path) -> None:
     """Reject real mode before hardware access unless profile and image evidence are supplied."""
-    completed = subprocess.run(
+    completed = subprocess.run(  # noqa: S603 - fixed argv invokes the local planning CLI.
         [sys.executable, "-m", "tools.rf_stress", "--real-rf", "--output", str(tmp_path)],
         check=False,
         capture_output=True,
@@ -56,7 +56,7 @@ def test_real_rf_requires_explicit_profile_and_saved_readback(tmp_path: Path) ->
 
 def test_torture_profile_requires_long_duration_opt_in(tmp_path: Path) -> None:
     """Keep the 1000-case profile behind its explicit long-duration switch."""
-    completed = subprocess.run(
+    completed = subprocess.run(  # noqa: S603 - fixed argv invokes the local planning CLI.
         [
             sys.executable,
             "-m",
@@ -81,7 +81,7 @@ def test_torture_plan_has_at_least_one_thousand_cases_and_a_bounded_runtime(
     tmp_path: Path,
 ) -> None:
     """Plan the 1000-case profile with the existing airtime interval and a finite cap."""
-    completed = subprocess.run(
+    completed = subprocess.run(  # noqa: S603 - fixed argv invokes the local planning CLI.
         [
             sys.executable,
             "-m",

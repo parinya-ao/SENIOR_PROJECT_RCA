@@ -11,6 +11,21 @@
 #include "ssot.h"
 
 namespace radio_diagnostics {
+/// Bounds each DATA fragment by both transport and exact-byte evidence capacity.
+inline uint8_t InteractivePayloadLimit(uint8_t transport_limit) {
+  const uint8_t log_limit = updi_role_log_payload_limit();
+  return log_limit < transport_limit ? log_limit : transport_limit;
+}
+
+/// Reports the shared Echo contract for an available production radio.
+inline void ReportInteractiveCapability(const char* role, const char* event,
+                                        uint8_t transport_limit) {
+  char line[64];
+  snprintf(line, sizeof line, "%s MAX_DATA=%u ECHO=1", event,
+           static_cast<unsigned>(InteractivePayloadLimit(transport_limit)));
+  updi_role_log(role, line);
+}
+
 
 // The UPDI logger's queue is local to the role's translation unit.
 // Emits the configured build, PHY fingerprint, and protocol identity.
@@ -101,7 +116,8 @@ inline void ReportRadioStatus(const char* role, const LoRa& radio,
 /// Emits at most one queued observation when UPDI is available.
 inline void FlushEvent(EventQueue& event_queue, const char* role,
                        const uint8_t* accepted_payload,
-                       bool log_address = false) {
+                       uint8_t accepted_payload_size, uint8_t local_address,
+                       uint8_t peer_address) {
   if (!event_queue.size() || !updi_uart_enabled()) return;
 #if defined(LORA_NONBLOCKING_LOG) && LORA_NONBLOCKING_LOG
   // The Receiver can enqueue three lines for one validated DATA observation.
@@ -117,17 +133,14 @@ inline void FlushEvent(EventQueue& event_queue, const char* role,
   updi_role_log(role, line);
   if (accepted_payload && !strcmp(event.name, "DATA_VALIDATED")) {
     updi_role_log_payload(role, "PAYLOAD_BYTES", event.campaign_id,
-                          event.sequence, accepted_payload,
-                          ssot::kHelloPayloadSize);
-    if (log_address) {
-      // DATA_VALIDATED follows decoded peer, destination and RadioLib CRC
-      // checks.
-      snprintf(line, sizeof line,
-               "DATA_ADDRESS SID=%04X Q=%u SRC=%u DST=%u CRC=OK",
-               event.campaign_id, event.sequence, LORA_SENDER_ADDRESS,
-               LORA_RECEIVER_ADDRESS);
-      updi_role_log(role, line);
-    }
+                          event.time_ms, event.type, event.sequence,
+                          accepted_payload, accepted_payload_size);
+    // DATA_VALIDATED follows decoded peer, destination and RadioLib CRC checks.
+    snprintf(line, sizeof line,
+             "DATA_ADDRESS SID=%04X T=%lu TYPE=%u Q=%u SRC=%u DST=%u CRC=OK",
+             event.campaign_id, static_cast<unsigned long>(event.time_ms),
+             event.type, event.sequence, peer_address, local_address);
+    updi_role_log(role, line);
   }
 }
 

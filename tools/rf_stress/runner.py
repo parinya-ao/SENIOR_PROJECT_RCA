@@ -10,6 +10,7 @@ import string
 import tomllib
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -22,12 +23,39 @@ from tools.config.arq_config import load_arq
 from tools.rf_stress.event_capture import load_event_journal
 from tools.rf_stress.metrics import calculate_metrics
 from tools.rf_stress.payload_generator import ALPHABET, generate_payload, split_payload
-from tools.rf_stress.protocol_adapter import SEQUENCE_MASK, SEQUENCE_ROLLOVER_WINDOW, assess_case
+from tools.rf_stress.protocol_adapter import (
+    SEQUENCE_MASK,
+    SEQUENCE_ROLLOVER_WINDOW,
+    FaultName,
+    assess_case,
+)
+from tools.rf_stress.status import ResultStatus
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = ROOT / "config/rf_stress.toml"
 RADIO_PROFILE_PATH = ROOT / "config/radio_915.toml"
 MINIMUM_REQUIRED_TORTURE_TRANSACTIONS = 1000
+
+
+class RunProfile(StrEnum):
+    """Named planning profiles accepted by the command line."""
+
+    SMOKE = "smoke"
+    TORTURE = "torture"
+
+
+class RadioProfile(StrEnum):
+    """Supported radio profile identifier in the runner configuration."""
+
+    LORA_915 = "radio_915"
+
+
+class RunMode(StrEnum):
+    """Run modes recorded in the evidence manifest."""
+
+    REAL_RF_REQUESTED = "REAL_RF_REQUESTED"
+
+
 DIRECTIONS = ("gateway_to_tracker", "tracker_to_gateway")
 FAULT_SCENARIOS = (
     ("SUPPRESS_ACK_ONCE", "ACK timeout followed by retry"),
@@ -125,7 +153,7 @@ def _validate_runner_settings(runner: object) -> None:
     if (
         type(runner_settings["minimum_torture_transactions"]) is not int
         or runner_settings["minimum_torture_transactions"] < MINIMUM_REQUIRED_TORTURE_TRANSACTIONS
-        or runner_settings["rf_profile"] != "radio_915"
+        or runner_settings["rf_profile"] != RadioProfile.LORA_915
     ):
         msg = "invalid torture requirement or RF profile"
         raise ValueError(msg)
@@ -243,7 +271,7 @@ def _append_case(
                 "direction": spec.direction,
                 "scenario": spec.scenario,
                 "fault": spec.fault,
-                "injection_point": spec.fault if spec.fault != "NO_FAULT" else None,
+                "injection_point": spec.fault if spec.fault != FaultName.NO_FAULT else None,
                 "expected_result": EXPECTED_RESULTS[spec.fault],
                 "payload_hex": frame.hex(),
                 "payload_ascii": ascii_payload,
@@ -381,14 +409,14 @@ def build_case_plan(profile_name: str, seed: int) -> list[dict[str, Any]]:
         add(generate_payload(11, rng), direction, "duplicate_data", "DUPLICATE_DATA")
 
     add(b"\x00A\xff", "gateway_to_tracker", "binary_framing", "NO_FAULT")
-    if profile_name != "smoke":
+    if profile_name != RunProfile.SMOKE:
         for fault, _ in FAULT_SCENARIOS:
-            if fault == "SEQUENCE_ROLLOVER":
+            if fault == FaultName.SEQUENCE_ROLLOVER:
                 add_sequence_rollover()
                 continue
             payload = (
                 arq["negative_payload"].encode("ascii")
-                if fault == "INVALID_APP_PAYLOAD"
+                if fault == FaultName.INVALID_APP_PAYLOAD
                 else generate_payload(11, rng)
             )
             add(payload, "gateway_to_tracker", "fault_injection", fault)
@@ -504,7 +532,7 @@ def _write_replay_bundle(
     with (output / "events.jsonl").open("w", encoding="utf-8") as stream:
         for event in events:
             stream.write(json.dumps(event, sort_keys=True) + "\n")
-    failures = [result for result in results if result["status"] != "PASS"]
+    failures = [result for result in results if result["status"] != ResultStatus.SUCCESS]
     (output / "failures.jsonl").write_text(
         "".join(json.dumps(result, sort_keys=True) + "\n" for result in failures),
         encoding="utf-8",
@@ -562,7 +590,7 @@ def _validated_options(
     if not 1 <= max_minutes <= runner["maximum_runtime_minutes"]:
         parser.error("--max-minutes exceeds the configured bound")
     if (
-        max_minutes > runner["long_duration_minutes"] or args.profile == "torture"
+        max_minutes > runner["long_duration_minutes"] or args.profile == RunProfile.TORTURE
     ) and not args.long_duration:
         parser.error(
             "--long-duration is required for torture or runs over the configured short limit"
@@ -720,7 +748,7 @@ def _write_run_bundle(plan: RunPlan) -> None:
 
 def _display_run(plan: RunPlan) -> None:
     """Print only observed preflight status and planned case counts."""
-    real_rf = plan.manifest["mode"] == "REAL_RF_REQUESTED"
+    real_rf = plan.manifest["mode"] == RunMode.REAL_RF_REQUESTED
     print(f"MODE={'REAL_RF_REQUESTED' if real_rf else 'DRY_RUN'}")
     print("RF_TRANSMISSIONS=0")
     print(f"PROFILE={plan.manifest['profile']}")

@@ -114,6 +114,7 @@ class Transport {
     armed_ = false;
     response_fault_ = ResponseFault::kNone;
     repeat_ack_ = sending_repeat_ = false;
+    confirming_ack_ = false;
     state_ = State::kRxWait;
     error_ = radio_.sleep();
     return error_;
@@ -158,6 +159,7 @@ class Transport {
     duplicates_ = 0;
     response_fault_ = ResponseFault::kNone;
     repeat_ack_ = sending_repeat_ = false;
+    confirming_ack_ = false;
     state_ = armed_ ? State::kRxWait : State::kFailed;
     result_ = armed_ ? Result::kPending : Result::kRadioError;
     return armed_;
@@ -199,6 +201,33 @@ class Transport {
     return TransmitData(now);
   }
 
+  /// Send a DATA handoff confirmation after accepting its ACK. It may be
+  /// repeated until reverse DATA arrives. The tag distinguishes it from an
+  /// ordinary two-byte ACK for that reverse DATA.
+  /// @param sequence Accepted DATA sequence to confirm.
+  /// @param now Current wrapping millisecond counter.
+  /// @return True if the radio accepted the one-shot control TX.
+  bool SendAckConfirmation(uint8_t sequence, uint32_t now) {
+    if (!armed_ || paused_ ||
+        (state_ != State::kComplete && state_ != State::kRxWait) ||
+        result_ != Result::kAccepted || !campaign_id_ || sequence != sequence_ ||
+        (have_accepted_ && last_campaign_id_ == campaign_id_ &&
+         last_sequence_ == sequence))
+      return false;
+    reply_[0] = ssot::kAckType;
+    reply_[1] = sequence;
+    reply_[2] = ssot::kDataType;
+    reply_campaign_ = campaign_id_;
+    confirming_ack_ = true;
+    if (!TransmitResponse(now)) {
+      confirming_ack_ = false;
+      return false;
+    }
+    EmitEvent("ACK_CONFIRM_TX_BEGIN", ssot::kAckType, sequence, 0,
+              reply_campaign_);
+    return true;
+  }
+
   /// Advances TX completion, receive handling and retry deadlines without
   /// waiting. Timestamps are modulo-uint32 milliseconds; poll within the
   /// timeout interval.
@@ -218,7 +247,8 @@ class Transport {
         return;
       case State::kWaitResponse:
         if (now - started_ >= LORA_ACK_TIMEOUT_MS) {
-          HandleAckTimeout();
+          EmitEvent("ACK_TIMEOUT", ssot::kDataType, sequence_);
+          RetryOrFail(Result::kAckTimeout, ssot::kDataType);
           return;
         }
         break;
@@ -255,6 +285,7 @@ class Transport {
     result_ = result;
     error_ = error;
     armed_ = false;
+    confirming_ack_ = false;
     if (stopped < 0 && error == -1) error_ = stopped;
     EmitEvent("TRANSACTION_FAILED", type, sequence, error_);
   }
@@ -291,8 +322,12 @@ class Transport {
     if (tx_done) {
       const char* event = "DATA_TX_DONE";
       if (!data) {
-        event = type == ssot::kAckType ? "ACK_TX_DONE" : "NACK_TX_DONE";
-        if (sending_repeat_) event = "ACK_DUP_TX_DONE";
+        if (confirming_ack_)
+          event = "ACK_CONFIRM_TX_DONE";
+        else {
+          event = type == ssot::kAckType ? "ACK_TX_DONE" : "NACK_TX_DONE";
+          if (sending_repeat_) event = "ACK_DUP_TX_DONE";
+        }
       }
       EmitEvent(event, type, seq, 0, campaign);
       if (rearm < 0) EmitEvent("RX_REARM_FAILED", type, seq, rearm, campaign);
@@ -307,6 +342,7 @@ class Transport {
       } else {
         state_ = State::kRxWait;
         sending_repeat_ = false;
+        confirming_ack_ = false;
         if (repeat_ack_) {
           repeat_ack_ = false;
           sending_repeat_ = TransmitResponse(now);
@@ -319,9 +355,9 @@ class Transport {
 
   /// @brief Schedules a retry or fails when the configured attempt budget ends.
   /// @post The original absolute transaction deadline is unchanged.
-  void HandleAckTimeout() {
+  void RetryOrFail(Result failure, uint8_t type) {
     if (attempts_ >= ssot::kMaxAttempts) {
-      Fail(Result::kAckTimeout, ssot::kDataType, sequence_);
+      Fail(failure, type, sequence_);
       return;
     }
     state_ = State::kRetryPending;
@@ -362,7 +398,7 @@ class Transport {
       return;
     }
     if (rx_[0] == ssot::kAckType || rx_[0] == ssot::kNackType) {
-      HandleControl(size);
+      HandleControl(size, campaign_id);
     } else if (receive_data) {
       HandleData(campaign_id, size, now);
     }
@@ -383,8 +419,14 @@ class Transport {
   /// @param size Control payload size.
   /// @pre HandleReceive has validated peer, destination, and campaign.
   /// @post Only an exact two-byte matching sequence can change the transaction.
-  void HandleControl(uint8_t size) {
+  void HandleControl(uint8_t size, uint16_t campaign_id) {
     const uint8_t type = rx_[0], sequence = rx_[1];
+    if (size == 3 && type == ssot::kAckType && rx_[2] == ssot::kDataType) {
+      if (state_ == State::kRxWait && have_accepted_ &&
+          campaign_id == last_campaign_id_ && sequence == last_sequence_)
+        EmitEvent("ACK_CONFIRM_RX", type, sequence, 0, campaign_id);
+      return;
+    }
     if (size != 2 || sequence != sequence_ || state_ != State::kWaitResponse) {
       EmitEvent("CONTROL_IGNORED", type, sequence);
       return;
@@ -398,10 +440,7 @@ class Transport {
       return;
     }
     EmitEvent("NACK_RX", type, sequence);
-    if (attempts_ >= ssot::kMaxAttempts)
-      Fail(Result::kRejected, type, sequence);
-    else
-      state_ = State::kRetryPending;
+    RetryOrFail(Result::kRejected, type);
   }
 
   /// @brief Validates an incoming DATA packet and schedules its response.
@@ -485,10 +524,10 @@ class Transport {
                 reply_[1], 0, reply_campaign_);
   }
 
-  /// Starts TX of the owned two-byte response and keeps it until TxDone.
+  /// Starts TX of the owned control frame and keeps it until TxDone.
   bool TransmitResponse(uint32_t now) {
-    const int16_t sent =
-        radio_.send(peer_, reply_campaign_, reply_, sizeof(reply_));
+    const size_t size = confirming_ack_ ? sizeof(reply_) : 2U;
+    const int16_t sent = radio_.send(peer_, reply_campaign_, reply_, size);
     if (sent < 0) {
       Fail(Result::kRadioError, reply_[0], reply_[1], sent);
       return false;
@@ -516,6 +555,7 @@ class Transport {
   bool armed_ = false, paused_ = false, have_accepted_ = false,
        session_locked_ = false;
   bool tx_outstanding_ = false, repeat_ack_ = false, sending_repeat_ = false;
+  bool confirming_ack_ = false;
   ResponseFault response_fault_ = ResponseFault::kNone;
   uint8_t local_ = 0, peer_ = 0, sequence_ = 1, attempts_ = 0, next_rx_ = 1;
   uint8_t last_sequence_ = 0, last_size_ = 0, wire_size_ = 0;
@@ -529,7 +569,7 @@ class Transport {
   // Separate bounded TX/RX/replay buffers prevent a receive from altering
   // retries.
   uint8_t wire_[251] = {}, rx_[256] = {}, last_data_[kMaxData] = {},
-          reply_[2] = {};
+          reply_[3] = {};
 };
 
 }  // namespace reliable

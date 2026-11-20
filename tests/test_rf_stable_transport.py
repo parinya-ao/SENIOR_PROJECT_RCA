@@ -10,6 +10,7 @@ from typing import Any, cast
 from unittest.mock import patch
 
 from tools import rf_proof
+from tools.device_detection.hardware_registry import hardware_ports
 
 ROOT = Path(__file__).resolve().parents[1]
 CAMPAIGN_ID = 0x1234
@@ -30,7 +31,7 @@ def image_evidence(run_id: str = "run-1") -> dict[str, dict[str, Any]]:
             "run_id": run_id,
             "verified": True,
             "signature": "1e970a",
-            "port": rf_proof.PORTS[role.lower()],
+            "port": hardware_ports()[role.lower()],
             "firmware_sha256": role.lower() + "-sha256",
             "build_id": manifest["environments"][environment]["build_id"],
         }

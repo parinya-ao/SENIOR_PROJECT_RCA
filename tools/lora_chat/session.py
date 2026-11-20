@@ -15,11 +15,15 @@ from uuid import uuid4
 from tools.lora_chat.errors import make_error
 from tools.lora_chat.protocol import (
     MAX_APPLICATION_PAYLOAD_BYTES,
+    MAX_HOST_MESSAGE_BYTES,
+    TIMEOUT_EVENTS,
     DeviceEvent,
     DeviceRole,
+    EventName,
     MessageProtocol,
     RoundTripContext,
-    encode_message,
+    echo_fragment_latency_ms,
+    encode_interactive_message,
     matches_ack,
     verify_round_trip,
 )
@@ -28,6 +32,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SETTINGS_PATH = ROOT / "config" / "lora_chat.json"
 SETTING_RANGES = {
     "max_pending_messages": (1, 64),
+    "max_message_bytes": (1, MAX_HOST_MESSAGE_BYTES),
     "event_history_limit": (1, 1000),
     "refresh_interval_ms": (25, 2000),
     "manual_retry_limit": (0, 3),
@@ -36,12 +41,14 @@ SETTING_RANGES = {
 
 @dataclass(frozen=True, slots=True)
 class ChatSettings:
-    """Validated limits used by the interactive console."""
+    """Console limits and optional receipt for the confirmed RF bench."""
 
     max_pending_messages: int
+    max_message_bytes: int
     event_history_limit: int
     refresh_interval_ms: int
     manual_retry_limit: int
+    confirmed_bench_receipt: Path | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +59,14 @@ class MessageRequest:
     text: str
     payload: bytes
     created_at: str
+
+
+class ExchangeStatus(StrEnum):
+    """Terminal results returned by the existing RF transaction runner."""
+
+    SUCCESS = "PASS"
+    TIMEOUT = "TIMEOUT"
+    UNSUPPORTED = "UNSUPPORTED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +80,7 @@ class ExchangeResult:
     retries: int
     timeouts: int
     host_elapsed_ms: float
+    legacy_data_ack: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +100,8 @@ class CompletedMessage:
     host_elapsed_ms: float
     firmware_timestamps_ms: tuple[int, ...]
     transaction_nacks: int
+    fragment_count: int
+    echo_fragment_latency_ms: tuple[int, ...]
 
 
 @dataclass(slots=True)
@@ -97,7 +115,9 @@ class ChatStats:
     retry_count: int = 0
     timeout_count: int = 0
     round_trip_successes: int = 0
+    legacy_data_ack_successes: int = 0
     failed_transactions: int = 0
+    blocked_transactions: int = 0
 
 
 class QueueFullError(RuntimeError):
@@ -132,7 +152,7 @@ class SessionStateError(RuntimeError):
 
 
 def load_chat_settings(path: Path = SETTINGS_PATH) -> ChatSettings:
-    """Load and strictly validate the file-backed console limits."""
+    """Load and validate the console limits and optional repository-relative receipt."""
     try:
         values = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -142,35 +162,42 @@ def load_chat_settings(path: Path = SETTINGS_PATH) -> ChatSettings:
     if not isinstance(values, dict):
         raise make_error(SessionConfigTypeError, "LoRa console settings must be a JSON object")
 
-    expected = {
-        "max_pending_messages",
-        "event_history_limit",
-        "refresh_interval_ms",
-        "manual_retry_limit",
-    }
-    if values.keys() != expected:
-        unknown = sorted(values.keys() - expected)
-        missing = sorted(expected - values.keys())
+    unknown = sorted(values.keys() - SETTING_RANGES.keys() - {"confirmed_bench_receipt"})
+    missing = sorted(SETTING_RANGES.keys() - values.keys())
+    if unknown or missing:
         raise make_error(
             SessionConfigError,
             f"Invalid LoRa console settings; missing={missing}, unknown={unknown}",
         )
-    for name, value in values.items():
+    for name, (minimum, maximum) in SETTING_RANGES.items():
+        value = values[name]
         if type(value) is not int:
             raise make_error(
                 SessionConfigTypeError, f"LoRa console setting {name} must be an integer"
             )
-        minimum, maximum = SETTING_RANGES[name]
         if not minimum <= value <= maximum:
             raise make_error(
                 SessionConfigError,
                 f"LoRa console setting {name} must be in {minimum}..{maximum}",
             )
+    receipt = values.get("confirmed_bench_receipt")
+    if receipt is not None and (
+        not isinstance(receipt, str)
+        or not receipt.strip()
+        or "\x00" in receipt
+        or Path(receipt).is_absolute()
+        or ".." in Path(receipt).parts
+    ):
+        raise make_error(
+            SessionConfigError, "confirmed_bench_receipt must be a repository-relative path or null"
+        )
     return ChatSettings(
         max_pending_messages=values["max_pending_messages"],
+        max_message_bytes=values["max_message_bytes"],
         event_history_limit=values["event_history_limit"],
         refresh_interval_ms=values["refresh_interval_ms"],
         manual_retry_limit=values["manual_retry_limit"],
+        confirmed_bench_receipt=Path(receipt) if receipt is not None else None,
     )
 
 
@@ -186,6 +213,7 @@ class ChatSession:
         """Create an empty session whose limits are supplied by validated config."""
         if (
             settings.max_pending_messages < 1
+            or settings.max_message_bytes < 1
             or settings.manual_retry_limit < 0
             or settings.event_history_limit < 1
         ):
@@ -206,6 +234,7 @@ class ChatSession:
         self.state = "IDLE"
         self.mode = "REAL RF"
         self.connected = False
+        self.echo_supported: bool | None = None
         self.stats = ChatStats()
         self.started_at = _utc_now()
         self.visible_events: deque[DeviceEvent] = deque(maxlen=settings.event_history_limit)
@@ -213,15 +242,8 @@ class ChatSession:
         self._seen_event_order: deque[tuple[str, str, str]] = deque(
             maxlen=settings.event_history_limit
         )
-        self._seen_data: set[tuple[DeviceRole, int | None, int | None]] = set()
-        self._seen_transmissions: set[tuple[int | None, int | None]] = set()
-        self._seen_data_order: deque[tuple[DeviceRole, int | None, int | None]] = deque(
-            maxlen=settings.event_history_limit
-        )
-        self._seen_transmissions_order: deque[tuple[int | None, int | None]] = deque(
-            maxlen=settings.event_history_limit
-        )
         self._retry_message_id: str | None = None
+        self._active_transmitted = False
         self.messages_path = run_dir / "messages.jsonl"
         self.session_path = run_dir / "session.json"
         self.messages_path.touch(exist_ok=True)
@@ -234,7 +256,7 @@ class ChatSession:
 
     def submit(self, text: str) -> tuple[MessageRequest, bool]:
         """Validate a message and make it active or place it in the bounded queue."""
-        payload = encode_message(text, self.profile.payload, MAX_APPLICATION_PAYLOAD_BYTES)
+        payload = encode_interactive_message(text, self.settings.max_message_bytes)
         message = MessageRequest(uuid4().hex, text, payload, _utc_now())
         queued = self.active is not None
         if queued:
@@ -243,6 +265,7 @@ class ChatSession:
             self.pending.append(message)
         else:
             self.active = message
+            self._active_transmitted = False
             self.state = "PREPARE"
         self._append_message(
             {
@@ -269,26 +292,20 @@ class ChatSession:
         self._seen_event_lines.add(signature)
         self.visible_events.append(event)
 
-        if event.role is DeviceRole.GATEWAY and event.name == "ACK_ACCEPTED":
+        if event.name == EventName.ACK_ACCEPTED:
             self.stats.ack_count += 1
-        if event.role is DeviceRole.GATEWAY and event.name == "NACK_RX":
+        if event.name == EventName.NACK_RX:
             self.stats.nack_count += 1
-        if event.name in {"ACK_TIMEOUT", "TX_TIMEOUT", "TIMEOUT"}:
+        if event.name in TIMEOUT_EVENTS:
             self.stats.timeout_count += 1
-        if event.name == "DATA_TX_DONE" and event.role is DeviceRole.GATEWAY:
-            tx_identity = (event.campaign_id, event.sequence)
-            if tx_identity not in self._seen_transmissions:
-                _remember_bounded(
-                    tx_identity, self._seen_transmissions, self._seen_transmissions_order
-                )
-                self._seen_transmissions.add(tx_identity)
-                self.stats.messages_sent += 1
-        if event.name in {"DATA_RX", "PAYLOAD_BYTES"} and event.payload is not None:
-            rx_identity = (event.role, event.campaign_id, event.sequence)
-            if rx_identity not in self._seen_data:
-                _remember_bounded(rx_identity, self._seen_data, self._seen_data_order)
-                self._seen_data.add(rx_identity)
-                self.stats.messages_received += 1
+        if (
+            event.name == EventName.DATA_TX_DONE
+            and event.role is DeviceRole.GATEWAY
+            and self.active is not None
+            and not self._active_transmitted
+        ):
+            self.stats.messages_sent += 1
+            self._active_transmitted = True
         self.persist_session()
         return True
 
@@ -300,30 +317,35 @@ class ChatSession:
         if message is None:
             raise make_error(SessionStateError, "no active message transaction")
 
-        transmit = next(
-            (
-                event
-                for event in result.events
-                if event.role is DeviceRole.GATEWAY
-                and event.name in {"DATA_TX_BEGIN", "DATA_TX_DONE"}
-                and event.packet_type == self.profile.data_type
-            ),
-            None,
-        )
+        for event in result.events:
+            self.observe_event(event)
+
+        transmits = [
+            event
+            for event in result.events
+            if event.role is DeviceRole.GATEWAY
+            and event.name in {EventName.DATA_TX_BEGIN, EventName.DATA_TX_DONE}
+            and event.packet_type == self.profile.data_type
+        ]
+        transmit = transmits[0] if transmits else None
         campaign_id = transmit.campaign_id if transmit else None
         sequence = transmit.sequence if transmit else None
-        ack_accepted = bool(
-            campaign_id is not None
-            and sequence is not None
-            and matches_ack(
+        transaction_keys = {
+            (event.campaign_id, event.sequence)
+            for event in transmits
+            if event.campaign_id is not None and event.sequence is not None
+        }
+        ack_accepted = bool(transaction_keys) and all(
+            matches_ack(
                 list(result.events),
-                campaign_id=campaign_id,
-                sequence=sequence,
+                campaign_id=campaign,
+                sequence=transaction_sequence,
                 ack_type=self.profile.ack_type,
             )
+            for campaign, transaction_sequence in transaction_keys
         )
         round_trip = bool(
-            result.status == "PASS"
+            result.status == ExchangeStatus.SUCCESS
             and campaign_id is not None
             and sequence is not None
             and verify_round_trip(
@@ -336,6 +358,7 @@ class ChatSession:
                     ack_type=self.profile.ack_type,
                     gateway_address=self.profile.gateway_address,
                     tracker_address=self.profile.tracker_address,
+                    sequence_bits=self.profile.sequence_bits,
                 ),
             )
         )
@@ -343,19 +366,24 @@ class ChatSession:
         if round_trip:
             status = "SUCCESS"
             self.stats.round_trip_successes += 1
-        elif ack_accepted:
+            self.stats.messages_received += 1
+        elif result.status == ExchangeStatus.UNSUPPORTED:
+            status = ExchangeStatus.UNSUPPORTED
+            self.stats.blocked_transactions += 1
+        elif result.legacy_data_ack and result.status == ExchangeStatus.SUCCESS and ack_accepted:
+            status = "DATA_ACK_VERIFIED"
+            self.stats.legacy_data_ack_successes += 1
+        elif result.status == ExchangeStatus.SUCCESS and ack_accepted:
             status = "ACK_ONLY"
             self.stats.failed_transactions += 1
         else:
-            status = "TIMEOUT" if result.status == "TIMEOUT" else "FAILED"
+            status = "TIMEOUT" if result.status == ExchangeStatus.TIMEOUT else "FAILED"
             self.stats.failed_transactions += 1
 
         transmitted = transmit is not None
         total_retries = max(0, result.retries) + (self.manual_retries if transmitted else 0)
         self.stats.retry_count += total_retries
-        if result.timeouts and not any(
-            event.name in {"ACK_TIMEOUT", "TX_TIMEOUT", "TIMEOUT"} for event in result.events
-        ):
+        if result.timeouts and not any(event.name in TIMEOUT_EVENTS for event in result.events):
             self.stats.timeout_count += result.timeouts
         completed = CompletedMessage(
             message=message,
@@ -366,7 +394,7 @@ class ChatSession:
             ack_accepted=ack_accepted,
             detail=(
                 "ACK accepted; installed Tracker firmware has no application DATA echo."
-                if ack_accepted and not round_trip
+                if status == "ACK_ONLY"
                 else result.detail
             ),
             attempts=result.attempts,
@@ -377,16 +405,25 @@ class ChatSession:
                 event.firmware_ms for event in result.events if event.firmware_ms is not None
             ),
             transaction_nacks=sum(
-                event.role is DeviceRole.GATEWAY and event.name == "NACK_RX"
+                event.role is DeviceRole.GATEWAY and event.name == EventName.NACK_RX
                 for event in result.events
+            ),
+            fragment_count=len(transaction_keys),
+            echo_fragment_latency_ms=(
+                echo_fragment_latency_ms(
+                    result.events, self.profile.data_type, self.profile.ack_type
+                )
+                if round_trip
+                else ()
             ),
         )
         self._append_message(self._message_record(completed))
-        self.last_retryable = message if not ack_accepted else None
+        self.last_retryable = message if status in {"FAILED", "TIMEOUT", "ACK_ONLY"} else None
         if self._retry_message_id != message.message_id:
             self.manual_retries = 0
         self._retry_message_id = message.message_id
         self.active = self.pending.popleft() if self.pending else None
+        self._active_transmitted = False
         self.state = "PREPARE" if self.active else status
         self.persist_session()
         return completed, self.active
@@ -405,6 +442,7 @@ class ChatSession:
         self.manual_retries += 1
         self.last_retryable = None
         self.active = message
+        self._active_transmitted = False
         self.state = "PREPARE"
         self.persist_session()
         return message
@@ -473,7 +511,7 @@ class ChatSession:
             "active_message_id": self.active.message_id if self.active else None,
             "pending_messages": len(self.pending),
             "counters": asdict(self.stats),
-            "tracker_echo_supported_by_installed_firmware": False,
+            "tracker_echo_supported_by_installed_firmware": self.echo_supported,
         }
         temporary = self.session_path.with_suffix(".json.tmp")
         temporary.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
@@ -488,8 +526,8 @@ class ChatSession:
             "direction": "gateway_to_tracker_and_back",
             "campaign": completed.campaign_id,
             "sequence": completed.sequence,
-            "chunk_index": 1,
-            "chunk_count": 1,
+            "chunk_index": 1 if completed.fragment_count else None,
+            "chunk_count": completed.fragment_count,
             "ack": "accepted" if completed.ack_accepted else None,
             "nack_count": completed.transaction_nacks,
             "attempts": completed.attempts,
@@ -498,6 +536,7 @@ class ChatSession:
             "transaction_result": completed.status,
             "host_timestamp": completed.message.created_at,
             "host_elapsed_ms": completed.host_elapsed_ms,
+            "echo_fragment_latency_ms": completed.echo_fragment_latency_ms,
             "firmware_timestamps_ms": completed.firmware_timestamps_ms,
             "detail": completed.detail,
         }

@@ -1,8 +1,10 @@
 """Host-side checks for the installed firmware's supported message contract."""
 
 import pytest
+from tools.lora_chat import protocol
 
 from tools.lora_chat.protocol import (
+    DeviceEvent,
     ProtocolParseError,
     RoundTripContext,
     UnsupportedPayloadError,
@@ -22,6 +24,79 @@ def test_rejects_text_that_installed_tracker_cannot_accept() -> None:
 def test_encodes_supported_utf8_bytes_exactly() -> None:
     """Encoding preserves the exact UTF-8 application bytes."""
     assert encode_message("hello world", b"hello world", 249) == b"hello world"
+
+
+def test_interactive_encoder_accepts_bounded_utf8_messages() -> None:
+    """The interactive mode preserves arbitrary UTF-8 bytes within configured bounds."""
+    encoder = getattr(protocol, "encode_interactive_message", None)
+    assert callable(encoder), "interactive UTF-8 encoder is missing"
+    assert encoder("café", 16) == "café".encode()
+
+
+def test_fragmentation_preserves_exact_bytes_at_the_negotiated_packet_limit() -> None:
+    """Fragments reassemble byte-for-byte without an invented wire envelope."""
+    fragmenter = getattr(protocol, "fragment_message", None)
+    assert callable(fragmenter), "interactive message fragmentation is missing"
+    payload = "café-and-longer".encode()
+
+    fragments = fragmenter(payload, 5)
+
+    assert fragments == (payload[:5], payload[5:10], payload[10:15], payload[15:])
+    assert b"".join(fragments) == payload
+
+
+def test_interactive_host_command_encodes_payload_length_and_bytes() -> None:
+    """The UPDI control command carries exact data as bounded ASCII hexadecimal."""
+    encoder = getattr(protocol, "encode_interactive_command", None)
+    assert callable(encoder), "interactive UPDI data command encoder is missing"
+    assert encoder(b"\x00a\xff", 3) == "X030061FF"
+
+
+def test_interactive_boundaries_reject_empty_oversize_and_invalid_utf8() -> None:
+    """Invalid host messages fail before a firmware command can be formed."""
+    encoder = getattr(protocol, "encode_interactive_message", None)
+    fragmenter = getattr(protocol, "fragment_message", None)
+    command = getattr(protocol, "encode_interactive_command", None)
+    assert callable(encoder) and callable(fragmenter) and callable(command)
+    with pytest.raises(UnsupportedPayloadError, match="empty"):
+        encoder("", 16)
+    with pytest.raises(UnsupportedPayloadError, match="configured maximum"):
+        encoder("long", 3)
+    with pytest.raises(ValueError, match="fragment size"):
+        fragmenter(b"abc", 0)
+    with pytest.raises(UnsupportedPayloadError, match="packet limit"):
+        command(b"abcd", 3)
+
+
+def test_interactive_capability_requires_echo_support_from_both_endpoints() -> None:
+    """The host uses the lower live endpoint limit and never assumes legacy echo."""
+    capability = getattr(protocol, "negotiated_payload_limit", None)
+    assert callable(capability), "runtime capability negotiation is missing"
+    gateway = parse_firmware_event(
+        {
+            "role": "GATEWAY",
+            "timestamp": "host-time",
+            "line": "[GATEWAY] INTERACTIVE_CAPS MAX_DATA=23 ECHO=1",
+        }
+    )
+    tracker = parse_firmware_event(
+        {
+            "role": "RECEIVER",
+            "timestamp": "host-time",
+            "line": "[RECEIVER] INTERACTIVE_CAPS MAX_DATA=19 ECHO=1",
+        }
+    )
+    no_echo = parse_firmware_event(
+        {
+            "role": "RECEIVER",
+            "timestamp": "host-time",
+            "line": "[RECEIVER] INTERACTIVE_CAPS MAX_DATA=19 ECHO=0",
+        }
+    )
+    assert gateway is not None and tracker is not None and no_echo is not None
+    assert capability([gateway, tracker]) == 19
+    assert capability([gateway]) is None
+    assert capability([gateway, no_echo]) is None
 
 
 def test_rejects_configured_payload_beyond_transport_limit() -> None:
@@ -107,25 +182,94 @@ def test_ack_alone_never_counts_as_a_tracker_echo() -> None:
     assert not verify_round_trip([ack], context)
 
 
-def test_round_trip_requires_tracker_data_gateway_ack_and_tracker_acceptance() -> None:
-    """Only actual reverse DATA bytes and their correlated ACK prove a round trip."""
+def _chunk_events(campaign: int, sequence: int, payload: bytes) -> list[DeviceEvent]:
+    """Build one complete bidirectional event sequence with no host-synthesized RF rows."""
+    campaign_hex = f"{campaign:04X}"
+    ascii_payload = payload.decode("ascii")
+    payload_hex = payload.hex().upper()
     lines = (
-        ("GATEWAY", "[GATEWAY] ACK_ACCEPTED SID=351C TYPE=03 Q=1"),
+        ("GATEWAY", f"[GATEWAY] DATA_TX_BEGIN SID={campaign_hex} TYPE=08 Q={sequence}"),
+        ("GATEWAY", f"[GATEWAY] DATA_TX_DONE SID={campaign_hex} TYPE=08 Q={sequence}"),
+        ("RECEIVER", f"[RECEIVER] DATA_VALIDATED SID={campaign_hex} TYPE=08 Q={sequence}"),
+        (
+            "RECEIVER",
+            f"[RECEIVER] PAYLOAD_BYTES SID={campaign_hex} TYPE=08 Q={sequence} "
+            f"LEN={len(payload)} HEX={payload_hex} ASCII={ascii_payload}",
+        ),
+        (
+            "RECEIVER",
+            f"[RECEIVER] DATA_ADDRESS SID={campaign_hex} TYPE=08 Q={sequence} SRC=0 DST=1 CRC=OK",
+        ),
+        ("RECEIVER", f"[RECEIVER] ACK_TX_DONE SID={campaign_hex} TYPE=03 Q={sequence}"),
+        ("GATEWAY", f"[GATEWAY] ACK_ACCEPTED SID={campaign_hex} TYPE=03 Q={sequence}"),
         (
             "GATEWAY",
-            (
-                "[GATEWAY] PAYLOAD_BYTES SID=351D TYPE=08 Q=1 SRC=1 DST=0 "
-                "LEN=11 HEX=68656C6C6F20776F726C64 ASCII=hello world"
-            ),
+            f"[GATEWAY] ACK_CONFIRM_TX_DONE SID={campaign_hex} TYPE=03 Q={sequence}",
         ),
-        ("GATEWAY", "[GATEWAY] ACK_TX_DONE SID=351D TYPE=03 Q=1"),
-        ("RECEIVER", "[RECEIVER] ACK_ACCEPTED SID=351D TYPE=03 Q=1"),
+        (
+            "RECEIVER",
+            f"[RECEIVER] ACK_CONFIRM_RX SID={campaign_hex} TYPE=03 Q={sequence}",
+        ),
+        ("RECEIVER", f"[RECEIVER] DATA_TX_BEGIN SID={campaign_hex} TYPE=08 Q={sequence}"),
+        ("RECEIVER", f"[RECEIVER] DATA_TX_DONE SID={campaign_hex} TYPE=08 Q={sequence}"),
+        ("GATEWAY", f"[GATEWAY] DATA_VALIDATED SID={campaign_hex} TYPE=08 Q={sequence}"),
+        (
+            "GATEWAY",
+            f"[GATEWAY] PAYLOAD_BYTES SID={campaign_hex} TYPE=08 Q={sequence} "
+            f"SRC=1 DST=0 LEN={len(payload)} HEX={payload_hex} ASCII={ascii_payload}",
+        ),
+        (
+            "GATEWAY",
+            f"[GATEWAY] DATA_ADDRESS SID={campaign_hex} TYPE=08 Q={sequence} SRC=1 DST=0 CRC=OK",
+        ),
+        ("GATEWAY", f"[GATEWAY] ACK_TX_DONE SID={campaign_hex} TYPE=03 Q={sequence}"),
+        ("RECEIVER", f"[RECEIVER] ACK_ACCEPTED SID={campaign_hex} TYPE=03 Q={sequence}"),
     )
-    events = [
+    return [
         event
         for role, line in lines
         if (event := parse_firmware_event({"role": role, "timestamp": "host-time", "line": line}))
         is not None
     ]
+
+
+def test_round_trip_requires_tracker_data_gateway_ack_and_tracker_acceptance() -> None:
+    """Only actual reverse DATA bytes and their correlated ACK prove a round trip."""
+    events = _chunk_events(0x351C, 1, b"hello world")
     context = RoundTripContext(0x351C, 1, b"hello world", 8, 3, 0, 1)
     assert verify_round_trip(events, context)
+
+
+def test_round_trip_reassembles_fragments_across_sequence_rollover() -> None:
+    """Fragments preserve ordering and campaign identity across sequence 255."""
+    events = _chunk_events(0xFFFF, 255, b"abc") + _chunk_events(1, 1, b"de")
+    context = RoundTripContext(0xFFFF, 255, b"abcde", 8, 3, 0, 1)
+
+    assert verify_round_trip(events, context)
+
+
+def test_echo_latency_uses_the_gateway_clock_and_first_attempt() -> None:
+    """Keep RF latency separate from serial capture and host setup time."""
+    from dataclasses import replace
+
+    from tools.lora_chat import protocol
+
+    events = _chunk_events(0x351C, 1, b"abc")
+    begin = replace(events[0], firmware_ms=0xFFFFFFFA)
+    retry = replace(begin, firmware_ms=7)
+    end = next(event for event in events if event.line.startswith("[GATEWAY] ACK_TX_DONE"))
+    end = replace(end, firmware_ms=22)
+    assert protocol.echo_fragment_latency_ms((begin, retry, end), 8, 3) == (28,)
+
+
+def test_round_trip_rejects_missing_ack_confirmation_and_out_of_order_fragments() -> None:
+    """No chunk advances without the ACK handoff, and wire order must match bytes."""
+    single = _chunk_events(0x351C, 1, b"abc")
+    single_context = RoundTripContext(0x351C, 1, b"abc", 8, 3, 0, 1)
+    without_confirmation = [event for event in single if event.name != "ACK_CONFIRM_RX"]
+    assert not verify_round_trip(without_confirmation, single_context)
+
+    first = _chunk_events(0xFFFF, 255, b"abc")
+    second = _chunk_events(1, 1, b"de")
+    context = RoundTripContext(0xFFFF, 255, b"abcde", 8, 3, 0, 1)
+    assert not verify_round_trip(second + first, context)

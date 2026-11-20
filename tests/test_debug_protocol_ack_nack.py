@@ -13,6 +13,8 @@ from tests.test_rf_stable_transport import image_evidence, journal
 from tools import debug_protocol_ack_nack as debug
 from tools import production_bench as bench
 from tools import rf_proof
+from tools.device_detection.flash_layout import calculate_flash_layout
+from tools.device_detection.hardware_registry import hardware_ports
 
 
 class DebugConsoleTests(unittest.TestCase):
@@ -71,10 +73,29 @@ class DebugConsoleTests(unittest.TestCase):
         }
         approval = self.log.path / "approval.json"
         approval.write_text(json.dumps(mismatch))
+        zero_layout = calculate_flash_layout(
+            device_model="AVR128DA28",
+            flash_bytes=131072,
+            page_bytes=512,
+            bootsize_pages=0,
+            codesize_pages=0,
+        ).to_dict()
         with self.assertRaisesRegex(bench.BenchBlockedError, "BOOTSIZE=0x00"):
-            bench.approve_writes(mismatch, {"GATEWAY": {"bootsize": 0, "codesize": 0}}, approval)
-        self.assertTrue(bench.write_span_is_application(512, 1024, 1, 2))
-        self.assertFalse(bench.write_span_is_application(512, 1536, 1, 2))
+            bench.approve_writes(
+                mismatch,
+                {"GATEWAY": {"calculated_layout": zero_layout}},
+                approval,
+            )
+        app_layout = calculate_flash_layout(
+            device_model="AVR128DA28",
+            flash_bytes=4096,
+            page_bytes=512,
+            bootsize_pages=1,
+            codesize_pages=2,
+        ).to_dict()
+        layout = {"calculated_layout": app_layout}
+        self.assertTrue(bench.write_span_is_application(512, 1024, layout))
+        self.assertFalse(bench.write_span_is_application(0, 512, layout))
 
     def test_interrupted_preparation_never_opens_monitors_or_publishes_receipt(self) -> None:
         hardware = debug.Hardware(self.log)
@@ -93,14 +114,51 @@ class DebugConsoleTests(unittest.TestCase):
 
     def test_swapped_port_overrides_never_reach_live_identification(self) -> None:
         hardware = debug.Hardware(self.log)
-        hardware.port_overrides = {"gateway": rf_proof.PORTS["receiver"]}
+        ports = hardware_ports()
+        hardware.port_overrides = {"gateway": ports["receiver"]}
         with (
-            patch.object(debug, "discover_ports", return_value=list(rf_proof.PORTS.values())),
+            patch.object(debug, "discover_ports", return_value=list(ports.values())),
             patch.object(hardware, "_connect_verified") as connect,
             self.assertRaisesRegex(bench.BenchBlockedError, "enrolled USB adapter"),
         ):
             hardware.connect()
         connect.assert_not_called()
+
+    def test_echo_sequence_rolls_over_without_restarting_the_bench(self) -> None:
+        """A message can span sequence rollover while the radios stay in Echo mode."""
+        hardware = debug.Hardware(self.log)
+        chunks = (b"x",) * 256
+        sequences = []
+
+        def command(role: str, value: str) -> None:
+            assert role == "gateway" and value == "X0178"
+            sequences.append(hardware.sequence)
+            self.log.record(
+                "GATEWAY",
+                f"[GATEWAY] DATA_TX_BEGIN SID=1234 T=1 TYPE=8 Q={hardware.sequence} E=0",
+            )
+
+        def ready(role: str, _command: str, _marker: str, _timeout: float) -> None:
+            label = role.upper()
+            self.log.record(label, f"[{label}] INTERACTIVE_READY MAX_DATA=1 ECHO=1")
+
+        with (
+            patch.object(hardware, "_require_rf"),
+            patch.object(
+                hardware,
+                "_start_interactive_campaign",
+                wraps=hardware._start_interactive_campaign,
+            ) as start,
+            patch.object(hardware, "_arm_radio"),
+            patch.object(hardware, "_park"),
+            patch.object(hardware, "send_and_wait", side_effect=ready),
+            patch.object(hardware, "command", side_effect=command),
+            patch.object(hardware, "wait"),
+            patch.object(debug, "verify_round_trip", return_value=True),
+        ):
+            hardware.exchange_interactive_message(chunks, 1)
+        self.assertEqual(sequences, [*range(1, 256), 1])
+        start.assert_called_once()
 
     def test_dry_run_builds_without_opening_serial(self) -> None:
         with (
@@ -214,7 +272,10 @@ class DebugConsoleTests(unittest.TestCase):
     def test_standby_timeout_does_not_mask_ctrl_c(self) -> None:
         hardware = debug.Hardware(self.log)
         hardware.authorize_rf = True
-        hardware.monitors = {"gateway": {}, "receiver": {}}
+        hardware.monitors = {
+            role: {"process": Mock(**{"poll.return_value": None})}
+            for role in ("receiver", "gateway")
+        }
         with (
             patch.object(hardware, "_arm_radio", side_effect=KeyboardInterrupt),
             patch.object(hardware, "_park", side_effect=TimeoutError("standby timed out")),
@@ -362,7 +423,10 @@ class DebugConsoleTests(unittest.TestCase):
                 hardware.authorize_rf = True
                 hardware.manifest = json.loads(bench.MANIFEST.read_text())
                 hardware.images = image_evidence(hardware.run_id)
-                hardware.monitors = {"receiver": {}, "gateway": {}}
+                hardware.monitors = {
+                    role: {"process": Mock(**{"poll.return_value": None})}
+                    for role in ("receiver", "gateway")
+                }
                 commands: list[tuple[str, str]] = []
 
                 def wire(

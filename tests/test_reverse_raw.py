@@ -176,13 +176,11 @@ class ReverseRawTests(unittest.TestCase):
                 ):
                     subprocess.run([binary, case], check=True)
 
-    def test_registered_target_bounds(self) -> None:
+    def test_unregistered_reverse_raw_targets_have_no_flash_write_bounds(self) -> None:
         from tools.rf_proof import application_bounds_for_environment
 
         config = subprocess.check_output(
             ["pio", "project", "config", "--json-output"], cwd=ROOT, text=True
         )
         for role in ("sender", "receiver"):
-            self.assertEqual(
-                application_bounds_for_environment(config, role + "_reverse_raw"), (0, 130048)
-            )
+            self.assertIsNone(application_bounds_for_environment(config, role + "_reverse_raw"))

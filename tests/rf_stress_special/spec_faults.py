@@ -37,7 +37,7 @@ def _fault_bundle(
 
 def _run_replay(manifest: Path, output: Path) -> subprocess.CompletedProcess[str]:
     """Analyze the fixture using replay mode, which has no radio transport."""
-    return subprocess.run(
+    return subprocess.run(  # noqa: S603 - fixed argv invokes the local replay CLI.
         [
             sys.executable,
             "-m",
