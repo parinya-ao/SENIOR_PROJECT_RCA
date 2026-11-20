@@ -1,0 +1,11 @@
+{
+  "name": "time-utils",
+  "version": "1.0.0",
+  "dependencies": {
+    "paulstoffregen/Time": "^1.6.1"
+  },
+  "build": {
+    "srcDir": ".",
+    "includeDir": "."
+  }
+}

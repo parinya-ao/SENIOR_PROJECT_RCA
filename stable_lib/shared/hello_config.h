@@ -1,5 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
-
 // Selects validated Hello build modes and rejects unsupported profile
 // overrides.
 

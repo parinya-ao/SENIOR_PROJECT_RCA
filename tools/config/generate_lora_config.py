@@ -129,7 +129,7 @@ def source_fingerprint() -> str:
             if path.is_file()
             and path.suffix in (".h", ".c", ".cpp", ".py", ".ini")
             and not path.is_relative_to(ROOT / "include/generated")
-            and path != ROOT / "stable_lib/arq/src/arq/board_ssot.c"
+            and path != ROOT / "stable_lib/arq/board_ssot.c"
         }
     )
 
@@ -196,6 +196,7 @@ def artifacts(config: Json, radio_profile: Json | None = None) -> dict[str, str]
     manifest: dict[str, Json] = {
         "shared": shared,
         "shared_fingerprint": fingerprint,
+        "device_profiles": config["device_profiles"],
         "boards": {},
         "environments": {},
         "source_fingerprint": source_hash,
@@ -267,28 +268,63 @@ def artifacts(config: Json, radio_profile: Json | None = None) -> dict[str, str]
     layout = ["[target_layout]"]
     for role, target in (("sender", "gateway"), ("receiver", "receiver")):
         board = config[f"{role}_board"]
+        geometry = config["device_profiles"][board["mcu"]]
         layout.extend(
             f"{target}_{key} = {hex(board[key])}" for key in ("bootsize", "codesize", "bodcfg")
         )
         layout.append(f"{target}_app_start = {hex(board['image_start'])}")
-    layout += [
-        "[flash_geometry]",
-        "total_bytes = 131072",
-        f"application_end = {hex(config['receiver_board']['image_end_exclusive'])}",
-    ]
+        layout.append(f"{target}_image_end = {hex(board['image_end_exclusive'])}")
+        layout.append(f"{target}_image_section = {board['image_section']}")
+        layout.extend(
+            (
+                f"{target}_mcu = {board['mcu']}",
+                f"{target}_signature_hex = {geometry['signature_hex']}",
+                f"{target}_flash_bytes = {geometry['flash_bytes']}",
+                f"{target}_page_bytes = {geometry['flash_page_bytes']}",
+                f"{target}_eeprom_bytes = {geometry['eeprom_bytes']}",
+            )
+        )
+        layout.extend(
+            f"{target}_{name}_fuse_offset = {offset}"
+            for name, offset in geometry["fuse_offsets"].items()
+        )
     outputs["generated/lora_platformio.ini"] = "\n".join(layout) + "\n"
 
     for role in ("sender", "receiver"):
         board = config[f"{role}_board"]
+        geometry = config["device_profiles"][board["mcu"]]
         radio_board = radio_profile[role]
-        full = digest({"shared": shared, "board": board, "radio_board": radio_board, "role": role})
-        manifest["boards"][role] = dict(board, radio_board=radio_board, build_fingerprint=full)
+        full = digest(
+            {
+                "shared": shared,
+                "board": board,
+                "device_memory": geometry,
+                "radio_board": radio_board,
+                "role": role,
+            }
+        )
+        manifest["boards"][role] = dict(
+            board,
+            device_memory=geometry,
+            radio_board=radio_board,
+            build_fingerprint=full,
+        )
         board_lines = [
             "#pragma once",
             "// Generated from config/lora_system.json.",
             f'#define LORA_BUILD_FINGERPRINT "{full}"',
             f"#define LORA_IMAGE_START {board['image_start']}",
             f"#define LORA_IMAGE_END {board['image_end_exclusive']}",
+            f"#define LORA_FLASH_BYTES {geometry['flash_bytes']}UL",
+            f"#define LORA_FLASH_PAGE_BYTES {geometry['flash_page_bytes']}U",
+            f"#define LORA_EEPROM_BYTES {geometry['eeprom_bytes']}U",
+            f"#define LORA_BOOTSIZE_PAGES {board['bootsize']}U",
+            f"#define LORA_CODESIZE_PAGES {board['codesize']}U",
+            f"#define LORA_BOOTSIZE_FUSE_OFFSET {geometry['fuse_offsets']['bootsize']}U",
+            f"#define LORA_CODESIZE_FUSE_OFFSET {geometry['fuse_offsets']['codesize']}U",
+            f"#define LORA_BODCFG_FUSE_OFFSET {geometry['fuse_offsets']['bodcfg']}U",
+            f"#define LORA_IMAGE_SECTION_{board['image_section']} 1",
+            f'#define LORA_DEVICE_SIGNATURE_HEX "{geometry["signature_hex"]}"',
         ]
         for name, pin in board.get("pins", {}).items():
             board_lines.append(f"#define LORA_PIN_{name.upper()} PIN_{pin}")
@@ -358,6 +394,29 @@ def generate(*, check: bool = False) -> None:
             _write_atomic(path, contents)
 
 
+def prepare_build_inputs() -> None:
+    """Verify generated headers and INI, then refresh ignored build manifests."""
+    from application_config import load as load_application  # type: ignore[import-not-found]
+    from application_config import render as render_application
+
+    if (ROOT / "include/application_config.h").read_text() != render_application(
+        load_application()
+    ):
+        msg = "stale generated application policy"
+        raise ValueError(msg)
+    outputs = artifacts(load(ROOT / "config/lora_system.json"))
+    manifests = {"generated/lora_manifest.json", "generated/arq_manifest.json"}
+    for name, contents in outputs.items():
+        if name in manifests or name.startswith("../"):
+            continue
+        path = ROOT / name
+        if not path.is_file() or path.read_text() != contents:
+            msg = f"stale or missing generated configuration: {name}"
+            raise ValueError(msg)
+    for name in sorted(manifests):
+        _write_atomic(ROOT / name, outputs[name])
+
+
 def main() -> None:
     """Run validation or deterministic artifact generation from the CLI."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -366,11 +425,18 @@ def main() -> None:
         "--check", action="store_true", help="fail if generated files are stale or missing"
     )
     mode.add_argument("--validate", action="store_true", help="validate both source configurations")
+    mode.add_argument(
+        "--prepare-build",
+        action="store_true",
+        help="validate INI and headers then refresh manifests",
+    )
     args = parser.parse_args()
     try:
         if args.validate:
             load(ROOT / "config/lora_system.json")
             load_radio_profile(ROOT / "config/radio_915.toml")
+        elif args.prepare_build:
+            prepare_build_inputs()
         else:
             generate(check=args.check)
     except (ValueError, OSError) as error:

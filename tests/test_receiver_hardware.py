@@ -77,7 +77,7 @@ class ReceiverHardwareTests(unittest.TestCase):
         # Compile the actual static GPIO function, replacing only Arduino I/O.
         source = (ROOT / "stable_lib/legacy_receiver/legacy_receiver.cpp").read_text()
         first = source.index("static void InitializeReceiverGpio()")
-        last = source.index("\nvoid setup()", first)
+        last = source.index("\nvoid Initialize()", first)
         aliases = "\n".join(
             line
             for line in source[:first].splitlines()
@@ -88,7 +88,14 @@ class ReceiverHardwareTests(unittest.TestCase):
             '#include "include/generated/lora_receiver_board.h"\n'
             '#include "include/generated/radio_915_config.h"\n'
             + aliases
-            + "\n"
+            + "\nstruct FakeLed { void Begin(uint32_t) {\n"
+            + "  digitalWriteFast(LORA_PIN_LED1, HIGH);\n"
+            + "  pinModeFast(LORA_PIN_LED1, OUTPUT);\n"
+            + "  digitalWriteFast(LORA_PIN_LED2, HIGH);\n"
+            + "  pinModeFast(LORA_PIN_LED2, OUTPUT);\n"
+            + "} };\n"
+            + "static FakeLed led_status;\n"
+            + "static uint32_t millis() { return 0; }\n"
             + source[first:last]
         )
         with tempfile.TemporaryDirectory() as directory:
@@ -112,7 +119,7 @@ class ReceiverHardwareTests(unittest.TestCase):
                 ],
                 capture_output=True,
                 text=True,
-            check=False,
+                check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             result = subprocess.run([str(binary)], capture_output=True, text=True, check=False)

@@ -29,9 +29,9 @@ class DirectionalTests(unittest.TestCase):
                             "-std=c++17",
                             *flags,
                             "-Iinclude",
-                            "-Istable_lib/arq/src/arq/src",
+                            "-Istable_lib/arq",
                             "-c",
-                            f"stable_lib/arq/src/arq/{source}.cpp",
+                            f"stable_lib/arq/{source}.cpp",
                             "-o",
                             obj,
                         ],
@@ -51,9 +51,10 @@ class DirectionalTests(unittest.TestCase):
                             "-Wno-unused-variable",
                             "-Wno-unused-function",
                             "-Itests/arq/stub",
+                            "-Isrc",
                             "-Itests/raw_mvp_stub",
                             "-Iinclude",
-                            "-Istable_lib/arq/src/arq/src",
+                            "-Istable_lib/arq",
                             "-DLORA_ROLE_" + role,
                             "-DARQ_TEST_MODE=1",
                             *flags,
@@ -70,7 +71,7 @@ class DirectionalTests(unittest.TestCase):
                         with self.subTest(reverse=reverse, role=role, case=case):
                             subprocess.run([binary, case], check=True)
 
-    def test_reverse_images_keep_physical_board_bounds_and_errata(self) -> None:
+    def test_unregistered_reverse_images_have_no_flash_write_bounds(self) -> None:
         import json
 
         from tools import rf_proof
@@ -81,7 +82,7 @@ class DirectionalTests(unittest.TestCase):
         sections = {s: dict(v) for s, v in json.loads(config)}
         for role in ("sender", "receiver"):
             env = role + "_arq_radio_only_reverse"
-            self.assertEqual(rf_proof.application_bounds_for_environment(config, env), (0, 130048))
+            self.assertIsNone(rf_proof.application_bounds_for_environment(config, env))
             self.assertIn("-DARQ_REVERSE_DIAGNOSTIC=1", sections["env:" + env]["build_flags"])
             self.assertIn("-DRADIOLIB_FIX_ERRATA_SX127X=1", sections["env:" + env]["build_flags"])
 

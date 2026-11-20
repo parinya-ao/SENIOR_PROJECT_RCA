@@ -83,11 +83,13 @@ class RawMvpTests(unittest.TestCase):
             self.assertIn(role + "_mvp", profile["environments"][role])
 
     def test_real_entrypoint(self) -> None:
-        self.assertTrue((ROOT / "stable_lib/mvp_app/mvp_app.cpp").exists(), "raw MVP entrypoint missing")
+        self.assertTrue(
+            (ROOT / "stable_lib/mvp_app/mvp_app.cpp").exists(), "raw MVP entrypoint missing"
+        )
         with tempfile.TemporaryDirectory() as directory:
             for role in ("SENDER", "RECEIVER"):
                 binary = Path(directory) / role
-                subprocess.run(
+                result = subprocess.run(
                     [
                         "g++",
                         "-std=c++17",
@@ -97,13 +99,21 @@ class RawMvpTests(unittest.TestCase):
                         "-DLORA_ROLE_" + role,
                         "-Itests/raw_mvp_stub",
                         "-Iinclude",
+                        "-Istable_lib/mvp_app",
+                        "-Istable_lib/reverse_raw_app",
+                        "-Istable_lib/updi_uart",
+                        "-DLORA_APP_MVP=1",
+                        "-Istable_lib/updi_uart",
                         "tests/raw_mvp_test.cpp",
                         "-o",
                         str(binary),
                     ],
                     cwd=ROOT,
-                    check=True,
+                    capture_output=True,
+                    text=True,
+                    check=False,
                 )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 subprocess.run([str(binary)], check=True)
 
 

@@ -2,10 +2,17 @@
 
 import argparse
 import json
+import re
+import sys
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.device_detection.flash_layout import Section, calculate_flash_layout, page_write_range
+
 Json = Any
 _MIN_TIMEOUT_MS = 100
 _MAX_TIMEOUT_MS = 60_000
@@ -32,6 +39,7 @@ def validate(config: Json) -> Json:
         "bodcfg": 0,
         "image_start": 0,
         "image_end_exclusive": 0,
+        "image_section": "",
     }
     receiver_shape = dict(
         board_shape,
@@ -46,6 +54,15 @@ def validate(config: Json) -> Json:
     )
     reference = {
         "schema_version": 0,
+        "device_profiles": {
+            "AVR128DA28": {
+                "signature_hex": "",
+                "flash_bytes": 0,
+                "flash_page_bytes": 0,
+                "eeprom_bytes": 0,
+                "fuse_offsets": {"bodcfg": 0, "codesize": 0, "bootsize": 0},
+            }
+        },
         "experiment": {"mode": "", "radio_inventory": None, "antenna_inventory": None},
         "protocol": {
             "version": 0,
@@ -81,9 +98,27 @@ def validate(config: Json) -> Json:
             raise ValueError(msg)
 
     shape(config, reference, "config")
-    if config["schema_version"] != 1:
+    if config["schema_version"] != 2:
         msg = "unsupported schema_version"
         raise ValueError(msg)
+    for model, profile in config["device_profiles"].items():
+        if (
+            not re.fullmatch(r"[0-9A-Fa-f]{6}", profile["signature_hex"])
+            or type(profile["flash_bytes"]) is not int
+            or type(profile["flash_page_bytes"]) is not int
+            or type(profile["eeprom_bytes"]) is not int
+            or profile["flash_bytes"] <= 0
+            or profile["flash_page_bytes"] <= 0
+            or profile["eeprom_bytes"] < 0
+            or profile["flash_bytes"] % profile["flash_page_bytes"]
+            or any(
+                type(offset) is not int or not 0 <= offset <= 0xFF
+                for offset in profile["fuse_offsets"].values()
+            )
+            or len(set(profile["fuse_offsets"].values())) != len(profile["fuse_offsets"])
+        ):
+            msg = f"device_profiles.{model}: invalid physical memory geometry"
+            raise ValueError(msg)
     protocol = config["protocol"]
     if protocol != {
         "version": 2,
@@ -99,18 +134,14 @@ def validate(config: Json) -> Json:
     }:
         msg = "unsupported protocol framing or payload"
         raise ValueError(msg)
-    for role, boot in [("sender", 0), ("receiver", 0)]:
+    for role in ("sender", "receiver"):
         board = config[f"{role}_board"]
-        expected = {
-            "mcu": "AVR128DA28",
-            "bootsize": boot,
-            "codesize": 0,
-            "bodcfg": 0,
-            "image_start": boot * 512,
-            "image_end_exclusive": 130048,
-        }
+        geometry = config["device_profiles"].get(board["mcu"])
+        if geometry is None:
+            msg = f"{role}: MCU has no validated device profile"
+            raise ValueError(msg)
         if role == "receiver":
-            expected["pins"] = {
+            expected_pins = {
                 "sd_cs": "PC3",
                 "led1": "PA6",
                 "led2": "PA5",
@@ -118,11 +149,42 @@ def validate(config: Json) -> Json:
                 "sd_enable": "PD6",
                 "sd_detect": "PA4",
             }
-        if board != expected:
-            msg = f"{role}: unsupported board geometry or pin mapping"
+            if board["pins"] != expected_pins:
+                msg = f"{role}: unsupported board pin mapping"
+                raise ValueError(msg)
+        layout = calculate_flash_layout(
+            device_model=board["mcu"],
+            flash_bytes=geometry["flash_bytes"],
+            page_bytes=geometry["flash_page_bytes"],
+            bootsize_pages=board["bootsize"],
+            codesize_pages=board["codesize"],
+            protection_state="CONFIGURED",
+        )
+        try:
+            section = Section(board["image_section"])
+        except ValueError as error:
+            msg = f"{role}: unsupported firmware image section"
+            raise ValueError(msg) from error
+        image_start = board["image_start"]
+        image_end = board["image_end_exclusive"]
+        write_span = page_write_range(layout, section, image_start, image_end)
+        section_region = layout.region(section)
+        if (
+            layout.fuse_status.value != "FUSE_LAYOUT_VALID"
+            or type(board["bodcfg"]) is not int
+            or not 0 <= board["bodcfg"] <= 0xFF
+            or section is Section.APPDATA
+            or section_region is None
+            or image_start != section_region.start
+            or image_end > section_region.end_exclusive
+            or write_span != (image_start, image_end)
+        ):
+            msg = f"{role}: firmware image or fuse geometry is incompatible with its section"
             raise ValueError(msg)
     if config["experiment"] != {
-        "mode": "single_packet", "radio_inventory": None, "antenna_inventory": None
+        "mode": "single_packet",
+        "radio_inventory": None,
+        "antenna_inventory": None,
     }:
         msg = "experiment: unsupported mode or unverified inventory assertion"
         raise ValueError(msg)

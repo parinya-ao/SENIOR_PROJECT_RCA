@@ -8,6 +8,7 @@ from pathlib import Path
 try:
     from tools.validate_repo_isolation import validate_repo
 except ImportError:
+
     def validate_repo(project_root: str | Path) -> list[str]:
         """Return a clear failure when the validator cannot be imported."""
         _ = project_root
@@ -133,7 +134,15 @@ class RepositoryIsolationTests(unittest.TestCase):
         tracked = self.root / "src/tracked.h"
         tracked.symlink_to("../../../outside.h")
         subprocess.run(
-            ["git", "-C", str(self.root), "add", "platformio.ini", "src/tracked.h"],
+            [
+                "git",
+                "-C",
+                str(self.root),
+                "add",
+                "--force",
+                "platformio.ini",
+                "src/tracked.h",
+            ],
             check=True,
         )
         tracked.unlink()

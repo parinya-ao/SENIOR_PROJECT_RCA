@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SsotProtocolTests(unittest.TestCase):
-    def compile_and_run(self, flags: Any=()) -> None:
+    def compile_and_run(self, flags: Any = ()) -> None:
         with tempfile.TemporaryDirectory(prefix="ssot-protocol-") as directory:
             binary = Path(directory) / "ssot_protocol_test"
             compile_result = subprocess.run(
@@ -22,12 +22,13 @@ class SsotProtocolTests(unittest.TestCase):
                     "-Wconversion",
                     "-Werror",
                     *flags,
-                    "-I" + str(ROOT / "src"),
+                    "-I" + str(ROOT / "stable_lib/ssot"),
                     "-I" + str(ROOT / "include"),
+                    "-I" + str(ROOT / "src"),
                     str(ROOT / "tests/ssot_protocol_test.cpp"),
-                    str(ROOT / "stable_lib/ssot/src/ssot/codec.cpp"),
-                    str(ROOT / "stable_lib/ssot/src/ssot/session.cpp"),
-                    str(ROOT / "stable_lib/ssot/src/ssot/control_input.cpp"),
+                    str(ROOT / "stable_lib/ssot/ssot_codec.cpp"),
+                    str(ROOT / "stable_lib/ssot/ssot_session.cpp"),
+                    str(ROOT / "stable_lib/ssot/ssot_control_input.cpp"),
                     "-o",
                     str(binary),
                 ],
@@ -50,6 +51,42 @@ class SsotProtocolTests(unittest.TestCase):
 
     def test_ram_only_campaign_stops_after_one_attempt(self) -> None:
         self.compile_and_run(("-DHELLO_TEST_MODE=1", "-DHELLO_RAM_ONLY_TEST=1"))
+
+    def test_existing_transport_acknowledges_both_data_directions(self) -> None:
+        """The existing reliable transport orders an ACK handoff before echo DATA."""
+        with tempfile.TemporaryDirectory(prefix="reliable-transport-") as directory:
+            binary = Path(directory) / "reliable_transport_test"
+            compile_result = subprocess.run(
+                [
+                    "g++",
+                    "-std=c++17",
+                    "-Wall",
+                    "-Wextra",
+                    "-Wshadow",
+                    "-Wconversion",
+                    "-Wsign-conversion",
+                    "-Werror",
+                    "-Itests/radio_stub",
+                    "-Iinclude",
+                    "-Isrc",
+                    "-Istable_lib/ssot",
+                    "tests/reliable_transport_test.cpp",
+                    "-o",
+                    str(binary),
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+            self.assertEqual(
+                compile_result.returncode, 0, compile_result.stdout + compile_result.stderr
+            )
+            run_result = subprocess.run(
+                [str(binary)], capture_output=True, text=True, timeout=10, check=False
+            )
+            self.assertEqual(run_result.returncode, 0, run_result.stdout + run_result.stderr)
 
 
 if __name__ == "__main__":

@@ -364,7 +364,7 @@ class Gate1Tests(unittest.TestCase):
             capture_output=True,
             text=True,
             timeout=5,
-        check=False,
+            check=False,
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("--execute-gate1", proc.stdout)
@@ -372,6 +372,20 @@ class Gate1Tests(unittest.TestCase):
         self.assertIn("--halt-write-probe", proc.stdout)
         self.assertIn("--wide-gpr-access", proc.stdout)
         self.assertIn("--controlled-cpu-reset", proc.stdout)
+
+    def test_gate1_provenance_covers_migrated_arq_sources(self) -> None:
+        from tools.rca import gate1_live
+
+        for name in (
+            "src/sender/appcode/arq/sender.cpp",
+            "src/receiver/appcode/arq/receiver.cpp",
+            "src/shared/diagnostics/arq_bench.cpp",
+            "src/shared/protocol/arq_ingress.cpp",
+            "src/shared/radio/arq_radio.cpp",
+        ):
+            with self.subTest(source=name):
+                self.assertIn(name, gate1_live.SOURCE_HASH_PATHS)
+                self.assertTrue((gate1_live.ROOT / name).is_file())
 
     def test_T24_part_identity_comes_from_read_signature_not_SIB_label(self) -> None:
         self.assertEqual(part_from_signature(bytes.fromhex("1e970a")), "AVR128DA28")
@@ -505,7 +519,7 @@ class Gate1Tests(unittest.TestCase):
             def instr(self, frame: Any) -> None:
                 self.read_pending = True
 
-            def recv(self, n: Any, expected: Any=None) -> Any:
+            def recv(self, n: Any, expected: Any = None) -> Any:
                 if expected is not None:
                     return expected
                 self.read_pending = False
@@ -565,7 +579,7 @@ class Gate1Tests(unittest.TestCase):
             def instr(self, frame: Any) -> None:
                 pass
 
-            def recv(self, n: Any, expected: Any=None) -> Any:
+            def recv(self, n: Any, expected: Any = None) -> Any:
                 return expected if expected is not None else bytes([self.gpr])
 
             def send(self, data: Any) -> None:
@@ -588,7 +602,7 @@ class Gate1Tests(unittest.TestCase):
             def instr(self, frame: Any) -> None:
                 self.frames.append(frame)
 
-            def recv(self, n: Any, expected: Any=None) -> Any:
+            def recv(self, n: Any, expected: Any = None) -> Any:
                 self.expected.append(expected)
                 return expected
 
@@ -616,7 +630,7 @@ class Gate1Tests(unittest.TestCase):
                 elif frame[0] == 0x44:
                     self.address = frame[1] | (frame[2] << 8)
 
-            def recv(self, n: Any, expected: Any=None) -> Any:
+            def recv(self, n: Any, expected: Any = None) -> Any:
                 if expected is not None:
                     return expected
                 self.read_data = False
@@ -654,7 +668,7 @@ class Gate1Tests(unittest.TestCase):
             def instr(self, frame: Any) -> None:
                 self.frames.append(frame)
 
-            def recv(self, n: Any, expected: Any=None) -> Any:
+            def recv(self, n: Any, expected: Any = None) -> Any:
                 return expected
 
             def send(self, data: Any) -> None:

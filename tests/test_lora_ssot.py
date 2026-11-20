@@ -37,7 +37,7 @@ class ConfigurationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "platformio.ini").write_text("[platformio]\n")
-            source = root / "stable_lib/lora/lora.cpp"
+            source = root / "src/shared/radio/radio_link.cpp"
             source.parent.mkdir(parents=True)
             source.write_text("int driver_version = 1;\n")
             with patch.object(generator, "ROOT", root):

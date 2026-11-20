@@ -1,10 +1,9 @@
-// No repository-wide license is declared; existing rights are unchanged.
 // Exercises the real callback-to-cooperative-task command handoff.
 #include <assert.h>
 #include <inttypes.h>
 #include <string.h>
 
-#include "../stable_lib/gateway_app/espcomm.cpp"
+#include "../src/sender/appcode/gateway/espcomm.cpp"
 
 uint32_t host_ms = 0;
 namespace fake_spi {
@@ -17,14 +16,16 @@ iw::core::RingBuffer<application_config::gateway::kResultBufferBytes> ringbuf;
 TaskScheduler scheduler;
 int16_t current_temperature = 0;
 }  // namespace gateway_app
-static int configurations, rejections;
+static int configurations, rejections, starts, stops;
+static bool bench_active;
+bool IsRadioBenchActive() { return bench_active; }
 void InitializeRadio(Address address) {
   assert(address == LORA_SENDER_ADDRESS);
   ++configurations;
 }
 void RejectRadioConfiguration() { ++rejections; }
-void StartRadioTransaction() {}
-void StopRadio() {}
+void StartRadioTransaction() { ++starts; }
+void StopRadio() { ++stops; }
 
 int main() {
   const float frequency = HELLO_RF_FREQUENCY_MHZ;
@@ -41,4 +42,17 @@ int main() {
   HandleReceive(7);
   i2c_command_task.Run();
   assert(configurations == 1 && rejections == 1 && is_ready);
+  const bool bench_modes[] = {false, true};
+  for (const bool bench : bench_modes) {
+    bench_active = bench;
+    Wire.offset = 0;
+    Wire.input[0] = kI2cStartLora;
+    HandleReceive(1);
+    i2c_command_task.Run();
+    Wire.offset = 0;
+    Wire.input[0] = kI2cStopLora;
+    HandleReceive(1);
+    i2c_command_task.Run();
+    assert(starts == 1 && stops == 1);
+  }
 }

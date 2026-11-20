@@ -1,7 +1,10 @@
+// Exercises the reverse raw application and its bounded diagnostic commands.
 #include <assert.h>
 
-#include "../stable_lib/arq/src/arq/diagnostics.cpp"
+#include "../stable_lib/arq/diagnostics.cpp"
 #include "../stable_lib/reverse_raw_app/reverse_raw_app.cpp"
+
+using namespace reverse_raw_app;
 #include "arq/diagnostics_test_access.h"
 const arq_board board_ssot = {3, 4, 5, 6};
 void board_ssot_init(void) {}

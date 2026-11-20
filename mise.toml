@@ -1,14 +1,22 @@
 [tools]
 clang = "latest"
 d2 = "latest"
-python = "3.12"
+python = "3.14"
 uv = "latest"
 
 [tasks.hello]
 run = "echo hello"
 [tasks.debug_protocol_ACK_NACK]
-description = "Interactive real LoRa DATA/ACK/NACK debugger (no firmware upload)"
-run = "uv run --no-sync python -m tools.debug_protocol_ack_nack"
+description = "Production LoRa DATA/ACK/NACK bench debugger"
+run = "uv run --locked python -m tools.debug_protocol_ack_nack"
+
+[tasks.lora_chat]
+description = "Interactive Gateway ↔ Tracker LoRa debug console"
+run = "uv run --no-sync python -m tools.lora_chat"
+
+[tasks.rf_stress]
+description = "Build a safe dry-run bundle for the isolated LoRa stress suite"
+run = "uv run --locked python -m tools.rf_stress"
 
 [tasks."monitor_reciver"]
 run = "uv run third_party/upditerm/upditerm.py /dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0 38400"
@@ -21,10 +29,10 @@ description = "Strict Python lint, formatting, and type checks (read-only)"
 depends = ["lint:python:ruff", "lint:python:format", "lint:python:types"]
 
 [tasks."lint:python:ruff"]
-run = "uv run --locked ruff check src/lora tools tests"
+run = "uv run --locked --no-sync ruff check tools tests"
 
 [tasks."lint:python:format"]
-run = "uv run --locked ruff format --check src/lora tools tests"
+run = "uv run --locked --no-sync ruff format --check tools tests"
 
 [tasks."lint:python:types"]
-run = "uv run --locked mypy"
+run = "uv run --locked --no-sync mypy"

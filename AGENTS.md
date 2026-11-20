@@ -25,13 +25,20 @@
 9. If work is blocked, complete every independent, non-destructive engineering action first; report `BLOCKED` with the exact blocker.
 10. Prefer boring, reliable C and small state machines over frameworks, dependencies, and abstractions.
 
+### Static analysis and documentation
+
+- Before a behavior change, trace actual callers and selected build environments, run the focused static and test baseline, then reproduce the defect with a deterministic test. Patch the confirmed cause and rerun the focused and affected full regression checks.
+- Keep comments on contracts, hardware assumptions, and non-obvious invariants. Format first-party files in scope and update documentation when pins, protocol, public interfaces, builds, or test procedures change.
+- Before deleting or consolidating Markdown, classify its owner and references. Preserve active policy, unique or historical evidence, and documents with uncertain purpose. Verify all local links after edits.
+- Record exact commands, exit codes, counts, sizes, and evidence status. Label host simulation separately from physical hardware results.
+
 ## 3. Project truth and protected files
 
 Read these before making changes that depend on pins, radio parameters, build targets, or programming boundaries:
 
 - `config/lora_system.json`
-- `docs/ssot/GATEWAY_SSOT.md`
-- `docs/ssot/TRACKER_SSOT.md`
+- `GATEWAY_SSOT.md`
+- `TRACKER_SSOT.md`
 - `include/generated/`
 - `generated/lora_platformio.ini`
 
@@ -64,7 +71,7 @@ These are **schematic reference mappings**, not permission to override current w
 | Radio RESET | PD1 | PD0 |
 | Radio DIO0 / IRQ | PD3 (`RF_IRQ`) | PD2 (`DIO0`) |
 | Radio DIO1 | PD2 (`RF_DIO1`) | PD3 (`DIO1`) |
-| Radio power enable | PA7 (`EN-LORA`) | Verify carrier/daughterboard power control |
+| Radio power enable | PA7 (`EN-LORA`) | No radio power-enable in current SSOT; PA7 is the A0 address/control net |
 
 Use role-specific pin definitions from the active configuration; never merge pin maps merely because both use AVR128DA28. GPS/SD power isolation on Tracker is intentional and should remain untouched during radio-only tests.
 

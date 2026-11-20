@@ -3,11 +3,12 @@
 import json
 import tomllib
 from pathlib import Path
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def validate(config: dict) -> dict:
+def validate(config: dict[str, Any]) -> dict[str, Any]:
     """Reject unknown settings and capacities outside existing AVR budgets."""
     fields = {
         "diagnostics": {"max_retries", "payload", "gateway_payload", "tracker_payload", "negative_payload"},
@@ -66,13 +67,13 @@ def validate(config: dict) -> dict:
     return config
 
 
-def load(path: Path = ROOT / "config/application.toml") -> dict:
+def load(path: Path = ROOT / "config/application.toml") -> dict[str, Any]:
     """Load and validate policy; retain no file handle after returning."""
     with path.open("rb") as stream:
         return validate(tomllib.load(stream))
 
 
-def render(config: dict) -> str:
+def render(config: dict[str, Any]) -> str:
     """Return deterministic C++17 constants from validated TOML policy."""
     validate(config)
     lines = [
@@ -102,7 +103,8 @@ def render(config: dict) -> str:
 
 def raw_payload() -> bytes:
     """Return the same ASCII bytes used by the raw firmware diagnostics."""
-    return load()["raw"]["payload"].encode("ascii")
+    payload = cast(str, load()["raw"]["payload"])
+    return payload.encode("ascii")
 
 
 def raw_send_command() -> str:

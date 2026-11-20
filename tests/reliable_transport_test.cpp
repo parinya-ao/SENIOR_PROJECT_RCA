@@ -1,604 +1,247 @@
-#include "reliable_transport.h"
-
 #include <assert.h>
-#include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
-struct FakeRadio {
-  uint8_t local = 0, source = 0, destination = 0, length = 0, bytes[256] = {};
-  bool incoming = false, done = false, init_ok = true;
-  unsigned starts = 0, inits = 0, sleeps = 0;
-  int16_t send_error = 0, completion_error = 0, receive_error = 0;
+#include "shared/protocol/interactive_command.h"
+#include "shared/protocol/reliable_transport.h"
+
+struct Packet {
+  uint8_t source = 0U;
+  uint8_t destination = 0U;
+  uint16_t campaign = 0U;
+  uint8_t size = 0U;
+  uint8_t bytes[256] = {};
+};
+
+class FakeRadio {
+ public:
+  explicit FakeRadio(uint8_t address) : address_(address) {}
 
   int16_t init(uint8_t address, float, int8_t, uint8_t) {
-    ++inits;
-    local = address;
-    incoming = false;
-    done = false;
-    return init_ok ? 0 : -1;
-  }
-  int16_t send(uint8_t dst, const uint8_t* payload, uint8_t size) {
-    ++starts;
-    done = false;
-    destination = dst;
-    length = size;
-    memcpy(bytes, payload, size);
-    return send_error;
-  }
-  int16_t send_done() {
-    return completion_error ? completion_error : (done ? 1 : 0);
-  }
-  bool available() { return incoming; }
-  int16_t recv(uint8_t* src, uint8_t* dst, uint8_t* payload, size_t capacity,
-               uint8_t* size) {
-    incoming = false;
-    *src = source;
-    *dst = destination;
-    *size = length;
-    if (receive_error) {
-      *size = 0;
-      return receive_error;
-    }
-    assert(length <= capacity);
-    memcpy(payload, bytes, length);
+    address_ = address;
     return 0;
   }
-  int16_t sleep() {
-    ++sleeps;
+
+  int16_t send(uint8_t peer, uint16_t campaign, const uint8_t* bytes,
+               size_t size) {
+    assert(bytes != nullptr && size <= sizeof(last_tx_.bytes));
+    last_tx_.source = address_;
+    last_tx_.destination = peer;
+    last_tx_.campaign = campaign;
+    last_tx_.size = static_cast<uint8_t>(size);
+    memcpy(last_tx_.bytes, bytes, size);
+    tx_pending_ = true;
     return 0;
   }
+
+  int16_t send_done(bool* tx_done, int16_t* rearm) {
+    *tx_done = tx_pending_;
+    *rearm = 0;
+    if (!tx_pending_) return 0;
+    tx_pending_ = false;
+    return 1;
+  }
+
+  int16_t recv(uint8_t* source, uint8_t* destination, uint16_t* campaign,
+               uint8_t* output, size_t capacity, uint8_t* size) {
+    assert(rx_pending_ && rx_.size <= capacity);
+    *source = rx_.source;
+    *destination = rx_.destination;
+    *campaign = rx_.campaign;
+    *size = rx_.size;
+    memcpy(output, rx_.bytes, rx_.size);
+    rx_pending_ = false;
+    return 0;
+  }
+
+  bool available() const { return rx_pending_; }
+  int16_t sleep() { return 0; }
+  const Packet& last_tx() const { return last_tx_; }
+  void inject(const Packet& packet) {
+    assert(!rx_pending_);
+    rx_ = packet;
+    rx_pending_ = true;
+  }
+
+ private:
+  uint8_t address_;
+  Packet last_tx_{};
+  Packet rx_{};
+  bool tx_pending_ = false;
+  bool rx_pending_ = false;
 };
 
-using Transport = reliable::Transport<FakeRadio>;
-struct Application {
-  unsigned applied = 0;
-  bool reject = false;
-};
-struct EventStats {
-  unsigned data_tx = 0, ack_tx = 0, nack_tx = 0, ack_accepted = 0,
-           nack_received = 0;
-  unsigned retries = 0, duplicates = 0, failures = 0, total = 0;
+struct EventLog {
+  const char* names[64] = {};
+  size_t count = 0U;
 };
 
-static void count_event(void* context, const char* event, uint8_t, uint8_t,
-                        int16_t) {
-  EventStats* stats = static_cast<EventStats*>(context);
-  ++stats->total;
-  if (!strcmp(event, "DATA_TX_BEGIN"))
-    ++stats->data_tx;
-  else if (!strcmp(event, "ACK_TX_BEGIN"))
-    ++stats->ack_tx;
-  else if (!strcmp(event, "NACK_TX_BEGIN"))
-    ++stats->nack_tx;
-  else if (!strcmp(event, "ACK_ACCEPTED"))
-    ++stats->ack_accepted;
-  else if (!strcmp(event, "NACK_RX"))
-    ++stats->nack_received;
-  else if (!strcmp(event, "RETRY_SCHEDULED"))
-    ++stats->retries;
-  else if (!strcmp(event, "DATA_DUP"))
-    ++stats->duplicates;
-  else if (!strcmp(event, "TRANSACTION_FAILED"))
-    ++stats->failures;
-}
+struct AcceptedPayload {
+  uint8_t bytes[reliable::Transport<FakeRadio>::kMaxData] = {};
+  uint8_t size = 0U;
+  bool allow_new = true;
+};
 
-static bool accept(void* context, uint8_t sequence, const uint8_t* data,
-                   uint8_t size) {
-  assert(sequence != 0);
-  Application* app = static_cast<Application*>(context);
-  if (app->reject || size == 0 || data[0] != 'h') return false;
-  ++app->applied;
+static bool AcceptPayload(void* context, uint8_t, const uint8_t* bytes,
+                          uint8_t size) {
+  auto* accepted = static_cast<AcceptedPayload*>(context);
+  if (!accepted->allow_new || !bytes || !size || size > sizeof(accepted->bytes))
+    return false;
+  memcpy(accepted->bytes, bytes, size);
+  accepted->size = size;
   return true;
 }
-static const uint8_t hello[] = "hello world";
 
-struct Pair {
-  FakeRadio a, b;
-  Application aa, bb;
-  EventStats events;
-  Transport x, y;
-  explicit Pair(uint8_t first = 0) : x(a, 915.0f, 2, 0), y(b, 915.0f, 2, 0) {
-    x.SetEventCallback(count_event, &events);
-    y.SetEventCallback(count_event, &events);
-    assert(x.Arm(first, first ^ 1, accept, &aa));
-    assert(y.Arm(first ^ 1, first, accept, &bb));
+static void Record(void* context, const char* event, uint8_t, uint8_t,
+                   int16_t) {
+  auto* events = static_cast<EventLog*>(context);
+  assert(events->count < sizeof(events->names) / sizeof(events->names[0]));
+  events->names[events->count++] = event;
+}
+
+static bool Has(const EventLog& events, const char* expected) {
+  for (size_t i = 0; i < events.count; ++i) {
+    if (strcmp(events.names[i], expected) == 0) return true;
   }
-};
-
-static void deliver(FakeRadio& from, FakeRadio& to) {
-  to.source = from.local;
-  to.destination = from.destination;
-  to.length = from.length;
-  memcpy(to.bytes, from.bytes, from.length);
-  to.incoming = true;
+  return false;
 }
 
-static void start_data(Pair& p, uint8_t sequence = 1, uint32_t now = 0) {
-  assert(p.x.SendReliableData(sequence, hello, sizeof(hello) - 1, now));
-  assert(p.a.length == 13 && p.a.bytes[0] == ssot::kDataType &&
-         p.a.bytes[1] == sequence &&
-         !memcmp(p.a.bytes + 2, hello, sizeof(hello) - 1));
-  p.a.done = true;
-  p.x.Poll(now + 1);
+static void TestBidirectionalAcknowledgmentHandoff() {
+  using Transport = reliable::Transport<FakeRadio>;
+  FakeRadio gateway_radio(0U), tracker_radio(1U);
+  Transport gateway(gateway_radio, 915.0F, 2, 0U);
+  Transport tracker(tracker_radio, 915.0F, 2, 0U);
+  AcceptedPayload tracker_payload{}, gateway_payload{};
+  EventLog gateway_events{}, tracker_events{};
+  static const uint8_t payload[] = {'o', 'k'};
+
+  gateway.SetEventCallback(Record, &gateway_events);
+  tracker.SetEventCallback(Record, &tracker_events);
+  assert(gateway.Arm(0U, 1U, AcceptPayload, &gateway_payload, 0x1234U));
+  assert(tracker.Arm(1U, 0U, AcceptPayload, &tracker_payload, 0U));
+  assert(gateway.SendReliableData(1U, payload, sizeof(payload), 0U));
+  gateway.Poll(1U, false);
+  tracker_radio.inject(gateway_radio.last_tx());
+  tracker.Poll(2U, true);
+  tracker.Poll(3U, true);
+  assert(Has(tracker_events, "ACK_TX_DONE"));
+  gateway_radio.inject(tracker_radio.last_tx());
+  gateway.Poll(4U, false);
+  assert(gateway.result() == Transport::Result::kAccepted);
+
+  assert(gateway.SendAckConfirmation(1U, 5U));
+  gateway.Poll(6U, false);
+  assert(Has(gateway_events, "ACK_CONFIRM_TX_DONE"));
+  assert(gateway_radio.last_tx().bytes[0] == ssot::kAckType);
+  assert(gateway_radio.last_tx().bytes[1] == 1U);
+
+  // Drop the first confirmation. The Gateway must be able to send it again.
+  assert(gateway.SendAckConfirmation(1U, 7U));
+  gateway.Poll(8U, false);
+  Packet ordinary_ack = gateway_radio.last_tx();
+  ordinary_ack.size = 2U;
+  tracker_radio.inject(ordinary_ack);
+  tracker.Poll(9U, true);
+  assert(!Has(tracker_events, "ACK_CONFIRM_RX"));
+
+  Packet stale_confirmation = gateway_radio.last_tx();
+  stale_confirmation.campaign = 0x1235U;
+  tracker_radio.inject(stale_confirmation);
+  tracker.Poll(10U, true);
+  assert(!Has(tracker_events, "ACK_CONFIRM_RX"));
+  tracker_radio.inject(gateway_radio.last_tx());
+  tracker.Poll(11U, true);
+  assert(Has(tracker_events, "ACK_CONFIRM_RX"));
+
+  assert(tracker.SendReliableData(1U, payload, sizeof(payload), 12U));
+  tracker.Poll(13U, true);
+  const Packet repeated_confirmation = gateway_radio.last_tx();
+  tracker_radio.inject(repeated_confirmation);
+  tracker.Poll(14U, true);
+  assert(tracker.IsActive());
+  gateway_radio.inject(tracker_radio.last_tx());
+  gateway.Poll(15U, true);
+  gateway.Poll(16U, true);
+  assert(Has(gateway_events, "ACK_TX_DONE"));
+
+  // Drop the Echo ACK. After completion, only exact repeats may be ACKed.
+  gateway_payload.allow_new = false;
+  const uint32_t retry_at = 13U + LORA_ACK_TIMEOUT_MS;
+  tracker.Poll(retry_at, true);
+  tracker.Poll(retry_at + 1U, true);
+  tracker.Poll(retry_at + 2U, true);
+  Packet unsolicited = tracker_radio.last_tx();
+  unsolicited.bytes[2] = 'x';
+  gateway_radio.inject(unsolicited);
+  gateway.Poll(retry_at + 3U, true);
+  gateway.Poll(retry_at + 4U, true);
+  assert(gateway_radio.last_tx().bytes[0] == ssot::kNackType);
+  gateway_radio.inject(tracker_radio.last_tx());
+  gateway.Poll(retry_at + 5U, true);
+  gateway.Poll(retry_at + 6U, true);
+  assert(Has(gateway_events, "DATA_DUP"));
+  tracker_radio.inject(gateway_radio.last_tx());
+  tracker.Poll(retry_at + 7U, true);
+  assert(tracker.result() == Transport::Result::kAccepted);
+  assert(gateway_payload.size == sizeof(payload));
+  assert(memcmp(gateway_payload.bytes, payload, sizeof(payload)) == 0);
+  assert(tracker_payload.size == sizeof(payload));
+  assert(memcmp(tracker_payload.bytes, payload, sizeof(payload)) == 0);
+  assert(!gateway.IsActive() && !tracker.IsActive());
 }
 
-static void finish_reply(FakeRadio& radio, Transport& transport, uint32_t now) {
-  radio.done = true;
-  transport.Poll(now);
+/// A NACK-driven retry is observable without waiting for an ACK timeout.
+static void TestNackRetryEvidence() {
+  using Transport = reliable::Transport<FakeRadio>;
+  FakeRadio gateway_radio(0U);
+  Transport gateway(gateway_radio, 915.0F, 2, 0U);
+  AcceptedPayload payload{};
+  EventLog events{};
+  gateway.SetEventCallback(Record, &events);
+  assert(gateway.Arm(0U, 1U, AcceptPayload, &payload, 0x1234U));
+  const uint8_t byte = 'x';
+  assert(gateway.SendReliableData(1U, &byte, 1U, 0U));
+  gateway.Poll(1U);
+  Packet nack{};
+  nack.source = 1U;
+  nack.campaign = 0x1234U;
+  nack.size = 2U;
+  nack.bytes[0] = ssot::kNackType;
+  nack.bytes[1] = 1U;
+  gateway_radio.inject(nack);
+  gateway.Poll(2U);
+  assert(Has(events, "NACK_RX"));
+  assert(Has(events, "RETRY_SCHEDULED"));
+  gateway.Poll(3U);
+  assert(gateway.attempts() == 2U);
 }
 
-static void successful_round_trip(Pair& p, uint32_t now = 0) {
-  deliver(p.a, p.b);
-  p.y.Poll(now + 2);
-  assert(p.b.length == 2 && p.b.bytes[0] == ssot::kAckType &&
-         p.b.bytes[1] == 1);
-  finish_reply(p.b, p.y, now + 3);
-  deliver(p.b, p.a);
-  p.x.Poll(now + 4);
-  assert(p.x.result() == Transport::Result::kAccepted);
-}
-
-static bool dropped(unsigned loss_percent, uint32_t& random) {
-  random = random * 1664525U + 1013904223U;
-  return random % 100U < loss_percent;
-}
-
-struct LossMetrics {
-  unsigned attempts = 0, ack_tx = 0, nack_tx = 0, retries = 0, timeouts = 0,
-           duplicates = 0;
-};
-
-static bool loss_scenario(unsigned loss_percent, uint32_t seed,
-                          LossMetrics* metrics) {
-  Pair p;
-  uint32_t now = 0, random = seed;
-  assert(p.x.SendReliableData(1, hello, sizeof(hello) - 1, now));
-  p.a.done = true;
-  p.x.Poll(++now);
-  for (unsigned attempt = 0; attempt < ssot::kMaxAttempts &&
-                             p.x.result() == Transport::Result::kPending;
-       ++attempt) {
-    if (!dropped(loss_percent, random)) {
-      deliver(p.a, p.b);
-      p.y.Poll(++now);
-      if (p.y.state() == Transport::State::kTxResponse) {
-        finish_reply(p.b, p.y, ++now);
-        if (!dropped(loss_percent, random)) {
-          deliver(p.b, p.a);
-          p.x.Poll(++now);
-        }
-      }
-    }
-    if (p.x.result() == Transport::Result::kAccepted) break;
-    if (p.x.state() == Transport::State::kWaitResponse) {
-      ++metrics->timeouts;
-      now += LORA_ACK_TIMEOUT_MS + 1U;
-      p.x.Poll(now);
-    }
-    if (p.x.state() == Transport::State::kRetryPending) {
-      p.x.Poll(++now);
-      if (p.x.state() == Transport::State::kTxData) {
-        p.a.done = true;
-        p.x.Poll(++now);
-      }
-    }
-  }
-  assert(p.x.attempts() <= ssot::kMaxAttempts);
-  if (p.x.result() == Transport::Result::kAccepted)
-    assert(p.bb.applied == 1);
-  else
-    assert(p.x.result() == Transport::Result::kAckTimeout);
-  metrics->attempts = p.x.attempts();
-  metrics->ack_tx = p.events.ack_tx;
-  metrics->nack_tx = p.events.nack_tx;
-  metrics->retries = p.events.retries + p.events.nack_received;
-  metrics->duplicates = p.events.duplicates;
-  return p.x.result() == Transport::Result::kAccepted;
-}
-
-template <class T, class Action>
-static void count_transition(T& transport, unsigned& transitions,
-                             Action action) {
-  const typename T::State before = transport.state();
-  action();
-  transitions += before != transport.state();
-}
-
-static void stress_round_trips(unsigned transactions) {
-  Pair p;
-  unsigned transitions = 0;
-  for (unsigned i = 0; i < transactions; ++i) {
-    const uint32_t now = i * 10U;
-    if (i) {
-      count_transition(p.x, transitions,
-                       [&] { assert(p.x.Arm(0, 1, accept, &p.aa)); });
-      count_transition(p.y, transitions,
-                       [&] { assert(p.y.Arm(1, 0, accept, &p.bb)); });
-    }
-    count_transition(p.x, transitions, [&] {
-      assert(p.x.SendReliableData(1, hello, sizeof(hello) - 1, now));
-    });
-    p.a.done = true;
-    count_transition(p.x, transitions, [&] { p.x.Poll(now + 1); });
-    deliver(p.a, p.b);
-    count_transition(p.y, transitions, [&] { p.y.Poll(now + 2); });
-    assert(p.b.bytes[0] == ssot::kAckType);
-    p.b.done = true;
-    count_transition(p.y, transitions, [&] { p.y.Poll(now + 3); });
-    deliver(p.b, p.a);
-    count_transition(p.x, transitions, [&] { p.x.Poll(now + 4); });
-    assert(p.x.result() == Transport::Result::kAccepted);
-    assert(p.x.attempts() == 1 && p.y.duplicates() == 0);
-    assert(p.bb.applied == i + 1);
-  }
-  assert(transitions >= 10000);
-  assert(p.events.ack_accepted == transactions &&
-         p.events.ack_tx == transactions);
-  printf(
-      "STRESS transactions=%u state_transitions=%u accepted=%u duplicates=%u\n",
-      transactions, transitions, p.events.ack_accepted, p.events.duplicates);
+/// A payload's E nibble must stay in the decoder, while P can still abort.
+static void TestInteractiveCommandRouting() {
+  using Decoder = reliable::HexDataCommandDecoder<16>;
+  Decoder decoder;
+  uint8_t bytes[16] = {};
+  assert(!decoder.Consumes('E'));
+  assert(decoder.Consumes('X'));
+  assert(decoder.Feed('X', bytes, sizeof(bytes)) == Decoder::Result::kPending);
+  assert(!decoder.Consumes('P'));
+  assert(decoder.Feed('0', bytes, sizeof(bytes)) == Decoder::Result::kPending);
+  assert(decoder.Feed('1', bytes, sizeof(bytes)) == Decoder::Result::kPending);
+  assert(decoder.Feed('6', bytes, sizeof(bytes)) == Decoder::Result::kPending);
+  assert(decoder.Consumes('E'));
+  assert(decoder.Feed('E', bytes, sizeof(bytes)) == Decoder::Result::kComplete);
+  assert(decoder.size() == 1U && bytes[0] == 'n');
+  decoder.Reset();
+  assert(!decoder.Consumes('E'));
+  assert(decoder.Feed('X', bytes, sizeof(bytes)) == Decoder::Result::kPending);
+  assert(decoder.Feed('\n', bytes, sizeof(bytes)) ==
+         Decoder::Result::kInvalidHex);
+  assert(!decoder.Consumes('E'));
 }
 
 int main() {
-  for (uint8_t first = 0; first < 2; ++first) {
-    Pair p(first);
-    start_data(p);
-    successful_round_trip(p);
-    assert(p.bb.applied == 1);
-  }
-
-  // A NACK requests a bounded retransmission; the next matching ACK accepts it.
-  {
-    Pair p;
-    p.bb.reject = true;
-    start_data(p);
-    deliver(p.a, p.b);
-    p.y.Poll(2);
-    assert(p.b.bytes[0] == ssot::kNackType && p.b.bytes[1] == 1);
-    finish_reply(p.b, p.y, 3);
-    deliver(p.b, p.a);
-    p.x.Poll(4);
-    assert(p.x.state() == Transport::State::kRetryPending &&
-           p.x.attempts() == 1);
-    p.bb.reject = false;
-    p.x.Poll(5);
-    assert(p.a.starts == 2 && p.a.bytes[0] == ssot::kDataType);
-    p.a.done = true;
-    p.x.Poll(6);
-    deliver(p.a, p.b);
-    p.y.Poll(7);
-    finish_reply(p.b, p.y, 8);
-    deliver(p.b, p.a);
-    p.x.Poll(9);
-    assert(p.x.result() == Transport::Result::kAccepted && p.bb.applied == 1);
-    printf(
-        "NACK retry data_tx=%u nack_tx=%u nack_rx=%u ack_tx=%u "
-        "ack_accepted=%u\n",
-        p.events.data_tx, p.events.nack_tx, p.events.nack_received,
-        p.events.ack_tx, p.events.ack_accepted);
-  }
-
-  // A lost NACK times out; a later NACK still schedules a bounded retry.
-  {
-    Pair p;
-    p.bb.reject = true;
-    start_data(p);
-    deliver(p.a, p.b);
-    p.y.Poll(2);
-    finish_reply(p.b, p.y, 3);  // Drop NACK.
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 2);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 3);
-    p.a.done = true;
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 4);
-    deliver(p.a, p.b);
-    p.y.Poll(LORA_ACK_TIMEOUT_MS + 5);
-    assert(p.b.bytes[0] == ssot::kNackType);
-    finish_reply(p.b, p.y, LORA_ACK_TIMEOUT_MS + 6);
-    deliver(p.b, p.a);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 7);
-    assert(p.x.state() == Transport::State::kRetryPending);
-    assert(p.x.attempts() == 2);
-  }
-
-  // A lost ACK causes a retry; the receiver ACKs the duplicate without
-  // reapplying it.
-  {
-    Pair p;
-    start_data(p);
-    deliver(p.a, p.b);
-    p.y.Poll(2);
-    finish_reply(p.b, p.y, 3);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 2);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 3);
-    assert(p.a.starts == 2);
-    p.a.done = true;
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 4);
-    deliver(p.a, p.b);
-    p.y.Poll(LORA_ACK_TIMEOUT_MS + 5);
-    assert(p.bb.applied == 1 && p.y.duplicates() == 1);
-    finish_reply(p.b, p.y, LORA_ACK_TIMEOUT_MS + 6);
-    deliver(p.b, p.a);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 7);
-    assert(p.x.result() == Transport::Result::kAccepted);
-  }
-
-  // An ACK arriving after the timeout cannot accept an attempt already queued
-  // for retry.
-  {
-    Pair p;
-    start_data(p);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 2);
-    assert(p.x.state() == Transport::State::kRetryPending);
-    p.a.source = 1;
-    p.a.destination = 0;
-    p.a.length = 2;
-    p.a.bytes[0] = ssot::kAckType;
-    p.a.bytes[1] = 1;
-    p.a.incoming = true;
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 3);
-    assert(p.x.state() == Transport::State::kRetryPending &&
-           p.x.result() == Transport::Result::kPending);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 4);
-    p.a.done = true;
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 5);
-    p.a.incoming = true;
-    p.a.source = 1;
-    p.a.destination = 0;
-    p.a.length = 2;
-    p.a.bytes[0] = ssot::kAckType;
-    p.a.bytes[1] = 1;
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 6);
-    assert(p.x.result() == Transport::Result::kAccepted);
-    p.a.incoming = true;
-    p.a.source = 1;
-    p.a.destination = 0;
-    p.a.length = 2;
-    p.a.bytes[0] = ssot::kAckType;
-    p.a.bytes[1] = 1;
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 7);
-    assert(p.x.result() == Transport::Result::kAccepted);
-  }
-
-  // Invalid, unrelated and oversized packets are discarded without resetting
-  // the radio.
-  {
-    Pair p;
-    const unsigned before = p.b.inits;
-    p.b.source = 9;
-    p.b.destination = 1;
-    p.b.length = 3;
-    p.b.bytes[0] = ssot::kDataType;
-    p.b.bytes[1] = 1;
-    p.b.bytes[2] = 'x';
-    p.b.incoming = true;
-    p.y.Poll(1);
-    assert(p.b.inits == before && p.bb.applied == 0);
-    p.b.source = 0;
-    p.b.destination = 1;
-    p.b.length = 252;
-    p.b.incoming = true;
-    p.y.Poll(2);
-    assert(p.b.inits == before && p.bb.applied == 0);
-  }
-
-  // Invalid arguments and malformed ACK/NACK responses never accept a
-  // transaction.
-  {
-    Pair p;
-    uint8_t payload[250];
-    memset(payload, 'h', sizeof(payload));
-    assert(!p.x.SendReliableData(0, hello, sizeof(hello) - 1, 0));
-    assert(!p.x.SendReliableData(1, hello, 0, 0));
-    assert(!p.x.SendReliableData(1, payload, sizeof(payload), 0));
-    assert(p.a.starts == 0);
-  }
-  {
-    Pair p;
-    start_data(p);
-    const uint8_t frames[][3] = {{ssot::kAckType, 2, 0},
-                                 {ssot::kNackType, 2, 0},
-                                 {ssot::kAckType, 1, 0xAA},
-                                 {0xFE, 1, 0}};
-    const uint8_t sizes[] = {2, 2, 3, 2};
-    for (unsigned i = 0; i < sizeof(sizes); ++i) {
-      p.a.source = (i == 0) ? 9 : 1;
-      p.a.destination = 0;
-      p.a.length = sizes[i];
-      memcpy(p.a.bytes, frames[i], sizes[i]);
-      p.a.incoming = true;
-      p.x.Poll(4 + i);
-      assert(p.x.state() == Transport::State::kWaitResponse &&
-             p.x.result() == Transport::Result::kPending);
-    }
-  }
-
-  // Corrupted application data is rejected and produces a NACK.
-  {
-    Pair p;
-    start_data(p);
-    deliver(p.a, p.b);
-    p.b.bytes[2] ^= 1;
-    p.y.Poll(2);
-    assert(p.bb.applied == 0 && p.b.bytes[0] == ssot::kNackType);
-  }
-
-  // The payload maximum keeps RadioHead's four-byte header within 255 bytes.
-  {
-    Pair p;
-    uint8_t data[249];
-    memset(data, 'h', sizeof(data));
-    assert(p.x.SendReliableData(1, data, sizeof(data), 0));
-    assert(p.a.length == 251 && p.a.bytes[0] == ssot::kDataType);
-  }
-
-  // Radio initialization failure is reported; TX timeout stops without an
-  // unbounded loop.
-  {
-    FakeRadio radio;
-    Application app;
-    Transport transport(radio, 915.0f, 2, 0);
-    radio.init_ok = false;
-    assert(!transport.Arm(0, 1, accept, &app));
-    assert(transport.result() == Transport::Result::kRadioError);
-    radio.init_ok = true;
-    assert(transport.Arm(0, 1, accept, &app));
-  }
-  {
-    Pair p;
-    start_data(p);
-    deliver(p.a, p.b);
-    p.b.receive_error = -6;
-    p.y.Poll(2);
-    assert(p.y.result() == Transport::Result::kRadioError && !p.y.IsActive());
-    p.b.receive_error = 0;
-    assert(p.y.Arm(1, 0, accept, &p.bb));
-  }
-  {
-    Pair p;
-    assert(p.x.SendReliableData(1, hello, sizeof(hello) - 1, 0));
-    p.x.Poll(LORA_TX_TIMEOUT_MS + 1);
-    assert(p.x.result() == Transport::Result::kTxTimeout && !p.x.IsActive());
-  }
-
-  // A fresh arm supports another bounded communication session.
-  {
-    Pair p;
-    start_data(p);
-    successful_round_trip(p);
-    assert(p.x.Arm(0, 1, accept, &p.aa));
-    assert(p.y.Arm(1, 0, accept, &p.bb));
-    start_data(p, 1, 10000);
-    successful_round_trip(p, 10000);
-    assert(p.bb.applied == 2);
-  }
-  // NACK retry exhaustion is explicit and never exceeds the configured attempt
-  // limit.
-  {
-    Pair p;
-    p.bb.reject = true;
-    start_data(p);
-    uint32_t now = 1;
-    for (unsigned attempt = 1; attempt <= ssot::kMaxAttempts; ++attempt) {
-      deliver(p.a, p.b);
-      p.y.Poll(++now);
-      assert(p.b.bytes[0] == ssot::kNackType && p.b.bytes[1] == 1);
-      finish_reply(p.b, p.y, ++now);
-      deliver(p.b, p.a);
-      p.x.Poll(++now);
-      if (attempt < ssot::kMaxAttempts) {
-        assert(p.x.state() == Transport::State::kRetryPending);
-        p.x.Poll(++now);
-        p.a.done = true;
-        p.x.Poll(++now);
-      }
-    }
-    assert(p.x.result() == Transport::Result::kRejected);
-    assert(p.x.attempts() == ssot::kMaxAttempts);
-    printf(
-        "NACK exhaustion data_tx=%u nack_tx=%u result=Rejected "
-        "attempts=%u/%u\n",
-        p.events.data_tx, p.events.nack_tx, p.x.attempts(), ssot::kMaxAttempts);
-  }
-
-  // A valid but stale ACK cannot be distinguished after a new session reuses
-  // sequence 1.
-  {
-    Pair p;
-    start_data(p);
-    deliver(p.a, p.b);
-    p.y.Poll(2);
-    finish_reply(p.b, p.y, 3);
-    const uint8_t old_ack[2] = {p.b.bytes[0], p.b.bytes[1]};
-    assert(old_ack[0] == ssot::kAckType);
-    deliver(p.b, p.a);
-    p.x.Poll(4);
-    assert(p.x.result() == Transport::Result::kAccepted);
-    assert(p.x.Arm(0, 1, accept, &p.aa));
-    assert(p.y.Arm(1, 0, accept, &p.bb));
-    start_data(p, 1, 100);
-    p.a.source = 1;
-    p.a.destination = 0;
-    p.a.length = 2;
-    memcpy(p.a.bytes, old_ack, sizeof(old_ack));
-    p.a.incoming = true;
-    p.x.Poll(104);
-    assert(p.x.result() == Transport::Result::kAccepted);
-    puts("LIMIT stale-session ACK accepted after sequence reuse");
-  }
-  {
-    Pair p;
-    start_data(p);
-    deliver(p.a, p.b);
-    p.y.Poll(2);
-    assert(p.bb.applied == 1);
-    finish_reply(p.b, p.y, 3);  // ACK lost; receiver restarts.
-    assert(p.y.Arm(1, 0, accept, &p.bb));
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 2);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 3);
-    p.a.done = true;
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 4);
-    deliver(p.a, p.b);
-    p.y.Poll(LORA_ACK_TIMEOUT_MS + 5);
-    assert(p.bb.applied == 2);
-    puts(
-        "LIMIT receiver restart clears duplicate cache; retry redelivers DATA");
-  }
-
-  {
-    Pair p;
-    p.y.SuppressNextResponse();
-    start_data(p);
-    deliver(p.a, p.b);
-    p.y.Poll(2);
-    assert(p.bb.applied == 1 && p.b.starts == 0 && !p.y.IsActive());
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 2);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 3);
-    p.a.done = true;
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 4);
-    deliver(p.a, p.b);
-    p.y.Poll(LORA_ACK_TIMEOUT_MS + 5);
-    assert(p.bb.applied == 1 && p.y.duplicates() == 1);
-    finish_reply(p.b, p.y, LORA_ACK_TIMEOUT_MS + 6);
-    deliver(p.b, p.a);
-    p.x.Poll(LORA_ACK_TIMEOUT_MS + 7);
-    assert(p.x.result() == Transport::Result::kAccepted && p.a.starts == 2);
-  }
-
-  const unsigned losses[] = {0U, 1U, 5U, 10U, 20U, 30U, 50U, 100U};
-  for (size_t rate = 0; rate < sizeof(losses) / sizeof(losses[0]); ++rate) {
-    unsigned delivered = 0, total_attempts = 0, total_acks = 0, total_nacks = 0;
-    unsigned total_retries = 0, total_timeouts = 0, total_duplicates = 0;
-    for (uint32_t scenario = 0; scenario < 100; ++scenario) {
-      LossMetrics metrics;
-      delivered += loss_scenario(
-          losses[rate], scenario + losses[rate] * 1000U + 1U, &metrics);
-      total_attempts += metrics.attempts;
-      total_acks += metrics.ack_tx;
-      total_nacks += metrics.nack_tx;
-      total_retries += metrics.retries;
-      total_timeouts += metrics.timeouts;
-      total_duplicates += metrics.duplicates;
-    }
-    assert(total_attempts <= 100U * ssot::kMaxAttempts);
-    if (losses[rate] == 0) assert(delivered == 100 && total_timeouts == 0);
-    if (losses[rate] == 100)
-      assert(delivered == 0 && total_attempts == 100U * ssot::kMaxAttempts);
-    printf(
-        "LOSS %u%% seed_start=%u transactions=100 delivered=%u/100 data_tx=%u "
-        "ack_tx=%u nack_tx=%u retries=%u timeouts=%u duplicates=%u\n",
-        losses[rate], losses[rate] * 1000U + 1U, delivered, total_attempts,
-        total_acks, total_nacks, total_retries, total_timeouts,
-        total_duplicates);
-  }
-  {
-    Pair p;
-    p.a.send_error = -4;
-    assert(!p.x.SendReliableData(1, hello, 11, 0));
-    assert(p.x.result() == Transport::Result::kRadioError);
-    assert(p.x.radio_error() == -4);
-  }
-  stress_round_trips(3000);
-  puts(
-      "PASS stable-API transport: ACK/NACK, bounded retry, duplicate, bounds "
-      "and rearm");
+  TestBidirectionalAcknowledgmentHandoff();
+  TestNackRetryEvidence();
+  TestInteractiveCommandRouting();
+  return 0;
 }

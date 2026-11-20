@@ -65,15 +65,11 @@ class USBInventoryTests(unittest.TestCase):
             for link, node in zip(links, nodes, strict=False):
                 link.symlink_to(node)
             properties = {
-                str(
-                    nodes[0]
-                ): (
+                str(nodes[0]): (
                     "ID_VENDOR_ID=10c4\nID_MODEL_ID=ea60\nID_SERIAL_SHORT=0001\n"
                     "ID_PATH=pci-0000-usb-0:1:1.0\nID_USB_DRIVER=cp210x\n"
                 ),
-                str(
-                    nodes[1]
-                ): (
+                str(nodes[1]): (
                     "ID_VENDOR_ID=10c4\nID_MODEL_ID=ea60\nID_SERIAL_SHORT=0001\n"
                     "ID_PATH=pci-0000-usb-0:4:1.0\nID_USB_DRIVER=cp210x\n"
                 ),

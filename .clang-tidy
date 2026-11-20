@@ -6,4 +6,4 @@ Checks: >-
   -performance-enum-size,-bugprone-easily-swappable-parameters,
   -bugprone-branch-clone,-portability-avoid-pragma-once
 WarningsAsErrors: '*'
-HeaderFilterRegex: 'src/(ssot(/.*)?\.h|arq/.*\.h|shared/reliable_transport\.h)$'
+HeaderFilterRegex: '(src/|stable_lib/(arq|ssot|shared|mvp_app|reverse_raw_app|legacy_receiver|legacy_sender|iw_core/src/iw/core|iw_avr128da28/src/iw/avr128da28|iw_tracker_radio_protocol/src/iw/tracker/radio|updi_uart/src|task|sleep|time-utils)/).*\.h$'

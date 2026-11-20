@@ -4,8 +4,8 @@
 #include <Arduino.h>
 #include <TimeLib.h>
 
-#include "iw/avr128da28/device.h"
-#include "iw/avr128da28/sleep.h"
+#include "avr128da28_device.h"
+#include "avr128da28_sleep.h"
 
 namespace {
 

@@ -1,0 +1,8 @@
+{
+  "max_pending_messages": 8,
+  "max_message_bytes": 4096,
+  "event_history_limit": 120,
+  "refresh_interval_ms": 100,
+  "manual_retry_limit": 1,
+  "confirmed_bench_receipt": "artifacts/rf-proof/20261118T095311Z/physical-upload.json"
+}

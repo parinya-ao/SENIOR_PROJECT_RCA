@@ -1,6 +1,6 @@
 #pragma once
 // Generated from config/lora_system.json and config/radio_915.toml.
-#define LORA_CONFIG_FINGERPRINT "90a17926cacfdb9133f173a0ab12a90365f20f66ad50709da7f8d379ff079d90"
+#define LORA_CONFIG_FINGERPRINT "e69d360e09bde98393b9a8e1911da43f45818829a2ef6dedae875ce6a7fba696"
 #define LORA_PROTOCOL_VERSION 2
 #define LORA_PROTOCOL_VERSION_TEXT "2"
 #define LORA_MAX_RETRIES 3

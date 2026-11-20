@@ -1,4 +1,5 @@
 import hashlib
+import importlib
 import json
 import subprocess
 import sys
@@ -6,12 +7,16 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, ClassVar
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import tools.receiver_boot as boot
+
+ROOT = Path(__file__).resolve().parents[1]
 from tools.device_detection.firmware_identity import normalize_ihex_region
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+receiver_boot_module = importlib.import_module("receiver_boot")
 
 
 def recording_command(commands: list[list[str]]) -> Any:
@@ -23,6 +28,14 @@ def recording_command(commands: list[list[str]]) -> Any:
 
 
 class ReceiverBootTests(unittest.TestCase):
+    def test_fixture_returns_the_resolved_handoff_audit(self) -> None:
+        """Expose the verified control-flow audit from the offline fixture build."""
+        with tempfile.TemporaryDirectory() as directory:
+            audit = boot.build_fixture(Path(directory) / "fixture")
+
+        self.assertEqual(audit["application_transfers"], [boot.APP_START])
+        self.assertEqual(audit["unresolved"], [])
+
     def test_snapshot_read_retries_at_lower_baud_after_link_failure(self) -> None:
         class Proof:
             run_dir = Path()
@@ -135,39 +148,25 @@ class ReceiverBootTests(unittest.TestCase):
 
 class CompiledHandoffTests(unittest.TestCase):
     code: bytes
+    directory: ClassVar[Path]
 
     @classmethod
     def setUpClass(cls) -> None:
         temporary = tempfile.TemporaryDirectory()
         cls.addClassCleanup(temporary.cleanup)
-        directory = Path(temporary.name)
-        (directory / "handoff_config.h").write_text(
-            "#define APP_START 0x5800\n#define CCP_IOREG_VALUE 0xD8\n"
-            + "".join(
-                f"#define RESET_BYTE_{i} {byte}\n"
-                for i, byte in enumerate(bytes.fromhex("52c00000"))
-            )
+        cls.directory = Path(temporary.name) / "fixture"
+        boot.build_fixture(cls.directory)
+        cls.code = (cls.directory / "receiver-handoff.bin").read_bytes()
+
+    def test_fixture_contains_standalone_flash_artifacts(self) -> None:
+        for extension in ("elf", "map", "hex", "disassembly.txt"):
+            self.assertTrue((self.directory / f"receiver-handoff.{extension}").stat().st_size)
+        self.assertEqual(
+            normalize_ihex_region(
+                (self.directory / "receiver-handoff.hex").read_text(), 0, len(self.code)
+            ),
+            self.code,
         )
-        elf, binary = directory / "boot.elf", directory / "boot.bin"
-        subprocess.run(
-            [
-                str(boot.TOOLCHAIN / "avr-gcc"),
-                "-mmcu=avr128da28",
-                "-nostdlib",
-                "-nostartfiles",
-                "-I",
-                str(directory),
-                "-Wl,-e,_start",
-                str(boot.ROOT / "boot/receiver_handoff.S"),
-                "-o",
-                str(elf),
-            ],
-            check=True,
-        )
-        subprocess.run(
-            [str(boot.TOOLCHAIN / "avr-objcopy"), "-O", "binary", str(elf), str(binary)], check=True
-        )
-        cls.code = binary.read_bytes()
 
     def test_compiled_handoff_uses_correct_byte_target_and_interrupt_state(self) -> None:
         result = boot.trace_stub(self.code, bytes.fromhex("52c00000"))
@@ -202,14 +201,12 @@ class BootPackageTests(unittest.TestCase):
             != 44
         ):
             msg = "archived BOOTSIZE=44 repair does not apply to the replacement Receiver"
-            raise unittest.SkipTest(
-                msg
-            )
+            raise unittest.SkipTest(msg)
         temporary = tempfile.TemporaryDirectory()
         cls.addClassCleanup(temporary.cleanup)
         cls.directory = Path(temporary.name)
 
-        def command(name: Any, argv: Any, timeout: Any=None) -> Any:
+        def command(name: Any, argv: Any, timeout: Any = None) -> Any:
             result = subprocess.run(argv, capture_output=True, timeout=timeout, check=False)
             (cls.directory / (name + ".stdout.log")).write_bytes(result.stdout)
             (cls.directory / (name + ".stderr.log")).write_bytes(result.stderr)
@@ -349,7 +346,8 @@ class BootPackageTests(unittest.TestCase):
         with (
             patch.object(boot, "read_snapshot", side_effect=[base, app]),
             patch.object(rf, "physical_readiness_errors", return_value=[]),
-            patch.object(rf, "check_port_owners", return_value=[]),self.assertRaises(ValueError)
+            patch.object(rf, "check_port_owners", return_value=[]),
+            self.assertRaises(ValueError),
         ):
             boot.install(proof, args)
         self.assertEqual(len(commands), 1)
@@ -410,7 +408,7 @@ class ApplicationPageWriteTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "usersig"):
             boot.require_preserved(before, dict(before, usersig=b"b"), 0, 512)
 
-    def test_guarded_app_writer_erases_only_its_page_with_installed_avrdude_dryrun(self) -> None:
+    def test_application_writer_refuses_unbound_image_before_updi(self) -> None:
         import tools.rf_proof as rf
         from tests.test_rf_proof import effective_platformio_config
 
@@ -418,10 +416,50 @@ class ApplicationPageWriteTests(unittest.TestCase):
             root = Path(directory)
             build = root / ".pio/build/receiver_spi"
             build.mkdir(parents=True)
+            (build / "firmware.hex").write_text(boot.ihex(b"\x52\xc0\x00\x00", boot.APP_START))
+            commands: list[list[str]] = []
+
+            def command(_name: str, argv: list[str], *_args: Any) -> tuple[int, bytes, bytes]:
+                commands.append(argv)
+                return 0, b"avrdude version 8.1", b""
+
+            proof: Any = SimpleNamespace(run_dir=root, command=command, note=lambda *_: None)
+            with (
+                patch.object(rf, "ROOT", root),
+                patch.object(receiver_boot_module, "read_snapshot") as snapshot,
+            ):
+                self.assertNotEqual(
+                    rf.program_application(proof, "receiver_spi", effective_platformio_config()), 0
+                )
+            self.assertEqual(commands, [])
+            snapshot.assert_not_called()
+
+    def test_guarded_app_writer_erases_only_its_page_with_installed_avrdude_dryrun(self) -> None:
+        import tools.rf_proof as rf
+        from tests.test_rf_proof import appcode_platformio_config
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            build = root / ".pio/build/receiver_spi"
+            build.mkdir(parents=True)
+            (root / "config").mkdir()
+            (root / "generated").mkdir()
+            (root / "config/current_hardware.json").write_text(
+                (ROOT / "config/current_hardware.json").read_text()
+            )
+            (root / "generated/lora_manifest.json").write_text(
+                (ROOT / "generated/lora_manifest.json").read_text()
+            )
             payload = bytes.fromhex("52c00000")
             (build / "firmware.hex").write_text(boot.ihex(payload, boot.APP_START))
             original = bytes(range(256)) * 512
-            before = dict.fromkeys(("signature", "sernum", "fuses", "eeprom", "lock"), b"unchanged")
+            approved_serial = "11" * 16
+            fuses = bytearray(16)
+            fuses[8] = 44
+            before = dict.fromkeys(("signature", "eeprom", "lock"), b"unchanged")
+            before["fuses"] = bytes(fuses)
+            before["sernum"] = bytes.fromhex(approved_serial)
+            before["usersig"] = b"unchanged-userrow"
             before["flash"] = original
             (root / "before.bin").write_bytes(original)
             commands: list[list[str]] = []
@@ -449,10 +487,20 @@ class ApplicationPageWriteTests(unittest.TestCase):
             proof: Any = SimpleNamespace(run_dir=root, command=command, note=lambda *_: None)
             with (
                 patch.object(rf, "ROOT", root),
-                patch.object(boot, "read_snapshot", side_effect=snapshot),
+                patch.object(receiver_boot_module, "read_snapshot", side_effect=snapshot),
             ):
                 self.assertEqual(
-                    rf.program_application(proof, "receiver_spi", effective_platformio_config()), 0
+                    rf.program_application(
+                        proof,
+                        "receiver_spi",
+                        appcode_platformio_config(44),
+                        approved_sha=hashlib.sha256(
+                            (build / "firmware.hex").read_bytes()
+                        ).hexdigest(),
+                        approved_serial=approved_serial,
+                        approved_pages=(boot.APP_START, boot.APP_START + 512),
+                    ),
+                    0,
                 )
             after = (root / "after.bin").read_bytes()
             self.assertEqual(after[: boot.APP_START], original[: boot.APP_START])

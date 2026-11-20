@@ -1,10 +1,14 @@
 """Strict firmware identity framing and readback fingerprint comparison."""
 
+import hashlib
 import re
 from dataclasses import dataclass
 from datetime import datetime
 
 from .evidence import ROLES, FirmwareIdentity
+
+RUNTIME_IDENTITY_MATCH = "RUNTIME_IDENTITY_MATCH"
+RUNTIME_IDENTITY_UNVERIFIED = "RUNTIME_IDENTITY_UNVERIFIED"
 
 _V1_MARKER = re.compile(
     rb"^\[(SENDER|RECEIVER)\] ID V1 (sender|sender_hello|receiver) "
@@ -55,6 +59,22 @@ class FingerprintResult:
     identity: FirmwareIdentity | None = None
     matches: tuple[FirmwareIdentity, ...] = ()
     details: tuple[str, ...] = ()
+    first_mismatch_address: int | None = None
+    differing_bytes: int | None = None
+    expected_sha256: str | None = None
+    readback_sha256: str | None = None
+
+
+@dataclass(frozen=True)
+class FlashComparison:
+    """Byte-for-byte comparison of one normalized HEX region and physical readback."""
+
+    status: str
+    first_mismatch_address: int | None = None
+    differing_bytes: int | None = None
+    expected_sha256: str | None = None
+    readback_sha256: str | None = None
+    details: tuple[str, ...] = ()
 
 
 def crc8(data: bytes) -> int:
@@ -76,10 +96,8 @@ def _valid_build(role: str, build: str) -> bool:
 def _valid_timestamp(date: bytes, time: bytes) -> bool:
     try:
         normalized_date = " ".join(date.decode("ascii").split())
-        datetime.strptime(
-            f"{normalized_date} {time.decode('ascii')}", "%b %d %Y %H:%M:%S"
-        )
-    except (UnicodeDecodeError, ValueError):
+        datetime.strptime(f"{normalized_date} {time.decode('ascii')}", "%b %d %Y %H:%M:%S")
+    except UnicodeDecodeError, ValueError:
         return False
     else:
         return True
@@ -215,6 +233,11 @@ def _parse_ihex(text: str) -> dict[int, int]:
     return memory
 
 
+def parse_ihex_image(text: str) -> dict[int, int]:
+    """Return validated Intel HEX bytes keyed by absolute Flash address."""
+    return _parse_ihex(text)
+
+
 def normalize_ihex_region(text: str, app_start: int, app_end: int) -> bytes:
     """Expand sparse Intel HEX data over the requested erased-byte-filled region."""
     if app_start < 0 or app_end <= app_start:
@@ -226,6 +249,50 @@ def normalize_ihex_region(text: str, app_start: int, app_end: int) -> bytes:
         if app_start <= address < app_end:
             normalized[address - app_start] = byte
     return bytes(normalized)
+
+
+def compare_flash_region(
+    actual_flash: bytes | None,
+    ihex: str,
+    *,
+    flash_size: int,
+    region_start: int,
+    region_end: int,
+) -> FlashComparison:
+    """Compare exact Flash bytes and report the first physical mismatch address."""
+    if actual_flash is None or len(actual_flash) != flash_size:
+        return FlashComparison("INCOMPLETE", details=("full Flash readback is unavailable",))
+    if not (0 <= region_start < region_end <= flash_size):
+        return FlashComparison("INVALID_RANGE", details=("Flash comparison range is invalid",))
+
+    image = parse_ihex_image(ihex)
+    outside = sorted(address for address in image if not region_start <= address < region_end)
+    if outside:
+        return FlashComparison(
+            "IMAGE_RANGE_MISMATCH",
+            first_mismatch_address=outside[0],
+            details=(f"firmware HEX contains data outside [{region_start}, {region_end})",),
+        )
+
+    expected = normalize_ihex_region(ihex, region_start, region_end)
+    readback = actual_flash[region_start:region_end]
+    mismatch_offsets = [
+        offset
+        for offset, (expected_byte, actual_byte) in enumerate(zip(expected, readback, strict=True))
+        if expected_byte != actual_byte
+    ]
+    return FlashComparison(
+        "FLASH_BYTES_MATCH" if not mismatch_offsets else "FLASH_BYTES_MISMATCH",
+        first_mismatch_address=(region_start + mismatch_offsets[0]) if mismatch_offsets else None,
+        differing_bytes=len(mismatch_offsets),
+        expected_sha256=hashlib.sha256(expected).hexdigest(),
+        readback_sha256=hashlib.sha256(readback).hexdigest(),
+        details=(
+            ()
+            if not mismatch_offsets
+            else (f"{len(mismatch_offsets)} bytes differ in the verified span",)
+        ),
+    )
 
 
 def match_flash_fingerprint(
@@ -246,8 +313,8 @@ def match_flash_fingerprint(
     if not references:
         return FingerprintResult("UNAVAILABLE", details=("no fingerprint references",))
 
-    actual = actual_flash[app_start:app_end]
     matches: list[FirmwareIdentity] = []
+    comparisons: list[FlashComparison] = []
     for reference in references:
         if (reference.flash_size, reference.app_start, reference.app_end) != (
             flash_size,
@@ -256,15 +323,33 @@ def match_flash_fingerprint(
         ):
             continue
         try:
-            expected = normalize_ihex_region(reference.ihex, app_start, app_end)
+            region_comparison = compare_flash_region(
+                actual_flash,
+                reference.ihex,
+                flash_size=flash_size,
+                region_start=app_start,
+                region_end=app_end,
+            )
         except ValueError:
             continue
-        if actual == expected and reference.role in ROLES:
+        comparisons.append(region_comparison)
+        if region_comparison.status == "FLASH_BYTES_MATCH" and reference.role in ROLES:
             matches.append(
                 FirmwareIdentity(reference.role, reference.build_id, 0, None, "flash-fingerprint")
             )
     if not matches:
-        return FingerprintResult("NO_MATCH", details=("no exact application image match",))
+        single_comparison = comparisons[0] if len(comparisons) == 1 else None
+        return FingerprintResult(
+            "NO_MATCH",
+            details=("no exact application image match",)
+            + (single_comparison.details if single_comparison else ()),
+            first_mismatch_address=(
+                single_comparison.first_mismatch_address if single_comparison else None
+            ),
+            differing_bytes=(single_comparison.differing_bytes if single_comparison else None),
+            expected_sha256=(single_comparison.expected_sha256 if single_comparison else None),
+            readback_sha256=(single_comparison.readback_sha256 if single_comparison else None),
+        )
     unique = {(identity.role, identity.build_id): identity for identity in matches}
     if len(unique) != 1:
         identities = tuple(unique.values())

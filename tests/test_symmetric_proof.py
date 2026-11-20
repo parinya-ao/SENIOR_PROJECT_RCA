@@ -39,7 +39,7 @@ def symmetric_fixture(test_id: Any) -> Any:
     add("HOST", "S1234")
     src, dst = (1, 0) if reverse else (0, 1)
 
-    def event(role: Any, name: Any, type_: Any, irq: Any, response: Any=False) -> None:
+    def event(role: Any, name: Any, type_: Any, irq: Any, response: Any = False) -> None:
         source, destination = (dst, src) if response else (src, dst)
         add(
             role,
@@ -136,6 +136,7 @@ class SymmetricProofTests(unittest.TestCase):
                 )
                 with (
                     patch.object(rf, "application_layout_verified", return_value=True),
+                    patch.object(rf, "firmware_image_layout_verified", return_value=True),
                     patch.object(rf, "upload_ports_match", return_value=True),
                     patch.object(rf, "check_port_owners", return_value=[]),
                     patch.object(rf, "physical_readiness_errors", return_value=[]),
@@ -158,7 +159,7 @@ class SymmetricProofTests(unittest.TestCase):
                 [(receiving, command), (sending, b"S1234"), (receiving, b"P"), (sending, b"P")],
             )
 
-    def check(self, test_id: Any, journal: Any=None) -> Any:
+    def check(self, test_id: Any, journal: Any = None) -> Any:
         manifest, records, images = symmetric_fixture(test_id)
         return rf.validate_live_proof(
             records if journal is None else journal,

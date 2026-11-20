@@ -1,0 +1,8 @@
+{
+  "name": "firmware-shared",
+  "version": "1.0.0",
+  "build": {
+    "srcDir": ".",
+    "includeDir": "."
+  }
+}

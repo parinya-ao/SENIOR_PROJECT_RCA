@@ -1,4 +1,5 @@
-// Nonblocking status indicators shared by Gateway and Tracker firmware.
+/// @file
+/// Nonblocking status indicators shared by Gateway and Tracker firmware.
 
 #ifndef SENIOR_PROJECT_RCA_SRC_SHARED_STATUS_LEDS_H_
 #define SENIOR_PROJECT_RCA_SRC_SHARED_STATUS_LEDS_H_
@@ -8,8 +9,16 @@
 
 namespace status_leds {
 
+/// Controls a periodic activity indicator and a transmit activity indicator.
 class Controller {
  public:
+  /// Binds two LEDs and their nonblocking toggle intervals without I/O.
+  /// @param led1_pin Activity indicator pin.
+  /// @param led2_pin Radio-transmit indicator pin.
+  /// @param led_on_level Electrical output level representing on.
+  /// @param led_off_level Electrical output level representing off.
+  /// @param led1_interval_ms Activity LED toggle interval in milliseconds.
+  /// @param tx_interval_ms Transmit LED toggle interval in milliseconds.
   Controller(uint8_t led1_pin, uint8_t led2_pin, uint8_t led_on_level,
              uint8_t led_off_level, uint32_t led1_interval_ms,
              uint32_t tx_interval_ms)
@@ -20,6 +29,8 @@ class Controller {
         led1_interval_ms_(led1_interval_ms),
         tx_interval_ms_(tx_interval_ms) {}
 
+  /// Configures both output pins and initializes their foreground timers.
+  /// @param now Current modulo-millisecond clock value.
   void Begin(uint32_t now) {
     digitalWrite(led1_pin_, led_off_level_);
     digitalWrite(led2_pin_, led_off_level_);
@@ -31,6 +42,9 @@ class Controller {
     tx_led_on_ = false;
   }
 
+  /// Updates the indicators without delaying the caller.
+  /// @param now Current modulo-millisecond clock value.
+  /// @param transmitting Whether a radio transmission is active.
   void Poll(uint32_t now, bool transmitting) {
     if (now - last_led1_toggle_ >= led1_interval_ms_) {
       last_led1_toggle_ = now;

@@ -7,26 +7,13 @@ Import("env")
 sys.path.insert(0, str(Path(env["PROJECT_DIR"]) / "tools/config"))
 import json
 
-from application_config import load as load_application, render as render_application
-from generate_lora_config import _write_atomic, artifacts, digest, load_radio_profile
-from validate_lora_ssot import ROOT, load
+from generate_lora_config import _write_atomic, digest, load_radio_profile, prepare_build_inputs
+from validate_lora_ssot import load
 
+prepare_build_inputs()
+ROOT = Path(env["PROJECT_DIR"])
 config = load(ROOT / "config/lora_system.json")
-if (ROOT / "include/application_config.h").read_text() != render_application(load_application()):
-    raise ValueError("stale application policy; run tools/config/application_config.py")
 radio = load_radio_profile(ROOT / "config/radio_915.toml")
-# Builds verify hardware configuration without rewriting protected SSOT outputs.
-# Only source provenance changes during an application migration.
-outputs = artifacts(config, radio)
-manifest_names = {"generated/lora_manifest.json", "generated/arq_manifest.json"}
-for name, contents in outputs.items():
-    if name in manifest_names or name.startswith("../"):
-        continue
-    path = ROOT / name
-    if not path.is_file() or path.read_text() != contents:
-        raise ValueError(f"stale or missing generated configuration: {name}")
-for name in sorted(manifest_names):
-    _write_atomic(ROOT / name, outputs[name])
 power_candidates = {
     "sender_hello_5dbm": "sender_hello",
     "receiver_5dbm": "receiver",
@@ -69,7 +56,7 @@ for flag in flags:
 defines = [(f"LORA_ROLE_{role.upper()}", 1)]
 if role == "receiver":
     defines.append(("LORA_RECEIVER_BOARD", 1))
-env.Append(CPPDEFINES=defines)
+env.Append(CPPDEFINES=defines, LINKFLAGS=["-Wl,-Map,$BUILD_DIR/firmware.map"])
 if env.GetProjectOption("build_type") == "release":
     env.Append(LINKFLAGS=["-Wl,--strip-debug"])
 manifest = json.loads((ROOT / "generated/lora_manifest.json").read_text())
@@ -81,7 +68,7 @@ if env["PIOENV"] in power_candidates:
     build_id = digest({"base_build_id": build_id, "shared_fingerprint": fingerprint})
     env.Append(CPPDEFINES=[("LORA_TEST_CONFIG_FINGERPRINT", '\\"' + fingerprint + '\\"')])
 if build_id is None:
-    from generate_lora_config import digest
+    from generate_lora_config import _write_atomic, digest
 
     arq = json.loads((ROOT / "generated/arq_manifest.json").read_text())
     build_id = digest({"environment": env["PIOENV"], "arq": arq})
@@ -99,6 +86,6 @@ def checked_cpp(build_env, node):
     return checked.Object(node)
 
 
-for source in ("stable_lib/ssot/src/ssot/codec.cpp", "stable_lib/arq/src/arq/codec.cpp", "stable_lib/arq/src/arq/sender.cpp", "stable_lib/arq/src/arq/receiver.cpp", "stable_lib/ssot/src/ssot/session.cpp", "stable_lib/ssot/src/ssot/control_input.cpp",
-               "stable_lib/arq/src/arq/commands.cpp", "stable_lib/arq/src/arq/diagnostics.cpp"):
+for source in ("stable_lib/ssot/ssot_codec.cpp", "stable_lib/arq/codec.cpp", "stable_lib/arq/sender.cpp", "stable_lib/arq/receiver.cpp", "stable_lib/ssot/ssot_session.cpp", "stable_lib/ssot/ssot_control_input.cpp",
+               "stable_lib/arq/commands.cpp", "stable_lib/arq/diagnostics.cpp"):
     env.AddBuildMiddleware(checked_cpp, "*" + source)

@@ -1,5 +1,6 @@
 // License: No repository-wide license is declared.
 // Existing rights and third-party notices are unchanged.
+// Exercises ARQ codecs, sender/receiver state, fuzz inputs, and retry stress.
 
 #include <assert.h>
 #include <stdio.h>
@@ -10,6 +11,16 @@
 static_assert(sizeof(arq::SenderState) == sizeof(int),
               "Preserve sender state layout");
 static_assert(sizeof(arq::Result) == sizeof(int), "Preserve result layout");
+
+// Compare logical fields, including unused payload bytes, without reading
+// padding.
+static bool SameFrame(const arq::Frame& first, const arq::Frame& second) {
+  return first.type == second.type && first.src == second.src &&
+         first.dst == second.dst && first.session == second.session &&
+         first.sequence == second.sequence && first.length == second.length &&
+         first.reason == second.reason &&
+         memcmp(first.payload, second.payload, sizeof first.payload) == 0;
+}
 
 static const uint8_t hello[] = "Hello World";
 static arq::Frame data(void) {
@@ -126,8 +137,7 @@ static void sender(void) {
   s = fresh(0);
   arq::Frame immutable = s.frame;
   for (int attempt = 1; attempt <= 5; attempt++) {
-    assert(s.attempts == attempt &&
-           !memcmp(&s.frame, &immutable, sizeof immutable));
+    assert(s.attempts == attempt && SameFrame(s.frame, immutable));
     uint32_t done = s.last_start + 10;
     arq::HandleTxCompletion(&s, done, true);
     assert(s.interval == ((uint32_t)2000 << (attempt - 1)));
@@ -285,7 +295,7 @@ static void parser_fuzz(void) {
       size_t n = arq::EncodeFrame(&result, encoded, sizeof encoded);
       assert(n == length && !memcmp(input, encoded, n));
     } else
-      assert(!memcmp(&result, &original, sizeof result));
+      assert(SameFrame(result, original));
   }
   puts("Parser fuzz: 50000 bounded inputs, seed 0x4c4f5241 PASS");
 }

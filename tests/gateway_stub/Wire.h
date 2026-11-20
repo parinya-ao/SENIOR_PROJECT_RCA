@@ -1,4 +1,3 @@
-// No repository-wide license is declared; existing rights are unchanged.
 // Supplies only the Wire calls used by the real gateway command task.
 #ifndef SENIOR_PROJECT_RCA_TESTS_GATEWAY_STUB_WIRE_H_
 #define SENIOR_PROJECT_RCA_TESTS_GATEWAY_STUB_WIRE_H_
@@ -6,7 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 inline int digitalRead(uint8_t) { return 0; }
-inline void pinMode(uint8_t, uint8_t) {}
 struct WireStub {
   uint8_t input[32]{};
   uint8_t offset = 0;

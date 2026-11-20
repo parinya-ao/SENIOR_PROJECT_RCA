@@ -53,9 +53,7 @@ class ReverseRawTests(unittest.TestCase):
                 r: {"process": SimpleNamespace(poll=lambda: None)} for r in ("sender", "receiver")
             }
 
-            def command(
-                role: str, text: str, c: Any = c, mode: int = mode
-            ) -> None:
+            def command(role: str, text: str, c: Any = c, mode: int = mode) -> None:
                 c.commands.append({"role": role, "text": text})
                 rows = []
                 if text == "RX":
@@ -160,6 +158,7 @@ class ReverseRawTests(unittest.TestCase):
                         "-Itests/arq/stub",
                         "-Itests/raw_mvp_stub",
                         "-Iinclude",
+                        "-Istable_lib/arq",
                         "-DLORA_ROLE_" + role,
                         '-DLORA_BUILD_ID="host-test"',
                         "tests/reverse_raw_test.cpp",
@@ -177,13 +176,11 @@ class ReverseRawTests(unittest.TestCase):
                 ):
                     subprocess.run([binary, case], check=True)
 
-    def test_registered_target_bounds(self) -> None:
+    def test_unregistered_reverse_raw_targets_have_no_flash_write_bounds(self) -> None:
         from tools.rf_proof import application_bounds_for_environment
 
         config = subprocess.check_output(
             ["pio", "project", "config", "--json-output"], cwd=ROOT, text=True
         )
         for role in ("sender", "receiver"):
-            self.assertEqual(
-                application_bounds_for_environment(config, role + "_reverse_raw"), (0, 130048)
-            )
+            self.assertIsNone(application_bounds_for_environment(config, role + "_reverse_raw"))

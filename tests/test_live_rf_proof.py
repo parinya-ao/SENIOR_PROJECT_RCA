@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import tools.rf_proof as rf
+from tools.device_detection.hardware_registry import hardware_ports
 
 
 def fixture() -> Any:
@@ -40,7 +41,7 @@ def fixture() -> Any:
             "run_id": "unit-run",
             "verified": True,
             "signature": "1e970a",
-            "port": rf.PORTS[role.lower()],
+            "port": hardware_ports()[role.lower()],
             "firmware_sha256": "a" * 64,
             "build_id": manifest["environments"][environment]["build_id"],
         }
@@ -151,7 +152,7 @@ class LiveProofTests(unittest.TestCase):
             self.assertFalse(rf.upload_evidence_matches(path, manifest))
 
     def test_fresh_readback_rejects_wrong_image_or_target_serial(self) -> None:
-        from tests.test_rf_proof import ihex_record
+        from tests.test_rf_proof import effective_platformio_config, ihex_record
 
         manifest, _, _ = fixture()
         with tempfile.TemporaryDirectory() as directory:
@@ -171,11 +172,18 @@ class LiveProofTests(unittest.TestCase):
             (root / "config/current_hardware.json").write_text(
                 json.dumps(
                     {
-                        role: {"device_serial_hex": "01 02", "port_path": rf.PORTS[role]}
+                        role: {
+                            "device_serial_hex": ("01" if role == "gateway" else "02") * 16,
+                            "fuses_hex": "00" * 16,
+                            "port_path": hardware_ports()[role],
+                            "design": f"{role} test fixture",
+                        }
                         for role in ("gateway", "receiver")
                     }
                 )
             )
+            (root / "generated").mkdir()
+            (root / "generated/lora_manifest.json").write_text(json.dumps(manifest))
             expected = {}
             for role, environment in [("GATEWAY", "sender_hello"), ("RECEIVER", "receiver")]:
                 payload = manifest["environments"][environment]["build_id"].encode()
@@ -194,7 +202,8 @@ class LiveProofTests(unittest.TestCase):
                     memory, _, path, _ = arg.split(":")
                     value = {
                         "signature": bytes.fromhex("1e970a"),
-                        "sernum": b"\x01\x02",
+                        "sernum": bytes.fromhex("01" * 16 if role == "gateway" else "02" * 16),
+                        "fuses": bytes(16),
                         "flash": expected[role],
                     }[memory]
                     if corrupt == memory:
@@ -208,11 +217,18 @@ class LiveProofTests(unittest.TestCase):
             with (
                 patch.object(rf, "ROOT", root),
                 patch.object(rf, "ARTIFACTS", artifact),
-                patch.object(rf, "application_bounds_for_environment", return_value=(0, 130048)),
             ):
-                self.assertIsNotNone(rf.verify_installed_images(proof, "config", manifest, "run"))
+                self.assertIsNotNone(
+                    rf.verify_installed_images(
+                        proof, effective_platformio_config(), manifest, "run"
+                    )
+                )
                 for corrupt in ("flash", "signature", "sernum"):
-                    self.assertIsNone(rf.verify_installed_images(proof, "config", manifest, "run"))
+                    self.assertIsNone(
+                        rf.verify_installed_images(
+                            proof, effective_platformio_config(), manifest, "run"
+                        )
+                    )
 
     def test_verification_flags_without_measurement_record_cannot_open_monitors(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -226,7 +242,7 @@ class LiveProofTests(unittest.TestCase):
             )
             with (
                 patch.object(rf, "ROOT", Path(directory)),
-                patch.object(rf, "application_layout_verified", return_value=True),
+                patch.object(rf, "firmware_image_layout_verified", return_value=True),
                 patch.object(rf, "upload_ports_match", return_value=True),
                 patch.object(rf, "check_port_owners", return_value=[]),
                 patch.object(rf, "start_rf_monitor") as monitor,
@@ -243,7 +259,7 @@ class LiveProofTests(unittest.TestCase):
     def test_repeated_wait_start_never_reissues_sender_command(self) -> None:
         self._run_capture(repeat_wait_start=True)
 
-    def _run_capture(self, short_write: Any=False, repeat_wait_start: Any=False) -> None:
+    def _run_capture(self, short_write: Any = False, repeat_wait_start: Any = False) -> None:
         _manifest, journal, images = fixture()
         writes = []
 
@@ -299,7 +315,7 @@ class LiveProofTests(unittest.TestCase):
                 authorize_rf_test=True,
             )
             with (
-                patch.object(rf, "application_layout_verified", return_value=True),
+                patch.object(rf, "firmware_image_layout_verified", return_value=True),
                 patch.object(rf, "upload_ports_match", return_value=True),
                 patch.object(rf, "check_port_owners", return_value=[]),
                 patch.object(rf, "physical_readiness_errors", return_value=[]),

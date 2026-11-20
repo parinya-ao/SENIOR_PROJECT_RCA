@@ -1,12 +1,24 @@
 // License: No repository-wide license is declared.
 // Existing rights and third-party notices are unchanged.
+// Drives the real ARQ application through a deterministic host radio adapter.
 
 #include <assert.h>
 
-#include "../../stable_lib/arq/src/arq/application.cpp"
-#include "../../stable_lib/arq/src/arq/board_ssot.c"
-#include "../../stable_lib/arq/src/arq/commands.cpp"
-#include "../../stable_lib/arq/src/arq/diagnostics.cpp"
+// Load the implementation in this fixture to observe private foreground state.
+// NOLINTBEGIN(bugprone-suspicious-include)
+#include "../../stable_lib/arq/arq_config.h"
+#if defined(ARQ_ROLE_SENDER)
+#include "../../src/sender/appcode/arq/sender.cpp"
+#else
+#include "../../src/receiver/appcode/arq/receiver.cpp"
+#endif
+#include "../../src/shared/diagnostics/arq_bench.cpp"
+#include "../../src/shared/protocol/arq_ingress.cpp"
+#include "../../src/shared/radio/arq_radio.cpp"
+#include "../../stable_lib/arq/board_ssot.c"
+#include "../../stable_lib/arq/commands.cpp"
+#include "../../stable_lib/arq/diagnostics.cpp"
+// NOLINTEND(bugprone-suspicious-include)
 #include "diagnostics_test_access.h"
 using namespace arq::app;
 static void send_command(const char* s) {
@@ -29,7 +41,7 @@ static void drain_status(char* out, size_t capacity,
     Poll();
     if (registers[0]) {
       assert(length + 1 < capacity);
-      out[length++] = registers[0];
+      out[length++] = static_cast<char>(registers[0]);
     }
   }
   assert(!status_next && !arq::diagnostics::PendingLineCount());
@@ -51,7 +63,8 @@ int main(int argc, char** argv) {
     char output[8192];
     drain_status(output, sizeof output, true);
     assert(strstr(output, "e=STATUS_END ") && strstr(output, "e=REG "));
-    assert(strstr(output, "e=RX_IRQ ") && rx_done == 2 && raw_regs[1] == 0x85);
+    assert(strstr(output, "e=RX_IRQ ") && receive_counters.rx_done == 2 &&
+           raw_regs[1] == 0x85);
     assert(arq::diagnostics::OverflowCount() == 0);
     return 0;
   }
@@ -153,7 +166,12 @@ int main(int argc, char** argv) {
     return 0;
   }
   Initialize();
-  assert(ready && !sender.armed && !receiver.armed);
+  assert(ready);
+#if defined(ARQ_ROLE_SENDER)
+  assert(!sender.armed);
+#else
+  assert(!receiver.armed);
+#endif
   assert(raw_regs[1] == 0x81);  // Standby keeps the mode bits while clearing
                                 // only the HF/LF selector.
 #if defined(ARQ_RADIO_ONLY_DIAGNOSTIC) && defined(LORA_ROLE_RECEIVER)
@@ -176,13 +194,17 @@ int main(int argc, char** argv) {
   assert(strchr(register_bytes, '\n') - register_bytes == 48);
   ResetLog();
   /* Polling diagnostics survive destructive driver reads and logger loss. */
-  unsigned observed_before = rx_done;
+  unsigned observed_before = receive_counters.rx_done;
   Poll();
   assert(!tx_starts);
   send_command("SEND 48656C6C6F20576F726C64");
   assert(!tx_starts);
   send_command("ARM 12345678");
-  assert(sender.armed || receiver.armed);
+#if defined(ARQ_ROLE_SENDER)
+  assert(sender.armed);
+#else
+  assert(receiver.armed);
+#endif
   assert(!parked && rx_starts == 1);
   assert(raw_regs[1] ==
          0x85);  // LoRa RX continuous, HF band, no LF register bank.
@@ -214,7 +236,7 @@ int main(int argc, char** argv) {
     assert(sender.state == arq::SenderState::kWaitingAck &&
            rx_starts == starts + 1 && !irq_flags);
   }
-  assert(control_rejects == 4 && decode_errors == 1);
+  assert(control_rejects == 4 && receive_counters.decode_errors == 1);
   packet_length = arq::EncodeFrame(&ack, packet, 44);
   irq_flags = 0x40;
   clock_ms = sender.retry_at;
@@ -226,7 +248,8 @@ int main(int argc, char** argv) {
         strstr(QueuedLogLine(i), " q=0 "))
       delivered_sequence_seen = true;
   assert(delivered_sequence_seen);
-  assert(rx_done == observed_before + 6 && last_rx_flags == 0x40);
+  assert(receive_counters.rx_done == observed_before + 6 &&
+         receive_counters.last_rx_flags == 0x40);
   send_command("X");
   send_command("SEND 00");
   assert(sender.state == arq::SenderState::kDelivered);
@@ -250,9 +273,10 @@ int main(int argc, char** argv) {
   data_status = -7;
   irq_flags = 0x60;
   Poll();
-  assert(receiver.deliveries == 0 && crc_errors == 1);
+  assert(receiver.deliveries == 0 && receive_counters.crc_errors == 1);
   data_status = 0;
-  assert(rx_done == observed_before + 5 && last_rx_flags == 0x60);
+  assert(receive_counters.rx_done == observed_before + 5 &&
+         receive_counters.last_rx_flags == 0x60);
   assert(irq_flags == 0);
   ResetLog();
   ResetLog();

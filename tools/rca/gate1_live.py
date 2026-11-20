@@ -25,6 +25,22 @@ Json = Any
 
 STATUS_STABILITY_TIMEOUT_S = 180  # 20 x the observed 7.6 s block latency, with margin.
 MAILBOX_PROBE_TIMEOUT_S = 10
+SOURCE_HASH_PATHS = (
+    "third_party/upditerm/upditerm.py",
+    "tools/arq_trial.py",
+    "tools/rca/gate1.py",
+    "tools/rca/gate1_live.py",
+    "tools/rf_proof.py",
+    "tools/device_detection/updi_probe.py",
+    "src/sender/appcode/arq/sender.cpp",
+    "src/receiver/appcode/arq/receiver.cpp",
+    "src/shared/diagnostics/arq_bench.cpp",
+    "src/shared/protocol/arq_ingress.cpp",
+    "src/shared/radio/arq_radio.cpp",
+    "config/current_hardware.json",
+    "generated/arq_manifest.json",
+    "artifacts/arq/20261113T123837Z-standby/independent-verification.json",
+)
 AUTHORIZED_PRESERVATION_CHANGES = {
     "third_party/upditerm/upditerm.py",
     "third_party/upditerm/__pycache__/upditerm.cpython-314.pyc",
@@ -900,18 +916,6 @@ def run_gate1(
     git_status = subprocess.check_output(
         ["git", "status", "--porcelain=v1", "-uall"], cwd=ROOT, text=True
     )
-    source_paths = [
-        "third_party/upditerm/upditerm.py",
-        "tools/arq_trial.py",
-        "tools/rca/gate1.py",
-        "tools/rca/gate1_live.py",
-        "tools/rf_proof.py",
-        "tools/device_detection/updi_probe.py",
-        "stable_lib/arq/src/arq/application.cpp",
-        "config/current_hardware.json",
-        "generated/arq_manifest.json",
-        "artifacts/arq/20261113T123837Z-standby/independent-verification.json",
-    ]
     (directory / "source-revision.json").write_text(
         json.dumps(
             {
@@ -938,7 +942,7 @@ def run_gate1(
     )
     (directory / "source-hashes.json").write_text(
         json.dumps(
-            {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in source_paths}, indent=2
+            {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in SOURCE_HASH_PATHS}, indent=2
         )
         + "\n"
     )

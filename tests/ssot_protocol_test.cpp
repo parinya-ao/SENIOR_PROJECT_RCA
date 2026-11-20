@@ -1,5 +1,7 @@
 // License: No repository-wide license is declared.
 // Existing rights and third-party notices are unchanged.
+// Validates SSOT wire bytes, campaign transitions, command input, and duplicate
+// tracking.
 
 #include <assert.h>
 #include <stdint.h>
@@ -7,11 +9,45 @@
 #include <string.h>
 
 #include "ssot.h"
+#if __has_include("shared/protocol/interactive_command.h")
+#include "shared/protocol/interactive_command.h"
+#define LORA_INTERACTIVE_COMMAND_AVAILABLE 1
+#endif
 
 static_assert(sizeof(ssot::CampaignState) == sizeof(int),
               "Preserve campaign state layout");
 
+static void test_interactive_command() {
+#if defined(LORA_INTERACTIVE_COMMAND_AVAILABLE)
+  reliable::HexDataCommandDecoder<8> decoder;
+  uint8_t payload[8] = {};
+  using Result = reliable::HexDataCommandDecoder<8>::Result;
+  assert(decoder.Feed('?', payload, sizeof payload) == Result::kNotCommand);
+  const char* command = "X03616263";
+  Result status = Result::kNotCommand;
+  for (const char* character = command; *character; ++character)
+    status = decoder.Feed(static_cast<uint8_t>(*character), payload, sizeof payload);
+  assert(status == Result::kComplete);
+  assert(decoder.size() == 3U);
+  assert(memcmp(payload, "abc", 3U) == 0);
+
+  decoder.Reset();
+  for (const char* character = "X09"; *character; ++character)
+    status = decoder.Feed(static_cast<uint8_t>(*character), payload, sizeof payload);
+  assert(status == Result::kInvalidLength);
+
+  decoder.Reset();
+  const char* malformed = "X01G";
+  for (const char* character = malformed; *character; ++character)
+    status = decoder.Feed(static_cast<uint8_t>(*character), payload, sizeof payload);
+  assert(status == Result::kInvalidHex);
+#else
+  assert(false && "interactive payload decoder is missing");
+#endif
+}
+
 int main(void) {
+  test_interactive_command();
   static const uint8_t expected[] = {0x01, 0x00, 0x34, 0x12, 0x08, 0x01,
                                      'h',  'e',  'l',  'l',  'o',  ' ',
                                      'w',  'o',  'r',  'l',  'd'};
@@ -58,16 +94,13 @@ int main(void) {
   assert(decoded.campaign_id == 0x1234U && decoded.sequence == 1U);
   assert(decoded.type == 8U);
   assert(!ssot::DecodeFrame(expected, sizeof expected - 1U, &decoded));
+  memcpy(frame, expected, sizeof frame);
+  frame[6] = 'X';
+  // Decoding identifies the wire format. Application policy decides acceptance.
+  assert(ssot::DecodeFrame(frame, sizeof frame, &decoded));
   assert(ssot::DecodePayload(1U, 0U, 0x34U, 0x12U, expected + 4U,
                              sizeof expected - 4U, &decoded));
   assert(decoded.type == 8U && decoded.campaign_id == 0x1234U);
-  assert(ssot::ReplyForData(1U, 0U, 0x34U, 0x12U, expected + 4U,
-                            sizeof expected - 4U, 0x1234U, &decoded) == 3U);
-  assert(decoded.type == 8U && decoded.sequence == 1U);
-  assert(ssot::ReplyForData(1U, 0U, 0x34U, 0x12U, expected + 4U,
-                            sizeof expected - 5U, 0x1234U, &decoded) == 9U);
-  assert(ssot::ReplyForData(1U, 0U, 0x34U, 0x12U, expected + 4U,
-                            sizeof expected - 4U, 0x1235U, &decoded) == 0U);
 
   const ssot::Frame correct_ack = {0U, 1U, 0x1234U, 3U, 1U};
   assert(ssot::AckMatches(&correct_ack, 1U, 0U, 0x1234U, 1U));

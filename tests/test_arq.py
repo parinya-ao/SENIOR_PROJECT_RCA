@@ -16,7 +16,8 @@ sys.path.insert(0, str(ROOT / "tools/config"))
 
 class ArqTests(unittest.TestCase):
     def test_adapter(self) -> None:
-        self.assertTrue((ROOT / "stable_lib/arq/src/arq/application.cpp").exists(), "ARQ adapter missing")
+        for role in ("sender", "receiver"):
+            self.assertTrue((ROOT / f"src/{role}/appcode/arq/{role}.cpp").is_file())
         with tempfile.TemporaryDirectory() as directory:
             objects = []
             for source in ("codec", "sender", "receiver"):
@@ -26,11 +27,11 @@ class ArqTests(unittest.TestCase):
                     [
                         "clang",
                         "--driver-mode=g++",
-                    "-std=c++17",
-                        "-Istable_lib/arq/src/arq/src",
+                        "-std=c++17",
+                        "-Istable_lib/arq",
                         "-Iinclude",
                         "-c",
-                        f"stable_lib/arq/src/arq/{source}.cpp",
+                        f"stable_lib/arq/{source}.cpp",
                         "-o",
                         obj,
                     ],
@@ -53,9 +54,10 @@ class ArqTests(unittest.TestCase):
                         "-Wno-unused-variable",
                         "-Wno-unused-function",
                         "-Itests/arq/stub",
+                        "-Isrc",
                         "-Itests/raw_mvp_stub",
                         "-Iinclude",
-                        "-Istable_lib/arq/src/arq/src",
+                        "-Istable_lib/arq",
                         "-DLORA_ROLE_" + role,
                         "-DARQ_TEST_MODE",
                         '-DLORA_BUILD_ID="host-test"',
@@ -75,7 +77,7 @@ class ArqTests(unittest.TestCase):
                     subprocess.run([binary, failure], check=True)
 
     def test_portable_core(self) -> None:
-        self.assertTrue((ROOT / "stable_lib/arq/src/arq/arq.h").exists(), "ARQ core missing")
+        self.assertTrue((ROOT / "stable_lib/arq/arq.h").exists(), "ARQ core missing")
         with tempfile.TemporaryDirectory() as directory:
             binary = Path(directory) / "core"
             subprocess.run(
@@ -90,12 +92,12 @@ class ArqTests(unittest.TestCase):
                     "-g",
                     "-fsanitize=address,undefined",
                     "-fno-omit-frame-pointer",
-                    "-Istable_lib/arq/src/arq/src",
+                    "-Istable_lib/arq",
                     "-Iinclude",
                     "tests/arq/core_test.cpp",
-                    "stable_lib/arq/src/arq/codec.cpp",
-                    "stable_lib/arq/src/arq/sender.cpp",
-                    "stable_lib/arq/src/arq/receiver.cpp",
+                    "stable_lib/arq/codec.cpp",
+                    "stable_lib/arq/sender.cpp",
+                    "stable_lib/arq/receiver.cpp",
                     "-o",
                     str(binary),
                 ],
@@ -133,9 +135,9 @@ class ArqTests(unittest.TestCase):
         board = load(ROOT / "config/lora_system.json")
         outputs = arq_artifacts(cfg, radio, board, "test-source")
         self.assertEqual(outputs, arq_artifacts(cfg, radio, board, "test-source"))
-        self.assertIn("PIN_PD0", outputs["stable_lib/arq/src/arq/board_ssot.c"])
+        self.assertIn("PIN_PD0", outputs["stable_lib/arq/board_ssot.c"])
         self.assertIn("SPI1_SWAP_DEFAULT", outputs["include/generated/board_ssot.h"])
-        self.assertNotIn("SPI1_SWAP_DEFAULT", outputs["stable_lib/arq/src/arq/board_ssot.c"])
+        self.assertNotIn("SPI1_SWAP_DEFAULT", outputs["stable_lib/arq/board_ssot.c"])
         manifest_radio = json.loads(outputs["generated/arq_manifest.json"])["radio"]
         self.assertEqual(manifest_radio["frequency_hz"], 915_000_000)
         self.assertEqual(manifest_radio["tx_power_dbm"], 2)
@@ -252,7 +254,7 @@ class ArqTests(unittest.TestCase):
             arq_trial.main()
             campaign.assert_called_once_with((("H01", 1), ("H02", 1), ("H03", 1), ("H04", 10)))
 
-    def test_application_bounds_include_arq(self) -> None:
+    def test_unregistered_arq_environments_have_no_flash_write_bounds(self) -> None:
         from tools.rf_proof import application_bounds_for_environment
 
         config = subprocess.check_output(
@@ -260,8 +262,8 @@ class ArqTests(unittest.TestCase):
         )
         for role in ("sender", "receiver"):
             for suffix in ("", "_test"):
-                self.assertEqual(
-                    application_bounds_for_environment(config, role + "_arq" + suffix), (0, 130048)
+                self.assertIsNone(
+                    application_bounds_for_environment(config, role + "_arq" + suffix)
                 )
 
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2011-2015 Frank Meyer - frank(at)fli4l.de
  *
-  * Revision History:
+ * Revision History:
  * V1.0 2015 xx xx Frank Meyer, original version
  * V1.1 2017 01 13 ChrisMicro , serial interface specific functions removed
  *
@@ -14,5 +14,5 @@
  *---------------------------------------------------------------------------------------------------------------------------------------------------
  */
 
-#define MCURSES_LINES               24              // 24 lines
-#define MCURSES_COLS                80              // 80 columns
+#define MCURSES_LINES 24  // 24 lines
+#define MCURSES_COLS 80   // 80 columns

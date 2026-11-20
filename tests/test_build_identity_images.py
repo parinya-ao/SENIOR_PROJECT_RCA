@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from typing import ClassVar
 
 from tools.device_detection.firmware_identity import normalize_ihex_region
 from tools.rf_proof import parse_ihex_range
@@ -14,20 +15,25 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class BuildIdentityImagesTests(unittest.TestCase):
-    environments = tuple(
+    environments: ClassVar[tuple[str, ...]] = tuple(
         role + suffix
         for role in ("sender", "receiver")
         for suffix in ("_arq", "_arq_test", "_reverse_raw")
     )
+    directory: ClassVar[tempfile.TemporaryDirectory[str]]
+    project: ClassVar[Path]
 
     @classmethod
     def setUpClass(cls) -> None:
+        """Build investigation images in a clean copy with cached dependencies."""
         pio = shutil.which("pio")
         if pio is None:
-            raise RuntimeError("PlatformIO is required for build-identity image verification")
+            message = "PlatformIO is required for build-identity image verification"
+            raise RuntimeError(message)
         dependencies = ROOT / ".pio/libdeps"
         if not dependencies.is_dir():
-            raise RuntimeError("cached PlatformIO libdeps are required; tests do not download deps")
+            message = "cached PlatformIO libdeps are required; tests do not download deps"
+            raise RuntimeError(message)
 
         cls.directory = tempfile.TemporaryDirectory(prefix="build-identity-images-")
         cls.project = Path(cls.directory.name) / "project"

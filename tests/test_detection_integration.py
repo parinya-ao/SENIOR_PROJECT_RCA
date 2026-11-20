@@ -225,6 +225,49 @@ class DetectionIntegrationTests(unittest.TestCase):
         self.assertIsNotNone(result.firmware_identity)
         self.assertNotIn("-r", seen)
 
+    def test_complete_firmware_identity_survives_bounded_monitor_stop(self) -> None:
+        import subprocess
+
+        probe = require(self, updi_probe, "probe_firmware_identity")
+        if probe is None:
+            return
+
+        class Process:
+            returncode = 0
+            calls = 0
+
+            def communicate(self, timeout: float | None = None) -> tuple[str, str]:
+                """Simulate one timed-out probe followed by a clean retry."""
+                self.calls += 1
+                if self.calls == 1:
+                    if timeout is None:
+                        message = "the UPDI probe must supply a timeout"
+                        raise AssertionError(message)
+                    command = "upditerm"
+                    raise subprocess.TimeoutExpired(command, timeout)
+                return "", ""
+
+            def send_signal(self, _signal: int) -> None:
+                return
+
+        def popen(argv: list[str], **_kwargs: Json) -> Process:
+            logfile = Path(argv[argv.index("-l") + 1])
+            logfile.write_bytes(b"[SENDER] ID V1 sender Nov  6 2026 05:00:00 CRC=15\r\n")
+            return Process()
+
+        result = probe(
+            "/dev/fake",
+            hardware_safe=True,
+            timeout=0.1,
+            command_runner=lambda *_args, **_kwargs: type(
+                "Completed", (), {"returncode": 1, "stdout": "", "stderr": ""}
+            )(),
+            popen=popen,
+        )
+        self.assertEqual(result.firmware_status, "OK")
+        self.assertEqual(result.parse_status, "VALID")
+        self.assertEqual(result.firmware_identity.role, "SENDER")
+
 
 if __name__ == "__main__":
     unittest.main()

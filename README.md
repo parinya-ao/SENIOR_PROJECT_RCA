@@ -6,10 +6,14 @@ The separate ARQ diagnostic protocol retains its own existing framing and values
 
 The handwritten application implementations are C++17. Existing Arduino entry
 points, RadioLib integration, fixed-capacity buffers and caller-owned protocol
-state remain in place. See [migration baseline](docs/migration/baseline.md),
-[architecture](docs/architecture.md), and
-[migration verification](docs/migration/verification.md) and
-[readability verification](docs/migration/readability-verification.md).
+state remain in place. Start with the [source map](src/README.md), the
+[hardware pin audit](PIN_MAPPING_AUDIT.md), and the
+[ACK/NACK protocol and test guide](docs/testing/LORA_ACK_NACK.md). Historical
+source ownership evidence is in [Source Ownership V2](docs/refactoring/SOURCE_OWNERSHIP_V2.md).
+The current [architecture](docs/architecture/FINAL_ARCHITECTURE.md),
+[regression matrix](docs/testing/REGRESSION_MATRIX.md),
+[real-radio evidence](docs/testing/REAL_RADIO_EVIDENCE.md), and
+[deletion audit](docs/migration/DELETION_AUDIT.md) are separate focused references.
 
 ## Build
 
@@ -75,16 +79,16 @@ tests replace physical MCU/radio I/O and do not prove an RF link.
 ## Static analysis and formatting
 
 ```sh
-pio check -e sender_arq --src-filters '+<src/ssot.cpp> +<src/ssot/> +<src/arq/>' --flags 'cppcheck: --enable=warning,performance,portability --std=c++17' --fail-on-defect high
-uvx --from clang-tidy clang-tidy src/ssot.cpp src/ssot/session.cpp src/ssot/control_input.cpp src/arq/codec.cpp src/arq/sender.cpp src/arq/receiver.cpp src/arq/commands.cpp -- -std=c++17 -Isrc -Isrc/arq -Iinclude
-uvx --from clang-format clang-format --dry-run --Werror src/ssot.cpp src/ssot/*.h src/ssot/*.cpp src/arq/*.h src/arq/*.cpp
+pio check -e sender_arq --flags 'cppcheck: --enable=warning,performance,portability --std=c++17' --fail-on-defect high
+uvx --from clang-tidy clang-tidy stable_lib/ssot/ssot_codec.cpp stable_lib/ssot/ssot_session.cpp stable_lib/ssot/ssot_control_input.cpp stable_lib/arq/codec.cpp stable_lib/arq/sender.cpp stable_lib/arq/receiver.cpp stable_lib/arq/commands.cpp -- -std=c++17 -Istable_lib/ssot -Istable_lib/arq -Iinclude
+uvx --from clang-format clang-format --dry-run --Werror src/{sender,receiver}/appcode/main.cpp stable_lib/ssot/*.h stable_lib/ssot/*.cpp stable_lib/arq/*.h stable_lib/arq/*.cpp
 ```
 
 The checked-in Clang configuration uses Google formatting and focused correctness
-checks. It preserves existing native enum layout and positional APIs. Full-tree
-Cppcheck also reports existing protothread parsing limitations and a RadioLib
-output-buffer initialization finding; migration-specific results and baseline
-comparison are recorded in the verification note.
+checks. It preserves existing native enum layout and positional APIs. The
+historical C++ quality baseline is in
+[docs/refactoring/BASELINE.md](docs/refactoring/BASELINE.md). Current ACK/NACK
+validation evidence is in [docs/testing/LORA_ACK_NACK.md](docs/testing/LORA_ACK_NACK.md).
 
 ## Preserved boundaries
 

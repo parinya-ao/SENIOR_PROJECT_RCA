@@ -48,7 +48,7 @@ def _normalize_hex(value: str | SupportsInt | None) -> str | None:
         return None
     try:
         return f"{int(value, 0) if isinstance(value, str) else int(value):04x}"
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return str(value).lower().removeprefix("0x")
 
 

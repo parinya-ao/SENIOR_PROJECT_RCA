@@ -1,9 +1,26 @@
 """Evidence models for the device detector."""
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 ROLES = ("SENDER", "RECEIVER")
+
+
+class DeviceRole(StrEnum):
+    """Canonical Gateway/Tracker roles; legacy Sender/Receiver names stay at adapters."""
+
+    GATEWAY = "GATEWAY"
+    TRACKER = "TRACKER"
+
+    @classmethod
+    def from_legacy(cls, role: str) -> DeviceRole | None:
+        """Map existing firmware and configuration role labels to canonical names."""
+        if role in {"SENDER", "GATEWAY", "gateway"}:
+            return cls.GATEWAY
+        if role in {"RECEIVER", "TRACKER", "receiver", "tracker"}:
+            return cls.TRACKER
+        return None
 
 
 @dataclass(frozen=True)
